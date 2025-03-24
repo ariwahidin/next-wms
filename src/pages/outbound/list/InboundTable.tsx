@@ -17,6 +17,7 @@ import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./InboundTable.module.css";
 import { useRouter } from "next/router";
 import { useAlert } from "@/contexts/AlertContext";
+import { Badge } from "@/components/ui/badge";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -34,12 +35,12 @@ const fetcher = (url: string) =>
 
 const HandleEdit = (id: number) => {
   console.log("Edit ID:", id);
-  window.location.href = `/inbound/edit/${id}`;
+  window.location.href = `/outbound/edit/${id}`;
 };
 
 const HandleDelete = (id: number) => {
   try {
-    api.delete(`/inbound/${id}`, { withCredentials: true }).then((res) => {
+    api.delete(`/outbound/${id}`, { withCredentials: true }).then((res) => {
       if (res.data.success === true) {
         // mutate("/inbound/detail/draft"); // 🔥 Auto-refresh tabel tanpa reload halaman
       }
@@ -50,7 +51,7 @@ const HandleDelete = (id: number) => {
 };
 
 const InboundTable = ({ setEditData }) => {
-  const { data: rowData, error, mutate } = useSWR("/inbound", fetcher);
+  const { data: rowData, error, mutate } = useSWR("/outbound", fetcher);
 
   const { showAlert, notify } = useAlert();
 
@@ -64,13 +65,17 @@ const InboundTable = ({ setEditData }) => {
       () => {
         console.log(id);
         api
-          .post(`/inbound/complete/${id}`, { inbound_id: id }, { withCredentials: true })
+          .post(
+            `/outbound/complete/${id}`,
+            { inbound_id: id },
+            { withCredentials: true }
+          )
           .then((res) => {
             if (res.data.success) {
               notify("Berhasil!", "Successfully", "success");
               setTimeout(() => {
                 window.location.href = "/inbound/list";
-                console.log('hah')
+                console.log("hah");
               }, 1000);
             }
           })
@@ -86,15 +91,54 @@ const InboundTable = ({ setEditData }) => {
 
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
-    { field: "inbound_date", headerName: "Inbound Date", width: 120 },
-    { field: "inbound_no", headerName: "Inbound No", width: 170 },
-    { field: "supplier_code", headerName: "Supplier Code", width: 140 },
-    { field: "supplier_name", headerName: "Supplier Name" },
-    { field: "transporter_name", headerName: "Transporter" },
-    { field: "truck_no", headerName: "Truck No." },
-    { field: "status", headerName: "Status", width: 100 },
+    {
+      field: "outbound_date",
+      headerName: "Outbound Date",
+      width: 140,
+      valueFormatter: (params) => {
+        if (!params.value) return ""; // Mencegah error jika null atau undefined
+        const date = new Date(params.value);
+        return date.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+      },
+    },
+    { field: "outbound_no", headerName: "Outbound No", width: 170 },
+    { field: "delivery_no", headerName: "Delivery No", width: 170 },
+    // { field: "status", headerName: "Status", width: 100 },
+    { 
+      field: "status", 
+      headerName: "Status", 
+      width: 120,
+      cellRenderer: (params) => {
+        if (!params.value) return null;
+  
+        let color = "bg-gray-500"; // Default warna abu-abu
+        switch (params.value.toLowerCase()) {
+          case "open":
+            color = "bg-blue-500 text-white"; // Biru]"; // Kuning
+            break;
+          case "completed":
+            color = "bg-green-500"; // Hijau
+            break;
+          case "canceled":
+            color = "bg-red-500"; // Merah
+            break;
+        }
+  
+        return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
+      }
+    },
+    { field: "customer_code", headerName: "Customer Code", width: 140 },
+    { field: "customer_name", headerName: "Customer Name", width: 180 },
+    // { field: "supplier_name", headerName: "Supplier Name" },
+    // { field: "transporter_name", headerName: "Transporter" },
+    // { field: "truck_no", headerName: "Truck No." },
     { field: "total_line", headerName: "Total Line", width: 100 },
-    { field: "total_qty", headerName: "Total Qty", width: 100 },
+    { field: "total_qty_req", headerName: "Req Qty", width: 100 },
+    { field: "total_qty_scan", headerName: "Scan Qty", width: 100 },
     {
       headerName: "Actions",
       field: "ID",
@@ -110,7 +154,7 @@ const InboundTable = ({ setEditData }) => {
               <CheckCircle2 className="h-4 w-4" />
             </Button>
             <Button
-              onClick={() => HandleEdit(params.data.id)}
+              onClick={() => HandleEdit(params.data.ID)}
               variant="ghost"
               size="icon"
               className="h-8 w-8"
@@ -139,7 +183,7 @@ const InboundTable = ({ setEditData }) => {
   );
 
   return (
-    <div style={{ width: "100%", height: "100vh" }}>
+    <div style={{ width: "100%", height: "510px" }}>
       <div className="justify-self-end">
         <div className={styles.inputWrapper} style={{ marginBottom: "1rem" }}>
           <svg
@@ -170,6 +214,9 @@ const InboundTable = ({ setEditData }) => {
         rowData={rowData}
         columnDefs={columnDefs}
         quickFilterText={quickFilterText}
+        pagination={true} // Mengaktifkan pagination
+        paginationPageSize={10} // Set jumlah data per halaman
+        paginationPageSizeSelector={[10, 25, 50]} // Opsional: Dropdown pilihan page size
       />
     </div>
   );

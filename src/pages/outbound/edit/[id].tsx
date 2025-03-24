@@ -38,41 +38,19 @@ export default function Page() {
   useAuth();
   const router = useRouter();
   const { id } = router.query;
-  const [code, setCode] = useState("");
-  const [editData, setEditData] = useState(null);
-
-  const [editMode, setEditMode] = useState(true);
-
-  const [dataHeader, setDataHeader] = useState({
-    inbound_no: "Auto Generate",
-    supplier_code: null,
-    invoice: "",
-    transporter_code: null,
-    driver_name: "",
-    truck_size: null,
-    truck_no: "",
-    inbound_date: new Date().toISOString().split("T")[0],
-    container_no: "",
-    bl_no: "",
-    po_no: "",
-    po_date: new Date().toISOString().split("T")[0],
-    sj_no: "",
-    origin: null,
-    time_arrival: "00:00",
-    start_unloading: "00:00",
-    finish_unloading: "00:00",
-    remarks_header: "",
-  });
+  const [formHeader, setFormHeader] = useState({});
+  const [formItem, setFormItem] = useState({});
+  const [dataHeader, setDataHeader] = useState(null);
 
 
   const { showAlert, notify } = useAlert();
 
   async function handleSave() {
 
-    if (!dataHeader || Object.keys(dataHeader).length === 0) {
-      alert("Data tidak boleh kosong!");
-      return;
-    }
+    // if (!dataHeader || Object.keys(dataHeader).length === 0) {
+    //   alert("Data tidak boleh kosong!");
+    //   return;
+    // }
 
     showAlert(
       "Konfirmasi Simpan",
@@ -80,12 +58,12 @@ export default function Page() {
       "error",
       () => {
         api
-          .put(`/inbound/${id}`, dataHeader, { withCredentials: true })
+          .put(`/outbound/${id}`, formHeader, { withCredentials: true })
           .then((res) => {
             if (res.data.success) {
               notify("Berhasil!", "Data telah disimpan.", "success");
               setTimeout(() => {
-                window.location.href = "/inbound/list";
+                window.location.href = "/outbound/list";
               }, 1000);
             }
           })
@@ -102,12 +80,11 @@ export default function Page() {
     const fetchData = async () => {
       try {
         if (!id) return; // Hindari fetch kalau ID belum ada
-        const res = await api.get(`/inbound/${id}`, { withCredentials: true });
-
+        const res = await api.get(`/outbound/${id}`, { withCredentials: true });
         if (res.data.success) {
-          console.log("API Response:", res.data.data); // Debugging
           if (res.data.data.header) {
-            setDataHeader(res.data.data.header);
+            setFormHeader(res.data.data.form_header);
+            setFormItem(res.data.data.form_items);
           } else {
             console.error("Header data is missing!");
           }
@@ -131,11 +108,11 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Inbound</BreadcrumbLink>
+                  <BreadcrumbLink href="#">Outbound</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Edit</BreadcrumbPage>
+                  <BreadcrumbPage>{formHeader?.outbound_no}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -159,15 +136,15 @@ export default function Page() {
           <Tabs defaultValue="account" className="w-full">
             <TabsList>
               <TabsTrigger value="account">Header</TabsTrigger>
-              <TabsTrigger value="password">Detail</TabsTrigger>
+              <TabsTrigger value="password">Items</TabsTrigger>
             </TabsList>
             <TabsContent value="account">
               <Card>
                 {/* <CardHeader></CardHeader> */}
                 <CardContent>
                   <HeaderForm
-                    dataHeader={dataHeader}
-                    setDataHeader={setDataHeader}
+                    formHeader={formHeader}
+                    setFormHeader={setFormHeader}
                   />
                 </CardContent>
               </Card>
@@ -176,18 +153,16 @@ export default function Page() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="col-span-2">
                   <ProductTable
-                    setEditData={setEditData}
-                    editMode={true}
-                    id={id}
-                  />
+                  formItem={formItem}
+                  setFormItem={setFormItem}
+                />
                 </div>
                 <div className="col-span-1">
                   <ProductForm
-                    editData={editData}
-                    setEditData={setEditData}
-                    editMode={true}
-                    id={id}
-                    code={code}
+                    formHeader={formHeader}
+                    setFormHeader={setFormHeader}
+                    formItem={formItem}
+                    setFormItem={setFormItem}
                   />
                 </div>
               </div>

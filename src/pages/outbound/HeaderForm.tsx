@@ -3,72 +3,79 @@ import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
 import Select from "react-select";
 import { Textarea } from "@/components/ui/textarea";
+import { set } from "react-hook-form";
 
-export function HeaderForm({ dataHeader, setDataHeader }) {
+export function HeaderForm({
+  formHeader,
+  setFormHeader,
+  dataForm,
+  setDataForm,
+}) {
+  const [optionCustomers, setOptionCustomers] = useState([]);
   const [optionsSupplier, setOptionsSupplier] = useState([]);
   const [optionsTransporter, setOptionsTransporter] = useState([]);
   const [optionsTruck, setOptionsTruck] = useState([]);
   const [originOptions, setOriginOptions] = useState([]);
 
-  const handleSupplierChange = (selectedOption) => {
-    setDataHeader({ ...dataHeader, supplier_code: selectedOption.value });
+  const [loading, setLoading] = useState(true);
+
+  // const [formHeader, setFormHeader] = useState({});
+
+  const handleOptionCustomerChange = (selectedOption) => {
+    // setDataForm({
+    //   ...dataForm,
+    //   form_header: {
+    //     ...dataForm.form_header,
+    //     customer_code: selectedOption.value,
+    //   },
+    // });
+    setFormHeader({ ...formHeader, customer_code: selectedOption.value });
   };
 
-  const handleTransporterChange = (selectedOption) => {
-    setDataHeader({ ...dataHeader, transporter_code: selectedOption.value });
-  };
+  // const handleTransporterChange = (selectedOption) => {
+  //   setDataHeader({ ...dataHeader, transporter_code: selectedOption.value });
+  // };
 
-  const handleTruckChange = (selectedOption) => {
-    setDataHeader({ ...dataHeader, truck_size: selectedOption.value });
-  };
+  // const handleTruckChange = (selectedOption) => {
+  //   setDataHeader({ ...dataHeader, truck_size: selectedOption.value });
+  // };
 
-  const handleOriginChange = (selectedOption) => {
-    setDataHeader({ ...dataHeader, origin: selectedOption.value });
-  };
+  // const handleOriginChange = (selectedOption) => {
+  //   setDataHeader({ ...dataHeader, origin: selectedOption.value });
+  // };
 
   // set title
   useEffect(() => {
-    // Fetch list suppliers
-    api.get("/suppliers", { withCredentials: true }).then((res) => {
-      setOptionsSupplier(
-        res.data.data.map((item) => ({
-          value: item.supplier_code,
-          label: item.supplier_code + " - " + item.supplier_name,
-        }))
-      );
-    });
-
-    api.get("/transporters", { withCredentials: true }).then((res) => {
-      setOptionsTransporter(
-        res.data.data.map((item) => ({
-          value: item.transporter_code,
-          label: item.transporter_code + " - " + item.transporter_name,
-        }))
-      );
-    });
-
-    api.get("/trucks", { withCredentials: true }).then((res) => {
-      setOptionsTruck(
-        res.data.data.map((item) => ({
-          value: item.truck_name,
-          label: item.truck_description,
-        }))
-      );
-    });
-
-    api.get("/origins", { withCredentials: true }).then((res) => {
-      setOriginOptions(
-        res.data.data.map((item) => ({
-          value: item.country,
-          label: item.country,
-        }))
-      );
-    });
+    const fetchData = async () => {
+      try {
+        const [customers] = await Promise.all([
+          api.get("/customers/", { withCredentials: true }),
+        ]);
+        if (customers.data.success) {
+          setOptionCustomers(
+            customers.data.data?.map((item) => ({
+              value: item.customer_code,
+              label: item.customer_code + " - " + item.customer_name,
+            }))
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setTimeout(() => {
+          setLoading(false);
+        }, 100);
+      }
+    };
+    fetchData();
   }, []);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-4 p-4 pt-7">
-      <div className="space-y-4">
+      {/* <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -208,23 +215,35 @@ export function HeaderForm({ dataHeader, setDataHeader }) {
             />
           </div>
         </div>
-      </div>
+      </div> */}
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4">
           <div className="grid md:grid-cols-1 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Supplier
+                Outbound Date
               </label>
-              <Select
-                options={optionsSupplier}
-                onChange={handleSupplierChange}
-                value={optionsSupplier.find(
-                  (item) => item.value === dataHeader.supplier_code
-                )}
+              <Input
+                type="date"
+                value={formHeader.outbound_date}
+                onChange={(e) =>
+                  setFormHeader({ ...formHeader, outbound_date: e.target.value })
+                }
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Customer
+              </label>
+              <Select
+                options={optionCustomers}
+                onChange={handleOptionCustomerChange}
+                value={optionCustomers.find(
+                  (item) => item.value === formHeader.customer_code
+                )}
+              />
+            </div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Transporter
               </label>
@@ -235,10 +254,10 @@ export function HeaderForm({ dataHeader, setDataHeader }) {
                   (item) => item.value === dataHeader.transporter_code
                 )}
               />
-            </div>
+            </div> */}
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          {/* <div className="grid md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Invoice No.
@@ -326,7 +345,7 @@ export function HeaderForm({ dataHeader, setDataHeader }) {
                 placeholder="Enter BL number"
               />
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

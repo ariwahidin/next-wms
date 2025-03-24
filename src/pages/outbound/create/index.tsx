@@ -12,8 +12,11 @@ import eventBus from "@/utils/eventBus";
 
 export default function Page() {
   const [editData, setEditData] = useState(null);
+  const [formHeader, setFormHeader] = useState({});
+  const [formItem, setFormItem] = useState({});
   const [dataHeader, setDataHeader] = useState({
     inbound_no: "Auto Generate",
+    customer_code: null,
     supplier_code: null,
     invoice: "",
     transporter_code: null,
@@ -32,6 +35,8 @@ export default function Page() {
     finish_unloading: "00:00",
     remarks_header: "",
   });
+
+  const [dataForm, setDataForm] = useState(null);
 
   async function handleSave() {
     try {
@@ -59,13 +64,20 @@ export default function Page() {
   // set title
   useEffect(() => {
     setLoading(true);
-    document.title = "Create Inbound";
-    setLoading(false);
+    document.title = "Create Outbound";
+    api.get("/outbound/create", { withCredentials: true }).then((response) => {
+      setDataForm(response.data.data);
+      setFormHeader(response.data.data.form_header);
+      setFormItem(response.data.data.form_items);
+      setLoading(false);
+    });
+    // setLoading(false);
   }, []);
 
-  return (
-    loading ? <p>Loading...</p> :
-    <Layout title="Inbound" subTitle="Create Inbound">
+  return loading ? (
+    <p>Loading...</p>
+  ) : (
+    <Layout title="Outbound" subTitle="Create Outbound">
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
         <div style={{ marginLeft: "auto" }}>
           <Button variant="outline" className="me-2">
@@ -84,8 +96,10 @@ export default function Page() {
             <Card>
               <CardContent>
                 <HeaderForm
-                  dataHeader={dataHeader}
-                  setDataHeader={setDataHeader}
+                  formHeader={formHeader}
+                  setFormHeader={setFormHeader}
+                  dataForm={dataForm}
+                  setDataForm={setDataForm}
                 />
               </CardContent>
             </Card>
@@ -94,18 +108,16 @@ export default function Page() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="col-span-2">
                 <ProductTable
-                  setEditData={setEditData}
-                  editMode={false}
-                  id={0}
+                  formItem={formItem}
+                  setFormItem={setFormItem}
                 />
               </div>
               <div className="col-span-1">
                 <ProductForm
-                  editData={editData}
-                  setEditData={setEditData}
-                  editMode={false}
-                  id={0}
-                  code={dataHeader.inbound_no}
+                  formHeader={formHeader}
+                  setFormHeader={setFormHeader}
+                  formItem={formItem}
+                  setFormItem={setFormItem}
                 />
               </div>
             </div>

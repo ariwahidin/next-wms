@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getEnabledCategories } from "trace_events";
+import Select from "react-select";
 
 export function ProductForm({ editData, setEditData }) {
   const [itemCode, setItemCode] = useState("");
@@ -24,12 +25,25 @@ export function ProductForm({ editData, setEditData }) {
   const [gmc, setGmc] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const [serialOptions, setSerialOptions] = useState([
+    { value: "Y", label: "YES" },
+    { value: "N", label: "NO" },
+  ]);
+
+  const [selectedSerial, setSelectedSerial] = useState(serialOptions[1]);
+
   // 🔥 Jika editData berubah, isi form dengan data produk yang dipilih
   useEffect(() => {
     if (editData) {
       setItemCode(editData.item_code);
       setItemName(editData.item_name);
       setGmc(editData.gmc);
+      serialOptions.find((option) => {
+        console.log(editData.has_serial);
+        if (option.value === editData.has_serial) {
+          setSelectedSerial(option);
+        }
+      });
     }
   }, [editData]);
 
@@ -62,9 +76,10 @@ export function ProductForm({ editData, setEditData }) {
             item_code: itemCode,
             item_name: itemName,
             gmc: gmc,
-            cbm : 1.0,
-            category : 'Book',
-            group : 'Book',
+            cbm: 1.0,
+            category: "Book",
+            group: "Book",
+            serial: selectedSerial.value,
           },
           { withCredentials: true }
         );
@@ -76,9 +91,10 @@ export function ProductForm({ editData, setEditData }) {
             item_code: itemCode,
             item_name: itemName,
             gmc: gmc,
-            cbm : 1.0,
-            category : 'Book',
-            group : 'Book',
+            cbm: 1.0,
+            category: "Book",
+            group: "Book",
+            serial: selectedSerial.value,
           },
           { withCredentials: true }
         );
@@ -164,6 +180,18 @@ export function ProductForm({ editData, setEditData }) {
                 onChange={(e) => setGmc(e.target.value)}
                 value={gmc}
                 placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label>Has Serial</Label>
+              <Select
+                options={serialOptions}
+                defaultValue={selectedSerial}
+                onChange={(selectedOption) =>
+                  setSelectedSerial(selectedOption)
+                }
+                value={selectedSerial}
+                placeholder="Select serial"
               />
             </div>
           </div>

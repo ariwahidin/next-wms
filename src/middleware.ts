@@ -18,5 +18,7 @@ export const config = {
         '/dashboard/:path*',
         '/master/:path*',
         '/inbound/:path*',
+        '/outbound/:path*',
+        '/rf/:path*',
     ],
 };

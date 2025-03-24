@@ -4,11 +4,12 @@ import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Barcode, Pencil, Trash2 } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./ProductTable.module.css";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { FormItem } from "@/components/ui/form";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -24,53 +25,43 @@ const fetcher = (url: string) =>
     return [];
   });
 
-const HandleDelete = (id: number, editMode: boolean) => {
-  try {
-    api
-      .delete(`/inbound/detail/${id}`, { withCredentials: true })
-      .then((res) => {
-        if (res.data.success === true) {
-          if (editMode) {
-            mutate(`/inbound/${id}`);
-          } else {
-            mutate("/inbound/detail/draft");
-          }
-        }
-      });
-  } catch (error) {
-    console.error("Gagal menghapus produk:", error);
-  }
-};
-
 const ProductTable = ({
-  setEditData,
-  editMode,
-  id,
-}: {
-  setEditData: any;
-  editMode: boolean;
-  id: number;
+  formItem,
+  setFormItem,
 }) => {
-  let url = "/inbound/detail/draft";
-
-  console.log("Edit Mode : ", editMode);
-
-  if (editMode) {
-    url = `/inbound/${id}`;
+  let url = "/outbound/draft";
+  if (formItem.outbound_id) {
+    url = "/outbound/" + formItem.outbound_id;
   }
-
   const { data: rowData, error, mutate } = useSWR(url, fetcher);
 
+  if (error) {
+    alert("error");
+  }
+
+  const HandleDelete = (id: number) => {
+    try {
+      api
+        .delete(`/outbound/item/${id}`, { withCredentials: true })
+        .then((res) => {
+          if (res.data.success === true) {
+            mutate("/outbound/" + formItem.outbound_id);
+          }
+        });
+    } catch (error) {
+      console.error("Gagal menghapus produk:", error);
+    }
+  };
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 60 },
-    { field: "rec_date", headerName: "Rec Date", width: 120 },
+    { field: "outbound_no", headerName: "Outbound No", width: 150 },
     { field: "item_code", headerName: "Item Code", width: 120 },
-    { field: "location", headerName: "Location", width: 120 },
     { field: "item_name", headerName: "Item Name", width: 120 },
     { field: "gmc", headerName: "GMC", width: 110 },
+    { field: "quantity", headerName: "Qty", width: 80 },
     { field: "whs_code", headerName: "Whs Code", width: 120 },
     { field: "remarks", headerName: "Remarks", width: 120 },
-    { field: "quantity", headerName: "Qty", width: 80 },
+    { field: "uom", headerName: "UoM", width: 80 },
     { field: "handling_used", headerName: "Handling", width: 140 },
     { field: "sum_rate_idr", headerName: "VAS", width: 140 },
     {
@@ -81,8 +72,21 @@ const ProductTable = ({
           <div>
             <Button
               onClick={() => {
-                setEditData(params.data);
-                console.log(params.data);
+                setFormItem({
+                  ...formItem,
+                  outbound_id: params.data.outbound_id,
+                  handling_id : params.data.handling_id,
+                  location: params.data.location,
+                  outbound_detail_id: params.data.ID,
+                  item_code: params.data.item_code,
+                  item_name : params.data.item_name,
+                  quantity: params.data.quantity,
+                  remarks: params.data.remarks,
+                  uom : params.data.uom,
+                  whs_code : params.data.whs_code,
+                  barcode : params.data.barcode
+                })
+                console.log("Dari table", params.data);
               }}
               variant="ghost"
               size="icon"
@@ -91,7 +95,7 @@ const ProductTable = ({
               <Pencil className="h-4 w-4" />
             </Button>
             <Button
-              onClick={() => HandleDelete(params.data.id, editMode)}
+              onClick={() => HandleDelete(params.data.ID)}
               variant="ghost"
               size="icon"
               className="h-8 w-8"
@@ -103,7 +107,6 @@ const ProductTable = ({
       },
     },
   ]);
-
   const [quickFilterText, setQuickFilterText] = useState<string>();
   const onFilterTextBoxChanged = useCallback(
     ({ target: { value } }: ChangeEvent<HTMLInputElement>) =>
