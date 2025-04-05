@@ -90,12 +90,13 @@ export function ScanForm({ dataToPost, setDataToPost }) {
     const dataInboundDetail = await InboundDetail(selectedOption.value);
 
     const itemOptions = dataInboundDetail.data.details.map((item: any) => ({
-      value: item.id,
-      label: item.gmc,
+      value: item.inbound_detail_id,
+      label: item.barcode,
     }));
 
     setDataToPost({
       ...dataToPost,
+      subtitle: "Scan " + selectedOption.label,
       inbound_detail: dataInboundDetail.data.details,
       inbound: dataInboundDetail.data.header,
       item_options: itemOptions,
@@ -238,6 +239,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
       inbound_detail_id: dataToPost.inbound_detail_id,
       serial_number: dataToPost.serial_number,
       serial_number2: dataToPost.serial_number_2,
+      pallet: dataToPost.pallet,
       location: dataToPost.location,
       qa_status: dataToPost.qa_status,
       whs_code: dataToPost.whs_code,
@@ -320,7 +322,10 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                         quantity: 1,
                       });
                     } else {
-                      setDataToPost({ ...dataToPost, scan_type: e.value });
+                      setDataToPost({
+                        ...dataToPost,
+                        scan_type: e.value,
+                      });
                     }
                   }}
                   value={scanOptions.find(
@@ -345,7 +350,35 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col space-y-1.5">
+                  <Label>Pallet</Label>
+                  <div className="flex w-full max-w-sm items-center space-x-2">
+                    <Input
+                      id="pallet"
+                      type="text"
+                      onChange={(e) => {
+                        setDataToPost({
+                          ...dataToPost,
+                          pallet: e.target.value,
+                        });
+                      }}
+                      value={dataToPost.pallet}
+                      placeholder="Enter Pallet No"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      // onClick={() => {
+                      //   setDataToPost({ ...dataToPost, location: "" });
+                      //   document.getElementById("location")?.focus();
+                      // }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
                 <div className="flex flex-col space-y-1.5">
                   <Label>Location</Label>
                   <div className="flex w-full max-w-sm items-center space-x-2">
@@ -420,7 +453,8 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                   </div>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  Item Code : {dataToPost.item_info?.item_code}, Serial : {dataToPost.item_info?.has_serial == "Y" ? "Yes" : "No"}
+                  Item Code : {dataToPost.item_info?.item_code}, Serial :{" "}
+                  {dataToPost.item_info?.has_serial == "Y" ? "Yes" : "No"}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   Expect : {dataToPost.item_info?.quantity} , Scanned :

@@ -150,7 +150,7 @@ export function ScanForm({
   // const [qaOptions, setQaOptions] = useState([]);
   const whRef = useRef<any>(null);
   const [selectedItem, setSelectedItem] = useState(null);
-  
+
   const [scanOptions, setScanOptions] = useState([
     { value: "SERIAL", label: "SERIAL" },
     { value: "BARCODE", label: "BARCODE" },
@@ -177,42 +177,37 @@ export function ScanForm({
   const postData = () => {
     console.log("Scan Form:", scanForm);
 
-    // if (dataToPost.inbound_detail_id === null) {
-    //   alert("Please select item");
-    //   return;
-    // }
-    // console.log(dataToPost);
-    // // return;
-    // const data = {
-    //   inbound_id: dataToPost.inbound_id,
-    //   inbound_detail_id: dataToPost.inbound_detail_id,
-    //   serial_number: dataToPost.serial_number,
-    //   serial_number2: dataToPost.serial_number_2,
-    //   location: dataToPost.location,
-    //   qa_status: dataToPost.qa_status,
-    //   whs_code: dataToPost.whs_code,
-    //   scan_type: dataToPost.scan_type,
-    //   quantity: parseInt(dataToPost.quantity),
-    // };
-    // api
-    //   .post("/rf/inbound/" + dataToPost.inbound_id, data, {
-    //     withCredentials: true,
-    //   })
-    //   .then((res) => {
-    //     if (res.data.success) {
-    //       eventBus.emit("showAlert", {
-    //         title: "Success!",
-    //         description: "Saved",
-    //         type: "success",
-    //       });
-    //       setDataToPost({
-    //         ...dataToPost,
-    //         serial_number: "",
-    //         item_info: res.data.data.scanned,
-    //       });
-    //       document.getElementById("serialNumber")?.focus();
-    //     }
-    //   });
+    if (!scanForm.outbound_id) {
+      setError("Please select Outbound No");
+      return;
+    }
+
+    if (!scanForm.outbound_detail_id) {
+      setError("Please select Item Code");
+      return;
+    }
+
+    api
+      .post("/rf/outbound/scan/post", scanForm, { withCredentials: true })
+      .then((res) => {
+        if (res.data.success) {
+
+          let outboundDetail = res.data.data.outbound_detail
+
+          eventBus.emit("showAlert", {
+            title: "Success!",
+            description: "Saved",
+            type: "success",
+          });
+          setScanForm({
+            ...scanForm,
+            scanned_qty: outboundDetail.qty_scan,
+            scan_data: "",
+          });
+          document.getElementById("serial_no")?.focus();
+        }
+      });
+
   };
 
   // useAutoFocus(dataToPost.location, 6, null, qaRef);
@@ -224,8 +219,7 @@ export function ScanForm({
     }
   };
 
-  const handleOnChangeSerialNumber = (e) => {
-  };
+  const handleOnChangeSerialNumber = (e) => {};
 
   const handleCancel = () => {};
 
@@ -252,10 +246,13 @@ export function ScanForm({
                   options={scanOptions}
                   placeholder="Select an type"
                   onChange={(e) => {
-                    setScanForm({
-                      ...scanForm,
-                      scan_type: e.value,
-                    });
+                    if (e?.value === "SERIAL") {
+                      setScanForm({
+                        ...scanForm,
+                        quantity: 1,
+                        scan_type: e.value,
+                      });
+                    }
                   }}
                   value={scanOptions.find(
                     (item) => item.value === scanForm.scan_type
@@ -340,7 +337,13 @@ export function ScanForm({
                       defaultValue={1}
                       id="koli"
                       type="number"
-                      // onChange={handleOnChangeLocation}
+                      onChange={(e) => {
+                        setScanForm({
+                          ...scanForm,
+                          koli: parseInt(e.target.value),
+                        });
+                      }}
+                      value={scanForm.koli}
                       // value={dataToPost.location}
                       placeholder="Enter Koli"
                     />
@@ -356,12 +359,17 @@ export function ScanForm({
                 <Label>Serial No</Label>
                 <div className="flex w-full max-w-sm items-center space-x-2">
                   <div className="w-full">
-                    <Select
-                      key={selectedItem ? selectedItem.value : "empty"}
-                      ref={refItemCode}
-                      id=""
-                      placeholder="Select an option"
-                      isClearable
+                    <Input
+                      id="serial_no"
+                      type="text"
+                      onChange={(e) => {
+                        setScanForm({
+                          ...scanForm,
+                          scan_data: e.target.value,
+                        });
+                      }}
+                      value={scanForm.scan_data}
+                      placeholder="Enter Serial No"
                     />
                   </div>
                 </div>

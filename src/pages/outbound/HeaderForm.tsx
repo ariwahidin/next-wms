@@ -218,7 +218,7 @@ export function HeaderForm({
       </div> */}
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4">
-          <div className="grid md:grid-cols-1 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Outbound Date
@@ -229,6 +229,17 @@ export function HeaderForm({
                 onChange={(e) =>
                   setFormHeader({ ...formHeader, outbound_date: e.target.value })
                 }
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Delivery No
+              </label>
+              <Input
+                type="text"
+                placeholder="Entry Delivery No"
+                onChange={(e) => setFormHeader({ ...formHeader, delivery_no: e.target.value })}
+                value={formHeader.delivery_no}
               />
             </div>
             <div>

@@ -39,7 +39,6 @@ const BarcodeTable = ({ dataToPost }: { dataToPost: any }) => {
       maxWidth: 60,
       valueGetter: (params) => params.node?.rowIndex + 1, // Gunakan node.rowIndex
     },
-    { field: "reference_code", headerName: "Inbound No", width: 140 },
     { field: "item_code", headerName: "Item Code", width: 120 },
     { field: "barcode", headerName: "Barcode", width: 120 },
     { field: "item_name", headerName: "Item Name", width: 140 },

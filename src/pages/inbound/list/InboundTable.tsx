@@ -15,8 +15,8 @@ import {
 import useSWR, { mutate } from "swr";
 import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./InboundTable.module.css";
-import { useRouter } from "next/router";
 import { useAlert } from "@/contexts/AlertContext";
+import { useRouter } from "next/router";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -32,16 +32,10 @@ const fetcher = (url: string) =>
     return [];
   });
 
-const HandleEdit = (id: number) => {
-  console.log("Edit ID:", id);
-  window.location.href = `/inbound/edit/${id}`;
-};
-
 const HandleDelete = (id: number) => {
   try {
     api.delete(`/inbound/${id}`, { withCredentials: true }).then((res) => {
       if (res.data.success === true) {
-        // mutate("/inbound/detail/draft"); // 🔥 Auto-refresh tabel tanpa reload halaman
       }
     });
   } catch (error) {
@@ -51,8 +45,12 @@ const HandleDelete = (id: number) => {
 
 const InboundTable = ({ setEditData }) => {
   const { data: rowData, error, mutate } = useSWR("/inbound", fetcher);
-
   const { showAlert, notify } = useAlert();
+  const router = useRouter();
+
+  const HandleEdit = (id: number) => {
+    router.push(`/inbound/${id}`);
+  };
 
   const HandleComplete = (id: number) => {
     console.log("Complete ID:", id);
@@ -64,13 +62,18 @@ const InboundTable = ({ setEditData }) => {
       () => {
         console.log(id);
         api
-          .post(`/inbound/complete/${id}`, { inbound_id: id }, { withCredentials: true })
+          .post(
+            `/inbound/complete/${id}`,
+            { inbound_id: id },
+            { withCredentials: true }
+          )
           .then((res) => {
             if (res.data.success) {
               notify("Berhasil!", "Successfully", "success");
               setTimeout(() => {
-                window.location.href = "/inbound/list";
-                console.log('hah')
+                // window.location.href = "/inbound/list";
+                router.push("/inbound/list");
+                console.log("hah");
               }, 1000);
             }
           })
@@ -80,21 +83,10 @@ const InboundTable = ({ setEditData }) => {
           });
       }
     );
-
-    // window.location.href = `/inbound/complete/${id}`; // Ganti dengan URL yang sesuai
   };
 
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
-    { field: "inbound_date", headerName: "Inbound Date", width: 120 },
-    { field: "inbound_no", headerName: "Inbound No", width: 170 },
-    { field: "supplier_code", headerName: "Supplier Code", width: 140 },
-    { field: "supplier_name", headerName: "Supplier Name" },
-    { field: "transporter_name", headerName: "Transporter" },
-    { field: "truck_no", headerName: "Truck No." },
-    { field: "status", headerName: "Status", width: 100 },
-    { field: "total_line", headerName: "Total Line", width: 100 },
-    { field: "total_qty", headerName: "Total Qty", width: 100 },
     {
       headerName: "Actions",
       field: "ID",
@@ -129,6 +121,15 @@ const InboundTable = ({ setEditData }) => {
         );
       },
     },
+    { field: "inbound_date", headerName: "Inbound Date", width: 120 },
+    { field: "inbound_no", headerName: "Inbound No", width: 170 },
+    { field: "supplier_name", headerName: "Supplier Name" },
+    { field: "status", headerName: "Status", width: 100 },
+    { field: "transporter_name", headerName: "Transporter" },
+    { field: "truck_no", headerName: "Truck No.", width: 100 },
+    { field: "total_line", headerName: "Total Line", width: 100 },
+    { field: "total_qty", headerName: "Total Qty", width: 100 },
+    { field: "qty_scan", headerName: "Scan Qty", width: 100 },
   ]);
 
   const [quickFilterText, setQuickFilterText] = useState<string>();

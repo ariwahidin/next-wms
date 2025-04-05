@@ -10,9 +10,11 @@ import Layout from "@/components/layout";
 import { HeaderForm } from "../HeaderForm";
 import eventBus from "@/utils/eventBus";
 import DataTableModal from "./DataTableModal";
+import PalletTable from "./PalletTable";
 
 export default function Page() {
   const [dataToPost, setDataToPost] = useState({
+    subtitle : "Scan Inbound",
     scan_type: null,
     item_info : null,
     detail_inbound: [],
@@ -22,7 +24,8 @@ export default function Page() {
     inbound_id: null,
     inbound_detail_id: null,
     item_code: null,
-    location: "",
+    pallet: "",
+    location: "RCVDOCK",
     gmc: "",
     serial_number: "",
     serial_number_2: "",
@@ -87,19 +90,27 @@ export default function Page() {
   return loading ? (
     <p>Loading...</p>
   ) : (
-    <Layout title="Inbound" subTitle="Scan Inbound">
+    <Layout title="Inbound" subTitle={dataToPost.subtitle}>
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
-        <Tabs defaultValue="account" className="w-full">
+        <Tabs defaultValue="scan" className="w-full">
           <TabsList>
-            <TabsTrigger value="account">Scan</TabsTrigger>
-            <TabsTrigger value="password">Actual</TabsTrigger>
+            <TabsTrigger value="scan">Scan</TabsTrigger>
+            <TabsTrigger value="pallet">Pallet</TabsTrigger>
+            <TabsTrigger value="actual">Actual</TabsTrigger>
           </TabsList>
-          <TabsContent value="account">
+          <TabsContent value="scan">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3 ">
               <ScanForm dataToPost={dataToPost} setDataToPost={setDataToPost} />
             </div>
           </TabsContent>
-          <TabsContent value="password">
+          <TabsContent value="pallet">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="col-span-2">
+                <PalletTable dataToPost={dataToPost} />
+              </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="actual">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="col-span-2">
                 <BarcodeTable dataToPost={dataToPost} />

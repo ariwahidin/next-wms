@@ -40,17 +40,11 @@ export default function Page() {
   const { id } = router.query;
   const [formHeader, setFormHeader] = useState({});
   const [formItem, setFormItem] = useState({});
-  const [dataHeader, setDataHeader] = useState(null);
 
 
   const { showAlert, notify } = useAlert();
 
   async function handleSave() {
-
-    // if (!dataHeader || Object.keys(dataHeader).length === 0) {
-    //   alert("Data tidak boleh kosong!");
-    //   return;
-    // }
 
     showAlert(
       "Konfirmasi Simpan",
@@ -85,6 +79,7 @@ export default function Page() {
           if (res.data.data.header) {
             setFormHeader(res.data.data.form_header);
             setFormItem(res.data.data.form_items);
+            document.title = res.data.data.form_header.outbound_no;;
           } else {
             console.error("Header data is missing!");
           }
@@ -93,6 +88,8 @@ export default function Page() {
         console.error("Error fetching data:", error);
       }
     };
+
+    
 
     fetchData();
   }, [id]);

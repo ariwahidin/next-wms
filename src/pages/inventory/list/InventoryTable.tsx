@@ -50,7 +50,7 @@ const InventoryTable = ({ setEditData }) => {
     { field: "location", headerName: "Location", width: 170 },
     { field: "qa_status", headerName: "QA", width: 170 },
     { field: "whs_code", headerName: "Whs Code", width: 170 },
-    { field: "quantity", headerName: "Quantity", width: 140 },
+    { field: "qty_onhand", headerName: "On Hand", width: 140 },
     // {
     //   headerName: "Actions",
     //   field: "ID",

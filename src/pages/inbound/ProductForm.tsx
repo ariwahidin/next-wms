@@ -18,8 +18,19 @@ import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Select from "react-select";
 import { FormDescription } from "@/components/ui/form";
+import eventBus from "@/utils/eventBus";
 
-export function ProductForm({ editData, setEditData, editMode, id, code }) {
+export function ProductForm({
+  editData,
+  setEditData,
+  editMode,
+  id,
+  code,
+  formHeader,
+  setFormHeader,
+  formItem,
+  setFormItem,
+}) {
   const [itemCode, setItemCode] = useState("");
   const [itemName, setItemName] = useState("");
   const [gmc, setGmc] = useState("");
@@ -67,100 +78,129 @@ export function ProductForm({ editData, setEditData, editMode, id, code }) {
   );
 
   useEffect(() => {
-    api.get("/products", { withCredentials: true }).then((res) => {
-      if (res.data.success) {
-        setItemsSelectOption(
-          res.data.data.map((item) => ({
-            value: item.item_code,
-            label: item.item_code + " - " + item.item_name,
-          }))
-        );
-        setItems(res.data.data);
-      }
-    });
 
-    api.get("handling", { withCredentials: true }).then((res) => {
-      if (res.data.success) {
-        // Olah response jadi opsi yang benar
-        const options = res.data.data.map((item) => ({
-          value: item.id,
-          label: item.name,
-        }));
-        // Set hasil ke state
-        setHandlingOption(options);
+    console.log("form header", formHeader);
+    console.log("form item", formItem);
 
-        // Set default Handling
-        if (!editData) {
-          setHandlingSelected(10);
+    const fetchData = async () => {
+      try {
+        const [products, handling] = await Promise.all([
+          api.get("/products", { withCredentials: true }),
+          api.get("/handling", { withCredentials: true }),
+        ]);
+
+        if (products.data.success && handling.data.success) {
+          setItemsSelectOption(
+            products.data.data.map((item) => ({
+              value: item.ID,
+              label: item.item_code,
+            }))
+          );
+          setItems(products.data.data);
+          const options = handling.data.data.map((item) => ({
+            value: item.id,
+            label: item.name,
+          }));
+          setHandlingOption(options);
         }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setTimeout(() => {
+          // setLoading(false);
+        }, 500);
       }
-    });
+    };
 
-    if (editData) {
-      setItemCode(editData.item_code);
-      setItemName(editData.item_name);
-      setGmc(editData.gmc);
-      setQuantity(editData.quantity);
-      setUom(editData.uom);
-      setRecDate(editData.rec_date);
-      setSelectedWhsCode(editData.whs_code);
-      setLocation(editData.location);
-      setHandlingSelected(editData.handling_id);
-      setRemarks(editData.remarks);
-    }
+    fetchData();
+  }, []);
 
-  }, [editData]);
+  // useEffect(() => {
+  //   api.get("/products", { withCredentials: true }).then((res) => {
+  //     if (res.data.success) {
+  //       setItemsSelectOption(
+  //         res.data.data.map((item) => ({
+  //           value: item.item_code,
+  //           label: item.item_code + " - " + item.item_name,
+  //         }))
+  //       );
+  //       setItems(res.data.data);
+  //     }
+  //   });
+
+  //   api.get("/handling", { withCredentials: true }).then((res) => {
+  //     if (res.data.success) {
+  //       // Olah response jadi opsi yang benar
+  //       const options = res.data.data.map((item) => ({
+  //         value: item.id,
+  //         label: item.name,
+  //       }));
+  //       // Set hasil ke state
+  //       setHandlingOption(options);
+
+  //       // Set default Handling
+  //       if (!editData) {
+  //         setHandlingSelected(10);
+  //       }
+  //     }
+  //   });
+
+  //   if (editData) {
+  //     setItemCode(editData.item_code);
+  //     setItemName(editData.item_name);
+  //     setGmc(editData.gmc);
+  //     setQuantity(editData.quantity);
+  //     setUom(editData.uom);
+  //     setRecDate(editData.rec_date);
+  //     setSelectedWhsCode(editData.whs_code);
+  //     setLocation(editData.location);
+  //     setHandlingSelected(editData.handling_id);
+  //     setRemarks(editData.remarks);
+  //   }
+
+  // }, [editData]);
 
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // Validasi form
-    if (!itemCode || !quantity) {
-      setError("Harap isi semua field.");
-      if (!itemCode) {
-        document.getElementById("itemCode")?.focus();
-      } else if (!quantity) {
-        document.getElementById("quantity")?.focus();
-      }
-      return;
-    }
+    console.log(formHeader, formItem);
+    // return;
 
     try {
-      setError(null);
+      const [saveData] = await Promise.all([
+        api.post(
+          "/inbound/detail",
+          { form_header: formHeader, form_item: formItem },
+          { withCredentials: true }
+        ),
+      ]);
 
-      console.log("ID : ", id);
+      if (saveData.data.success) {
+        eventBus.emit("showAlert", {
+          title: "Success!",
+          description: "Saved",
+          type: "success",
+        });
 
-      const dataPost = {
-        inbound_id: parseInt(id),
-        item_code: itemCode,
-        quantity: parseInt(quantity),
-        reference_code: code,
-        uom: uom,
-        rec_date: recDate,
-        whs_code: selectedWhsCode,
-        handling_id: handlingSelected,
-        remarks: remarks,
-        location: location,
-      };
+        console.log("Inbound ID : ", saveData.data.data.inbound_id);
 
-      if (editData) {
-        const editUrl = `/inbound/detail/${editData.id}`;
-        await api.put(editUrl, dataPost, { withCredentials: true });
-      } else {
-        const urlAdd = `/inbound/detail`;
-        await api.post(urlAdd, dataPost, { withCredentials: true });
+        setFormHeader({
+          ...formHeader,
+          inbound_id: saveData.data.data.inbound_id,
+          inbound_no: saveData.data.data.inbound_no,
+        });
+
+        setFormItem({
+          ...formItem,
+          inbound_detail_id: 0,
+          inbound_id: saveData.data.data.inbound_id,
+          inbound_no: saveData.data.data.inbound_no,
+        });
+
+        mutate("/inbound/" + saveData.data.data.inbound_id);
       }
 
-      let urlMutate = "/inbound/detail/draft";
-      if (editMode) {
-        urlMutate = "/inbound/" + id;
-      }
-
-      mutate(urlMutate);
-      setEditData(null);
-      // setQuantity("");
-
-      document.getElementById("itemCode")?.focus();
+      // document.getElementById("itemCode")?.focus();
     } catch (err: any) {
       if (err.response) {
         if (err.response.status === 400) {
@@ -181,11 +221,11 @@ export function ProductForm({ editData, setEditData, editMode, id, code }) {
   };
 
   const handleCancel = () => {
-    setError(null);
-    setEditData(null);
-    setItemCode("");
-    setItemName("");
-    setGmc("");
+    // setError(null);
+    // setEditData(null);
+    // setItemCode("");
+    // setItemName("");
+    // setGmc("");
   };
 
   return (
@@ -211,16 +251,33 @@ export function ProductForm({ editData, setEditData, editMode, id, code }) {
               <Select
                 id="itemCode"
                 options={itemsSelectOption}
-                onChange={handleSelectChange}
-                value={itemsSelectOption.find(
-                  (item) => item.value === itemCode
-                )}
+                onChange={(selectedOption) => {
+                  const item = items.find((e) => e.ID === selectedOption.value);
+                  setFormItem({
+                    ...formItem,
+                    item_id: selectedOption.value,
+                    item_code: item.item_code,
+                    item_name: item.item_name,
+                    barcode: item.barcode,
+                    uom: item.uom,
+                  });
+                }}
+                value={{ value: formItem.item_id, label: formItem.item_code }}
                 placeholder="Select an option"
               />
               <span className="text-xs text-muted-foreground">
-                Item Name : {itemName}
+                Item Name : {formItem.item_name} <br />
+                GMC : {formItem.barcode} <br />
+                Serial :{" "}
+                {
+                  items.find((item) => item.ID === formItem.item_id)?.has_serial
+                }{" "}
+                | Waranty :{" "}
+                {
+                  items.find((item) => item.ID === formItem.item_id)
+                    ?.has_waranty
+                }
               </span>
-              <span className="text-xs text-muted-foreground">GMC : {gmc}</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="flex flex-col space-y-1.5">
@@ -228,9 +285,14 @@ export function ProductForm({ editData, setEditData, editMode, id, code }) {
                 <Input
                   type="number"
                   id="quantity"
-                  onChange={(e) => setQuantity(e.target.value)}
-                  value={quantity}
-                  placeholder=""
+                  onChange={(e) =>
+                    setFormItem({
+                      ...formItem,
+                      quantity: parseInt(e.target.value),
+                    })
+                  }
+                  value={formItem.quantity}
+                  placeholder="Enter Quantity"
                 />
               </div>
               <div className="flex flex-col space-y-1.5">
@@ -238,8 +300,12 @@ export function ProductForm({ editData, setEditData, editMode, id, code }) {
                 <Input
                   type="text"
                   id="uom"
-                  onChange={(e) => setUom(e.target.value)}
-                  value={uom}
+                  onChange={(e) =>
+                    setFormItem({ ...formItem, uom: e.target.value })
+                  }
+                  value={
+                    items.find((item) => item.ID === formItem.item_id)?.uom
+                  }
                   placeholder=""
                   readOnly
                 />
@@ -249,8 +315,10 @@ export function ProductForm({ editData, setEditData, editMode, id, code }) {
                 <Input
                   type="text"
                   id="location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  value={formItem.location}
+                  onChange={(e) =>
+                    setFormItem({ ...formItem, location: e.target.value })
+                  }
                   placeholder=""
                 />
               </div>
@@ -261,8 +329,10 @@ export function ProductForm({ editData, setEditData, editMode, id, code }) {
                 <Input
                   type="date"
                   id="recDate"
-                  onChange={(e) => setRecDate(e.target.value)}
-                  value={recDate}
+                  onChange={(e) =>
+                    setFormItem({ ...formItem, rec_date: e.target.value })
+                  }
+                  value={formItem.rec_date}
                   placeholder=""
                 />
               </div>
@@ -271,8 +341,10 @@ export function ProductForm({ editData, setEditData, editMode, id, code }) {
                 <Select
                   id="whsCode"
                   options={whsCode}
-                  value={whsCode.find((item) => item.value === selectedWhsCode)}
-                  onChange={handleWhsCodeChange}
+                  value={{ value: formItem.whs_code, label: formItem.whs_code }}
+                  onChange={(e) =>
+                    setFormItem({ ...formItem, whs_code: e.value })
+                  }
                   placeholder="Select an option"
                 />
               </div>
@@ -283,10 +355,15 @@ export function ProductForm({ editData, setEditData, editMode, id, code }) {
                 <Select
                   id="handling"
                   options={handlingOption}
-                  onChange={handleHandlingChange}
-                  value={handlingOption.find(
-                    (item) => item.value === handlingSelected
-                  )}
+                  onChange={(e) =>
+                    setFormItem({ ...formItem, handling_id: e.value })
+                  }
+                  value={{
+                    value: formItem.handling_id,
+                    label: handlingOption.find(
+                      (item) => item.value === formItem.handling_id
+                    )?.label,
+                  }}
                   placeholder="Select an option"
                 />
               </div>
@@ -297,9 +374,11 @@ export function ProductForm({ editData, setEditData, editMode, id, code }) {
                 <Input
                   type="text"
                   id="remarks"
-                  onChange={(e) => setRemarks(e.target.value)}
-                  value={remarks}
-                  placeholder=""
+                  onChange={(e) =>
+                    setFormItem({ ...formItem, remarks: e.target.value })
+                  }
+                  value={formItem.remarks}
+                  placeholder="Enter Remarks"
                 />
               </div>
             </div>
@@ -313,7 +392,7 @@ export function ProductForm({ editData, setEditData, editMode, id, code }) {
         <Button onClick={handleSubmit} type="submit">
           {" "}
           {/* Tombol submit */}
-          {editData ? "Update" : "Add"}
+          {formItem.inbound_detail_id > 0 ? "Update" : "Add"}
         </Button>
       </CardFooter>
     </Card>

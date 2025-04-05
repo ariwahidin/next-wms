@@ -112,8 +112,6 @@ export default function Page() {
 
   // set title
   useEffect(() => {
-    document.title = "Create Inbound";
-
     // Fetch list suppliers
     api.get("/suppliers", { withCredentials: true }).then((res) => {
       setListSuppliers(res.data.data);
@@ -127,7 +125,7 @@ export default function Page() {
   }, []);
 
   return (
-    <Layout title="Outbound" subTitle="List">
+    <Layout title="Outbound" subTitle="List Outbound">
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
         <InboundTable setEditData={setEditData} />
       </div>

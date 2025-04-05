@@ -79,14 +79,14 @@ export default function Page() {
   ) : (
     <Layout title="Outbound" subTitle="Create Outbound">
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
-        <div style={{ marginLeft: "auto" }}>
+        {/* <div style={{ marginLeft: "auto" }}>
           <Button variant="outline" className="me-2">
             Cancel
           </Button>
           <Button onClick={handleSave} className="me-4">
             Save
           </Button>
-        </div>
+        </div> */}
         <Tabs defaultValue="account" className="w-full">
           <TabsList>
             <TabsTrigger value="account">Header</TabsTrigger>

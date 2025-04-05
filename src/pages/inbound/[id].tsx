@@ -1,5 +1,5 @@
-import ProductTable from "../ProductTable";
-import { ProductForm } from "../ProductForm";
+import ProductTable from "./ProductTable";
+import { ProductForm } from "./ProductForm";
 import { useState, useEffect } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from "@/lib/api";
 import Layout from "@/components/layout";
-import { HeaderForm } from "../HeaderForm";
+import { HeaderForm } from "./HeaderForm";
 import eventBus from "@/utils/eventBus";
+import { useRouter } from "next/router";
 
 export default function Page() {
   const [editData, setEditData] = useState(null);
@@ -58,46 +59,44 @@ export default function Page() {
     }
   }
 
+  const router = useRouter();
+  const { id } = router.query;
+
   const [loading, setLoading] = useState(true);
+  const [subtitle, setSubtitle] = useState("Inbound");
   useEffect(() => {
     setLoading(true);
-    document.title = "Create Inbound";
-    setLoading(false);
-
 
     const fecthData = async () => {
       try {
+        if (!id) return;
+        console.log("ID :", id);
         const [form] = await Promise.all([
-          api.get("/inbound/create", { withCredentials: true }),
+          api.get("/inbound/" + id, { withCredentials: true }),
         ]);
         if (form.data.success) {
           setFormHeader(form.data.data?.form_header);
           setFormItem(form.data.data?.form_item);
+
+          console.log(form.data.data?.form_header.inbound_no)
+
+          setSubtitle("Inbound - " + form.data.data?.form_header.inbound_no);
+          setLoading(false);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
-        setTimeout(() => {
-          setLoading(false);
-        }, 500);
+        setTimeout(() => {}, 500);
       }
     };
     fecthData();
+  }, [id]);
 
-  }, []);
-
-  return (
-    loading ? <p>Loading...</p> :
-    <Layout title="Inbound" subTitle="Create Inbound">
+  return loading ? (
+    <p>Loading...</p>
+  ) : (
+    <Layout title="Inbound" subTitle={subtitle}>
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
-        {/* <div style={{ marginLeft: "auto" }}>
-          <Button variant="outline" className="me-2">
-            Cancel
-          </Button>
-          <Button onClick={handleSave} className="me-4">
-            Save
-          </Button>
-        </div> */}
         <Tabs defaultValue="account" className="w-full">
           <TabsList>
             <TabsTrigger value="account">Header</TabsTrigger>
@@ -133,10 +132,10 @@ export default function Page() {
                   editMode={false}
                   id={0}
                   code={dataHeader.inbound_no}
-                  formHeader = {formHeader}
-                  setFormHeader = {setFormHeader}
-                  formItem = {formItem}
-                  setFormItem = {setFormItem}
+                  formHeader={formHeader}
+                  setFormHeader={setFormHeader}
+                  formItem={formItem}
+                  setFormItem={setFormItem}
                 />
               </div>
             </div>

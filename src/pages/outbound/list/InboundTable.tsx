@@ -9,7 +9,10 @@ import {
   CheckCheck,
   CheckCircle2,
   CheckSquareIcon,
+  Hand,
+  HandIcon,
   Pencil,
+  Printer,
   Trash2,
 } from "lucide-react";
 import useSWR, { mutate } from "swr";
@@ -18,6 +21,7 @@ import styles from "./InboundTable.module.css";
 import { useRouter } from "next/router";
 import { useAlert } from "@/contexts/AlertContext";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -50,6 +54,12 @@ const HandleDelete = (id: number) => {
   }
 };
 
+const HandlePreviewPDF = (id: number) => {
+  console.log("Preview PDF ID:", id);
+
+  window.open(`/outbound/print/picking_sheet/${id}`, "_blank");
+};
+
 const InboundTable = ({ setEditData }) => {
   const { data: rowData, error, mutate } = useSWR("/outbound", fetcher);
 
@@ -59,14 +69,14 @@ const InboundTable = ({ setEditData }) => {
     console.log("Complete ID:", id);
 
     showAlert(
-      "Konfirmasi Simpan",
-      "Apakah Anda yakin ingin menyimpan data ini?",
+      "Picking Confirmation",
+      "Are you sure you want to save this data?",
       "error",
       () => {
         console.log(id);
         api
           .post(
-            `/outbound/complete/${id}`,
+            `/outbound/picking/${id}`,
             { inbound_id: id },
             { withCredentials: true }
           )
@@ -74,7 +84,7 @@ const InboundTable = ({ setEditData }) => {
             if (res.data.success) {
               notify("Berhasil!", "Successfully", "success");
               setTimeout(() => {
-                window.location.href = "/inbound/list";
+                window.location.href = "/outbound/list";
                 console.log("hah");
               }, 1000);
             }
@@ -92,67 +102,33 @@ const InboundTable = ({ setEditData }) => {
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
     {
-      field: "outbound_date",
-      headerName: "Outbound Date",
-      width: 140,
-      valueFormatter: (params) => {
-        if (!params.value) return ""; // Mencegah error jika null atau undefined
-        const date = new Date(params.value);
-        return date.toLocaleDateString("id-ID", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        });
-      },
-    },
-    { field: "outbound_no", headerName: "Outbound No", width: 170 },
-    { field: "delivery_no", headerName: "Delivery No", width: 170 },
-    // { field: "status", headerName: "Status", width: 100 },
-    { 
-      field: "status", 
-      headerName: "Status", 
-      width: 120,
-      cellRenderer: (params) => {
-        if (!params.value) return null;
-  
-        let color = "bg-gray-500"; // Default warna abu-abu
-        switch (params.value.toLowerCase()) {
-          case "open":
-            color = "bg-blue-500 text-white"; // Biru]"; // Kuning
-            break;
-          case "completed":
-            color = "bg-green-500"; // Hijau
-            break;
-          case "canceled":
-            color = "bg-red-500"; // Merah
-            break;
-        }
-  
-        return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
-      }
-    },
-    { field: "customer_code", headerName: "Customer Code", width: 140 },
-    { field: "customer_name", headerName: "Customer Name", width: 180 },
-    // { field: "supplier_name", headerName: "Supplier Name" },
-    // { field: "transporter_name", headerName: "Transporter" },
-    // { field: "truck_no", headerName: "Truck No." },
-    { field: "total_line", headerName: "Total Line", width: 100 },
-    { field: "total_qty_req", headerName: "Req Qty", width: 100 },
-    { field: "total_qty_scan", headerName: "Scan Qty", width: 100 },
-    {
       headerName: "Actions",
       field: "ID",
+      maxWidth: 120,
       cellRenderer: (params) => {
         return (
           <div>
-            <Button
-              onClick={() => HandleComplete(params.data.id)}
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-            </Button>
+            {params.data.status === "open" && (
+              <Button
+                onClick={() => HandleComplete(params.data.ID)}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <Hand className="h-4 w-4" />
+              </Button>
+            )}
+
+            {params.data.status === "picking" && (
+              <Button
+                onClick={() => HandlePreviewPDF(params.data.ID)}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <Printer className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               onClick={() => HandleEdit(params.data.ID)}
               variant="ghost"
@@ -173,6 +149,58 @@ const InboundTable = ({ setEditData }) => {
         );
       },
     },
+    {
+      field: "outbound_date",
+      headerName: "Outbound Date",
+      width: 140,
+      valueFormatter: (params) => {
+        if (!params.value) return ""; // Mencegah error jika null atau undefined
+        const date = new Date(params.value);
+        return date.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+      },
+    },
+    { field: "outbound_no", headerName: "Outbound No", width: 170 },
+    { field: "delivery_no", headerName: "Delivery No", width: 170 },
+    // { field: "status", headerName: "Status", width: 100 },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      cellRenderer: (params) => {
+        if (!params.value) return null;
+
+        let color = "bg-gray-500"; // Default warna abu-abu
+        switch (params.value.toLowerCase()) {
+          case "open":
+            color = "bg-blue-500 text-white"; // Biru]"; // Kuning
+            break;
+          case "picking":
+            color = "bg-yellow-500 text-black";
+            break;
+          case "completed":
+            color = "bg-green-500"; // Hijau
+            break;
+          case "canceled":
+            color = "bg-red-500"; // Merah
+            break;
+        }
+
+        return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
+      },
+    },
+    { field: "customer_code", headerName: "Customer Code", width: 140 },
+    { field: "customer_name", headerName: "Customer Name", width: 180 },
+    // { field: "supplier_name", headerName: "Supplier Name" },
+    // { field: "transporter_name", headerName: "Transporter" },
+    // { field: "truck_no", headerName: "Truck No." },
+    { field: "total_line", headerName: "Total Line", width: 100 },
+    { field: "total_qty_req", headerName: "Req Qty", width: 100 },
+    { field: "plan_pick", headerName: "Plan Pick", width: 100 },
+    { field: "picked_qty", headerName: "Picked Qty", width: 100 },
   ]);
 
   const [quickFilterText, setQuickFilterText] = useState<string>();
@@ -183,7 +211,18 @@ const InboundTable = ({ setEditData }) => {
   );
 
   return (
-    <div style={{ width: "100%", height: "510px" }}>
+    <div
+      // className="ag-theme-alpine"
+      // style={{
+      //   height: "400px",
+      //   width: "100%",
+      //   // font-size: "8px";
+      //   // font-family: "Roboto", sans-serif;
+      //   fontSize: "10px" ,
+      //   fontFamily: "Roboto ",
+      // }}
+      style={{ width: "100%", height: "510px" }}
+    >
       <div className="justify-self-end">
         <div className={styles.inputWrapper} style={{ marginBottom: "1rem" }}>
           <svg

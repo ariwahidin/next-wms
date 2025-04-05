@@ -96,17 +96,6 @@ const AgGridModal = ({
       .catch((error) => {
         console.log(error);
       });
-    // try {
-    //   api
-    //     .delete(`rf/inbound/detail/scanned/${id}`, { withCredentials: true })
-    //     .then((res) => {
-    //       if (res.data.success === true) {
-    //         getDataBarcode(data.inbound_id, data.inbound_detail_id);
-    //       }
-    //     });
-    // } catch (error) {
-    //   console.error("Gagal menghapus produk:", error);
-    // }
   };
 
   useEffect(() => {
@@ -127,7 +116,7 @@ const AgGridModal = ({
         headerCheckboxSelection: true,
         checkboxSelection: (params) => {
           // Return false if status is "in_stock", true otherwise
-          return params.data.status !== "in_stock";
+          return params.data.status !== "in stock";
         },
         width: 50,
       },
@@ -147,26 +136,6 @@ const AgGridModal = ({
       { field: "location", headerName: "Location", width: 110 },
 
       { field: "inbound_no", headerName: "Inbound No", width: 140 },
-
-      // {
-      //   headerName: "Actions",
-      //   field: "ID",
-      //   width: 100,
-      //   cellRenderer: (params) => {
-      //     return (
-      //       <div>
-      //         <Button
-      //           onClick={() => HandleDelete(params.data.id)}
-      //           variant="ghost"
-      //           size="icon"
-      //           className="h-8 w-8"
-      //         >
-      //           <Trash2 className="h-4 w-4" />
-      //         </Button>
-      //       </div>
-      //     );
-      //   },
-      // },
     ],
     []
   );

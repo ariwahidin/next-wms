@@ -129,6 +129,10 @@ const data = {
           title: "List Inventory",
           url: "/inventory/list",
         },
+        {
+          title: "Transfer Location",
+          url: "/inventory/transfer",
+        },
       ],
     },
     {
