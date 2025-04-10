@@ -35,18 +35,18 @@ export function LoginForm({
           router.push("/dashboard");
         }
       })
-      .then(
-        (res) => {
-          console.log(res);
-          if (res.data.success === true) {
-            router.push("/dashboard");
-          }
-        },
-        (err) => {
-          console.log(err);
-          setError(err.response.data.message);
-        }
-      )
+      // .then(
+      //   (res) => {
+      //     console.log(res);
+      //     if (res.data.success === true) {
+      //       router.push("/dashboard");
+      //     }
+      //   },
+      //   (err) => {
+      //     console.log(err);
+      //     setError(err.response.data.message);
+      //   }
+      // )
       .catch((err) => console.log(err));
   };
 
