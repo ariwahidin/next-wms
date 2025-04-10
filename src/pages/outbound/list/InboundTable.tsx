@@ -22,6 +22,8 @@ import { useRouter } from "next/router";
 import { useAlert } from "@/contexts/AlertContext";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { emit } from "process";
+import eventBus from "@/utils/eventBus";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -59,6 +61,38 @@ const HandlePreviewPDF = (id: number) => {
 
   window.open(`/outbound/print/picking_sheet/${id}`, "_blank");
 };
+
+const handleCompletePicking = async (id: number) => {
+  console.log("Complete Picking ID:", id);
+
+  try {
+    const response = await api.post(
+      `/outbound/picking/complete/${id}`,
+      { outbound_id: id },
+      { withCredentials: true }
+    );
+
+
+    console.log("Response Object:", response); // Debugging
+
+    const data = await response.data;
+
+    if (data.success) {
+      eventBus.emit("showAlert", {
+        title: "Success!",
+        description: "Picking Completed",
+        type: "success",
+      });
+    }
+
+    return data;
+  } catch (error) {
+    console.error(
+      "Error saving inbound:",
+      error
+    )
+  }
+}
 
 const InboundTable = ({ setEditData }) => {
   const { data: rowData, error, mutate } = useSWR("/outbound", fetcher);
@@ -103,8 +137,10 @@ const InboundTable = ({ setEditData }) => {
     { field: "no", headerName: "No. ", maxWidth: 70 },
     {
       headerName: "Actions",
+      headerClass: "header-center",
+      cellStyle: { textAlign: "center" },
       field: "ID",
-      maxWidth: 120,
+      maxWidth: 160,
       cellRenderer: (params) => {
         return (
           <div>
@@ -114,20 +150,33 @@ const InboundTable = ({ setEditData }) => {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
+                title="Picking"
               >
                 <Hand className="h-4 w-4" />
               </Button>
             )}
 
             {params.data.status === "picking" && (
-              <Button
-                onClick={() => HandlePreviewPDF(params.data.ID)}
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-              >
-                <Printer className="h-4 w-4" />
-              </Button>
+              <>
+                <Button
+                  onClick={() => handleCompletePicking(params.data.ID)}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  title="Complete Picking"
+                >
+                  <CheckCheck className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={() => HandlePreviewPDF(params.data.ID)}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  title="Print Picking Sheet"
+                >
+                  <Printer className="h-4 w-4" />
+                </Button>
+              </>
             )}
             <Button
               onClick={() => HandleEdit(params.data.ID)}

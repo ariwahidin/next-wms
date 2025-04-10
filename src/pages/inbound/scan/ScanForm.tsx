@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
 import { useEffect, useState, useRef } from "react";
-import { AlertCircle, Trash2 } from "lucide-react";
+import { AlertCircle, RefreshCcwDot, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Select from "react-select";
 import eventBus from "@/utils/eventBus";
@@ -103,6 +103,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
       inbound_id: selectedOption.value,
       inbound_detail_id: null,
       item_code: "",
+      location: generateRandomSerial(6, "LOC-"),
       gmc: "",
     });
     document.getElementById("location")?.focus();
@@ -220,6 +221,60 @@ export function ScanForm({ dataToPost, setDataToPost }) {
     });
   }, []);
 
+  const generateRandomSerial = (length = 10, prefix = "") => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let serial = "";
+    for (let i = 0; i < length; i++) {
+      serial += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return prefix + serial;
+  };
+
+
+  const generateStringPallet = (prefix = "PAL") => {
+    const now = new Date();
+    const pad = (n, len = 2) => n.toString().padStart(len, "0");
+  
+    const timestamp =
+      now.getFullYear().toString() +
+      pad(now.getMonth() + 1) +
+      pad(now.getDate()) +
+      pad(now.getHours()) +
+      pad(now.getMinutes()) +
+      pad(now.getSeconds()) +
+      pad(now.getMilliseconds(), 3);
+  
+    return `${prefix}${timestamp}`; // Misal: PAL20250410162530045
+  };
+
+  //Tambahkan ini di useEffect atau setelah komponen dimount
+  // useEffect(() => {
+  //   const serialInput = document.getElementById("serialNumber");
+
+  //   const handleFocus = () => {
+  //     const dummySerial = generateRandomSerial();
+  //     // setScanForm((prevForm) => ({
+  //     //   ...prevForm,
+  //     //   scan_data: dummySerial,
+  //     // }));
+
+  //     setDataToPost({
+  //       ...dataToPost,
+  //       serial_number: dummySerial,
+  //     });
+  //   };
+
+  //   if (serialInput) {
+  //     serialInput.addEventListener("focus", handleFocus);
+  //   }
+
+  //   return () => {
+  //     if (serialInput) {
+  //       serialInput.removeEventListener("focus", handleFocus);
+  //     }
+  //   };
+  // }, []);
+
   async function handleSubmit(e) {
     e.preventDefault();
     postData();
@@ -258,12 +313,33 @@ export function ScanForm({ dataToPost, setDataToPost }) {
             description: "Saved",
             type: "success",
           });
+
+          let lokasi = dataToPost.location;
+          let pallet = dataToPost.pallet;
+
+          // jika res.data.data.scanned kelipatan 10 ganti lokasi lain
+
+          if (res.data.data.scanned.qty_scan % 10 === 0) {
+            console.log("scanned qty", res.data.data.scanned.qty_scan);
+
+            // lokasi = generateRandomSerial(6, "LOC-");
+            pallet = generateStringPallet("PAL");
+          }
+
+          if (res.data.data.scanned.qty_scan % 30 === 0) {
+            console.log("scanned qty", res.data.data.scanned.qty_scan);
+
+            lokasi = generateRandomSerial(6, "LOC-");
+            // pallet = generateRandomSerial(6, "PAL-");
+          }
+
           setDataToPost({
             ...dataToPost,
-            serial_number: "",
+            pallet: pallet,
+            location: lokasi,
+            serial_number: generateRandomSerial(8, "SN-"),
             item_info: res.data.data.scanned,
           });
-
           document.getElementById("serialNumber")?.focus();
         }
       });
@@ -350,7 +426,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 <div className="flex flex-col space-y-1.5">
                   <Label>Pallet</Label>
                   <div className="flex w-full max-w-sm items-center space-x-2">
@@ -363,18 +439,19 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                           pallet: e.target.value,
                         });
                       }}
+                      readOnly
                       value={dataToPost.pallet}
                       placeholder="Enter Pallet No"
                     />
                     <Button
                       type="button"
                       variant="outline"
-                      // onClick={() => {
-                      //   setDataToPost({ ...dataToPost, location: "" });
-                      //   document.getElementById("location")?.focus();
-                      // }}
+                      onClick={() => {
+                        setDataToPost({ ...dataToPost, pallet: generateStringPallet("PAL") });
+                        // document.getElementById("location")?.focus();
+                      }}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <RefreshCcwDot className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -383,6 +460,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                   <Label>Location</Label>
                   <div className="flex w-full max-w-sm items-center space-x-2">
                     <Input
+                      // defaultValue={generateRandomSerial(6, "LOC-")}
                       id="location"
                       type="text"
                       onChange={handleOnChangeLocation}

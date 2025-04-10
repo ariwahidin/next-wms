@@ -121,3 +121,7 @@ body {
   font-size: 8px;
   font-family: "Roboto", sans-serif;
 }
+
+.header-center .ag-header-cell-label {
+  justify-content: center !important;
+}

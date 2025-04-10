@@ -58,7 +58,7 @@ export function ProductForm({
       ...formItem,
       item_code: selectedOption.value,
       item_name: itemSelected.item_name,
-      barcode: itemSelected.gmc,
+      barcode: itemSelected.barcode,
     });
   };
 

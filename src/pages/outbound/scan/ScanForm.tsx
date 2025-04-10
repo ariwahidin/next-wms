@@ -102,49 +102,6 @@ export function ScanForm({
   const [outboundDetail, setOutboundDetail] = useState([]);
 
   const [error, setError] = useState<string | null>(null);
-  // const onChangeInboundNo = async (selectedOption) => {
-  //   setSelectedItem(null);
-
-  //   const dataInboundDetail = await InboundDetail(selectedOption.value);
-
-  //   const itemOptions = dataInboundDetail.data.details.map((item: any) => ({
-  //     value: item.id,
-  //     label: item.gmc,
-  //   }));
-
-  //   setDataToPost({
-  //     ...dataToPost,
-  //     inbound_detail: dataInboundDetail.data.details,
-  //     inbound: dataInboundDetail.data.header,
-  //     item_options: itemOptions,
-  //     inbound_id: selectedOption.value,
-  //     inbound_detail_id: null,
-  //     item_code: "",
-  //     gmc: "",
-  //   });
-  //   document.getElementById("location")?.focus();
-  // };
-
-  // const InboundDetail = async (id: number) => {
-  //   const response = await api.get("/rf/inbound/" + id, {
-  //     withCredentials: true,
-  //   });
-  //   console.log("Response Object:", response); // Debugging
-  //   const data = await response.data;
-  //   return data;
-  // };
-
-  // const [whOptions, setWhOptions] = useState([]);
-  // const handleWhChange = (selectedOption) => {
-  //   setDataToPost({ ...dataToPost, whs_code: selectedOption.value });
-  //   refItemCode.current?.focus();
-  // };
-  // const handleQaChange = (selectedOption) => {
-  //   console.log(selectedOption);
-  //   console.log(qaOptions);
-  //   setDataToPost({ ...dataToPost, qa_status: selectedOption.value });
-  //   whRef.current?.focus();
-  // };
   const refItemCode = useRef<any>(null);
   const qaRef = useRef<any>(null);
   // const [qaOptions, setQaOptions] = useState([]);
@@ -158,16 +115,47 @@ export function ScanForm({
   ]);
 
   useEffect(() => {
-    console.log("Scan Form:", scanForm);
-    console.log("List Outbound:", listOutbound);
-
-    setOutboundOptions(
-      listOutbound.map((item) => ({
-        value: item.ID,
-        label: item.outbound_no,
-      }))
-    );
+    if (listOutbound) {
+      setOutboundOptions(
+        listOutbound.map((item) => ({
+          value: item.ID,
+          label: item.outbound_no,
+        }))
+      );
+    }
   }, []);
+
+  // const generateRandomSerial = (length = 10) => {
+  //   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  //   let serial = "";
+  //   for (let i = 0; i < length; i++) {
+  //     serial += chars.charAt(Math.floor(Math.random() * chars.length));
+  //   }
+  //   return serial;
+  // };
+
+  // //Tambahkan ini di useEffect atau setelah komponen dimount
+  // useEffect(() => {
+  //   const serialInput = document.getElementById("serial_no");
+
+  //   const handleFocus = () => {
+  //     const dummySerial = generateRandomSerial();
+  //     setScanForm((prevForm) => ({
+  //       ...prevForm,
+  //       scan_data: dummySerial,
+  //     }));
+  //   };
+
+  //   if (serialInput) {
+  //     serialInput.addEventListener("focus", handleFocus);
+  //   }
+
+  //   return () => {
+  //     if (serialInput) {
+  //       serialInput.removeEventListener("focus", handleFocus);
+  //     }
+  //   };
+  // }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -191,8 +179,7 @@ export function ScanForm({
       .post("/rf/outbound/scan/post", scanForm, { withCredentials: true })
       .then((res) => {
         if (res.data.success) {
-
-          let outboundDetail = res.data.data.outbound_detail
+          let outboundDetail = res.data.data?.outbound_detail;
 
           eventBus.emit("showAlert", {
             title: "Success!",
@@ -201,13 +188,13 @@ export function ScanForm({
           });
           setScanForm({
             ...scanForm,
-            scanned_qty: outboundDetail.qty_scan,
+            scanned_qty: outboundDetail?.qty_scan,
             scan_data: "",
           });
           document.getElementById("serial_no")?.focus();
+          // generateRandomSerial();
         }
       });
-
   };
 
   // useAutoFocus(dataToPost.location, 6, null, qaRef);
@@ -252,11 +239,17 @@ export function ScanForm({
                         quantity: 1,
                         scan_type: e.value,
                       });
+                    } else {
+                      setScanForm({
+                        ...scanForm,
+                        quantity: 1,
+                        scan_type: e.value,
+                      });
                     }
                   }}
-                  value={scanOptions.find(
-                    (item) => item.value === scanForm.scan_type
-                  )}
+                  // value={scanOptions.find(
+                  //   (item) => item.value === scanForm.scan_type
+                  // )}
                 />
               </div>
 
@@ -381,6 +374,24 @@ export function ScanForm({
                 </span>
               </div>
             </div>
+
+            {scanForm.scan_type === "BARCODE" && (
+              <div className="flex flex-col space-y-1.5">
+                <Label>Quantity</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  value={scanForm.quantity}
+                  onChange={(e) =>
+                    setScanForm({
+                      ...scanForm,
+                      quantity: parseInt(e.target.value),
+                    })
+                  }
+                  placeholder="Enter Quantity"
+                />
+              </div>
+            )}
           </div>
         </form>
       </CardContent>

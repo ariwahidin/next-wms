@@ -32,17 +32,6 @@ const PickingSheetPrint = () => {
 
     const pickingSheet = data.data.data;
 
-    // const dummyData = {
-    //   id,
-    //   customer: "PT. Contoh Sejahtera",
-    //   date: "2025-03-25",
-    //   items: Array.from({ length: 50 }, (_, i) => ({
-    //     name: `Produk ${i + 1}`,
-    //     qty: Math.floor(Math.random() * 10) + 1,
-    //     price: (Math.floor(Math.random() * 50) + 1) * 1000,
-    //   })),
-    // };
-
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
@@ -111,6 +100,7 @@ const PickingSheetPrint = () => {
           "WH Code",
           "Qty",
           "Rec Date",
+          "Pallet",
           "Location",
         ],
       ],
@@ -122,10 +112,14 @@ const PickingSheetPrint = () => {
         item.whs_code,
         item.quantity,
         item.rec_date,
+        item.pallet,
         item.location,
-        // `Rp ${item.price.toLocaleString()}`,
       ]),
       margin: { top: 40 },
+      styles: {
+        fontSize: 8,  // Ukuran font di dalam tabel lebih kecil
+        cellPadding: 2  // Mengurangi padding untuk menghemat ruang
+      },
       didDrawPage: (data) => {
         //   addHeaderFooter(doc, pageNumber, doc.getCurrentPageInfo().pageNumber);
         addHeaderFooter(doc, pageNumber, doc.getCurrentPageInfo().pageNumber);
