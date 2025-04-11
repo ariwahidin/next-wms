@@ -1,3 +1,5 @@
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState } from "react";
@@ -7,24 +9,6 @@ import StockTakeList from "./list-sto";
 import BottomNav from "./bottom-nav";
 import UploadedList from "./uploaded-list"; // import baru
 
-// const handleUpload = async () => {
-//   const data = await getAllAktivitas();
-//   const res = await fetch("/api/upload", {
-//     method: "POST",
-//     body: JSON.stringify(data),
-//     headers: {
-//       "Content-Type": "application/json",
-//     },
-//   });
-
-//   if (res.ok) {
-//     alert("Upload berhasil!");
-//     await clearAktivitas(); // hapus dari IDB
-//     setRefreshSignal(Date.now()); // refresh list
-//   } else {
-//     alert("Gagal upload.");
-//   }
-// };
 
 export default function Page() {
   const [refreshSignal, setRefreshSignal] = useState(0);

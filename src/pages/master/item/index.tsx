@@ -1,6 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import GridComponent from "@/components/GridComponent";
-import FormTableInbound from "@/components/inbound/form-table-inbound";
+// import FormTableInbound from "@/components/inbound/form-table-inbound";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -45,7 +44,7 @@ export default function Page() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <FormTableInbound />
+          {/* <FormTableInbound /> */}
         </div>
       </SidebarInset>
     </SidebarProvider>

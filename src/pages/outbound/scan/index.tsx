@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import BarcodeTable from "./BarcodeTable";
-import { ScanForm } from "./ScanForm";
+import ScanForm from "./ScanForm";
 import { useState, useEffect } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from "@/lib/api";
 import Layout from "@/components/layout";
-import { HeaderForm } from "../HeaderForm";
+import HeaderForm from "../HeaderForm";
 import eventBus from "@/utils/eventBus";
 import DataTableModal from "./DataTableModal";
 
@@ -56,7 +57,6 @@ export default function Page() {
                 scanForm={scanForm}
                 setScanForm={setScanForm}
                 listOutbound={listOutbound}
-                setListOutbound={setListOutbound}
               />
             </div>
           </TabsContent>

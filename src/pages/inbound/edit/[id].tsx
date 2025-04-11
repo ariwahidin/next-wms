@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
@@ -15,33 +16,27 @@ import {
 } from "@/components/ui/sidebar";
 import useAuth from "@/hooks/useAuth";
 import ProductTable from "../ProductTable";
-import { ProductForm } from "../ProductForm";
+import ProductForm  from "../ProductForm";
 import { useEffect, useState } from "react";
 
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from "@/lib/api";
 
 import { useRouter } from "next/router";
-import { HeaderForm } from "../HeaderForm";
+import HeaderForm from "../HeaderForm";
 import { useAlert } from "@/contexts/AlertContext";
 
 export default function Page() {
   useAuth();
   const router = useRouter();
   const { id } = router.query;
-  const [code, setCode] = useState("");
+  const [code] = useState("");
   const [editData, setEditData] = useState(null);
-
-  const [editMode, setEditMode] = useState(true);
 
   const [dataHeader, setDataHeader] = useState({
     inbound_no: "Auto Generate",
@@ -166,8 +161,8 @@ export default function Page() {
                 {/* <CardHeader></CardHeader> */}
                 <CardContent>
                   <HeaderForm
-                    dataHeader={dataHeader}
-                    setDataHeader={setDataHeader}
+                    formHeader={dataHeader}
+                    setFormHeader={setDataHeader}
                   />
                 </CardContent>
               </Card>
@@ -175,20 +170,20 @@ export default function Page() {
             <TabsContent value="password">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="col-span-2">
-                  <ProductTable
+                  {/* <ProductTable
                     setEditData={setEditData}
                     editMode={true}
                     id={id}
-                  />
+                  /> */}
                 </div>
                 <div className="col-span-1">
-                  <ProductForm
+                  {/* <ProductForm
                     editData={editData}
                     setEditData={setEditData}
                     editMode={true}
                     id={id}
                     code={code}
-                  />
+                  /> */}
                 </div>
               </div>
             </TabsContent>

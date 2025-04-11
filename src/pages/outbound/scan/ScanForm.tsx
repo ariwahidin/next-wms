@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -12,75 +12,74 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
-import { useEffect, useState, useRef } from "react";
-import { AlertCircle, Minus, Plus, RefreshCcw, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertCircle, RefreshCcw} from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Select from "react-select";
 import eventBus from "@/utils/eventBus";
-import { set } from "react-hook-form";
 
-const useAutoFocus = (
-  value: string,
-  maxLength: number,
-  nextElementId: string | null,
-  ref: React.RefObject<HTMLInputElement> | null,
-  callBack?: () => void
-) => {
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const isFirstRender = useRef<boolean>(true);
+// const useAutoFocus = (
+//   value: string,
+//   maxLength: number,
+//   nextElementId: string | null,
+//   ref: React.RefObject<HTMLInputElement> | null,
+//   callBack?: () => void
+// ) => {
+//   const timerRef = useRef<NodeJS.Timeout | null>(null);
+//   const isFirstRender = useRef<boolean>(true);
 
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+//   useEffect(() => {
+//     if (isFirstRender.current) {
+//       isFirstRender.current = false;
+//       return;
+//     }
 
-    console.log("useAutoFocus dijalankan");
-    // Jika panjang karakter kurang dari maxLength, batal pindah focus
-    if (value.length < maxLength) {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-      return;
-    }
+//     console.log("useAutoFocus dijalankan");
+//     // Jika panjang karakter kurang dari maxLength, batal pindah focus
+//     if (value.length < maxLength) {
+//       if (timerRef.current) {
+//         clearTimeout(timerRef.current);
+//       }
+//       return;
+//     }
 
-    // Set timeout untuk pindah focus setelah 3 detik
-    timerRef.current = setTimeout(() => {
-      if (callBack) {
-        if (nextElementId) {
-          const nextInput = document.getElementById(
-            nextElementId
-          ) as HTMLInputElement;
-          nextInput?.focus();
-          console.log("Pindah ke ID : ", nextElementId);
-        } else {
-          ref?.current?.focus();
-          console.log("Pindah ke Ref : ", nextElementId);
-        }
-        callBack?.();
-      } else {
-        if (nextElementId) {
-          const nextInput = document.getElementById(
-            nextElementId
-          ) as HTMLInputElement;
-          nextInput?.focus();
-          console.log("Pindah ke ID : ", nextElementId);
-        } else {
-          ref?.current?.focus();
-          console.log("Pindah ke Ref : ", nextElementId);
-        }
-        console.log("Tidak ada callBack");
-      }
-    }, 500);
+//     // Set timeout untuk pindah focus setelah 3 detik
+//     timerRef.current = setTimeout(() => {
+//       if (callBack) {
+//         if (nextElementId) {
+//           const nextInput = document.getElementById(
+//             nextElementId
+//           ) as HTMLInputElement;
+//           nextInput?.focus();
+//           console.log("Pindah ke ID : ", nextElementId);
+//         } else {
+//           ref?.current?.focus();
+//           console.log("Pindah ke Ref : ", nextElementId);
+//         }
+//         callBack?.();
+//       } else {
+//         if (nextElementId) {
+//           const nextInput = document.getElementById(
+//             nextElementId
+//           ) as HTMLInputElement;
+//           nextInput?.focus();
+//           console.log("Pindah ke ID : ", nextElementId);
+//         } else {
+//           ref?.current?.focus();
+//           console.log("Pindah ke Ref : ", nextElementId);
+//         }
+//         console.log("Tidak ada callBack");
+//       }
+//     }, 500);
 
-    return () => {
-      // Hapus timer jika user masih mengetik sebelum 3 detik
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [value, maxLength, nextElementId, ref]);
-};
+//     return () => {
+//       // Hapus timer jika user masih mengetik sebelum 3 detik
+//       if (timerRef.current) {
+//         clearTimeout(timerRef.current);
+//       }
+//     };
+//   }, [value, maxLength, nextElementId, ref]);
+// };
 
 const getDetailOutbound = async (id: number) => {
   const response = await api.get("/rf/outbound/scan/list/" + id, {
@@ -91,24 +90,18 @@ const getDetailOutbound = async (id: number) => {
   return data;
 };
 
-export function ScanForm({
+export default function ScanForm({
   scanForm,
   setScanForm,
   listOutbound,
-  setListOutbound,
 }) {
   const [outboundOptions, setOutboundOptions] = useState([]);
   const [detailOptions, setDetailOptions] = useState([]);
   const [outboundDetail, setOutboundDetail] = useState([]);
 
   const [error, setError] = useState<string | null>(null);
-  const refItemCode = useRef<any>(null);
-  const qaRef = useRef<any>(null);
-  // const [qaOptions, setQaOptions] = useState([]);
-  const whRef = useRef<any>(null);
-  const [selectedItem, setSelectedItem] = useState(null);
 
-  const [scanOptions, setScanOptions] = useState([
+  const [scanOptions] = useState([
     { value: "SERIAL", label: "SERIAL" },
     { value: "BARCODE", label: "BARCODE" },
     { value: "SET", label: "SET" },
@@ -123,39 +116,7 @@ export function ScanForm({
         }))
       );
     }
-  }, []);
-
-  // const generateRandomSerial = (length = 10) => {
-  //   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  //   let serial = "";
-  //   for (let i = 0; i < length; i++) {
-  //     serial += chars.charAt(Math.floor(Math.random() * chars.length));
-  //   }
-  //   return serial;
-  // };
-
-  // //Tambahkan ini di useEffect atau setelah komponen dimount
-  // useEffect(() => {
-  //   const serialInput = document.getElementById("serial_no");
-
-  //   const handleFocus = () => {
-  //     const dummySerial = generateRandomSerial();
-  //     setScanForm((prevForm) => ({
-  //       ...prevForm,
-  //       scan_data: dummySerial,
-  //     }));
-  //   };
-
-  //   if (serialInput) {
-  //     serialInput.addEventListener("focus", handleFocus);
-  //   }
-
-  //   return () => {
-  //     if (serialInput) {
-  //       serialInput.removeEventListener("focus", handleFocus);
-  //     }
-  //   };
-  // }, []);
+  }, [listOutbound]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -165,12 +126,12 @@ export function ScanForm({
   const postData = () => {
     console.log("Scan Form:", scanForm);
 
-    if (!scanForm.outbound_id) {
+    if (!scanForm?.outbound_id) {
       setError("Please select Outbound No");
       return;
     }
 
-    if (!scanForm.outbound_detail_id) {
+    if (!scanForm?.outbound_detail_id) {
       setError("Please select Item Code");
       return;
     }
@@ -179,7 +140,7 @@ export function ScanForm({
       .post("/rf/outbound/scan/post", scanForm, { withCredentials: true })
       .then((res) => {
         if (res.data.success) {
-          let outboundDetail = res.data.data?.outbound_detail;
+          const outboundDetail = res.data.data?.outbound_detail;
 
           eventBus.emit("showAlert", {
             title: "Success!",
@@ -200,13 +161,13 @@ export function ScanForm({
   // useAutoFocus(dataToPost.location, 6, null, qaRef);
   // useAutoFocus(dataToPost.serial_number, 6, null, null, postData);
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleSubmit(e); // Submit form saat Enter
-    }
-  };
+  // const handleKeyDown = (e) => {
+  //   if (e.key === "Enter") {
+  //     handleSubmit(e); // Submit form saat Enter
+  //   }
+  // };
 
-  const handleOnChangeSerialNumber = (e) => {};
+  // const handleOnChangeSerialNumber = (e) => {};
 
   const handleCancel = () => {};
 
@@ -248,7 +209,7 @@ export function ScanForm({
                     }
                   }}
                   // value={scanOptions.find(
-                  //   (item) => item.value === scanForm.scan_type
+                  //   (item) => item.value === scanForm?.scan_type
                   // )}
                 />
               </div>
@@ -265,7 +226,7 @@ export function ScanForm({
                       outbound_no: e.label,
                       customer_name: listOutbound.find(
                         (item) => item.ID === e.value
-                      ).customer_name,
+                      )?.customer_name,
                       delivery_no: listOutbound.find(
                         (item) => item.ID === e.value
                       ).delivery_no,
@@ -283,12 +244,12 @@ export function ScanForm({
                     }
                   }}
                   value={outboundOptions.find(
-                    (item) => item.value === scanForm.outbound_id
+                    (item) => item.value === scanForm?.outbound_id
                   )}
                   placeholder="Select an option"
                 />
                 <span className="text-xs text-muted-foreground">
-                  Customer : {scanForm.customer_name}
+                  Customer : {scanForm?.customer_name}
                   <br /> Delivery No : {scanForm?.delivery_no}
                 </span>
               </div>
@@ -304,21 +265,21 @@ export function ScanForm({
                     );
                     setScanForm({
                       ...scanForm,
-                      item_code: itemSelected.item_code || "",
-                      item_id: itemSelected.item_id || 0,
-                      outbound_detail_id: itemSelected.outbound_detail_id || 0,
-                      item_name: itemSelected.item_name || "",
-                      item_has_serial: itemSelected.has_serial || "",
-                      req_qty: itemSelected.qty_req || 0,
-                      scanned_qty: itemSelected.qty_scan || 0,
+                      item_code: itemSelected?.item_code || "",
+                      item_id: itemSelected?.item_id || 0,
+                      outbound_detail_id: itemSelected?.outbound_detail_id || 0,
+                      item_name: itemSelected?.item_name || "",
+                      item_has_serial: itemSelected?.has_serial || "",
+                      req_qty: itemSelected?.qty_req || 0,
+                      scanned_qty: itemSelected?.qty_scan || 0,
                     });
                   }}
                   placeholder="Select an option"
                 />
                 <span className="text-xs text-muted-foreground">
-                  Item Name : {scanForm.item_name}
+                  Item Name : {scanForm?.item_name}
                   <br /> Has Serial :{" "}
-                  {scanForm.item_has_serial === "Y" ? "Yes" : "No"}
+                  {scanForm?.item_has_serial === "Y" ? "Yes" : "No"}
                 </span>
               </div>
 
@@ -336,7 +297,7 @@ export function ScanForm({
                           koli: parseInt(e.target.value),
                         });
                       }}
-                      value={scanForm.koli}
+                      value={scanForm?.koli}
                       // value={dataToPost.location}
                       placeholder="Enter Koli"
                     />
@@ -361,7 +322,7 @@ export function ScanForm({
                           scan_data: e.target.value,
                         });
                       }}
-                      value={scanForm.scan_data}
+                      value={scanForm?.scan_data}
                       placeholder="Enter Serial No"
                     />
                   </div>
@@ -370,18 +331,18 @@ export function ScanForm({
                   {/* Item Code : {dataToPost.item_info?.item_code}, Serial : {dataToPost.item_info?.has_serial == "Y" ? "Yes" : "No"} */}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Req Qty : {scanForm.req_qty} , Scanned :{scanForm.scanned_qty}
+                  Req Qty : {scanForm?.req_qty} , Scanned :{scanForm?.scanned_qty}
                 </span>
               </div>
             </div>
 
-            {scanForm.scan_type === "BARCODE" && (
+            {scanForm?.scan_type === "BARCODE" && (
               <div className="flex flex-col space-y-1.5">
                 <Label>Quantity</Label>
                 <Input
                   id="quantity"
                   type="number"
-                  value={scanForm.quantity}
+                  value={scanForm?.quantity}
                   onChange={(e) =>
                     setScanForm({
                       ...scanForm,

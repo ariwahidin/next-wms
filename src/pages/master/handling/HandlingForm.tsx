@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
@@ -20,7 +22,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TabsContent } from "@radix-ui/react-tabs";
 import Select from "react-select";
 
-export function HandlingForm({ ...props }: any) {
+export default function HandlingForm({ ...props }: any) {
   const [handlingName, setHandlingName] = useState("");
   const [handlingRate, setHandlingRate] = useState("");
   const [error, setError] = useState<string | null>(null);

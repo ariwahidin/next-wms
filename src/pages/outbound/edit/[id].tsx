@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
@@ -15,7 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import useAuth from "@/hooks/useAuth";
 import ProductTable from "../ProductTable";
-import { ProductForm } from "../ProductForm";
+import ProductForm from "../ProductForm";
 import { useEffect, useState } from "react";
 
 import {
@@ -31,14 +34,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from "@/lib/api";
 
 import { useRouter } from "next/router";
-import { HeaderForm } from "../HeaderForm";
+import HeaderForm from "../HeaderForm";
 import { useAlert } from "@/contexts/AlertContext";
 
 export default function Page() {
   useAuth();
   const router = useRouter();
   const { id } = router.query;
-  const [formHeader, setFormHeader] = useState({});
+  const [formHeader, setFormHeader] = useState({}) as any;
   const [formItem, setFormItem] = useState({});
 
 
@@ -141,8 +144,9 @@ export default function Page() {
                 <CardContent>
                   <HeaderForm
                     formHeader={formHeader}
-                    setFormHeader={setFormHeader}
-                  />
+                    setFormHeader={setFormHeader} 
+                    dataForm={undefined} 
+                    setDataForm={undefined}                  />
                 </CardContent>
               </Card>
             </TabsContent>

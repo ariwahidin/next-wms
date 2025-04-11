@@ -16,7 +16,7 @@ export function LoginForm({
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
 
   const handleLogin = (e) => {
     e.preventDefault();

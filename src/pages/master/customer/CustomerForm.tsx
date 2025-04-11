@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +19,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export function CustomerForm({ editData, setEditData }) {
+export default function CustomerForm({ editData, setEditData }) {
   const [customerCode, setCustomerCode] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [error, setError] = useState<string | null>(null);

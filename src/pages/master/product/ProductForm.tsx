@@ -1,4 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 import * as React from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +22,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getEnabledCategories } from "trace_events";
 import Select from "react-select";
 
-export function ProductForm({ editData, setEditData }) {
+export default function ProductForm({ editData, setEditData }) {
   const [itemCode, setItemCode] = useState("");
   const [itemName, setItemName] = useState("");
   const [gmc, setGmc] = useState("");

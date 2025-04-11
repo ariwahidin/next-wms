@@ -1,7 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 
-import BarcodeTable from "./BarcodeTable";
-import { ScanForm } from "./ScanForm";
+
 import { useState, useEffect } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,10 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from "@/lib/api";
 import Layout from "@/components/layout";
-import { HeaderForm } from "../HeaderForm";
 import eventBus from "@/utils/eventBus";
-import DataTableModal from "./DataTableModal";
-import PalletTable from "./PalletTable";
 import { Label } from "@radix-ui/react-label";
 import { Input } from "@/components/ui/input";
 import {

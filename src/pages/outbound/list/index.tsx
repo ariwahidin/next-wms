@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
@@ -14,48 +15,25 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import useAuth from "@/hooks/useAuth";
-import ProductTable from "./ProductTable";
-import { ProductForm } from "./ProductForm";
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import api from "@/lib/api";
-import Select from "react-select";
+import api from "@/lib/api";;
 import InboundTable from "./InboundTable";
 import Layout from "@/components/layout";
 
 export default function Page() {
   useAuth();
-  const [editData, setEditData] = useState(null);
+  const [setEditData] = useState(null);
 
-  const [orderInfo, setOrderInfo] = useState({
-    orderNo: generateOrderNumber(),
-    date: new Date().toISOString().split("T")[0],
-    customerName: "",
-    phone: "",
-    email: "",
-    address: "",
-  });
+  
 
   const [listSuppliers, setListSuppliers] = useState([]);
   const [optionsSupplier, setOptionsSupplier] = useState([]);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
-  const [inboundDate, setInboundDate] = useState(
+  const [inboundDate] = useState(
     new Date().toISOString().split("T")[0]
   );
   const [detailItems, setDetailItems] = useState([]);
 
-  const [editMode, setEditMode] = useState(false);
 
   const handleSupplierChange = (selectedOption) => {
     setSelectedSupplier(selectedOption.value);

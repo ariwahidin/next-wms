@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { AgGridReact } from "ag-grid-react";
@@ -28,7 +30,7 @@ const fetcher = (url: string) =>
 const BarcodeTable = ({ dataToPost }: { dataToPost: any }) => {
   console.log("Data To Post : ", dataToPost);
 
-  const inbound_id = dataToPost.inbound_id;
+  const inbound_id = dataToPost?.inbound_id;
   const [rowData, setRowData] = useState([]);
   const [dataModal, setDataModal] = useState(null);
   const [modalIsOpen, setModalIsOpen] = useState(false);

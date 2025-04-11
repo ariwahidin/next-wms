@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // hooks/useAuth.ts
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
@@ -12,14 +13,12 @@ const useAuth = () => {
       try {
         const res = await api.get("/isLoggedIn", { withCredentials: true });
         if (res.data.success === false) {
-          // window.location.href = "/auth/login";
           router.push("/auth/login");
         } else {
           setLoading(false);
         }
-      } catch (error) {
-        if (error.response && error.response.status === 401) {
-          // window.location.href = "/auth/login";
+      } catch (error : any) {
+        if (error?.response && error.response?.status === 401) {
           router.push("/auth/login");
           return;
         }

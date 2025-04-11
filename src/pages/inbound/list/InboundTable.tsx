@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { AgGridReact } from "ag-grid-react";
@@ -85,7 +87,7 @@ const InboundTable = ({ setEditData }) => {
     );
   };
 
-  const [columnDefs, setColumnDefs] = useState<ColDef[]>([
+  const [columnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
     {
       headerName: "Actions",

@@ -1,6 +1,6 @@
 import Layout from "@/components/layout";
 import HandlingTable from "./HandlingTable";
-import {HandlingForm} from "./HandlingForm";
+import HandlingForm from "./HandlingForm";
 import { useState } from "react";
 
 export default function Handling() {

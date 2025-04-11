@@ -1,5 +1,7 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as React from "react";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -81,7 +83,7 @@ const useAutoFocus = (
   }, [value, maxLength, nextElementId, ref]);
 };
 
-export function ScanForm({ dataToPost, setDataToPost }) {
+export default function ScanForm({ dataToPost, setDataToPost }) {
   const [error, setError] = useState<string | null>(null);
   const [inboundOptions, setInboundOptions] = useState([]);
   const onChangeInboundNo = async (selectedOption) => {
@@ -133,7 +135,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
   const qaRef = useRef<any>(null);
   const [qaOptions, setQaOptions] = useState([]);
   const whRef = useRef<any>(null);
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null) as any;
   const onChangeItem = async (option) => {
     setSelectedItem(option);
     if (option === null) {
@@ -165,7 +167,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
   };
 
   const onInputChangeItem = (e) => {
-    const selected = dataToPost.item_options.find((item) => item.label === e);
+    const selected = dataToPost?.item_options.find((item) => item.label === e);
     if (selected) {
       setDataToPost({
         ...dataToPost,
@@ -247,41 +249,13 @@ export function ScanForm({ dataToPost, setDataToPost }) {
     return `${prefix}${timestamp}`; // Misal: PAL20250410162530045
   };
 
-  //Tambahkan ini di useEffect atau setelah komponen dimount
-  // useEffect(() => {
-  //   const serialInput = document.getElementById("serialNumber");
-
-  //   const handleFocus = () => {
-  //     const dummySerial = generateRandomSerial();
-  //     // setScanForm((prevForm) => ({
-  //     //   ...prevForm,
-  //     //   scan_data: dummySerial,
-  //     // }));
-
-  //     setDataToPost({
-  //       ...dataToPost,
-  //       serial_number: dummySerial,
-  //     });
-  //   };
-
-  //   if (serialInput) {
-  //     serialInput.addEventListener("focus", handleFocus);
-  //   }
-
-  //   return () => {
-  //     if (serialInput) {
-  //       serialInput.removeEventListener("focus", handleFocus);
-  //     }
-  //   };
-  // }, []);
-
   async function handleSubmit(e) {
     e.preventDefault();
     postData();
   }
 
   const postData = () => {
-    if (dataToPost.inbound_detail_id === null) {
+    if (dataToPost?.inbound_detail_id === null) {
       alert("Please select item");
       return;
     }
@@ -290,20 +264,20 @@ export function ScanForm({ dataToPost, setDataToPost }) {
     // return;
 
     const data = {
-      inbound_id: dataToPost.inbound_id,
-      inbound_detail_id: dataToPost.inbound_detail_id,
-      serial_number: dataToPost.serial_number,
-      serial_number2: dataToPost.serial_number_2,
-      pallet: dataToPost.pallet,
-      location: dataToPost.location,
-      qa_status: dataToPost.qa_status,
-      whs_code: dataToPost.whs_code,
-      scan_type: dataToPost.scan_type,
-      quantity: parseInt(dataToPost.quantity),
+      inbound_id: dataToPost?.inbound_id,
+      inbound_detail_id: dataToPost?.inbound_detail_id,
+      serial_number: dataToPost?.serial_number,
+      serial_number2: dataToPost?.serial_number_2,
+      pallet: dataToPost?.pallet,
+      location: dataToPost?.location,
+      qa_status: dataToPost?.qa_status,
+      whs_code: dataToPost?.whs_code,
+      scan_type: dataToPost?.scan_type,
+      quantity: parseInt(dataToPost?.quantity),
     };
 
     api
-      .post("/rf/inbound/" + dataToPost.inbound_id, data, {
+      .post("/rf/inbound/" + dataToPost?.inbound_id, data, {
         withCredentials: true,
       })
       .then((res) => {
@@ -314,8 +288,8 @@ export function ScanForm({ dataToPost, setDataToPost }) {
             type: "success",
           });
 
-          let lokasi = dataToPost.location;
-          let pallet = dataToPost.pallet;
+          let lokasi = dataToPost?.location;
+          let pallet = dataToPost?.pallet;
 
           // jika res.data.data.scanned kelipatan 10 ganti lokasi lain
 
@@ -345,8 +319,8 @@ export function ScanForm({ dataToPost, setDataToPost }) {
       });
   };
 
-  useAutoFocus(dataToPost.location, 6, null, qaRef);
-  useAutoFocus(dataToPost.serial_number, 6, null, null, postData);
+  useAutoFocus(dataToPost?.location, 6, null, qaRef);
+  useAutoFocus(dataToPost?.serial_number, 6, null, null, postData);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
@@ -405,7 +379,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                     }
                   }}
                   value={scanOptions.find(
-                    (item) => item.value === dataToPost.scan_type
+                    (item) => item.value === dataToPost?.scan_type
                   )}
                 />
               </div>
@@ -417,12 +391,12 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                   options={inboundOptions}
                   onChange={onChangeInboundNo}
                   value={inboundOptions.find(
-                    (item) => item.value === dataToPost.inbound_id
+                    (item) => item.value === dataToPost?.inbound_id
                   )}
                   placeholder="Select an option"
                 />
                 <span className="text-xs text-muted-foreground">
-                  Supplier : {dataToPost.inbound?.supplier_name}
+                  Supplier : {dataToPost?.inbound?.supplier_name}
                 </span>
               </div>
 
@@ -440,7 +414,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                         });
                       }}
                       readOnly
-                      value={dataToPost.pallet}
+                      value={dataToPost?.pallet}
                       placeholder="Enter Pallet No"
                     />
                     <Button
@@ -464,7 +438,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                       id="location"
                       type="text"
                       onChange={handleOnChangeLocation}
-                      value={dataToPost.location}
+                      value={dataToPost?.location}
                       placeholder="Enter Location"
                     />
                     <Button
@@ -491,7 +465,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                   options={qaOptions}
                   onChange={handleQaChange}
                   value={qaOptions.find(
-                    (item) => item.value === dataToPost.qa_status
+                    (item) => item.value === dataToPost?.qa_status
                   )}
                   placeholder="Select"
                 />
@@ -504,7 +478,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                   options={whOptions}
                   onChange={handleWhChange}
                   value={whOptions.find(
-                    (item) => item.value === dataToPost.whs_code
+                    (item) => item.value === dataToPost?.whs_code
                   )}
                   placeholder="Select"
                 />
@@ -519,11 +493,11 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                       key={selectedItem ? selectedItem.value : "empty"}
                       ref={refItemCode}
                       id="itemCode"
-                      options={dataToPost.item_options}
+                      options={dataToPost?.item_options}
                       onChange={onChangeItem}
                       onInputChange={onInputChangeItem}
-                      value={dataToPost.item_options.find(
-                        (item) => item.value === dataToPost.inbound_detail_id
+                      value={dataToPost?.item_options.find(
+                        (item) => item.value === dataToPost?.inbound_detail_id
                       )}
                       placeholder="Select an option"
                       isClearable
@@ -531,12 +505,12 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                   </div>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  Item Code : {dataToPost.item_info?.item_code}, Serial :{" "}
-                  {dataToPost.item_info?.has_serial == "Y" ? "Yes" : "No"}
+                  Item Code : {dataToPost?.item_info?.item_code}, Serial :{" "}
+                  {dataToPost?.item_info?.has_serial == "Y" ? "Yes" : "No"}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Expect : {dataToPost.item_info?.quantity} , Scanned :
-                  {dataToPost.item_info?.qty_scan}
+                  Expect : {dataToPost?.item_info?.quantity} , Scanned :
+                  {dataToPost?.item_info?.qty_scan}
                 </span>
               </div>
 
@@ -547,7 +521,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                     id="serialNumber"
                     type="text"
                     onChange={handleOnChangeSerialNumber}
-                    value={dataToPost.serial_number}
+                    value={dataToPost?.serial_number}
                     placeholder="Enter Serial No"
                   />
                   <Button
@@ -565,14 +539,14 @@ export function ScanForm({ dataToPost, setDataToPost }) {
               </div> */}
 
               {/* Kondisi Input berdasarkan Scan Type */}
-              {dataToPost.scan_type === "SERIAL" && (
+              {dataToPost?.scan_type === "SERIAL" && (
                 <div className="flex flex-col space-y-1.5">
                   <Label>Serial No.</Label>
                   <div className="flex w-full max-w-sm items-center space-x-2">
                     <Input
                       id="serialNumber"
                       type="text"
-                      value={dataToPost.serial_number}
+                      value={dataToPost?.serial_number}
                       onChange={(e) =>
                         setDataToPost({
                           ...dataToPost,
@@ -594,13 +568,13 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                 </div>
               )}
 
-              {dataToPost.scan_type === "BARCODE" && (
+              {dataToPost?.scan_type === "BARCODE" && (
                 <div className="flex flex-col space-y-1.5">
                   <Label>Quantity</Label>
                   <Input
                     id="quantity"
                     type="number"
-                    value={dataToPost.quantity}
+                    value={dataToPost?.quantity}
                     onChange={(e) =>
                       setDataToPost({ ...dataToPost, quantity: e.target.value })
                     }
@@ -609,13 +583,13 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                 </div>
               )}
 
-              {dataToPost.scan_type === "SET" && (
+              {dataToPost?.scan_type === "SET" && (
                 <div className="flex flex-col space-y-1.5">
                   <Label>Serial No. 1</Label>
                   <Input
                     id="serialNumber1"
                     type="text"
-                    value={dataToPost.serial_number}
+                    value={dataToPost?.serial_number}
                     onChange={(e) =>
                       setDataToPost({
                         ...dataToPost,
@@ -629,7 +603,7 @@ export function ScanForm({ dataToPost, setDataToPost }) {
                   <Input
                     id="serialNumber2"
                     type="text"
-                    value={dataToPost.serial_number_2}
+                    value={dataToPost?.serial_number_2}
                     onChange={(e) =>
                       setDataToPost({
                         ...dataToPost,

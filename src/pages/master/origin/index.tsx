@@ -1,7 +1,7 @@
 import useAuth from "@/hooks/useAuth";
 import { useState } from "react";
 import Layout from "@/components/layout";
-import { OriginForm  } from "./OriginForm";
+import OriginForm from "./OriginForm";
 import OriginTable from "./OriginTable";
 
 export default function Page() {

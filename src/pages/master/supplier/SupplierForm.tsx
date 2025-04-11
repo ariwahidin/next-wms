@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export function SupplierForm({ editData, setEditData }) {
+export default function SupplierForm({ editData, setEditData }) {
   const [supplierCode, setSupplierCode] = useState("");
   const [supplierName, setSupplierName] = useState("");
   const [error, setError] = useState<string | null>(null);

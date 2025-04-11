@@ -10,12 +10,18 @@ import { Pencil, Trash2, Search } from "lucide-react";
 export default function StockTakeList({ refreshSignal }) {
   const [list, setList] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({});
+  const [editForm, setEditForm] = useState({
+    kodeLokasi: "",
+    kodeBarang: "",
+    serialNumber: "",
+    jumlahFisik: 1,
+    catatan: "",
+  });
   const [searchTerm, setSearchTerm] = useState("");
 
   const load = async () => {
     const data = await getAllAktivitas();
-    setList(data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+    setList(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   };
 
   useEffect(() => {

@@ -1,3 +1,5 @@
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
@@ -15,7 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import useAuth from "@/hooks/useAuth";
 import SupplierTable from "./SupplierTable";
-import { SupplierForm } from "./SupplierForm";
+import SupplierForm from "./SupplierForm";
 import { useEffect, useState } from "react";
 import Layout from "@/components/layout";
 

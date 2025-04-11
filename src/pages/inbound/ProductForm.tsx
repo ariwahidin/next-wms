@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
@@ -20,7 +23,7 @@ import Select from "react-select";
 import { FormDescription } from "@/components/ui/form";
 import eventBus from "@/utils/eventBus";
 
-export function ProductForm({
+export default function ProductForm({
   editData,
   setEditData,
   editMode,
@@ -36,7 +39,7 @@ export function ProductForm({
   const [gmc, setGmc] = useState("");
   const [quantity, setQuantity] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState([]) as any;
   const [itemsSelectOption, setItemsSelectOption] = useState([]);
 
   const [remarks, setRemarks] = useState("");
@@ -64,11 +67,11 @@ export function ProductForm({
   };
 
   const handleSelectChange = (selectedOption) => {
-    const itemSelected = items.find(
-      (item) => item.item_code === selectedOption.value
+    const itemSelected : any = items.find(
+      (item : any) => item?.item_code === selectedOption.value
     );
     setItemCode(selectedOption.value);
-    setItemName(itemSelected.item_name);
+    setItemName(itemSelected?.item_name);
     setGmc(itemSelected.gmc);
   };
 
@@ -92,14 +95,14 @@ export function ProductForm({
         if (products.data.success && handling.data.success) {
           setItemsSelectOption(
             products.data.data.map((item) => ({
-              value: item.ID,
-              label: item.item_code,
+              value: item?.ID,
+              label: item?.item_code,
             }))
           );
           setItems(products.data.data);
           const options = handling.data.data.map((item) => ({
-            value: item.id,
-            label: item.name,
+            value: item?.id,
+            label: item?.name,
           }));
           setHandlingOption(options);
         }
@@ -115,56 +118,8 @@ export function ProductForm({
     fetchData();
   }, []);
 
-  // useEffect(() => {
-  //   api.get("/products", { withCredentials: true }).then((res) => {
-  //     if (res.data.success) {
-  //       setItemsSelectOption(
-  //         res.data.data.map((item) => ({
-  //           value: item.item_code,
-  //           label: item.item_code + " - " + item.item_name,
-  //         }))
-  //       );
-  //       setItems(res.data.data);
-  //     }
-  //   });
-
-  //   api.get("/handling", { withCredentials: true }).then((res) => {
-  //     if (res.data.success) {
-  //       // Olah response jadi opsi yang benar
-  //       const options = res.data.data.map((item) => ({
-  //         value: item.id,
-  //         label: item.name,
-  //       }));
-  //       // Set hasil ke state
-  //       setHandlingOption(options);
-
-  //       // Set default Handling
-  //       if (!editData) {
-  //         setHandlingSelected(10);
-  //       }
-  //     }
-  //   });
-
-  //   if (editData) {
-  //     setItemCode(editData.item_code);
-  //     setItemName(editData.item_name);
-  //     setGmc(editData.gmc);
-  //     setQuantity(editData.quantity);
-  //     setUom(editData.uom);
-  //     setRecDate(editData.rec_date);
-  //     setSelectedWhsCode(editData.whs_code);
-  //     setLocation(editData.location);
-  //     setHandlingSelected(editData.handling_id);
-  //     setRemarks(editData.remarks);
-  //   }
-
-  // }, [editData]);
-
   async function handleSubmit(e) {
     e.preventDefault();
-
-    console.log(formHeader, formItem);
-    // return;
 
     try {
       const [saveData] = await Promise.all([
@@ -182,22 +137,22 @@ export function ProductForm({
           type: "success",
         });
 
-        console.log("Inbound ID : ", saveData.data.data.inbound_id);
+        console.log("Inbound ID : ", saveData.data.data?.inbound_id);
 
         setFormHeader({
           ...formHeader,
-          inbound_id: saveData.data.data.inbound_id,
+          inbound_id: saveData.data.data?.inbound_id,
           inbound_no: saveData.data.data.inbound_no,
         });
 
         setFormItem({
           ...formItem,
           inbound_detail_id: 0,
-          inbound_id: saveData.data.data.inbound_id,
+          inbound_id: saveData.data.data?.inbound_id,
           inbound_no: saveData.data.data.inbound_no,
         });
 
-        mutate("/inbound/" + saveData.data.data.inbound_id);
+        mutate("/inbound/" + saveData.data.data?.inbound_id);
       }
 
       // document.getElementById("itemCode")?.focus();
@@ -251,31 +206,31 @@ export function ProductForm({
               <Select
                 id="itemCode"
                 options={itemsSelectOption}
-                onChange={(selectedOption) => {
-                  const item = items.find((e) => e.ID === selectedOption.value);
+                onChange={(selectedOption : any) => {
+                  const item : any = items.find((e : any) => e.ID === selectedOption.value);
                   setFormItem({
                     ...formItem,
                     item_id: selectedOption.value,
-                    item_code: item.item_code,
-                    item_name: item.item_name,
-                    barcode: item.barcode,
-                    uom: item.uom,
+                    item_code: item?.item_code,
+                    item_name: item?.item_name,
+                    barcode: item?.barcode,
+                    uom: item?.uom,
                   });
                 }}
-                value={{ value: formItem.item_id, label: formItem.item_code }}
+                value={{ value: formItem?.item_id, label: formItem?.item_code }}
                 placeholder="Select an option"
               />
               <span className="text-xs text-muted-foreground">
-                Item Name : {formItem.item_name} <br />
-                GMC : {formItem.barcode} <br />
+                Item Name : {formItem?.item_name} <br />
+                GMC : {formItem?.barcode} <br />
                 Serial :{" "}
                 {
-                  items.find((item) => item.ID === formItem.item_id)?.has_serial
+                  items.find((item : any) => item?.ID === formItem?.item_id)?.has_serial
                 }{" "}
                 | Waranty :{" "}
                 {
-                  items.find((item) => item.ID === formItem.item_id)
-                    ?.has_waranty
+                  items.find((item : any) => item?.ID === formItem?.item_id)
+                    ?.has_waranty 
                 }
               </span>
             </div>
@@ -291,7 +246,7 @@ export function ProductForm({
                       quantity: parseInt(e.target.value),
                     })
                   }
-                  value={formItem.quantity}
+                  value={formItem?.quantity}
                   placeholder="Enter Quantity"
                 />
               </div>
@@ -304,7 +259,7 @@ export function ProductForm({
                     setFormItem({ ...formItem, uom: e.target.value })
                   }
                   value={
-                    items.find((item) => item.ID === formItem.item_id)?.uom
+                    items.find((item) => item?.ID === formItem?.item_id)?.uom
                   }
                   placeholder=""
                   readOnly
@@ -315,7 +270,7 @@ export function ProductForm({
                 <Input
                   type="text"
                   id="location"
-                  value={formItem.location}
+                  value={formItem?.location}
                   onChange={(e) =>
                     setFormItem({ ...formItem, location: e.target.value })
                   }
@@ -332,7 +287,7 @@ export function ProductForm({
                   onChange={(e) =>
                     setFormItem({ ...formItem, rec_date: e.target.value })
                   }
-                  value={formItem.rec_date}
+                  value={formItem?.rec_date}
                   placeholder=""
                 />
               </div>
@@ -341,8 +296,8 @@ export function ProductForm({
                 <Select
                   id="whsCode"
                   options={whsCode}
-                  value={{ value: formItem.whs_code, label: formItem.whs_code }}
-                  onChange={(e) =>
+                  value={{ value: formItem?.whs_code, label: formItem?.whs_code }}
+                  onChange={(e : any) =>
                     setFormItem({ ...formItem, whs_code: e.value })
                   }
                   placeholder="Select an option"
@@ -355,13 +310,13 @@ export function ProductForm({
                 <Select
                   id="handling"
                   options={handlingOption}
-                  onChange={(e) =>
+                  onChange={(e : any) =>
                     setFormItem({ ...formItem, handling_id: e.value })
                   }
                   value={{
-                    value: formItem.handling_id,
+                    value: formItem?.handling_id,
                     label: handlingOption.find(
-                      (item) => item.value === formItem.handling_id
+                      (item : any) => item?.value === formItem?.handling_id
                     )?.label,
                   }}
                   placeholder="Select an option"
@@ -377,7 +332,7 @@ export function ProductForm({
                   onChange={(e) =>
                     setFormItem({ ...formItem, remarks: e.target.value })
                   }
-                  value={formItem.remarks}
+                  value={formItem?.remarks}
                   placeholder="Enter Remarks"
                 />
               </div>
@@ -392,7 +347,7 @@ export function ProductForm({
         <Button onClick={handleSubmit} type="submit">
           {" "}
           {/* Tombol submit */}
-          {formItem.inbound_detail_id > 0 ? "Update" : "Add"}
+          {formItem?.inbound_detail_id > 0 ? "Update" : "Add"}
         </Button>
       </CardFooter>
     </Card>

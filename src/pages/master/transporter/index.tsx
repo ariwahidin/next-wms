@@ -2,7 +2,7 @@ import useAuth from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import Layout from "@/components/layout";
 import TransporterTable from "./TransporterTable";
-import { TransporterForm } from "./TransporterForm";
+import TransporterForm from "./TransporterForm";
 
 export default function Page() {
   useAuth();

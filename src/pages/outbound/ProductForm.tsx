@@ -1,5 +1,8 @@
 import * as React from "react";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,7 +22,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Select from "react-select";
 import { set } from "react-hook-form";
 
-export function ProductForm({
+export default function ProductForm({
   formHeader,
   setFormHeader,
   formItem,
@@ -108,6 +111,7 @@ export function ProductForm({
     };
 
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleSubmit(e) {

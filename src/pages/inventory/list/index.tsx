@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import useAuth from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import InboundTable from "./InventoryTable";

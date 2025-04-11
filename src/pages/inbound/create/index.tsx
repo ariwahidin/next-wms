@@ -1,18 +1,16 @@
 import ProductTable from "../ProductTable";
-import { ProductForm } from "../ProductForm";
+import ProductForm from "../ProductForm";
 import { useState, useEffect } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from "@/lib/api";
 import Layout from "@/components/layout";
-import { HeaderForm } from "../HeaderForm";
-import eventBus from "@/utils/eventBus";
+import HeaderForm from "../HeaderForm";
 
 export default function Page() {
   const [editData, setEditData] = useState(null);
-  const [dataHeader, setDataHeader] = useState({
+  const [dataHeader] = useState({
     inbound_no: "Auto Generate",
     supplier_code: null,
     invoice: "",
@@ -36,34 +34,33 @@ export default function Page() {
   const [formHeader, setFormHeader] = useState({});
   const [formItem, setFormItem] = useState({});
 
-  async function handleSave() {
-    try {
-      const res = await api.post("/inbound", formHeader || {}, {
-        withCredentials: true,
-      });
-      if (res.data.success) {
-        // alert("Inbound berhasil disimpan");
+  // async function handleSave() {
+  //   try {
+  //     const res = await api.post("/inbound", formHeader || {}, {
+  //       withCredentials: true,
+  //     });
+  //     if (res.data.success) {
+  //       // alert("Inbound berhasil disimpan");
 
-        eventBus.emit("showAlert", {
-          title: "Success!",
-          description: "Saved",
-          type: "success",
-        });
+  //       eventBus.emit("showAlert", {
+  //         title: "Success!",
+  //         description: "Saved",
+  //         type: "success",
+  //       });
 
-        window.location.href = "/inbound/list";
-      }
-    } catch (error) {
-      console.error("Error saving inbound:", error);
-      // alert("Error saving inbound");
-    }
-  }
+  //       window.location.href = "/inbound/list";
+  //     }
+  //   } catch (error) {
+  //     console.error("Error saving inbound:", error);
+  //     // alert("Error saving inbound");
+  //   }
+  // }
 
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     setLoading(true);
     document.title = "Create Inbound";
     setLoading(false);
-
 
     const fecthData = async () => {
       try {
@@ -83,11 +80,11 @@ export default function Page() {
       }
     };
     fecthData();
-
   }, []);
 
-  return (
-    loading ? <p>Loading...</p> :
+  return loading ? (
+    <p>Loading...</p>
+  ) : (
     <Layout title="Inbound" subTitle="Create Inbound">
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
         {/* <div style={{ marginLeft: "auto" }}>
@@ -133,10 +130,10 @@ export default function Page() {
                   editMode={false}
                   id={0}
                   code={dataHeader.inbound_no}
-                  formHeader = {formHeader}
-                  setFormHeader = {setFormHeader}
-                  formItem = {formItem}
-                  setFormItem = {setFormItem}
+                  formHeader={formHeader}
+                  setFormHeader={setFormHeader}
+                  formItem={formItem}
+                  setFormItem={setFormItem}
                 />
               </div>
             </div>

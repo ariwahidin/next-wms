@@ -1,5 +1,5 @@
 import UserTable from "./UserTable";
-import { UserForm } from "./UserForm";
+import UserForm from "./UserForm";
 import Layout from "@/components/layout";
 import { useState } from "react";
 

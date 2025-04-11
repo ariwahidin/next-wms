@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { AgGridReact } from "ag-grid-react";
@@ -43,7 +45,7 @@ const ProductTable = ({
 }) => {
   console.log(formHeader, formItem);
 
-  const url = "/inbound/" + formHeader.inbound_id;
+  const url = "/inbound/" + formHeader?.inbound_id;
   const { data: rowData, error, mutate } = useSWR(url, fetcher);
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 60 },
@@ -102,7 +104,7 @@ const ProductTable = ({
         .delete(`/inbound/detail/${id}`, { withCredentials: true })
         .then((res) => {
           if (res.data.success === true) {
-            mutate("/inbound/" + formHeader.inbound_id);
+            mutate("/inbound/" + formHeader?.inbound_id);
           }
         });
     } catch (error) {

@@ -1,13 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
 import Select from "react-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { emit } from "process";
 import eventBus from "@/utils/eventBus";
 
-export function HeaderForm({ formHeader, setFormHeader }) {
+export default function HeaderForm({ formHeader, setFormHeader }) {
   const [optionsSupplier, setOptionsSupplier] = useState([]);
   const [optionsTransporter, setOptionsTransporter] = useState([]);
   const [optionsTruck, setOptionsTruck] = useState([]);
@@ -100,7 +100,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
               </label>
               <Input
                 type="text"
-                value={formHeader.inbound_no}
+                value={formHeader?.inbound_no}
                 readOnly
                 className="bg-gray-50"
               />
@@ -111,7 +111,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
               </label>
               <Input
                 type="date"
-                value={formHeader.inbound_date}
+                value={formHeader?.inbound_date}
                 onChange={(e) =>
                   setFormHeader({ ...formHeader, inbound_date: e.target.value })
                 }
@@ -124,14 +124,14 @@ export function HeaderForm({ formHeader, setFormHeader }) {
               <Select
                 // defaultValue={}
                 options={originOptions}
-                onChange={(selectedOption) => {
+                onChange={(selectedOption : any) => {
                   setFormHeader({
                     ...formHeader,
                     origin_id: selectedOption.value,
                   });
                 }}
                 value={originOptions.find(
-                  (option) => option.value === formHeader.origin_id
+                  (option : any) => option.value === formHeader?.origin_id
                 )}
               />
             </div>
@@ -143,7 +143,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
               </label>
               <Input
                 type="text"
-                value={formHeader.po_no}
+                value={formHeader?.po_no}
                 onChange={(e) =>
                   setFormHeader({ ...formHeader, po_no: e.target.value })
                 }
@@ -156,7 +156,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
               </label>
               <Input
                 type="date"
-                value={formHeader.po_date}
+                value={formHeader?.po_date}
                 onChange={(e) =>
                   setFormHeader({ ...formHeader, po_date: e.target.value })
                 }
@@ -168,7 +168,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
               </label>
               <Input
                 type="text"
-                value={formHeader.sj_no}
+                value={formHeader?.sj_no}
                 onChange={(e) =>
                   setFormHeader({ ...formHeader, sj_no: e.target.value })
                 }
@@ -183,7 +183,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
               </label>
               <Input
                 type="time"
-                value={formHeader.time_arrival}
+                value={formHeader?.time_arrival}
                 onChange={(e) =>
                   setFormHeader({ ...formHeader, time_arrival: e.target.value })
                 }
@@ -196,7 +196,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
               </label>
               <Input
                 type="time"
-                value={formHeader.start_unloading}
+                value={formHeader?.start_unloading}
                 onChange={(e) =>
                   setFormHeader({
                     ...formHeader,
@@ -212,7 +212,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
               </label>
               <Input
                 type="time"
-                value={formHeader.finish_unloading}
+                value={formHeader?.finish_unloading}
                 onChange={(e) =>
                   setFormHeader({
                     ...formHeader,
@@ -229,7 +229,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
                 Remarks
               </label>
               <Textarea
-                value={formHeader.remarks_header}
+                value={formHeader?.remarks_header}
                 onChange={(e) =>
                   setFormHeader({
                     ...formHeader,
@@ -250,14 +250,14 @@ export function HeaderForm({ formHeader, setFormHeader }) {
                 </label>
                 <Select
                   options={optionsSupplier}
-                  onChange={(selectedOption) => {
+                  onChange={(selectedOption : any) => {
                     setFormHeader({
                       ...formHeader,
                       supplier_id: selectedOption.value,
                     });
                   }}
                   value={optionsSupplier.find(
-                    (item) => item.value === formHeader?.supplier_id
+                    (item : any) => item.value === formHeader?.supplier_id
                   )}
                 />
               </div>
@@ -267,14 +267,14 @@ export function HeaderForm({ formHeader, setFormHeader }) {
                 </label>
                 <Select
                   options={optionsTransporter}
-                  onChange={(selectedOption) => {
+                  onChange={(selectedOption : any) => {
                     setFormHeader({
                       ...formHeader,
                       transporter_id: selectedOption.value,
                     });
                   }}
                   value={optionsTransporter.find(
-                    (item) => item.value === formHeader?.transporter_id
+                    (item : any) => item.value === formHeader?.transporter_id
                   )}
                 />
               </div>
@@ -290,7 +290,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
                   onChange={(e) =>
                     setFormHeader({ ...formHeader, invoice: e.target.value })
                   }
-                  value={formHeader.invoice}
+                  value={formHeader?.invoice}
                   placeholder="Enter invoice number"
                 />
               </div>
@@ -304,7 +304,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
                   onChange={(e) => {
                     setFormHeader({ ...formHeader, driver: e.target.value });
                   }}
-                  value={formHeader.driver}
+                  value={formHeader?.driver}
                   placeholder="Enter driver name"
                 />
               </div>
@@ -314,14 +314,14 @@ export function HeaderForm({ formHeader, setFormHeader }) {
                 </label>
                 <Select
                   options={optionsTruck}
-                  onChange={(selectedOption) => {
+                  onChange={(selectedOption : any) => {
                     setFormHeader({
                       ...formHeader,
                       truck_id: parseInt(selectedOption.value),
                     });
                   }}
                   value={optionsTruck.find(
-                    (item) => item.value === formHeader?.truck_id
+                    (item : any) => item.value === formHeader?.truck_id
                   )}
                 />
               </div>
@@ -334,7 +334,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
                   onChange={(e) =>
                     setFormHeader({ ...formHeader, truck_no: e.target.value })
                   }
-                  value={formHeader.truck_no}
+                  value={formHeader?.truck_no}
                   placeholder="Enter truck number"
                 />
               </div>
@@ -350,7 +350,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
                       container_no: e.target.value,
                     })
                   }
-                  value={formHeader.container_no}
+                  value={formHeader?.container_no}
                   placeholder="Enter container number"
                 />
               </div>
@@ -363,7 +363,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
                   onChange={(e) =>
                     setFormHeader({ ...formHeader, bl_no: e.target.value })
                   }
-                  value={formHeader.bl_no}
+                  value={formHeader?.bl_no}
                   placeholder="Enter BL number"
                 />
               </div>
@@ -371,7 +371,7 @@ export function HeaderForm({ formHeader, setFormHeader }) {
           </div>
         </div>
       </div>
-      {formHeader.inbound_id > 0 && (
+      {formHeader?.inbound_id > 0 && (
         <div className="p-4 flex justify-end">
           <Button variant="outline" className="me-2">
             Cancel

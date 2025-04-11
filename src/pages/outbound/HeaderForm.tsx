@@ -1,3 +1,5 @@
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
@@ -5,7 +7,7 @@ import Select from "react-select";
 import { Textarea } from "@/components/ui/textarea";
 import { set } from "react-hook-form";
 
-export function HeaderForm({
+export default function HeaderForm({
   formHeader,
   setFormHeader,
   dataForm,
@@ -75,147 +77,6 @@ export function HeaderForm({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-4 p-4 pt-7">
-      {/* <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Inbound No
-            </label>
-            <Input
-              type="text"
-              value={dataHeader.inbound_no}
-              readOnly
-              className="bg-gray-50"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Inbound Date
-            </label>
-            <Input
-              type="date"
-              value={dataHeader.inbound_date}
-              onChange={(e) =>
-                setDataHeader({ ...dataHeader, inbound_date: e.target.value })
-              }
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Origin Country
-            </label>
-            <Select
-              // defaultValue={}
-              options={originOptions}
-              onChange={handleOriginChange}
-              value={originOptions.find(
-                (item) => item.value === dataHeader.origin
-              )}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              PO No.
-            </label>
-            <Input
-              type="text"
-              value={dataHeader.po_no}
-              onChange={(e) =>
-                setDataHeader({ ...dataHeader, po_no: e.target.value })
-              }
-              className="bg-gray-50"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              PO Date
-            </label>
-            <Input
-              type="date"
-              value={dataHeader.po_date}
-              onChange={(e) =>
-                setDataHeader({ ...dataHeader, po_date: e.target.value })
-              }
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              SJ No.
-            </label>
-            <Input
-              type="text"
-              value={dataHeader.sj_no}
-              onChange={(e) =>
-                setDataHeader({ ...dataHeader, sj_no: e.target.value })
-              }
-              className="bg-gray-50"
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Time Arrival
-            </label>
-            <Input
-              type="time"
-              value={dataHeader.time_arrival}
-              onChange={(e) =>
-                setDataHeader({ ...dataHeader, time_arrival: e.target.value })
-              }
-              className="bg-gray-50"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Start Unloading
-            </label>
-            <Input
-              type="time"
-              value={dataHeader.start_unloading}
-              onChange={(e) =>
-                setDataHeader({
-                  ...dataHeader,
-                  start_unloading: e.target.value,
-                })
-              }
-              className="bg-gray-50"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Finish Unloading
-            </label>
-            <Input
-              type="time"
-              value={dataHeader.finish_unloading}
-              onChange={(e) =>
-                setDataHeader({
-                  ...dataHeader,
-                  finish_unloading: e.target.value,
-                })
-              }
-              className="bg-gray-50"
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Remarks
-            </label>
-            <Textarea
-              value={dataHeader.remarks_header}
-              onChange={(e) =>
-                setDataHeader({ ...dataHeader, remarks_header: e.target.value })
-              }
-              placeholder="Type your message here."
-            />
-          </div>
-        </div>
-      </div> */}
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4">
           <div className="grid md:grid-cols-2 gap-4">

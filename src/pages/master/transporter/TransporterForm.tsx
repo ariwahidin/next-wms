@@ -1,3 +1,6 @@
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +20,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export function TransporterForm({ editData, setEditData }) {
+export default function TransporterForm({ editData, setEditData }) {
   const [transporterCode, setTransporterCode] = useState("");
   const [transporterName, setTransporterName] = useState("");
   const [transporterAddress, setTransporterAddress] = useState("");
@@ -57,8 +60,8 @@ export function TransporterForm({ editData, setEditData }) {
         await api.put(
           `/transporters/${editData.ID}`, // ID produk dari editData
           {
-            supplier_code: supplierCode,
-            supplier_name: supplierName,
+            // supplier_code: supplierCode,
+            // supplier_name: supplierName,
           },
           { withCredentials: true }
         );

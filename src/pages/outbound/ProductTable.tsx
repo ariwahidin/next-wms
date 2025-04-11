@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { AgGridReact } from "ag-grid-react";
@@ -30,8 +32,8 @@ const ProductTable = ({
   setFormItem,
 }) => {
   let url = "/outbound/draft";
-  if (formItem.outbound_id) {
-    url = "/outbound/" + formItem.outbound_id;
+  if (formItem?.outbound_id) {
+    url = "/outbound/" + formItem?.outbound_id;
   }
   const { data: rowData, error, mutate } = useSWR(url, fetcher);
 
@@ -45,7 +47,7 @@ const ProductTable = ({
         .delete(`/outbound/item/${id}`, { withCredentials: true })
         .then((res) => {
           if (res.data.success === true) {
-            mutate("/outbound/" + formItem.outbound_id);
+            mutate("/outbound/" + formItem?.outbound_id);
           }
         });
     } catch (error) {
@@ -74,7 +76,7 @@ const ProductTable = ({
               onClick={() => {
                 setFormItem({
                   ...formItem,
-                  outbound_id: params.data.outbound_id,
+                  outbound_id: params.data?.outbound_id,
                   handling_id : params.data.handling_id,
                   location: params.data.location,
                   outbound_detail_id: params.data.ID,

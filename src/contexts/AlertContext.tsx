@@ -100,10 +100,8 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
     onConfirm?: () => void
   ) => {
     if (onConfirm) {
-      // ✅ Jika ada onConfirm, tampilkan Dialog Konfirmasi
       setAlert({ title, description, type, onConfirm, isOpen: true });
     } else {
-      // ✅ Jika tidak, pakai Toast Notifikasi
       eventBus.emit("showAlert", { title, description, type });
     }
   };

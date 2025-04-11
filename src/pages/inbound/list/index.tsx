@@ -1,36 +1,9 @@
-import { AppSidebar } from "@/components/app-sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import useAuth from "@/hooks/useAuth";
-import ProductTable from "./ProductTable";
-import { ProductForm } from "./ProductForm";
-import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import useAuth from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
 import api from "@/lib/api";
-import Select from "react-select";
 import InboundTable from "./InboundTable";
 import Layout from "@/components/layout";
 
@@ -38,14 +11,7 @@ export default function Page() {
   useAuth();
   const [editData, setEditData] = useState(null);
 
-  const [orderInfo, setOrderInfo] = useState({
-    orderNo: generateOrderNumber(),
-    date: new Date().toISOString().split("T")[0],
-    customerName: "",
-    phone: "",
-    email: "",
-    address: "",
-  });
+ 
 
   const [listSuppliers, setListSuppliers] = useState([]);
   const [optionsSupplier, setOptionsSupplier] = useState([]);
