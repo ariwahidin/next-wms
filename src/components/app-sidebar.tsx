@@ -133,6 +133,10 @@ const data = {
           title: "Transfer Location",
           url: "/inventory/transfer",
         },
+        {
+          title: "STO",
+          url: "/inventory/sto",
+        },
       ],
     },
     {
