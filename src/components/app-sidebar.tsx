@@ -153,6 +153,18 @@ const data = {
         },
       ],
     },
+    {
+      title: "Mobile",
+      url: "#",
+      icon: Archive,
+      isActive: true,
+      items: [
+        {
+          title: "Mobile RF",
+          url: "/mobile/home",
+        },
+      ],
+    },
   ],
   projects: [
     {
