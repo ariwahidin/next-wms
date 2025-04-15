@@ -19,27 +19,39 @@ const inventoryMenus = [
   {
     label: "Location Transfer",
     icon: <MoveRight />,
-    href: "/inventory/transfer",
+    href: "/mobile/inventory/transfer",
   },
   {
     label: "Location Transfer by Serial",
     icon: <Barcode />,
-    href: "/inventory/transfer-serial",
+    href: "/mobile/inventory/transfer-serial",
   },
   {
     label: "Stock Opname",
     icon: <ClipboardList />,
-    href: "/inventory/stock-opname",
+    href: "/mobile/inventory/stock-opname",
   }, // bisa juga diganti jadi "Physical Stock Count"
   {
     label: "Stock Adjustment",
     icon: <SlidersHorizontal />,
-    href: "/inventory/adjustment",
+    href: "/mobile/inventory/adjustment",
   },
-  { label: "Item Mutation", icon: <Repeat />, href: "/inventory/mutation" }, // bisa juga "Item Movement"
-  { label: "Stock History", icon: <History />, href: "/inventory/history" },
-  { label: "Stock Report", icon: <FileText />, href: "/inventory/report" },
-  { label: "Scan Item", icon: <ScanBarcode />, href: "/inventory/scan" },
+  {
+    label: "Item Mutation",
+    icon: <Repeat />,
+    href: "/mobile/inventory/mutation",
+  }, // bisa juga "Item Movement"
+  {
+    label: "Stock History",
+    icon: <History />,
+    href: "/mobile/inventory/history",
+  },
+  {
+    label: "Stock Report",
+    icon: <FileText />,
+    href: "/mobile/inventory/report",
+  },
+  { label: "Scan Item", icon: <ScanBarcode />, href: "/mobile/inventory/scan" },
 ];
 
 export default function InventoryMenuPage() {
