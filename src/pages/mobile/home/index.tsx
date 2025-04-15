@@ -1,18 +1,14 @@
-// app/menu/page.tsx
 "use client";
 
 import { useState } from "react";
-import PageHeader from "../components/PageHeader";
+import PageHeader from "@/components/mobile/PageHeader";
 import { Input } from "@/components/ui/input";
-import MenuCard from "./MenuCard";
-import BottomNavbar from "../components/BottomNavbar";
+import MenuCard from "@/components/mobile/ItemMenuCard";
+import BottomNavbar from "@/components/mobile/BottomNavbar";
 import {
   Truck,
-  Package,
   Boxes,
-  ClipboardList,
   Settings,
-  Info,
   PackagePlus,
   Undo2,
   FileText,
@@ -32,7 +28,7 @@ const menus = [
   {
     label: "Inventory",
     icon: <Boxes />,
-    href: "/inventory",
+    href: "/mobile/inventory",
   },
   {
     label: "Returns",
@@ -54,6 +50,7 @@ const menus = [
 export default function MenuPage() {
   const [search, setSearch] = useState("");
 
+  
   const filteredMenus = menus.filter((menu) =>
     menu.label.toLowerCase().includes(search.toLowerCase())
   );

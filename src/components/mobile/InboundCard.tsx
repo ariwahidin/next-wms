@@ -5,20 +5,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import router from "next/router";
 
 type InboundItem = {
-  id: string;
-  noDO: string;
-  supplier: string;
-  tanggal: string;
-  status: "Belum Diterima" | "Sebagian" | "Selesai";
+  id: number;
+  inbound_no: string;
+  supplier_name: string;
+  receive_status: string;
+  status: "fully received" | "partial" | "open";
 };
 
 export default function InboundCard({ data }: { data: InboundItem }) {
-  const { noDO, supplier, tanggal, status } = data;
+  const { inbound_no, supplier_name, receive_status, status } = data;
 
   const statusColor = {
-    "Belum Diterima": "bg-red-100 text-red-600",
-    Sebagian: "bg-yellow-100 text-yellow-600",
-    Selesai: "bg-green-100 text-green-600",
+    "open": "bg-red-100 text-red-600",
+    "partial": "bg-yellow-100 text-yellow-600",
+    "fully Received": "bg-green-100 text-green-600",
   };
 
   const handleCheckingClick = (noDO: string) => {
@@ -28,9 +28,9 @@ export default function InboundCard({ data }: { data: InboundItem }) {
   return (
     <Card className="p-3">
       <CardContent className="p-0 space-y-1">
-        <div className="text-sm font-semibold">{noDO}</div>
-        <div className="text-sm text-gray-500">{supplier}</div>
-        <div className="text-sm text-gray-400">{tanggal}</div>
+        <div className="text-sm font-semibold">{inbound_no}</div>
+        <div className="text-sm text-gray-500">{supplier_name}</div>
+        <div className="text-sm text-gray-400">{receive_status}</div>
 
         <div
           className={`text-xs rounded px-2 py-1 w-max mt-1 ${statusColor[status]}`}
@@ -41,7 +41,7 @@ export default function InboundCard({ data }: { data: InboundItem }) {
         <div className="mt-3 flex gap-2">
           <Button
             className="w-full"
-            onClick={() => handleCheckingClick(noDO)}
+            onClick={() => handleCheckingClick(inbound_no)}
           >
             Checking
           </Button>
