@@ -1,21 +1,41 @@
-// components/BottomNavbar.tsx
-import { Home, Menu, User } from "lucide-react"
+"use client";
+
+import { Home, Menu, User } from "lucide-react";
+import { usePathname } from "next/navigation";
+import BottomNavItem from "./BottomNavItem";
+
+const navItems = [
+  {
+    label: "Home",
+    icon: Home,
+    href: "/mobile/home",
+  },
+  {
+    label: "Menu",
+    icon: Menu,
+    href: "/mobile/menu",
+  },
+  {
+    label: "Akun",
+    icon: User,
+    href: "/mobile/profile",
+  },
+];
 
 export default function BottomNavbar() {
+  const pathname = usePathname();
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t p-2 flex justify-around items-center shadow-md">
-      <div className="flex flex-col items-center text-sm text-gray-700">
-        <Home className="w-5 h-5" />
-        Home
-      </div>
-      <div className="flex flex-col items-center text-sm text-gray-700">
-        <Menu className="w-5 h-5" />
-        Menu
-      </div>
-      <div className="flex flex-col items-center text-sm text-gray-700">
-        <User className="w-5 h-5" />
-        Akun
-      </div>
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-2 flex justify-around items-center shadow-lg z-50">
+      {navItems.map((item) => (
+        <BottomNavItem
+          key={item.label}
+          label={item.label}
+          href={item.href}
+          icon={item.icon}
+          active={pathname === item.href}
+        />
+      ))}
     </nav>
-  )
+  );
 }
