@@ -90,7 +90,7 @@ export default function TransferBySerialPage() {
 
           {/* Transfer Button */}
           <Button
-            variant="solid"
+            variant="outline"
             onClick={handleTransfer}
             className="w-full py-3 mt-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
             disabled={isLoading}

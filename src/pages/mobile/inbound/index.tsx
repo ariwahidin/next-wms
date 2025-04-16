@@ -1,67 +1,79 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
-import PageHeader from "../../../components/mobile/PageHeader";
-import InboundCard from "@/components/mobile/InboundCard";
-import api from "@/lib/api";
+import PageHeader from "@/components/mobile/PageHeader";
+import BottomNavbar from "@/components/mobile/BottomNavbar";
+import InboundMenuCard from "@/components/mobile/inbound/InboundMenuCard";
 
-interface InboundItem {
-  id: number;
-  inbound_no: string;
-  supplier_name: string;
-  receive_status: string;
-  status: "fully received" | "partial" | "open";
-}
+import {
+  Package,
+  Truck,
+  Archive,
+  ClipboardCheck,
+  FileText,
+  Calendar,
+  CheckCircle,
+  Scan,
+} from "lucide-react";
 
-export default function InboundListPage() {
-  const [search, setSearch] = useState("");
-  const [listInbound, setListInbound] = useState<InboundItem[]>([]);
+const inboundMenus = [
+  {
+    label: "Create Inbound Order",
+    icon: <Package />,
+    href: "/mobile/inbound/create-order",
+  },
+  {
+    label: "View Inbound Orders",
+    icon: <Truck />,
+    href: "/mobile/inbound/view-orders",
+  },
+  {
+    label: "Goods Receipt",
+    icon: <ClipboardCheck />,
+    href: "/mobile/inbound/goods-receipt",
+  },
+  {
+    label: "Inventory Receipt Report",
+    icon: <FileText />,
+    href: "/mobile/inbound/inventory-receipt-report",
+  },
+  {
+    label: "Goods Arrival Confirmation",
+    icon: <Archive />,
+    href: "/mobile/inbound/goods-arrival-confirmation",
+  },
+  {
+    label: "Inbound History",
+    icon: <ClipboardCheck />,
+    href: "/mobile/inbound/history",
+  },
+  {
+    label: "Inbound Calendar",
+    icon: <Calendar />,
+    href: "/mobile/inbound/calendar",
+  },
+  {
+    label: "Scan Inbound Items",
+    icon: <Scan />,
+    href: "/mobile/inbound/scan-items",
+  },
+];
 
-  const filtered = listInbound.filter(
-    (item) =>
-      item.inbound_no.toLowerCase().includes(search.toLowerCase()) ||
-      item.supplier_name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await api.get("/mobile/inbound/list/open", {
-          withCredentials: true,
-        });
-        const data = await response.data;
-
-        if (data.data === null) {
-          return;
-        }
-        setListInbound(data.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
+export default function InboundMenuPage() {
   return (
     <>
       <PageHeader title="Inbound" showBackButton />
-      <div className="min-h-screen pb-20 px-4 pt-4 bg-gray-50">
-        <Input
-          placeholder="Cari No Inbound atau Supplier..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mb-4"
-        />
-
+      <div className="min-h-screen bg-gray-50 px-4 pt-4 pb-20">
         <div className="space-y-3">
-          {filtered.length > 0 ? (
-            filtered.map((item) => <InboundCard key={item.id} data={item} />)
-          ) : (
-            <p className="text-center text-gray-500">Data tidak ditemukan</p>
-          )}
+          {inboundMenus.map((menu, idx) => (
+            <InboundMenuCard
+              key={idx}
+              icon={menu.icon}
+              label={menu.label}
+              href={menu.href}
+            />
+          ))}
         </div>
+        <BottomNavbar />
       </div>
     </>
   );

@@ -23,7 +23,7 @@ const menus = [
   {
     label: "Outbound",
     icon: <Truck />,
-    href: "/outbound",
+    href: "/mobile/outbound",
   },
   {
     label: "Inventory",
