@@ -126,7 +126,7 @@ export function NavMain({
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link href="/">
+            <Link href="/home">
               <Home />
               Home
             </Link>

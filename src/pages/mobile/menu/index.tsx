@@ -57,7 +57,7 @@ export default function MenuPage() {
 
   return (
     <>
-      <PageHeader title="Menu" showBackButton />
+      <PageHeader title="Menu"/>
       <div className="min-h-screen pb-20 px-4 pt-4 bg-gray-50">
         <Input
           placeholder="Cari menu..."

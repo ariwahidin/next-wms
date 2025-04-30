@@ -23,7 +23,6 @@ import { useState } from "react";
 import Layout from "@/components/layout";
 
 export default function Page() {
-  useAuth();
   const [editData, setEditData] = useState(null);
   useEffect(() => {
     document.title = "Master Supplier";
@@ -31,7 +30,7 @@ export default function Page() {
 
   return (
     <Layout title="Master" subTitle="Customer">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="p-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="col-span-2">
           <CustomerTable setEditData={setEditData} />
         </div>

@@ -6,10 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import PageHeader from "@/components/mobile/PageHeader";
 
 import {
-  ArrowBigRight,
-  Barcode,
   Check,
-  CheckCheck,
   Loader2,
   Search,
 } from "lucide-react";
@@ -41,21 +38,18 @@ interface ScannedItem {
   status?: string;
 }
 
-const TransferPage = () => {
+const PutawayPage = () => {
   const router = useRouter();
   const { inbound } = router.query;
 
   const [scanLocation, setScanLocation] = useState("");
   const [scanLocation2, setScanLocation2] = useState("");
-  const [qtyTransfer, setQtyTransfer] = useState(0);
 
   const [scanBarcode, setScanBarcode] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [showConfirmModalMoveTo, setShowConfirmModalMoveTo] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [itemSelected, setItemSelected] = useState<ScannedItem | null>(null);
   const [listInboundScanned, setListInboundScanned] = useState<ScannedItem[]>(
     []
   );
@@ -65,9 +59,10 @@ const TransferPage = () => {
 
     try {
       const response = await api.post(
-        "/mobile/inventory/location/barcode",
+        "/mobile/inbound/search/location",
         {
           location: scanLocation,
+          inbound_no: inbound,
           barcode: scanBarcode,
         },
         {
@@ -89,7 +84,7 @@ const TransferPage = () => {
           qa_status: item.qa_status,
           whs_code: item.whs_code,
           scan_type: item.scan_type,
-          quantity: item.qty_available,
+          quantity: item.quantity,
           status: item.status,
         }));
 
@@ -104,20 +99,21 @@ const TransferPage = () => {
     }
   };
 
-  const handleConfirmTransfer = async () => {
+  const handleConfirmPutaway = async (inbound_no: string) => {
     console.log("List Inbound Scanned:", listInboundScanned);
 
     const dataToPost = {
+      inbound_no: inbound_no,
       from_location: scanLocation,
       to_location: scanLocation2,
-      list_inventory: listInboundScanned,
+      list_inbound_scanned: listInboundScanned,
     };
 
     console.log("Data to Post:", dataToPost);
 
     try {
       const response = await api.post(
-        "/mobile/inventory/transfer/location/barcode",
+        "/mobile/inbound/putaway/location/" + inbound_no,
         dataToPost,
         {
           withCredentials: true,
@@ -152,87 +148,15 @@ const TransferPage = () => {
         item?.location.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
-  const moveItemToLocation = async () => {
-    const dataToPost = {
-      from_location: scanLocation,
-      to_location: scanLocation2,
-      qty_transfer: qtyTransfer,
-      inventory_id: itemSelected?.id,
-      list_inventory: [itemSelected],
-    };
-
-    console.log("Data to Post:", dataToPost);
-
-    if (qtyTransfer <= 0) {
-      eventBus.emit("showAlert", {
-        title: "Error!",
-        description: "Qty transfer must be greater than 0",
-        type: "error",
-      });
-      return;
-    }
-
-    if (qtyTransfer > itemSelected?.quantity) {
-      eventBus.emit("showAlert", {
-        title: "Error!",
-        description: "Qty transfer must be less than available qty",
-        type: "error",
-      });
-      return;
-    }
-
-    if (scanLocation2.trim() === "") {
-      eventBus.emit("showAlert", {
-        title: "Error!",
-        description: "Destination location cannot be empty",
-        type: "error",
-      });
-      return;
-    }
-
-    try {
-      const response = await api.post(
-        "/mobile/inventory/transfer/location/serial",
-        dataToPost,
-        {
-          withCredentials: true,
-        }
-      );
-
-      const data = await response.data;
-
-      if (data.success) {
-        eventBus.emit("showAlert", {
-          title: "Success!",
-          description: data.message,
-          type: "success",
-        });
-        setShowConfirmModalMoveTo(false);
-        setScanLocation2("");
-        handleSearch();
-      } else {
-        console.error("Transfer failed:", data.message);
-      }
-    } catch (error) {
-      console.error("Error during transfer:", error);
-    }
-  };
+  
 
   useEffect(() => {
     console.log("Data terbaru:", listInboundScanned);
   }, [listInboundScanned]);
 
-  useEffect(() => {
-    if (showConfirmModalMoveTo) {
-      setTimeout(() => {
-        document.getElementById("locationTransfer")?.focus();
-      }, 100); // delay kecil supaya nunggu dialog benar-benar render
-    }
-  }, [showConfirmModalMoveTo]);
-
   return (
     <>
-      <PageHeader title={`Transfer Location`} showBackButton />
+      <PageHeader title={`Putaway ${inbound}`} showBackButton />
       <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24">
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -273,6 +197,7 @@ const TransferPage = () => {
                     setScanBarcode("");
                     setListInboundScanned([]); // Clear the scanned items
                     document.getElementById("barcode")?.focus();
+
                   }}
                 >
                   <XCircle size={18} />
@@ -281,7 +206,7 @@ const TransferPage = () => {
             </div>
 
             <Button onClick={handleSearch} className="w-full">
-              <Search size={18} />
+              <Search size={18} className="mr-2" />
               Search
             </Button>
           </CardContent>
@@ -301,35 +226,15 @@ const TransferPage = () => {
         {!loading && (
           <Card>
             <CardContent className="p-4 space-y-4">
-              <div className="relative">
-                <Input
-                  id="search"
-                  className="w-full"
-                  placeholder="Search Serial..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-
-                {searchTerm && (
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    onClick={() => {
-                      setSearchTerm("");
-                      document.getElementById("search")?.focus();
-                    }}
-                  >
-                    <XCircle size={18} />
-                  </button>
-                )}
-              </div>
-
-              {/* Item Count */}
+              <Input
+                className="w-full"
+                placeholder="Cari barang..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
 
               <div className="text-sm">
-                <span className="text-gray-600">
-                  Item : {filteredScannedItems.length}
-                </span>
+                <span>Total Scanned: {filteredScannedItems.length}</span>
               </div>
 
               {/* ListView */}
@@ -354,22 +259,35 @@ const TransferPage = () => {
                         <div>
                           <strong>Location:</strong> {item.location}
                         </div>
-                        <div>
-                          <strong>Available:</strong> {item.quantity}
-                        </div>
                       </div>
 
-                      <Button
-                        className="w-full"
-                        onClick={() => {
-                          setShowConfirmModalMoveTo(true);
-                          setItemSelected(item);
-                          setQtyTransfer(item.quantity);
-                        }}
-                      >
-                        <ArrowBigRight size={18} />
-                        Move to
-                      </Button>
+                      <div className="grid grid-cols-3 gap-4">
+                        {/* Tombol berada di kolom 1 dan 2 */}
+                        {/* <div className="col-span-2 flex items-center">
+                        {item.status === "pending" ? (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() =>
+                              handleRemoveItem(item.id, item.inbound_detail_id)
+                            }
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        ) : (
+                          <></>
+                        )}
+                      </div> */}
+
+                        {/* Status di kolom 3, menggunakan flex untuk posisikan di bawah */}
+                        {/* <div className="col-span-1 flex justify-end items-end">
+                        {item.status && (
+                          <span className="text-xs text-gray-400">
+                            {item.status}
+                          </span>
+                        )}
+                      </div> */}
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -384,103 +302,28 @@ const TransferPage = () => {
 
         {/* Floating Upload Button */}
 
-        {listInboundScanned.length > 0 && !loading && (
-          <div className="items-center justify-center fixed bottom-0 left-0 right-0 bg-white shadow-md">
-            <Button
-              onClick={() => setShowConfirmModal(true)}
-              className="fixed bottom-6 w-90 left-2 right-2"
-            >
-              <CheckCheck size={28} />
-              Transfer All
-            </Button>
-          </div>
+        {listInboundScanned.length > 0 && (
+          <Button
+            onClick={() => setShowConfirmModal(true)}
+            className="fixed bottom-6 right-6 rounded-full shadow-lg h-14 w-14 p-0"
+          >
+            <Check size={28} />
+          </Button>
         )}
-
-        <Dialog
-          open={showConfirmModalMoveTo}
-          onOpenChange={setShowConfirmModalMoveTo}
-        >
-          <DialogContent className="bg-white">
-            <DialogHeader>
-              <DialogTitle>Confirmation</DialogTitle>
-            </DialogHeader>
-
-            <p>
-              Item with serial <strong>{itemSelected?.serial_number}</strong>,
-              barcode <strong>{scanBarcode}</strong> in{" "}
-              <strong>{scanLocation}</strong> will be moved to the destination
-              location?
-            </p>
-
-            <div className="relative">
-              <Input
-                // readOnly
-                className="mb-2"
-                id="qtyTransfer"
-                autoComplete="off"
-                placeholder="Qty..."
-                type="number"
-                value={qtyTransfer}
-                onChange={(e) => setQtyTransfer(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="relative">
-              <Input
-                id="locationTransfer"
-                autoComplete="off"
-                placeholder="Destination Location..."
-                value={scanLocation2}
-                onChange={(e) => setScanLocation2(e.target.value)}
-              />
-
-              {scanLocation2 && (
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => {
-                    setScanLocation2("");
-                    document.getElementById("locationTransfer")?.focus();
-                  }}
-                >
-                  <XCircle size={18} />
-                </button>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="ghost"
-                onClick={() => setShowConfirmModalMoveTo(false)}
-              >
-                Batal
-              </Button>
-              <Button onClick={moveItemToLocation}>Confirm</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
           <DialogContent className="bg-white">
             <DialogHeader>
-              <DialogTitle>Confirmation</DialogTitle>
+              <DialogTitle>Putaway Confirmation</DialogTitle>
             </DialogHeader>
-
-            <p>
-              All items of <strong>{scanBarcode}</strong> in{" "}
-              <strong>{scanLocation}</strong> will be moved to the destination
-              location?
-            </p>
 
             <div className="relative">
               <Input
                 id="location2"
-                autoComplete="off"
                 placeholder="Destination Location..."
                 value={scanLocation2}
                 onChange={(e) => setScanLocation2(e.target.value)}
               />
-
               {scanLocation2 && (
                 <button
                   type="button"
@@ -502,13 +345,25 @@ const TransferPage = () => {
               >
                 Batal
               </Button>
-              <Button onClick={handleConfirmTransfer}>Confirm</Button>
+              <Button
+                onClick={() => {
+                  console.log(typeof inbound, inbound);
+                  if (inbound) {
+                    handleConfirmPutaway(
+                      Array.isArray(inbound) ? inbound[0] : inbound
+                    );
+                  }
+                }}
+              >
+                Confirm
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
       </div>
     </>
   );
 };
 
-export default TransferPage;
+export default PutawayPage;

@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge, Boxes, Check, Trash2, Upload } from "lucide-react";
+import {Trash2} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { XCircle } from "lucide-react"; // untuk icon clear
 import api from "@/lib/api";
+import eventBus from "@/utils/eventBus";
 
 // Types
 interface ScanItem {
@@ -34,6 +35,16 @@ interface ScanItem {
   scanType: string;
   qtyScan: number;
   uploaded: boolean;
+}
+
+interface InboundDetail {
+  id: number;
+  inbound_no: string;
+  inbound_detail_id: number;
+  item_code: string;
+  barcode: string;
+  quantity: number;
+  scan_qty: number;
 }
 
 interface ScannedItem {
@@ -51,28 +62,26 @@ interface ScannedItem {
   status?: string;
 }
 
-interface Pallet {
-  id: string;
-  items: ScanItem[];
-}
-
 const CheckingPage = () => {
   const router = useRouter();
   const { inbound } = router.query;
 
-  const [pallets, setPallets] = useState<Pallet[]>([
-    { id: "Pallet 1", items: [] },
-  ]);
-
-  const [activePallet, setActivePallet] = useState("Pallet 1");
   const [scanQa, setScanQa] = useState("A");
   const [scanType, setScanType] = useState("SERIAL");
   const [scanWhs, setScanWhs] = useState("CKY");
   const [scanLocation, setScanLocation] = useState("");
   const [scanBarcode, setScanBarcode] = useState("");
   const [scanSerial, setScanSerial] = useState("");
+  const [searchInboundDetail, setSearchInboundDetail] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showModalDetail, setShowModalDetail] = useState(false);
+  
+
+  const [listInboundDetail, setListInboundDetail] = useState<InboundDetail[]>(
+    []
+  );
+
   const [listInboundScanned, setListInboundScanned] = useState<ScannedItem[]>(
     []
   );
@@ -99,24 +108,34 @@ const CheckingPage = () => {
     });
     const data = await response.data;
     if (data.success) {
-      fetchScannedItems();
+      fetchInboundDetail();
     }
-
-    console.log("List Inbound Scanned:", listInboundScanned);
-
-    // setPallets((prev) =>
-    //   prev.map((p) =>
-    //     p.id === activePallet ? { ...p, items: [...p.items, newItem] } : p
-    //   )
-    // );
-
-    // setScanLocation("");
-    // setScanBarcode("");
-    // setScanSerial("");
   };
 
-  const fetchScannedItems = async () => {
-    const response = await api.get("/mobile/inbound/scan/" + inbound, {
+  const fetchInboundDetail = async () => {
+    const response = await api.get("/mobile/inbound/detail/" + inbound, {
+      withCredentials: true,
+    });
+    const data = await response.data;
+    // return data;
+    if (data.success) {
+      const filtered = data.data.map((item: any) => ({
+        id: item.ID,
+        inbound_detail_id: item.ID,
+        item_code: item.item_code,
+        barcode: item.barcode,
+        quantity: item.quantity,
+        scan_qty: item.scan_qty,
+      }));
+
+      setListInboundDetail(filtered);
+    }
+  };
+
+  const fetchScannedItems = async (id?: number) => {
+    console.log("ID Inbound Detail:", id);
+
+    const response = await api.get("/mobile/inbound/scan/" + id, {
       withCredentials: true,
     });
     const data = await response.data;
@@ -137,12 +156,11 @@ const CheckingPage = () => {
       }));
 
       setListInboundScanned(filtered);
-      console.log("Filtered scanned items:", filtered);
     }
   };
 
-  const handleRemoveItem = async (index: number) => {
-    console.log("ID Inbound BaRCODE:", index);
+  const handleRemoveItem = async (index: number, inbound_detail_id: number) => {
+    console.log("ID Inbound Barcod :", index, inbound_detail_id);
 
     try {
       const response = await api.delete("/mobile/inbound/scan/" + index, {
@@ -150,93 +168,71 @@ const CheckingPage = () => {
       });
       const data = await response.data;
       if (data.success) {
-        fetchScannedItems();
+        fetchScannedItems(inbound_detail_id);
+        fetchInboundDetail();
       }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
-
-    // setPallets((prev) =>
-    //   prev.map((p) =>
-    //     p.id === activePallet
-    //       ? { ...p, items: p.items.filter((_, i) => i !== index) }
-    //       : p
-    //   )
-    // );
   };
 
-  // const handleAddPallet = () => {
-  //   const newId = `Pallet ${pallets.length + 1}`;
-  //   setPallets([...pallets, { id: newId, items: [] }]);
-  //   setActivePallet(newId);
-  // };
-
-  const handleConfirmPutaway = async (inbound_no : string) => {
-
-    console.log(inbound_no);
-
+  const handleConfirmPutaway = async (inbound_no: string) => {
     const dataToPost = {
       inboundNo: inbound_no,
-      location : scanLocation
-    }
+      location: scanLocation,
+    };
 
-    try{
-      const response = await api.put("/mobile/inbound/scan/putaway/" + inbound_no, dataToPost, {
-        withCredentials: true,
-      })
-  
+    try {
+      const response = await api.put(
+        "/mobile/inbound/scan/putaway/" + inbound_no,
+        dataToPost,
+        {
+          withCredentials: true,
+        }
+      );
+
       const data = await response.data;
-  
+
       if (data.success) {
-        fetchScannedItems();
+        // fetchScannedItems();
         setShowConfirmModal(false);
+
+        eventBus.emit("showAlert", {
+          title: "Success!",
+          description: data,
+          type: "success",
+        });
       }
-    }catch (error) {
+    } catch (error) {
       console.error("Error fetching data:", error);
     }
-
-
-
-    // const dataUpload = pallets.map((pallet) => ({
-    //   inbound_no: inbound,
-    //   pallet_id: pallet.id,
-    //   items: pallet.items.map((item) => ({
-    //     id: item.id,
-    //     location: item.location,
-    //     barcode: item.barcode,
-    //     serial: item.serial,
-    //   })),
-    // }));
-
-    // console.log(dataUpload);
-
-    // const updatedPallets = pallets.map((pallet) => {
-    //   if (pallet.id === activePallet) {
-    //     const uploadedItems = pallet.items.map((item) => ({
-    //       ...item,
-    //       uploaded: true,
-    //       id: Math.floor(Math.random() * 10000),
-    //     }));
-    //     return { ...pallet, items: uploadedItems };
-    //   }
-    //   return pallet;
-    // });
-
-    // setPallets(updatedPallets);
-    // setShowConfirmModal(false);
   };
 
-  const currentPallet = pallets.find((p) => p.id === activePallet);
   const filteredItems =
+    listInboundDetail.filter(
+      (item) =>
+        item?.item_code
+          .toLowerCase()
+          .includes(searchInboundDetail.toLowerCase()) ||
+        item?.barcode
+          .toLowerCase()
+          .includes(searchInboundDetail.toLowerCase()) ||
+        item?.quantity.toString().includes(searchInboundDetail.toLowerCase()) ||
+        item?.scan_qty.toString().includes(searchInboundDetail.toLowerCase())
+    ) || [];
+
+  const filteredScannedItems =
     listInboundScanned.filter(
       (item) =>
-        item?.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item?.id.toString().includes(searchTerm.toLowerCase()) ||
+        item?.inbound_detail_id.toString().includes(searchTerm.toLowerCase()) ||
         item?.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item?.serial_number.toLowerCase().includes(searchTerm.toLowerCase())
+        item?.serial_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item?.location.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
   useEffect(() => {
-    if (inbound) fetchScannedItems();
+    if (inbound) fetchInboundDetail();
   }, [inbound]);
 
   useEffect(() => {
@@ -284,7 +280,7 @@ const CheckingPage = () => {
             <div className="relative">
               <Input
                 id="location"
-                placeholder="Location..."
+                placeholder="Location ..."
                 value={scanLocation}
                 onChange={(e) => setScanLocation(e.target.value)}
               />
@@ -305,7 +301,7 @@ const CheckingPage = () => {
             <div className="relative">
               <Input
                 id="barcode"
-                placeholder="Scan barcode barang..."
+                placeholder="Scan barcode ..."
                 value={scanBarcode}
                 onChange={(e) => setScanBarcode(e.target.value)}
               />
@@ -326,7 +322,7 @@ const CheckingPage = () => {
             <div className="relative">
               <Input
                 id="serial"
-                placeholder="Serial Number..."
+                placeholder="Serial number ..."
                 value={scanSerial}
                 onChange={(e) => setScanSerial(e.target.value)}
               />
@@ -355,9 +351,9 @@ const CheckingPage = () => {
             <div className="flex items-center gap-2">
               <Input
                 className="w-full"
-                placeholder="Cari barang..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search ..."
+                value={searchInboundDetail}
+                onChange={(e) => setSearchInboundDetail(e.target.value)}
               />
             </div>
 
@@ -366,14 +362,99 @@ const CheckingPage = () => {
               <ul className="space-y-3">
                 {filteredItems.map((item, idx) => (
                   <li
+                    onClick={() => {
+                      fetchScannedItems(item.inbound_detail_id);
+                      setShowModalDetail(true);
+                    }}
                     key={idx}
-                    className={`flex flex-col sm:flex-row sm:items-center sm:justify-between border p-3 rounded ${
+                    className={`flex flex-col sm:flex-row sm:items-center sm:justify-between border p-3 rounded cursor-pointer hover:bg-gray-100`}
+                  >
+                    {/* Info Barang */}
+                    <div className="text-sm space-y-1">
+                      <div>
+                        <strong>Item Code:</strong> {item.item_code}
+                      </div>
+                      <div>
+                        <strong>Barcode:</strong> {item.barcode}
+                      </div>
+                      <div>
+                        <strong>Scanned:</strong> {item.scan_qty} /{" "}
+                        {item.quantity}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-sm text-gray-400">
+                Tidak ada barang ditemukan
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+          <DialogContent className="bg-white">
+            <DialogHeader>
+              <DialogTitle>Putaway Confirmation</DialogTitle>
+            </DialogHeader>
+            <p>
+              Are you sure you want to confirm the putaway in location{" "}
+              {scanLocation}?
+            </p>
+            <DialogFooter>
+              <Button
+                variant="ghost"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={() => {
+                  console.log(typeof inbound, inbound);
+                  if (inbound) {
+                    handleConfirmPutaway(
+                      Array.isArray(inbound) ? inbound[0] : inbound
+                    );
+                  }
+                }}
+              >
+                Confirm
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showModalDetail} onOpenChange={setShowModalDetail}>
+          <DialogContent className="bg-white">
+            <DialogHeader>
+              <DialogTitle>Detail Scanned Items</DialogTitle>
+            </DialogHeader>
+
+            <Input
+              className="w-full"
+              placeholder="Cari barang..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+
+            
+            <div className="text-sm">
+              <span>Total Scanned: {filteredScannedItems.length}</span>
+            </div>
+
+            {/* ListView */}
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {filteredScannedItems.length > 0 ? (
+                filteredScannedItems.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`p-2 border rounded-md hover:bg-gray-100 cursor-pointer ${
                       item.status === "in stock"
                         ? "bg-green-100"
                         : "bg-blue-100"
                     }`}
                   >
-                    {/* Info Barang */}
                     <div className="text-sm space-y-1">
                       <div>
                         <strong>Barcode:</strong> {item.barcode}
@@ -393,7 +474,9 @@ const CheckingPage = () => {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleRemoveItem(item.id)}
+                            onClick={() =>
+                              handleRemoveItem(item.id, item.inbound_detail_id)
+                            }
                           >
                             <Trash2 size={16} />
                           </Button>
@@ -411,46 +494,17 @@ const CheckingPage = () => {
                         )}
                       </div>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-sm text-gray-400">
-                Tidak ada barang ditemukan
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 text-sm">
+                  Tidak ada barang ditemukan.
+                </div>
+              )}
+            </div>
 
-        {/* Floating Upload Button */}
-        <Button
-          onClick={() => setShowConfirmModal(true)}
-          className="fixed bottom-6 right-6 rounded-full shadow-lg h-14 w-14 p-0"
-        >
-          <Check size={28} />
-        </Button>
-
-        <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-          <DialogContent className="bg-white">
-            <DialogHeader>
-              <DialogTitle>Putaway Confirmation</DialogTitle>
-            </DialogHeader>
-            <p>
-              Are you sure you want to confirm the putaway in location {scanLocation}?
-            </p>
             <DialogFooter>
-              <Button
-                variant="ghost"
-                onClick={() => setShowConfirmModal(false)}
-              >
-                Batal
-              </Button>
-              <Button onClick={() => {
-                console.log(typeof inbound, inbound)
-                if(inbound){
-                  handleConfirmPutaway(Array.isArray(inbound) ? inbound[0] : inbound);
-                }
-              }}>Upload</Button>
+              {/* Kosongkan atau tambahkan tombol lain di sini */}
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -3,31 +3,30 @@
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import PageHeader from "@/components/mobile/PageHeader";
-import InboundCard from "@/components/mobile/inbound/order-views/InboundCard";
 import api from "@/lib/api";
+import OutboundCard from "@/components/mobile/outbound/order-views/OutboundCard";
 
-interface InboundItem {
+interface OutboundItem {
   id: number;
-  inbound_no: string;
-  supplier_name: string;
-  receive_status: string;
+  outbound_no: string;
+  customer_name: string;
   status: "fully received" | "partial" | "open";
 }
 
 export default function InboundListPage() {
   const [search, setSearch] = useState("");
-  const [listInbound, setListInbound] = useState<InboundItem[]>([]);
+  const [listInbound, setListInbound] = useState<OutboundItem[]>([]);
 
   const filtered = listInbound.filter(
     (item) =>
-      item.inbound_no.toLowerCase().includes(search.toLowerCase()) ||
-      item.supplier_name.toLowerCase().includes(search.toLowerCase())
+      item.outbound_no.toLowerCase().includes(search.toLowerCase()) ||
+      item.customer_name.toLowerCase().includes(search.toLowerCase())
   );
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await api.get("/mobile/inbound/list/open", {
+        const response = await api.get("/mobile/outbound/list/open", {
           withCredentials: true,
         });
         const data = await response.data;
@@ -45,10 +44,10 @@ export default function InboundListPage() {
 
   return (
     <>
-      <PageHeader title="Inbound Orders" showBackButton />
+      <PageHeader title="Outbound Orders" showBackButton />
       <div className="min-h-screen pb-20 px-4 pt-4 bg-gray-50">
         <Input
-          placeholder="Search Inbound No. or Supplier Name"
+          placeholder="Search Outbound No"
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -57,9 +56,9 @@ export default function InboundListPage() {
 
         <div className="space-y-3">
           {filtered.length > 0 ? (
-            filtered.map((item) => <InboundCard key={item.id} data={item} />)
+              filtered.map((item) => <OutboundCard key={item.id} data={item} />)
           ) : (
-            <p className="text-center text-gray-500">Data tidak ditemukan</p>
+            <p className="text-center text-gray-500">Data not found</p>
           )}
         </div>
       </div>

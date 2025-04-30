@@ -32,7 +32,11 @@ export function LoginForm({
       .then((res) => {
         console.log(res);
         if (res.data.success === true) {
-          router.push("/dashboard");
+          if (res.data.user.base_url === "/dashboard") {
+            router.push("/home");
+          } else {
+            router.push("/mobile/home");
+          }
         }
       })
       // .then(
@@ -55,7 +59,7 @@ export function LoginForm({
       .get("/isLoggedIn", { withCredentials: true })
       .then((res) => {
         if (res.data.success === true) {
-          window.location.href = "/dashboard";
+          window.location.href = "/home";
         }
       })
       .catch((err) => {
@@ -76,12 +80,12 @@ export function LoginForm({
                 </p>
               </div>
               {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -110,8 +114,7 @@ export function LoginForm({
               </Button>
             </div>
           </form>
-          <div className="relative hidden bg-muted md:block">
-          </div>
+          <div className="relative hidden bg-muted md:block"></div>
         </CardContent>
       </Card>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
@@ -121,7 +124,3 @@ export function LoginForm({
     </div>
   );
 }
-
-
-
-

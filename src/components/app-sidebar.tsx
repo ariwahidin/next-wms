@@ -8,6 +8,10 @@ import {
   PieChart,
   Database,
   Archive,
+  Truck,
+  InboxIcon,
+  Box,
+  Smartphone,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -56,6 +60,18 @@ const data = {
           url: "/master/user",
         },
         {
+          title: "Roles",
+          url: "/master/role",
+        },
+        {
+          title: "Permissions",
+          url: "/master/permissions",
+        },
+        {
+          title: "Role Permissions",
+          url: "/master/role-permission",
+        },
+        {
           title: "Product",
           url: "/master/product",
         },
@@ -83,20 +99,20 @@ const data = {
           title: "Origin",
           url: "/master/origin",
         },
-        {
-          title: "Master Items",
-          url: "/master/item",
-        },
-        {
-          title: "Dashboard",
-          url: "/dashboard",
-        },
+        // {
+        //   title: "Master Items",
+        //   url: "/master/item",
+        // },
+        // {
+        //   title: "Dashboard",
+        //   url: "/dashboard",
+        // },
       ],
     },
     {
       title: "Inbound",
       url: "#",
-      icon: Archive,
+      icon: InboxIcon,
       isActive: true,
       items: [
         {
@@ -107,30 +123,30 @@ const data = {
           title: "List Inbound",
           url: "/inbound/list",
         },
-        {
-          title: "Scan Inbound",
-          url: "/inbound/scan",
-        },
+        // {
+        //   title: "Scan Inbound",
+        //   url: "/inbound/scan",
+        // },
       ],
     },
     {
       title: "Inventory",
       url: "#",
-      icon: Archive,
+      icon: Box,
       isActive: true,
       items: [
         {
           title: "List Inventory",
           url: "/inventory/list",
         },
-        {
-          title: "Transfer Location",
-          url: "/inventory/transfer",
-        },
-        {
-          title: "STO",
-          url: "/inventory/sto",
-        },
+        // {
+        //   title: "Transfer Location",
+        //   url: "/inventory/transfer",
+        // },
+        // {
+        //   title: "STO",
+        //   url: "/inventory/sto",
+        // },
       ],
     },
     {
@@ -147,20 +163,40 @@ const data = {
           title: "List Outbound",
           url: "/outbound/list",
         },
+        // {
+        //   title: "Scan Outbound",
+        //   url: "/outbound/scan",
+        // },
+      ],
+    },
+    {
+      title: "Shipping",
+      url: "#",
+      icon: Truck,
+      isActive: true,
+      items: [
         {
-          title: "Scan Outbound",
-          url: "/outbound/scan",
+          title: "Combine DN",
+          url: "/shipping/combine-dn",
+        },
+        {
+          title: "Combine Existing Order",
+          url: "/shipping/combine-existing",
+        },
+        {
+          title: "List Order",
+          url: "/shipping/order-list",
         },
       ],
     },
     {
-      title: "Mobile",
+      title: "Mobile RF",
       url: "#",
-      icon: Archive,
+      icon: Smartphone,
       isActive: true,
       items: [
         {
-          title: "Mobile RF",
+          title: "Home",
           url: "/mobile/home",
         },
       ],

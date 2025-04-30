@@ -67,7 +67,6 @@ const HandlingTable = ({ setEditData }) => {
             <Button
               onClick={() => {
                 setEditData(params.data);
-                console.log(params.data);
               }}
               variant="ghost"
               size="icon"

@@ -1,7 +1,6 @@
 "use client";
 
 import { Home, Menu, User } from "lucide-react";
-import { usePathname } from "next/navigation";
 import BottomNavItem from "./BottomNavItem";
 
 const navItems = [
@@ -23,7 +22,7 @@ const navItems = [
 ];
 
 export default function BottomNavbar() {
-  const pathname = usePathname();
+  // const pathname = usePathname();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-2 flex justify-around items-center shadow-lg z-50">
@@ -33,7 +32,7 @@ export default function BottomNavbar() {
           label={item.label}
           href={item.href}
           icon={item.icon}
-          active={pathname === item.href}
+          // active={pathname === item.href}
         />
       ))}
     </nav>

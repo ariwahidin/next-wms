@@ -51,7 +51,8 @@ const inventoryMenus = [
     icon: <FileText />,
     href: "/mobile/inventory/report",
   },
-  { label: "Scan Item", icon: <ScanBarcode />, href: "/mobile/inventory/scan" },
+  { label: "Scan Item", icon: <ScanBarcode />, href: "/mobile/inventory/scan-item" },
+  { label: "Scan Location", icon: <ScanBarcode />, href: "/mobile/inventory/scan-location" },
 ];
 
 export default function InventoryMenuPage() {

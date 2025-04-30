@@ -20,7 +20,7 @@ import {
 import useSWR, { mutate } from "swr";
 import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./InboundTable.module.css";
-import { useRouter } from "next/router";
+import router, { useRouter } from "next/router";
 import { useAlert } from "@/contexts/AlertContext";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -60,7 +60,6 @@ const HandleDelete = (id: number) => {
 
 const HandlePreviewPDF = (id: number) => {
   console.log("Preview PDF ID:", id);
-
   window.open(`/outbound/print/picking_sheet/${id}`, "_blank");
 };
 
@@ -74,7 +73,6 @@ const handleCompletePicking = async (id: number) => {
       { withCredentials: true }
     );
 
-
     console.log("Response Object:", response); // Debugging
 
     const data = await response.data;
@@ -82,27 +80,27 @@ const handleCompletePicking = async (id: number) => {
     if (data.success) {
       eventBus.emit("showAlert", {
         title: "Success!",
-        description: "Picking Completed",
+        description: data.message,
         type: "success",
       });
+
+      setTimeout(() => {
+        window.location.href = "/outbound/list";
+      }, 500);
     }
 
     return data;
   } catch (error) {
-    console.error(
-      "Error saving inbound:",
-      error
-    )
+    console.error("Error saving inbound:", error);
   }
-}
+};
 
 const InboundTable = ({ setEditData }) => {
   const { data: rowData, error, mutate } = useSWR("/outbound", fetcher);
 
   const { showAlert, notify } = useAlert();
 
-  const HandleComplete = (id: number) => {
-    console.log("Complete ID:", id);
+  const HandlePicking = (id: number) => {
 
     showAlert(
       "Picking Confirmation",
@@ -118,11 +116,15 @@ const InboundTable = ({ setEditData }) => {
           )
           .then((res) => {
             if (res.data.success) {
-              notify("Berhasil!", "Successfully", "success");
+              eventBus.emit("showAlert", {
+                title: "Success!",
+                description: res.data.message,
+                type: "success",
+              });
+
               setTimeout(() => {
                 window.location.href = "/outbound/list";
-                console.log("hah");
-              }, 1000);
+              }, 500);
             }
           })
           .catch((error) => {
@@ -148,7 +150,7 @@ const InboundTable = ({ setEditData }) => {
           <div>
             {params.data.status === "open" && (
               <Button
-                onClick={() => HandleComplete(params.data.ID)}
+                onClick={() => HandlePicking(params.data.ID)}
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
@@ -245,9 +247,6 @@ const InboundTable = ({ setEditData }) => {
     },
     { field: "customer_code", headerName: "Customer Code", width: 140 },
     { field: "customer_name", headerName: "Customer Name", width: 180 },
-    // { field: "supplier_name", headerName: "Supplier Name" },
-    // { field: "transporter_name", headerName: "Transporter" },
-    // { field: "truck_no", headerName: "Truck No." },
     { field: "total_line", headerName: "Total Line", width: 100 },
     { field: "total_qty_req", headerName: "Req Qty", width: 100 },
     { field: "plan_pick", headerName: "Plan Pick", width: 100 },
@@ -262,18 +261,7 @@ const InboundTable = ({ setEditData }) => {
   );
 
   return (
-    <div
-      // className="ag-theme-alpine"
-      // style={{
-      //   height: "400px",
-      //   width: "100%",
-      //   // font-size: "8px";
-      //   // font-family: "Roboto", sans-serif;
-      //   fontSize: "10px" ,
-      //   fontFamily: "Roboto ",
-      // }}
-      style={{ width: "100%", height: "510px" }}
-    >
+    <div style={{ width: "100%", height: "510px" }}>
       <div className="justify-self-end">
         <div className={styles.inputWrapper} style={{ marginBottom: "1rem" }}>
           <svg
@@ -307,6 +295,7 @@ const InboundTable = ({ setEditData }) => {
         pagination={true} // Mengaktifkan pagination
         paginationPageSize={10} // Set jumlah data per halaman
         paginationPageSizeSelector={[10, 25, 50]} // Opsional: Dropdown pilihan page size
+        domLayout="autoHeight"
       />
     </div>
   );

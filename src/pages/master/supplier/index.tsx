@@ -22,7 +22,6 @@ import { useEffect, useState } from "react";
 import Layout from "@/components/layout";
 
 export default function Page() {
-  useAuth();
   const [editData, setEditData] = useState(null);
   useEffect(() => {
     document.title = "Master Supplier";

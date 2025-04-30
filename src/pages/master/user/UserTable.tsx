@@ -6,10 +6,11 @@ import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Router, Trash2 } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./UserTable.module.css";
+import router from "next/router";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -84,8 +85,15 @@ const UserTable = ({ setEditData }) => {
     []
   );
 
+  const handleAddUser = () => {
+    router.push("/master/user/create")
+  };
+
   return (
     <div style={{ width: "100%", height: "100vh" }}>
+      <Button className="absolute top-20 left-4"
+      onClick={handleAddUser}
+      >Add</Button>
       <div className="justify-self-end">
         <div className={styles.inputWrapper} style={{ marginBottom: "1rem" }}>
           <svg

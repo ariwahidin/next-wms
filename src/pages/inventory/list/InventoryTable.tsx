@@ -53,40 +53,7 @@ const InventoryTable = ({ setEditData }) => {
     { field: "qa_status", headerName: "QA", width: 170 },
     { field: "whs_code", headerName: "Whs Code", width: 170 },
     { field: "qty_onhand", headerName: "On Hand", width: 140 },
-    // {
-    //   headerName: "Actions",
-    //   field: "ID",
-    //   cellRenderer: (params) => {
-    //     return (
-    //       <div>
-    //         <Button
-    //           onClick={() => HandleComplete(params.data.id)}
-    //           variant="ghost"
-    //           size="icon"
-    //           className="h-8 w-8"
-    //         >
-    //           <CheckCircle2 className="h-4 w-4" />
-    //         </Button>
-    //         <Button
-    //           onClick={() => HandleEdit(params.data.id)}
-    //           variant="ghost"
-    //           size="icon"
-    //           className="h-8 w-8"
-    //         >
-    //           <Pencil className="h-4 w-4" />
-    //         </Button>
-    //         <Button
-    //           onClick={() => HandleDelete(params.data.id)}
-    //           variant="ghost"
-    //           size="icon"
-    //           className="h-8 w-8"
-    //         >
-    //           <Trash2 className="h-4 w-4" />
-    //         </Button>
-    //       </div>
-    //     );
-    //   },
-    // },
+    { field: "qty_available", headerName: "Qty Avaliable", width: 140 },
   ]);
 
   const [quickFilterText, setQuickFilterText] = useState<string>();
