@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -9,6 +11,8 @@ import api from "@/lib/api";
 // import { ClientSideRowModelModule } from "ag-grid-community";
 
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
+import { Button } from "@/components/ui/button";
+import { Edit, Printer, PrinterIcon } from "lucide-react";
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 export default function OrderListPage() {
@@ -40,16 +44,26 @@ export default function OrderListPage() {
       width: 120,
       cellRenderer: (params: any) => {
         return (
-          <button
-            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-            onClick={() =>
-              router.push(
-                `/shipping/order-list/${params.data.order_no}`
-              )
-            }
-          >
-            Edit
-          </button>
+          <div>
+            <Button
+              onClick={() => {
+                router.push(`/shipping/surat-jalan`);
+              }}
+              className=""
+              variant="ghost"
+            >
+              <Printer></Printer>
+            </Button>
+            <Button
+              onClick={() =>
+                router.push(`/shipping/order-list/${params.data.order_no}`)
+              }
+              className=""
+              variant="ghost"
+            >
+              <Edit />
+            </Button>
+          </div>
         );
       },
     },
@@ -91,8 +105,6 @@ export default function OrderListPage() {
               placeholder="Search Orders..."
               className="border p-2 rounded w-64"
             />
-
-            
           </div>
 
           {/* Grid */}

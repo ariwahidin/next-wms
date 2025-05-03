@@ -61,9 +61,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Package,
-  CheckCheck,
   BoxesIcon,
-  Scan,
   ScanBarcode,
 } from "lucide-react"; // Import icon
 import router from "next/router";
@@ -92,11 +90,11 @@ export default function InboundCard({ data }: { data: InboundItem }) {
     status,
   } = data;
 
-  const statusColor = {
-    open: "bg-red-100 text-red-600",
-    partial: "bg-yellow-100 text-yellow-600",
-    "fully received": "bg-green-100 text-green-600",
-  };
+  // const statusColor = {
+  //   open: "bg-red-100 text-red-600",
+  //   partial: "bg-yellow-100 text-yellow-600",
+  //   "fully received": "bg-green-100 text-green-600",
+  // };
 
   const handleCheckingClick = (noDO: string) => {
     router.push(`/mobile/inbound/checking/${noDO}`);
@@ -106,11 +104,11 @@ export default function InboundCard({ data }: { data: InboundItem }) {
   };
 
   // Data dummy angka
-  const dummyCounts = {
-    packages: 12,
-    trucks: 5,
-    checked: 8,
-  };
+  // const dummyCounts = {
+  //   packages: 12,
+  //   trucks: 5,
+  //   checked: 8,
+  // };
 
   return (
     <Card className="p-3 relative">

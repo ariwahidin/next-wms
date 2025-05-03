@@ -8,6 +8,9 @@ import OutboundCard from "@/components/mobile/outbound/order-views/OutboundCard"
 
 interface OutboundItem {
   id: number;
+  delivery_no : string, 
+  qty_req : number, 
+  qty_scan : number,
   outbound_no: string;
   customer_name: string;
   status: "fully received" | "partial" | "open";
@@ -56,7 +59,7 @@ export default function InboundListPage() {
 
         <div className="space-y-3">
           {filtered.length > 0 ? (
-              filtered.map((item) => <OutboundCard key={item.id} data={item} />)
+              filtered.map((item : OutboundItem) => <OutboundCard key={item.id} data={item} />)
           ) : (
             <p className="text-center text-gray-500">Data not found</p>
           )}

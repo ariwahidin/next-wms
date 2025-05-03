@@ -11,7 +11,6 @@ import {
   ClipboardCheck,
   FileText,
   Calendar,
-  CheckCircle,
   Scan,
 } from "lucide-react";
 

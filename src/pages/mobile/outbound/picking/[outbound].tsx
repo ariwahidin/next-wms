@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useRouter } from "next/router";
 import { use, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";

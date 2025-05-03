@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import UserTable from "./UserTable";
 import UserForm from "./UserForm";
 import Layout from "@/components/layout";

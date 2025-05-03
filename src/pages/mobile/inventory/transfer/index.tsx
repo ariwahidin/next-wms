@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -7,8 +8,6 @@ import PageHeader from "@/components/mobile/PageHeader";
 
 import {
   ArrowBigRight,
-  Barcode,
-  Check,
   CheckCheck,
   Loader2,
   Search,

@@ -8,6 +8,10 @@ import api from "@/lib/api";
 
 interface InboundItem {
   id: number;
+  invoice_no : string, 
+  req_qty : number, 
+  qty_stock : number, 
+  scan_qty : number,
   inbound_no: string;
   supplier_name: string;
   receive_status: string;
@@ -57,7 +61,7 @@ export default function InboundListPage() {
 
         <div className="space-y-3">
           {filtered.length > 0 ? (
-            filtered.map((item) => <InboundCard key={item.id} data={item} />)
+            filtered.map((item : InboundItem) => <InboundCard key={item.id} data={item} />)
           ) : (
             <p className="text-center text-gray-500">Data tidak ditemukan</p>
           )}

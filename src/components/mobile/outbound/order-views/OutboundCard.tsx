@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BoxesIcon, Package, ScanBarcode } from "lucide-react";
+import { Package, ScanBarcode } from "lucide-react";
 import router from "next/router";
 
 type OutboundItem = {
@@ -18,11 +18,11 @@ type OutboundItem = {
 export default function OutboundCard({ data }: { data: OutboundItem }) {
   const { outbound_no, customer_name, status, qty_req, qty_scan, delivery_no } = data;
 
-  const statusColor = {
-    "open": "bg-red-100 text-red-600",
-    "partial": "bg-yellow-100 text-yellow-600",
-    "fully Received": "bg-green-100 text-green-600",
-  };
+  // const statusColor = {
+  //   "open": "bg-red-100 text-red-600",
+  //   "partial": "bg-yellow-100 text-yellow-600",
+  //   "fully Received": "bg-green-100 text-green-600",
+  // };
 
   const handlePickingClick = (outbound_no: string) => {
     router.push(`/mobile/outbound/picking/${outbound_no}`); // Arahkan ke halaman checking
