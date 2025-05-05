@@ -29,7 +29,7 @@ const data = {
   user: {
     name: "shadcn",
     email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    avatar: "/avatar/avatar1.jpg",
   },
   teams: [
     {
@@ -55,22 +55,6 @@ const data = {
       icon: Database,
       isActive: true,
       items: [
-        {
-          title: "Users",
-          url: "/master/user",
-        },
-        {
-          title: "Roles",
-          url: "/master/role",
-        },
-        {
-          title: "Permissions",
-          url: "/master/permissions",
-        },
-        {
-          title: "Role Permissions",
-          url: "/master/role-permission",
-        },
         {
           title: "Product",
           url: "/master/product",
@@ -99,6 +83,25 @@ const data = {
           title: "Origin",
           url: "/master/origin",
         },
+
+        {
+          title: "Users",
+          url: "/master/user",
+        },
+        {
+          title: "Roles",
+          url: "/master/role",
+        },
+        {
+          title: "Permissions",
+          url: "/master/permissions",
+        },
+        {
+          title: "Role Permissions",
+          url: "/master/role-permission",
+        },
+
+        
         // {
         //   title: "Master Items",
         //   url: "/master/item",

@@ -1,9 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import {
-  ChevronsUpDown,
-  LogOut,
-} from "lucide-react";
+import { ChevronsUpDown, LogOut, User } from "lucide-react";
 
 // import { LogOut } from "@/auth/log-out";
 
@@ -24,7 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import api from "@/lib/api";
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export function NavUser({
   user,
@@ -37,18 +36,25 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchUser = async () => {
+    const response = await api.get("/user/profile", {
+      withCredentials: true,
+    });
+
+    if (response.data.success === true) {
+      const profile = response.data.data;
+      user.name = profile.name;
+      user.email = profile.email;
+      user.avatar = profile.avatar;
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    api.get("/user/profile", { withCredentials: true }).then((res) => {
-      if (res.data.success === true) {
-        console.log(res.data.data);
-        const profile = res.data.data;
-        user.name = profile.name;
-        user.email = profile.email;
-        user.avatar = profile.avatar;
-      }
-    });
-  }, [user]);
+    fetchUser();
+  }, []);
 
   const handleLogout = () => {
     api
@@ -63,6 +69,10 @@ export function NavUser({
       .catch((err) => console.log(err));
   };
 
+  // if (isLoading) {
+  //   return <div>Loading</div>;
+  // }
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -73,8 +83,13 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">PY</AvatarFallback>
+                {user.avatar ? (
+                  <AvatarImage src={user.avatar} alt={user.name} />
+                ) : (
+                  <AvatarFallback className="rounded-lg flex items-center justify-center bg-gray-200">
+                    <User className="h-4 w-4 text-gray-500" />
+                  </AvatarFallback>
+                )}
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.name}</span>
@@ -89,7 +104,7 @@ export function NavUser({
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="p-0 font-normal">
+            {/* <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
@@ -101,12 +116,8 @@ export function NavUser({
                 </div>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator /> */}
             <DropdownMenuItem>
-              {/* <LogOut onClick={() => console.log("Logout")} /> */}
-              {/* <a href="/auth/logout">Log Out</a> */}
-              {/* <LogOut /> */}
-
               <LogOut />
               <button onClick={handleLogout}>Log Out</button>
             </DropdownMenuItem>

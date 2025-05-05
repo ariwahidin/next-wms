@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -26,14 +27,13 @@ export default function Layout({
   ...props
 }: {
   children: React.ReactNode;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [props: string]: any;
 }) {
   useEffect(() => {
     if (props.subTitle) {
       window.document.title = props.subTitle;
     }
-  }, [props.subTitle]); // ✅ Dependency array ditambahkan
+  }, [props.subTitle]);
 
   return (
     <SidebarProvider>
@@ -60,7 +60,6 @@ export default function Layout({
             </Breadcrumb>
           </div>
         </header>
-        {/* <main className="p-4">{children}</main> */}
         <div className={`${inter.variable} font-sans`}>{children}</div>
       </SidebarInset>
     </SidebarProvider>

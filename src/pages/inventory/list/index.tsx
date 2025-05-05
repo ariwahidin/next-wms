@@ -103,6 +103,7 @@ const InventoryTable = ({ setEditData }) => {
         pagination={true} // Mengaktifkan pagination
         paginationPageSize={10} // Set jumlah data per halaman
         paginationPageSizeSelector={[10, 25, 50]} // Opsional: Dropdown pilihan page size
+        domLayout="autoHeight"
       />
     </div>
   );
@@ -200,7 +201,7 @@ const InventorySummaryTable = () => {
         pagination={true}
         paginationPageSize={10}
         paginationPageSizeSelector={[10, 25, 50]}
-
+        domLayout="autoHeight"
       />
     </div>
   );

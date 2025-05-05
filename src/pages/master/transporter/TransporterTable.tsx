@@ -85,7 +85,7 @@ const TransporterTable = ({ setEditData }) => {
   );
 
   return (
-    <div style={{ width: "100%", height: "100vh" }}>
+    <div style={{ width: "100%", height: "510px" }}>
       <div className="justify-self-end">
         <div className={styles.inputWrapper} style={{ marginBottom: "1rem" }}>
           <svg
@@ -116,6 +116,10 @@ const TransporterTable = ({ setEditData }) => {
         rowData={rowData}
         columnDefs={columnDefs}
         quickFilterText={quickFilterText}
+        pagination={true} // Mengaktifkan pagination
+        paginationPageSize={10} // Set jumlah data per halaman
+        paginationPageSizeSelector={[10, 25, 50]} // Opsional: Dropdown pilihan page size
+        domLayout="autoHeight"
       />
     </div>
   );
