@@ -1,151 +1,146 @@
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect } from "react";
+/* eslint-disable @next/next/no-img-element */
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 import JsBarcode from "jsbarcode";
 import api from "@/lib/api";
-
-const loadImageAsBase64 = async (url) => {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.readAsDataURL(blob);
-  });
-};
 
 const PickingSheetPrint = () => {
   const router = useRouter();
   const { id } = router.query;
+  const [pickingSheet, setPickingSheet] = useState([]);
+  const barcodeRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (id) {
-      generatePDF(id);
+      fetchData(id as string);
     }
   }, [id]);
 
-  const generatePDF = async (id: string | string[]) => {
-    const data = await api.get(`/outbound/picking/sheet/${id}`, {
+  const fetchData = async (id: string) => {
+    const res = await api.get(`/outbound/picking/sheet/${id}`, {
       withCredentials: true,
     });
-
-    const pickingSheet = data.data.data;
-
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
-
-    // HEADER & FOOTER
-    const addHeaderFooter = (
-      doc: jsPDF,
-      pageNumber: number,
-      totalPages: number
-    ) => {
-      // **Tambahkan Logo**
-      //   const img = "/images/yusen001.jpeg"; // Pastikan file ada di dalam public/
-      //   doc.addImage(img, "JPEG", 15, 10, 30, 15); // (src, format, x, y, width, height)
-
-      const imagePath = "/images/yusen001.jpeg"; // Akses dari public folder
-      doc.addImage(imagePath, "JPEG", 15, 5, 30, 30); // (src, format, x, y, width, height)
-
-
-      const canvas = document.createElement("canvas");
-      const barcodeText = pickingSheet[0].outbound_no;
-
-      // 🔥 Generate barcode dari teks
-      JsBarcode(canvas, barcodeText, {
-        format: "CODE128",
-        displayValue: true, // Tampilkan teks di bawah barcode
-        width: 2,
-        height: 30,
-      });
-
-      // 🔥 Konversi ke Data URL (Base64)
-      const barcodeBase64 = canvas.toDataURL("image/png");
-
-      // 🔥 Tambahkan barcode ke PDF
-      doc.addImage(barcodeBase64, "PNG", 135, 22, 60, 20); // (x, y, width, height)
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("Picking Sheet", 105, 20, { align: "center" });
-      doc.setFontSize(10);
-      doc.text(`Picking ID: ${pickingSheet[0].outbound_no}`, 15, 30);
-      doc.text(`Delivery No: ${pickingSheet[0].delivery_no}`, 15, 35);
-      doc.text(`Customer: ${pickingSheet[0].customer_name}`, 15, 40);
-      doc.text(`Date: ${pickingSheet[0].outbound_date}`, 15, 45);
-
-      // 🔥 Pindahkan Nomor Halaman ke Bawah
-      doc.text(`Page ${pageNumber} of ${totalPages}`, 105, 290, {
-        align: "center",
-      });
-    };
-
-    // let pageNumber = 1;
-    doc.setFont("helvetica", "bold");
-    // addHeaderFooter(doc, pageNumber, 1); // Tambah header pertama sebelum autoTable
-
-    let pageNumber = 1;
-    autoTable(doc, {
-      startY: 50,
-      head: [
-        [
-          "No",
-          "Item Code",
-          "Barcode",
-          "Item Name",
-          "WH Code",
-          "Qty",
-          "Rec Date",
-          "Pallet",
-          "Location",
-        ],
-      ],
-      body: pickingSheet.map((item, index) => [
-        index + 1,
-        item.item_code,
-        item.barcode,
-        item.item_name,
-        item.whs_code,
-        item.quantity,
-        item.rec_date,
-        item.pallet,
-        item.location,
-      ]),
-      margin: { top: 40 },
-      styles: {
-        fontSize: 8,  // Ukuran font di dalam tabel lebih kecil
-        cellPadding: 2  // Mengurangi padding untuk menghemat ruang
-      },
-      didDrawPage: (data) => {
-        //   addHeaderFooter(doc, pageNumber, doc.getCurrentPageInfo().pageNumber);
-        addHeaderFooter(doc, pageNumber, doc.getCurrentPageInfo().pageNumber);
-        pageNumber++;
-      },
-    });
-
-    // 🔥 Tanda tangan di halaman terakhir
-    // doc.addPage();
-    // addHeaderFooter(doc, pageNumber, doc.getCurrentPageInfo().pageNumber);
-    doc.setFontSize(10);
-    doc.text("Tanda Tangan:", 20, 250);
-    doc.line(15, 270, 70, 270);
-    doc.text("Manager", 35, 275);
-    doc.line(85, 270, 140, 270);
-    doc.text("Supervisor", 105, 275);
-    doc.line(155, 270, 200, 270);
-    doc.text("Staff", 170, 275);
-
-    window.open(doc.output("bloburl"), "_blank");
-    window.close();
+    setPickingSheet(res.data.data);
   };
 
-  return <p>Generating PDF...</p>;
+  useEffect(() => {
+    if (pickingSheet.length > 0 && barcodeRef.current) {
+      JsBarcode(barcodeRef.current, pickingSheet[0].outbound_no, {
+        format: "CODE128",
+        displayValue: true,
+        width: 2,
+        height: 50,
+      });
+
+      // Panggil print setelah barcode digambar
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    }
+  }, [pickingSheet]);
+
+  if (pickingSheet.length === 0) return <p>Loading...</p>;
+
+  const data = pickingSheet[0];
+
+  return (
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <img src="/images/yusen001.jpeg" alt="Logo" width="100" />
+        <canvas ref={barcodeRef}></canvas>
+      </div>
+      <h2 style={{ textAlign: "center" }}>Picking Sheet</h2>
+      <p>
+        <strong>Picking ID:</strong> {data.outbound_no}
+      </p>
+      <p>
+        <strong>Delivery No:</strong> {data.delivery_no}
+      </p>
+      <p>
+        <strong>Customer:</strong> {data.customer_name}
+      </p>
+      <p>
+        <strong>Date:</strong> {data.outbound_date}
+      </p>
+
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          marginTop: "20px",
+          fontSize: "12px",
+        }}
+      >
+        <thead>
+          <tr>
+            <th style={th}>No</th>
+            <th style={th}>Item Code</th>
+            <th style={th}>Barcode</th>
+            <th style={th}>Item Name</th>
+            <th style={th}>WH Code</th>
+            <th style={th}>Qty</th>
+            <th style={th}>Rec Date</th>
+            <th style={th}>Pallet</th>
+            <th style={th}>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pickingSheet.map((item, i) => (
+            <tr key={i}>
+              <td style={td}>{i + 1}</td>
+              <td style={td}>{item.item_code}</td>
+              <td style={td}>{item.barcode}</td>
+              <td style={td}>{item.item_name}</td>
+              <td style={td}>{item.whs_code}</td>
+              <td style={td}>{item.quantity}</td>
+              <td style={td}>{item.rec_date}</td>
+              <td style={td}>{item.pallet}</td>
+              <td style={td}>{item.location}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div
+        style={{
+          marginTop: "50px",
+          display: "flex",
+          justifyContent: "space-around",
+        }}
+      >
+        <div>
+          <div style={signatureLine}></div>
+          <p style={{ textAlign: "center" }}>Manager</p>
+        </div>
+        <div>
+          <div style={signatureLine}></div>
+          <p style={{ textAlign: "center" }}>Supervisor</p>
+        </div>
+        <div>
+          <div style={signatureLine}></div>
+          <p style={{ textAlign: "center" }}>Staff</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const th = {
+  border: "1px solid #000",
+  padding: "4px",
+  backgroundColor: "#eee",
+};
+
+const td = {
+  border: "1px solid #000",
+  padding: "4px",
+};
+
+const signatureLine = {
+  borderBottom: "1px solid black",
+  width: "150px",
+  height: "40px",
+  marginBottom: "5px",
 };
 
 export default PickingSheetPrint;

@@ -60,7 +60,8 @@ const HandleDelete = (id: number) => {
 
 const HandlePreviewPDF = (id: number) => {
   console.log("Preview PDF ID:", id);
-  window.open(`/outbound/print/picking_sheet/${id}`, "_blank");
+  // window.open(`/outbound/print/picking_sheet/${id}`, "_blank");
+  router.push(`/outbound/print/picking_sheet/${id}`);
 };
 
 const handleCompletePicking = async (id: number) => {
