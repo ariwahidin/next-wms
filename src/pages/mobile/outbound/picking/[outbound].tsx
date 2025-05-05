@@ -89,6 +89,10 @@ const CheckingPage = () => {
   );
 
   const handleScan = async () => {
+    if (scanType === "BARCODE") {
+      setScanSerial(scanBarcode);
+    }
+
     if (!scanBarcode.trim() || !scanSerial.trim()) return;
 
     const newItem: ScanItem = {
@@ -260,14 +264,16 @@ const CheckingPage = () => {
         item?.location.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
-  const groupedItems = filteredScannedItems.reduce<Record<number, ScannedItem[]>>((groups, item) => {
-      const { seq_box } = item;
-      if (!groups[seq_box]) {
-        groups[seq_box] = [];
-      }
-      groups[seq_box].push(item);
-      return groups;
-    }, {});
+  const groupedItems = filteredScannedItems.reduce<
+    Record<number, ScannedItem[]>
+  >((groups, item) => {
+    const { seq_box } = item;
+    if (!groups[seq_box]) {
+      groups[seq_box] = [];
+    }
+    groups[seq_box].push(item);
+    return groups;
+  }, {});
 
   useEffect(() => {
     if (outbound) fetchOutboundDetail();
@@ -275,6 +281,7 @@ const CheckingPage = () => {
 
   useEffect(() => {
     if (scanType === "SERIAL") {
+      setScanSerial("");
       setQtyScan(1);
     }
   }, [scanType]);
@@ -347,6 +354,7 @@ const CheckingPage = () => {
 
               <div className="relative w-full">
                 <Input
+                  autoComplete="off"
                   id="barcode"
                   placeholder="Scan barcode..."
                   value={scanBarcode}
@@ -367,34 +375,37 @@ const CheckingPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <label
-                htmlFor="serial"
-                className="text-sm text-gray-600 whitespace-nowrap"
-              >
-                Serial No :
-              </label>
-              <div className="relative w-full">
-                <Input
-                  id="serial"
-                  placeholder="Serial number..."
-                  value={scanSerial}
-                  onChange={(e) => setScanSerial(e.target.value)}
-                />
-                {scanSerial && (
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    onClick={() => {
-                      setScanSerial("");
-                      document.getElementById("serial")?.focus();
-                    }}
-                  >
-                    <XCircle size={18} />
-                  </button>
-                )}
+            {scanType === "SERIAL" && (
+              <div className="flex items-center space-x-2">
+                <label
+                  htmlFor="serial"
+                  className="text-sm text-gray-600 whitespace-nowrap"
+                >
+                  Serial No :
+                </label>
+                <div className="relative w-full">
+                  <Input
+                    id="serial"
+                    autoComplete="off"
+                    placeholder="Serial number..."
+                    value={scanSerial}
+                    onChange={(e) => setScanSerial(e.target.value)}
+                  />
+                  {scanSerial && (
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      onClick={() => {
+                        setScanSerial("");
+                        document.getElementById("serial")?.focus();
+                      }}
+                    >
+                      <XCircle size={18} />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {scanType === "BARCODE" && (
               <div className="flex items-center space-x-2">
@@ -402,7 +413,7 @@ const CheckingPage = () => {
                   htmlFor="serial"
                   className="text-sm text-gray-600 whitespace-nowrap"
                 >
-                  Qty Scan : 
+                  Qty Scan :
                 </label>
 
                 <div className="relative w-full">
@@ -560,7 +571,8 @@ const CheckingPage = () => {
                           className="p-2 border rounded-md bg-gray-50"
                         >
                           <div className="font-semibold text-sm mb-2">
-                            Koli: {koli}, Items: {(items as ScannedItem[])?.length}, Qty:{" "}
+                            Koli: {koli}, Items:{" "}
+                            {(items as ScannedItem[])?.length}, Qty:{" "}
                             {items?.reduce(
                               (total, item) => total + item.quantity,
                               0
@@ -624,81 +636,6 @@ const CheckingPage = () => {
                   )}
                 </div>
               ) : (
-                // <Card className="p-2 space-y-2">
-                //   <CardHeader className="p-2">
-                //     <div className="flex items-center justify-between">
-                //       <div className="flex items-center space-x-2">
-                //         <span className="text-sm font-semibold">
-                //           Scanned Items
-                //         </span>
-                //       </div>
-                //       <Button
-                //         variant="ghost"
-                //         size="icon"
-                //         onClick={() => setShowModalDetail(false)}
-                //       >
-                //         <XCircle size={16} className="text-gray-400" />
-                //       </Button>
-                //     </div>
-                //   </CardHeader>
-                //   <CardContent className="p-2 space-y-2">
-                //     {filteredScannedItems.map((item, index) => (
-                //       <div
-                //         key={index}
-                //         className={`p-2 border rounded-md hover:bg-gray-100 cursor-pointer ${
-                //           item.status === "in stock"
-                //             ? "bg-green-100"
-                //             : "bg-blue-100"
-                //         }`}
-                //       >
-                //         <div className="text-sm space-y-1">
-                //           <div>
-                //             <strong>Koli:</strong> {item.seq_box}
-                //             <br />
-                //             <strong>Barcode:</strong> {item.barcode}
-                //             <br />
-                //             <strong>Serial:</strong> {item.serial_number}
-                //             <br />
-                //             <strong>Location:</strong> {item.location}
-                //             <br />
-                //             <strong>Qty : </strong> {item.quantity}
-                //           </div>
-                //         </div>
-
-                //         <div className="grid grid-cols-3 gap-4">
-                //           {/* Tombol berada di kolom 1 dan 2 */}
-                //           <div className="col-span-2 flex items-center">
-                //             {item.status === "picking" ? (
-                //               <Button
-                //                 variant="destructive"
-                //                 size="sm"
-                //                 onClick={() =>
-                //                   handleRemoveItem(
-                //                     item.id,
-                //                     item.outbound_detail_id
-                //                   )
-                //                 }
-                //               >
-                //                 <Trash2 size={16} />
-                //               </Button>
-                //             ) : (
-                //               <></>
-                //             )}
-                //           </div>
-
-                //           {/* Status di kolom 3, menggunakan flex untuk posisikan di bawah */}
-                //           <div className="col-span-1 flex justify-end items-end">
-                //             {item.status && (
-                //               <span className="text-xs text-gray-400">
-                //                 {item.status}
-                //               </span>
-                //             )}
-                //           </div>
-                //         </div>
-                //       </div>
-                //     ))}
-                //   </CardContent>
-                // </Card>
                 <div className="text-gray-500 text-sm">
                   Tidak ada barang ditemukan.
                 </div>
