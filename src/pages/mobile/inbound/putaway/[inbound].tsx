@@ -6,11 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import PageHeader from "@/components/mobile/PageHeader";
 
-import {
-  Check,
-  Loader2,
-  Search,
-} from "lucide-react";
+import { Check, Loader2, ScanBarcode, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -149,8 +145,6 @@ const PutawayPage = () => {
         item?.location.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
-  
-
   useEffect(() => {
     console.log("Data terbaru:", listInboundScanned);
   }, [listInboundScanned]);
@@ -198,7 +192,6 @@ const PutawayPage = () => {
                     setScanBarcode("");
                     setListInboundScanned([]); // Clear the scanned items
                     document.getElementById("barcode")?.focus();
-
                   }}
                 >
                   <XCircle size={18} />
@@ -235,7 +228,7 @@ const PutawayPage = () => {
               />
 
               <div className="text-sm">
-                <span>Total Scanned: {filteredScannedItems.length}</span>
+                <span>{filteredScannedItems.length} items, Total Qty Scanned: {filteredScannedItems.reduce((total, item) => total + item.quantity, 0)}</span>
               </div>
 
               {/* ListView */}
@@ -251,6 +244,13 @@ const PutawayPage = () => {
                       }`}
                     >
                       <div className="text-sm space-y-1">
+                        <div className="top-2 right-2 flex gap-3">
+                          <div className="flex items-center space-x-1 text-gray-500 text-xs">
+                            <ScanBarcode size={16} />
+                            <span>{item.quantity}</span>
+                          </div>
+                        </div>
+
                         <div>
                           <strong>Barcode:</strong> {item.barcode}
                         </div>
@@ -320,6 +320,7 @@ const PutawayPage = () => {
 
             <div className="relative">
               <Input
+                autoComplete="off"
                 id="location2"
                 placeholder="Destination Location..."
                 value={scanLocation2}
@@ -361,7 +362,6 @@ const PutawayPage = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
       </div>
     </>
   );

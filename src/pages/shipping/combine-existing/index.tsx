@@ -31,26 +31,25 @@ export default function AddToOrderPage() {
     {
       headerCheckboxSelection: true,
       checkboxSelection: true,
-      field: "order_id",
+      field: "delivery_number",
       headerName: "Order ID",
       pinned: "left",
       width: 150,
     },
     { field: "customer_name", headerName: "Customer", flex: 1 },
-    { field: "item_code", headerName: "Product", flex: 1 },
-    { field: "qty", headerName: "Qty", width: 100 },
+    { field: "total_item", headerName: "Total Item", flex: 1 },
+    { field: "total_qty", headerName: "Total Qty", width: 100 },
   ];
 
   const existingOrdersColumnDefs: ColDef[] = [
     {
       headerCheckboxSelection: true,
       checkboxSelection: true,
-      field: "ID",
-      headerName: "Order ID",
+      field: "order_no",
+      headerName: "Order No",
       pinned: "left",
       width: 150,
     },
-    { field: "order_no", headerName: "Order No", flex: 1 },
     { field: "status", headerName: "Status", flex: 1 },
   ];
 
@@ -96,8 +95,8 @@ export default function AddToOrderPage() {
 
     try {
       const payload = {
-        targetOrderId: selectedExistingOrder.ID,
-        ordersToAdd: selectedNewOrders.map((o) => o.ID),
+        orderNo: selectedExistingOrder.order_no,
+        deliveryNumbers: selectedNewOrders.map((o) => o.delivery_number),
       };
 
       console.log(payload);

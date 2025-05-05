@@ -29,15 +29,15 @@ export default function OrderDetailPage() {
     {
       headerCheckboxSelection: true,
       checkboxSelection: true,
-      field: "ID",
-      headerName: "Order ID",
+      field: "delivery_number",
+      headerName: "Delivery Number",
       width: 150,
       pinned: "left",
     },
-    { field: "order_no", headerName: "Order ID", flex: 1 },
-    { field: "delivery_number", headerName: "Delivery Number", flex: 1 },
-    { field: "qty", headerName: "Quantity", width: 120 },
-    { field: "volume", headerName: "Volume", width: 120 },
+    // { field: "delivery_number", headerName: "Delivery Number", flex: 1 },
+    { field: "destination_city", headerName: "Destination", flex: 1 },
+    { field: "total_item", headerName: "Total Item", width: 120 },
+    { field: "total_qty", headerName: "Total Qty", width: 120 },
   ];
 
   const gridOptions = {
@@ -102,7 +102,7 @@ export default function OrderDetailPage() {
     if (order) {
       fetchData();
     }
-  }, []);
+  }, [order]);
 
   return (
     <Layout title="Shipping" subTitle={`Order Detail #${order}`}>

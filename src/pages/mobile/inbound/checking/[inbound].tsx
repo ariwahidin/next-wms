@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRouter } from "next/router";
@@ -13,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Trash2} from "lucide-react";
+import { Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ import {
 import { XCircle } from "lucide-react"; // untuk icon clear
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
+import { set } from "date-fns";
 
 // Types
 interface ScanItem {
@@ -78,7 +80,7 @@ const CheckingPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showModalDetail, setShowModalDetail] = useState(false);
-  
+  const [scanQty, setScanQty] = useState(1);
 
   const [listInboundDetail, setListInboundDetail] = useState<InboundDetail[]>(
     []
@@ -89,6 +91,10 @@ const CheckingPage = () => {
   );
 
   const handleScan = async () => {
+    if (scanType === "BARCODE") {
+      setScanSerial(scanBarcode);
+    }
+
     if (!scanLocation.trim() || !scanBarcode.trim() || !scanSerial.trim())
       return;
 
@@ -101,7 +107,7 @@ const CheckingPage = () => {
       whsCode: scanWhs,
       qaStatus: scanQa,
       serial: scanSerial.trim(),
-      qtyScan: 1,
+      qtyScan: scanQty,
       uploaded: false,
     };
 
@@ -241,6 +247,13 @@ const CheckingPage = () => {
     console.log("Data terbaru:", listInboundScanned);
   }, [listInboundScanned]);
 
+  useEffect(() => {
+    if (scanType === "SERIAL") {
+      setScanQty(1);
+      setScanSerial("");
+    }
+  }, [scanType]);
+
   return (
     <>
       <PageHeader title={`Checking ${inbound}`} showBackButton />
@@ -321,26 +334,52 @@ const CheckingPage = () => {
               )}
             </div>
 
-            <div className="relative">
-              <Input
-                id="serial"
-                placeholder="Serial number ..."
-                value={scanSerial}
-                onChange={(e) => setScanSerial(e.target.value)}
-              />
-              {scanSerial && (
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => {
-                    setScanSerial("");
-                    document.getElementById("serial")?.focus();
-                  }}
-                >
-                  <XCircle size={18} />
-                </button>
-              )}
-            </div>
+            {scanType === "BARCODE" && (
+              <div className="relative">
+                <Input
+                  id="qty"
+                  placeholder="Qty ..."
+                  value={scanQty}
+                  onChange={(e) => setScanQty(Number(e.target.value))}
+                />
+                {scanQty && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => {
+                      setScanQty(1);
+                      document.getElementById("qty")?.focus();
+                    }}
+                  >
+                    <XCircle size={18} />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {scanType === "SERIAL" && (
+              <div className="relative">
+                <Input
+                  id="serial"
+                  placeholder="Serial number ..."
+                  value={scanSerial}
+                  onChange={(e) => setScanSerial(e.target.value)}
+                />
+                {scanSerial && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => {
+                      setScanSerial("");
+                      document.getElementById("serial")?.focus();
+                    }}
+                  >
+                    <XCircle size={18} />
+                  </button>
+                )}
+              </div>
+            )}
+
             <Button onClick={handleScan} className="w-full">
               Add
             </Button>
@@ -440,7 +479,6 @@ const CheckingPage = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
 
-            
             <div className="text-sm">
               <span>Total Scanned: {filteredScannedItems.length}</span>
             </div>
