@@ -9,6 +9,8 @@ const PickingSheetPrint = () => {
   const { id } = router.query;
   const [pickingSheet, setPickingSheet] = useState([]);
   const barcodeRef = useRef<HTMLCanvasElement>(null);
+  const barcodeItemRef = useRef<HTMLCanvasElement>(null);
+  const barcodeLocationRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -27,10 +29,29 @@ const PickingSheetPrint = () => {
     if (pickingSheet.length > 0 && barcodeRef.current) {
       JsBarcode(barcodeRef.current, pickingSheet[0].outbound_no, {
         format: "CODE128",
-        displayValue: true,
+        displayValue: false,
         width: 2,
-        height: 50,
+        height: 10,
+        // margin: 0,
       });
+
+      for (let i = 0; i < pickingSheet.length; i++) {
+        JsBarcode(barcodeLocationRef.current, pickingSheet[i].location, {
+          format: "CODE128",
+          displayValue: false,
+          width: 1.5,
+          height: 20,
+          margin: 0,
+        });
+
+        JsBarcode(barcodeItemRef.current, pickingSheet[i].barcode, {
+          format: "CODE128",
+          displayValue: false,
+          width: 1.5,
+          height: 20,
+          margin: 0,
+        });
+      }
 
       // Panggil print setelah barcode digambar
       setTimeout(() => {
@@ -49,19 +70,23 @@ const PickingSheetPrint = () => {
         <img src="/images/yusen001.jpeg" alt="Logo" width="100" />
         <canvas ref={barcodeRef}></canvas>
       </div>
+
       <h2 style={{ textAlign: "center" }}>Picking Sheet</h2>
-      <p>
-        <strong>Picking ID:</strong> {data.outbound_no}
-      </p>
-      <p>
-        <strong>Delivery No:</strong> {data.delivery_no}
-      </p>
-      <p>
-        <strong>Customer:</strong> {data.customer_name}
-      </p>
-      <p>
-        <strong>Date:</strong> {data.outbound_date}
-      </p>
+
+      <div style={{ fontSize: "12px" }}>
+        <p>
+          <strong>Picking ID:</strong> {data.outbound_no}
+        </p>
+        <p>
+          <strong>Delivery No:</strong> {data.delivery_no}
+        </p>
+        <p>
+          <strong>Customer:</strong> {data.customer_name}
+        </p>
+        <p>
+          <strong>Date:</strong> {data.outbound_date}
+        </p>
+      </div>
 
       <table
         style={{
@@ -76,28 +101,41 @@ const PickingSheetPrint = () => {
             <th style={th}>No</th>
             <th style={th}>Item Code</th>
             <th style={th}>Barcode</th>
-            <th style={th}>Item Name</th>
-            <th style={th}>WH Code</th>
+            {/* <th style={th}>Item Name</th> */}
+            {/* <th style={th}>WH Code</th> */}
             <th style={th}>Qty</th>
-            <th style={th}>Rec Date</th>
-            <th style={th}>Pallet</th>
+            {/* <th style={th}>Rec Date</th> */}
             <th style={th}>Location</th>
           </tr>
         </thead>
         <tbody>
           {pickingSheet.map((item, i) => (
             <tr key={i}>
-              <td style={td}>{i + 1}</td>
+              <td style={{ ...td, textAlign: "center" }}>{i + 1}</td>
               <td style={td}>{item.item_code}</td>
-              <td style={td}>{item.barcode}</td>
-              <td style={td}>{item.item_name}</td>
-              <td style={td}>{item.whs_code}</td>
-              <td style={td}>{item.quantity}</td>
-              <td style={td}>{item.rec_date}</td>
-              <td style={td}>{item.pallet}</td>
-              <td style={td}>{item.location}</td>
+              <td style={td}>
+                <span className="text-xs text-gray-500">{item.barcode}</span>
+                <canvas ref={barcodeItemRef}></canvas>
+              </td>
+              {/* <td style={td}>{item.item_name}</td> */}
+              {/* <td style={td}>{item.whs_code}</td> */}
+              <td style={{ ...td, textAlign: "center" }}>{item.quantity}</td>
+              {/* <td style={td}>{item.rec_date}</td> */}
+              <td style={td}>
+                <span className="text-xs text-gray-500">{item.location}</span>
+                <canvas ref={barcodeLocationRef}></canvas>
+              </td>
             </tr>
           ))}
+          <tr>
+            <td colSpan={3} style={{ ...td, textAlign: "center" }}>
+              Total
+            </td>
+            <td style={{ ...td, textAlign: "center" }}>
+              {pickingSheet.reduce((acc, item) => acc + item.quantity, 0)}
+            </td>
+            <td colSpan={3} style={{ ...td, textAlign: "center" }}></td>
+          </tr>
         </tbody>
       </table>
 

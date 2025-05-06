@@ -25,6 +25,7 @@ import {
 import { XCircle } from "lucide-react"; // untuk icon clear
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
+import { set } from "date-fns";
 
 // Types
 interface ScanItem {
@@ -34,6 +35,7 @@ interface ScanItem {
   serial_no: string;
   qty?: number;
   seq_box?: number;
+  location?: string;
 }
 
 interface OutboundDetail {
@@ -91,6 +93,13 @@ const CheckingPage = () => {
   const handleScan = async () => {
     if (scanType === "BARCODE") {
       setScanSerial(scanBarcode);
+      if (!scanLocation.trim()) {
+        return eventBus.emit("showAlert", {
+          title: "Error!",
+          description: "Please input location",
+          type: "error",
+        })
+      };
     }
 
     if (!scanBarcode.trim() || !scanSerial.trim()) return;
@@ -102,6 +111,7 @@ const CheckingPage = () => {
       serial_no: scanSerial,
       qty: qtyScan,
       seq_box: seqBox,
+      location : scanLocation
     };
 
     setIsLoading(true);
@@ -211,37 +221,37 @@ const CheckingPage = () => {
     }
   };
 
-  const handleConfirmPutaway = async (inbound_no: string) => {
-    const dataToPost = {
-      inboundNo: inbound_no,
-      location: scanLocation,
-    };
+  // const handleConfirmPutaway = async (inbound_no: string) => {
+  //   const dataToPost = {
+  //     inboundNo: inbound_no,
+  //     location: scanLocation,
+  //   };
 
-    // try {
-    //   const response = await api.put(
-    //     "/mobile/inbound/scan/putaway/" + inbound_no,
-    //     dataToPost,
-    //     {
-    //       withCredentials: true,
-    //     }
-    //   );
+  //   // try {
+  //   //   const response = await api.put(
+  //   //     "/mobile/inbound/scan/putaway/" + inbound_no,
+  //   //     dataToPost,
+  //   //     {
+  //   //       withCredentials: true,
+  //   //     }
+  //   //   );
 
-    //   const data = await response.data;
+  //   //   const data = await response.data;
 
-    //   if (data.success) {
-    //     // fetchScannedItems();
-    //     setShowConfirmModal(false);
+  //   //   if (data.success) {
+  //   //     // fetchScannedItems();
+  //   //     setShowConfirmModal(false);
 
-    //     eventBus.emit("showAlert", {
-    //       title: "Success!",
-    //       description: data,
-    //       type: "success",
-    //     });
-    //   }
-    // } catch (error) {
-    //   console.error("Error fetching data:", error);
-    // }
-  };
+  //   //     eventBus.emit("showAlert", {
+  //   //       title: "Success!",
+  //   //       description: data,
+  //   //       type: "success",
+  //   //     });
+  //   //   }
+  //   // } catch (error) {
+  //   //   console.error("Error fetching data:", error);
+  //   // }
+  // };
 
   const filteredItems =
     listOutboundDetail.filter(
@@ -282,6 +292,7 @@ const CheckingPage = () => {
   useEffect(() => {
     if (scanType === "SERIAL") {
       setScanSerial("");
+      setScanLocation("");
       setQtyScan(1);
     }
   }, [scanType]);
@@ -328,12 +339,12 @@ const CheckingPage = () => {
                     value={seqBox}
                     onChange={(e) => setSeqBox(Number(e.target.value))}
                   />
-                  {scanLocation && (
+                  {seqBox && (
                     <button
                       type="button"
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       onClick={() => {
-                        setScanLocation("");
+                        setSeqBox(0);
                         document.getElementById("seq_box")?.focus();
                       }}
                     >
@@ -408,45 +419,77 @@ const CheckingPage = () => {
             )}
 
             {scanType === "BARCODE" && (
-              <div className="flex items-center space-x-2">
-                <label
-                  htmlFor="serial"
-                  className="text-sm text-gray-600 whitespace-nowrap"
-                >
-                  Qty Scan :
-                </label>
+              <>
+                <div className="flex items-center space-x-2">
+                  <label
+                    htmlFor="location"
+                    className="text-sm text-gray-600 whitespace-nowrap"
+                  >
+                    Location :
+                  </label>
 
-                <div className="relative w-full">
-                  <Input
-                    type="number"
-                    id="qtyScan"
-                    placeholder="Quantity to scan..."
-                    value={qtyScan}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, "");
-                      // agar 0 diawal tidak ditampilkan
-                      if (value.length > 0 && value[0] === "0") {
-                        e.target.value = value.slice(1);
-                        setQtyScan(Number(value.slice(1)));
-                      } else {
-                        setQtyScan(Number(value));
-                      }
-                    }}
-                  />
-                  {qtyScan > 0 && (
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      onClick={() => {
-                        setQtyScan(0);
-                        document.getElementById("qtyScan")?.focus();
-                      }}
-                    >
-                      <XCircle size={18} />
-                    </button>
-                  )}
+                  <div className="relative w-full">
+                    <Input
+                      type="text"
+                      id="location"
+                      placeholder="Enter location ..."
+                      value={scanLocation}
+                      onChange={(e) => setScanLocation(e.target.value)}
+                    />
+                    {scanLocation.length > 0 && (
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          setScanLocation("");
+                          document.getElementById("location")?.focus();
+                        }}
+                      >
+                        <XCircle size={18} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+                <div className="flex items-center space-x-2">
+                  <label
+                    htmlFor="qtyScan"
+                    className="text-sm text-gray-600 whitespace-nowrap"
+                  >
+                    Qty Scan :
+                  </label>
+
+                  <div className="relative w-full">
+                    <Input
+                      type="number"
+                      id="qtyScan"
+                      placeholder="Quantity to scan..."
+                      value={qtyScan}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        // agar 0 diawal tidak ditampilkan
+                        if (value.length > 0 && value[0] === "0") {
+                          e.target.value = value.slice(1);
+                          setQtyScan(Number(value.slice(1)));
+                        } else {
+                          setQtyScan(Number(value));
+                        }
+                      }}
+                    />
+                    {qtyScan > 0 && (
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          setQtyScan(0);
+                          document.getElementById("qtyScan")?.focus();
+                        }}
+                      >
+                        <XCircle size={18} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </>
             )}
 
             <Button onClick={handleScan} className="w-full">
@@ -511,7 +554,7 @@ const CheckingPage = () => {
           </CardContent>
         </Card>
 
-        <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        {/* <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
           <DialogContent className="bg-white">
             <DialogHeader>
               <DialogTitle>Putaway Confirmation</DialogTitle>
@@ -540,7 +583,7 @@ const CheckingPage = () => {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+        </Dialog> */}
 
         <Dialog open={showModalDetail} onOpenChange={setShowModalDetail}>
           <DialogContent className="bg-white">

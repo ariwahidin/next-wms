@@ -45,6 +45,7 @@ const ProductTable = ({ setEditData }) => {
     { field: "item_code", headerName: "Item Code" },
     { field: "item_name", headerName: "Item Name" },
     { field: "gmc", headerName: "GMC" },
+    { field: "uom", headerName: "UOM" },
     { field: "has_serial", headerName: "SN", width: 70 },
     {
       headerName: "Actions",
@@ -55,7 +56,7 @@ const ProductTable = ({ setEditData }) => {
             <Button
               onClick={() => {
                 setEditData(params.data);
-                console.log(params.data);
+                // console.log(params.data);
               }}
               variant="ghost"
               size="icon"

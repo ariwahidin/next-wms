@@ -62,6 +62,7 @@ export default function ProductForm({
       item_code: selectedOption.value,
       item_name: itemSelected.item_name,
       barcode: itemSelected.barcode,
+      uom: itemSelected.uom,
     });
   };
 
@@ -97,7 +98,7 @@ export default function ProductForm({
               ...formItem,
               handling_id: handling.data.data[0].id,
               whs_code: whsCode[0].value,
-              uom: "PCS",
+              // uom: "PCS",
             });
           }
         }

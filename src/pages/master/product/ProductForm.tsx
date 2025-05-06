@@ -35,9 +35,14 @@ export default function ProductForm({ editData, setEditData }) {
 
   const [selectedSerial, setSelectedSerial] = useState(serialOptions[1]);
 
-  // 🔥 Jika editData berubah, isi form dengan data produk yang dipilih
   useEffect(() => {
     if (editData) {
+
+
+      console.log("Edit Data Di Form : ", editData);
+
+      console.log("uom Options : ", uomOptions);
+
       setItemCode(editData.item_code);
       setItemName(editData.item_name);
       setGmc(editData.gmc);
@@ -47,32 +52,75 @@ export default function ProductForm({ editData, setEditData }) {
           setSelectedSerial(option);
         }
       });
+
+      uomOptions.find((option) => {
+        if (option.value === editData.uom) {
+          console.log("papapa")
+          setSelectedUom(option);
+        }
+      });
     }
   }, [editData]);
+
+
+  const AllUOM = async () => {
+    try {
+      const response = await api.get("/uoms", { withCredentials: true });
+      return response.data;
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const [uoms, setUoms] = useState([]);
+  const [uomOptions, setUomOptions] = useState([]);
+  const [selectedUom, setSelectedUom] = useState(null);
+  useEffect(() => {
+    async function fetchData() {
+      const data = await AllUOM();
+      if (data.success) {
+        setUoms(data.data);
+        setUomOptions(data.data.map((uom) => ({ value: uom.code, label: uom.code })));
+      }
+    }
+    fetchData();
+  }, []);
+
+  useEffect(()=> {
+    if(uoms.length > 0) {
+      setSelectedUom(uomOptions[0]);
+    }
+  },[uoms]);
 
   async function handleSubmit(e) {
     e.preventDefault();
 
     // Validasi form
-    if (!itemCode || !itemName || !gmc) {
+    if (!itemCode || !itemName || !gmc || !selectedSerial || !selectedUom) {
       setError("Harap isi semua field.");
-      // Fokuskan ke field yang kosong
       if (!itemCode) {
         document.getElementById("itemCode")?.focus();
       } else if (!itemName) {
         document.getElementById("itemName")?.focus();
       } else if (!gmc) {
+        console.log("Focus set to itemCode");
         document.getElementById("gmc")?.focus();
+      } else if (!selectedSerial) {
+        console.log("Focus set to itemName");
+        document.getElementById("serial")?.focus();
+      } else if (!selectedUom) {
+        console.log("Focus set to gmc");
+        document.getElementById("uom")?.focus();
       }
+        console.log("Focus set to serial");
       return;
     }
+        console.log("Focus set to uom");
 
     try {
-      setError(null); // Reset error message jika form valid
+      setError(null); // Reset error message jika form valid;
 
       if (editData) {
-        console.log(editData);
-        // 🔥 Update produk jika sedang dalam mode edit
         await api.put(
           `/products/${editData.ID}`, // ID produk dari editData
           {
@@ -81,8 +129,10 @@ export default function ProductForm({ editData, setEditData }) {
             gmc: gmc,
             cbm: 1.0,
             category: "Book",
+
             group: "Book",
             serial: selectedSerial.value,
+            uom: selectedUom.value
           },
           { withCredentials: true }
         );
@@ -98,17 +148,18 @@ export default function ProductForm({ editData, setEditData }) {
             category: "Book",
             group: "Book",
             serial: selectedSerial.value,
+            uom: selectedUom.value
           },
           { withCredentials: true }
         );
       }
 
-      mutate("/products"); // 🔥 Refresh tabel otomatis tanpa reload
-      setEditData(null); // 🔄 Reset editData setelah submit
-      setItemCode("");
-      setItemName("");
-      setGmc("");
-      document.getElementById("itemCode")?.focus();
+      mutate("/products");
+      // setEditData(null); 
+      // setItemCode("");
+      // setItemName("");
+      // setGmc("");
+      // document.getElementById("itemCode")?.focus();
     } catch (err: any) {
       // Tangani error dengan cara yang lebih ramah
       if (err.response) {
@@ -183,6 +234,16 @@ export default function ProductForm({ editData, setEditData }) {
                 onChange={(e) => setGmc(e.target.value)}
                 value={gmc}
                 placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label>Base UOM</Label>
+              <Select
+                options={uomOptions}
+                defaultValue={selectedUom}
+                onChange={(selectedOption) => setSelectedUom(selectedOption)}
+                placeholder="Select base UOM"
+                value={selectedUom}
               />
             </div>
             <div className="flex flex-col space-y-1.5">
