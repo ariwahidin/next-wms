@@ -54,6 +54,7 @@ const InventoryTable = ({ setEditData }) => {
     { field: "whs_code", headerName: "Whs Code", width: 170 },
     { field: "qty_onhand", headerName: "On Hand", width: 140 },
     { field: "qty_available", headerName: "Qty Avaliable", width: 140 },
+    { field: "qty_allocated", headerName: "Qty Allocated", width: 140 },
   ]);
 
   const [quickFilterText, setQuickFilterText] = useState<string>();

@@ -9,8 +9,8 @@ const PickingSheetPrint = () => {
   const { id } = router.query;
   const [pickingSheet, setPickingSheet] = useState([]);
   const barcodeRef = useRef<HTMLCanvasElement>(null);
-  const barcodeItemRef = useRef<HTMLCanvasElement>(null);
-  const barcodeLocationRef = useRef<HTMLCanvasElement>(null);
+  const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
+  const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
 
   useEffect(() => {
     if (id) {
@@ -35,23 +35,30 @@ const PickingSheetPrint = () => {
         // margin: 0,
       });
 
-      for (let i = 0; i < pickingSheet.length; i++) {
-        JsBarcode(barcodeLocationRef.current, pickingSheet[i].location, {
-          format: "CODE128",
-          displayValue: false,
-          width: 1.5,
-          height: 20,
-          margin: 0,
-        });
 
-        JsBarcode(barcodeItemRef.current, pickingSheet[i].barcode, {
-          format: "CODE128",
-          displayValue: false,
-          width: 1.5,
-          height: 20,
-          margin: 0,
-        });
-      }
+      pickingSheet.forEach((item, index) => {
+        const canvasBarcode = barcodeLocationRef.current[index];
+        if (canvasBarcode) {
+          JsBarcode(canvasBarcode, item.location, {
+            format: "CODE128",
+            displayValue: false,
+            width: 1.5,
+            height: 20,
+            margin: 0,
+          });
+        }
+
+        const canvasBarcodeItem = barcodeItemRef.current[index];
+        if (canvasBarcodeItem) {
+          JsBarcode(canvasBarcodeItem, item.barcode, {
+            format: "CODE128",
+            displayValue: false,
+            width: 1.5,
+            height: 20,
+            margin: 0,
+          });
+        }
+      });
 
       // Panggil print setelah barcode digambar
       setTimeout(() => {
@@ -115,7 +122,11 @@ const PickingSheetPrint = () => {
               <td style={td}>{item.item_code}</td>
               <td style={td}>
                 <span className="text-xs text-gray-500">{item.barcode}</span>
-                <canvas ref={barcodeItemRef}></canvas>
+                <canvas
+                  ref={(el: HTMLCanvasElement | null) => {
+                    barcodeItemRef.current[i] = el;
+                  }}
+                ></canvas>
               </td>
               {/* <td style={td}>{item.item_name}</td> */}
               {/* <td style={td}>{item.whs_code}</td> */}
@@ -123,7 +134,11 @@ const PickingSheetPrint = () => {
               {/* <td style={td}>{item.rec_date}</td> */}
               <td style={td}>
                 <span className="text-xs text-gray-500">{item.location}</span>
-                <canvas ref={barcodeLocationRef}></canvas>
+                <canvas
+                  ref={(el: HTMLCanvasElement | null) => {
+                    barcodeLocationRef.current[i] = el;
+                  }}
+                ></canvas>
               </td>
             </tr>
           ))}

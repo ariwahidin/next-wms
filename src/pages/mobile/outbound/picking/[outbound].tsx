@@ -75,7 +75,12 @@ const CheckingPage = () => {
   const [scanBarcode, setScanBarcode] = useState("");
   const [scanSerial, setScanSerial] = useState("");
   const [qtyScan, setQtyScan] = useState<number>(1);
-  const [searchInboundDetail, setSearchInboundDetail] = useState("");
+  
+
+
+  const [searchOutboundDetail, setSearchOutboundDetail] = useState("");
+
+
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showModalDetail, setShowModalDetail] = useState(false);
@@ -256,10 +261,10 @@ const CheckingPage = () => {
   const filteredItems =
     listOutboundDetail.filter(
       (item) =>
-        item?.item_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item?.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item?.quantity.toString().includes(searchTerm.toLowerCase()) ||
-        item?.scan_qty.toString().includes(searchTerm.toLowerCase())
+        item?.item_code.toLowerCase().includes(searchOutboundDetail.toLowerCase()) ||
+        item?.barcode.toLowerCase().includes(searchOutboundDetail.toLowerCase()) ||
+        item?.quantity.toString().includes(searchOutboundDetail.toLowerCase()) ||
+        item?.scan_qty.toString().includes(searchOutboundDetail.toLowerCase())
     ) || [];
 
   const filteredScannedItems =
@@ -513,8 +518,8 @@ const CheckingPage = () => {
               <Input
                 className="w-full"
                 placeholder="Search items..."
-                value={searchInboundDetail}
-                onChange={(e) => setSearchInboundDetail(e.target.value)}
+                value={searchOutboundDetail}
+                onChange={(e) => setSearchOutboundDetail(e.target.value)}
               />
             </div>
 
@@ -594,8 +599,8 @@ const CheckingPage = () => {
             <Input
               className="w-full"
               placeholder="Cari barang..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              // value={searchTerm}
+              // onChange={(e) => setSearchTerm(e.target.value)}
             />
 
             {/* <div className="text-sm">
