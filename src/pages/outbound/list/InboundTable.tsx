@@ -102,7 +102,6 @@ const InboundTable = ({ setEditData }) => {
   const { showAlert, notify } = useAlert();
 
   const HandlePicking = (id: number) => {
-
     showAlert(
       "Picking Confirmation",
       "Are you sure you want to save this data?",
@@ -172,6 +171,11 @@ const InboundTable = ({ setEditData }) => {
                 >
                   <CheckCheck className="h-4 w-4" />
                 </Button>
+              </>
+            )}
+
+            {params.data.status != "open" && (
+              <>
                 <Button
                   onClick={() => HandlePreviewPDF(params.data.ID)}
                   variant="ghost"
@@ -183,6 +187,7 @@ const InboundTable = ({ setEditData }) => {
                 </Button>
               </>
             )}
+
             <Button
               onClick={() => HandleEdit(params.data.ID)}
               variant="ghost"
@@ -191,14 +196,14 @@ const InboundTable = ({ setEditData }) => {
             >
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button
+            {/* <Button
               onClick={() => HandleDelete(params.data.id)}
               variant="ghost"
               size="icon"
               className="h-8 w-8"
             >
               <Trash2 className="h-4 w-4" />
-            </Button>
+            </Button> */}
           </div>
         );
       },

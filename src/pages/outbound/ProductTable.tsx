@@ -17,6 +17,9 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 const fetcher = (url: string) =>
   api.get(url, { withCredentials: true }).then((res) => {
+    if (res.data.header) {
+    }
+
     if (res.data.success && res.data.data.details) {
       return res.data.data.details.map((item: any, key: number) => ({
         ...item,
@@ -27,10 +30,7 @@ const fetcher = (url: string) =>
     return [];
   });
 
-const ProductTable = ({
-  formItem,
-  setFormItem,
-}) => {
+const ProductTable = ({ headerData, formItem, setFormItem }) => {
   let url = "/outbound/draft";
   if (formItem?.outbound_id) {
     url = "/outbound/" + formItem?.outbound_id;
@@ -54,61 +54,64 @@ const ProductTable = ({
       console.error("Gagal menghapus produk:", error);
     }
   };
+
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 60 },
     { field: "outbound_no", headerName: "Outbound No", width: 150 },
     { field: "item_code", headerName: "Item Code", width: 120 },
-    // { field: "item_name", headerName: "Item Name", width: 120 },
-    // { field: "gmc", headerName: "GMC", width: 110 },
     { field: "quantity", headerName: "Qty", width: 80 },
     { field: "whs_code", headerName: "Whs Code", width: 120 },
     { field: "remarks", headerName: "Remarks", width: 120 },
     { field: "uom", headerName: "UoM", width: 80 },
     { field: "handling_used", headerName: "Handling", width: 140 },
     { field: "total_vas", headerName: "VAS", width: 140 },
+
     {
       headerName: "Actions",
       field: "ID",
       cellRenderer: (params) => {
-        return (
-          <div>
-            <Button
-              onClick={() => {
-                setFormItem({
-                  ...formItem,
-                  outbound_id: params.data?.outbound_id,
-                  handling_id : params.data.handling_id,
-                  location: params.data.location,
-                  outbound_detail_id: params.data.ID,
-                  item_code: params.data.item_code,
-                  item_name : params.data.item_name,
-                  quantity: params.data.quantity,
-                  remarks: params.data.remarks,
-                  uom : params.data.uom,
-                  whs_code : params.data.whs_code,
-                  barcode : params.data.barcode
-                })
-                console.log("Dari table", params.data);
-              }}
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={() => HandleDelete(params.data.ID)}
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        );
+        if (headerData?.status === "open") {
+          return (
+            <div>
+              <Button
+                onClick={() => {
+                  setFormItem({
+                    ...formItem,
+                    outbound_id: params.data?.outbound_id,
+                    handling_id: params.data.handling_id,
+                    location: params.data.location,
+                    outbound_detail_id: params.data.ID,
+                    item_code: params.data.item_code,
+                    item_name: params.data.item_name,
+                    quantity: params.data.quantity,
+                    remarks: params.data.remarks,
+                    uom: params.data.uom,
+                    whs_code: params.data.whs_code,
+                    barcode: params.data.barcode,
+                  });
+                  console.log("Dari table", params.data);
+                }}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => HandleDelete(params.data.ID)}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          );
+        }
       },
     },
   ]);
+
   const [quickFilterText, setQuickFilterText] = useState<string>();
   const onFilterTextBoxChanged = useCallback(
     ({ target: { value } }: ChangeEvent<HTMLInputElement>) =>

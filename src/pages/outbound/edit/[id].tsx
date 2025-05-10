@@ -41,14 +41,12 @@ export default function Page() {
   useAuth();
   const router = useRouter();
   const { id } = router.query;
+  const [headerData, setHeaderData] = useState({}) as any;
   const [formHeader, setFormHeader] = useState({}) as any;
   const [formItem, setFormItem] = useState({});
-
-
   const { showAlert, notify } = useAlert();
 
   async function handleSave() {
-
     showAlert(
       "Konfirmasi Simpan",
       "Apakah Anda yakin ingin menyimpan data ini?",
@@ -72,7 +70,6 @@ export default function Page() {
     );
   }
 
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -82,7 +79,8 @@ export default function Page() {
           if (res.data.data.header) {
             setFormHeader(res.data.data.form_header);
             setFormItem(res.data.data.form_items);
-            document.title = res.data.data.form_header.outbound_no;;
+            setHeaderData(res.data.data.header);
+            document.title = res.data.data.form_header.outbound_no;
           } else {
             console.error("Header data is missing!");
           }
@@ -91,8 +89,6 @@ export default function Page() {
         console.error("Error fetching data:", error);
       }
     };
-
-    
 
     fetchData();
   }, [id]);
@@ -144,28 +140,31 @@ export default function Page() {
                 <CardContent>
                   <HeaderForm
                     formHeader={formHeader}
-                    setFormHeader={setFormHeader} 
-                    dataForm={undefined} 
-                    setDataForm={undefined}                  />
+                    setFormHeader={setFormHeader}
+                    dataForm={undefined}
+                    setDataForm={undefined}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
             <TabsContent value="password">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="col-span-2">
-                  <ProductTable
-                  formItem={formItem}
-                  setFormItem={setFormItem}
-                />
+                  <ProductTable headerData={headerData} formItem={formItem} setFormItem={setFormItem} />
                 </div>
-                <div className="col-span-1">
-                  <ProductForm
-                    formHeader={formHeader}
-                    setFormHeader={setFormHeader}
-                    formItem={formItem}
-                    setFormItem={setFormItem}
-                  />
-                </div>
+
+                {headerData.status === "open" && (
+                  <div className="col-span-1">
+                    <ProductForm
+                      formHeader={formHeader}
+                      setFormHeader={setFormHeader}
+                      formItem={formItem}
+                      setFormItem={setFormItem}
+                    />
+                  </div>
+                )}
+
+
               </div>
             </TabsContent>
           </Tabs>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as React from "react";
 import {
   AudioWaveform,
@@ -12,6 +13,9 @@ import {
   InboxIcon,
   Box,
   Smartphone,
+  Settings2,
+  Settings,
+  SettingsIcon,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -84,24 +88,6 @@ const data = {
           url: "/master/origin",
         },
 
-        {
-          title: "Users",
-          url: "/master/user",
-        },
-        {
-          title: "Roles",
-          url: "/master/role",
-        },
-        {
-          title: "Permissions",
-          url: "/master/permissions",
-        },
-        {
-          title: "Role Permissions",
-          url: "/master/role-permission",
-        },
-
-        
         // {
         //   title: "Master Items",
         //   url: "/master/item",
@@ -123,13 +109,13 @@ const data = {
           url: "/inbound/create",
         },
         {
+          title: "Upload Inbound",
+          url: "/inbound/create/upload",
+        },
+        {
           title: "List Inbound",
           url: "/inbound/list",
         },
-        // {
-        //   title: "Scan Inbound",
-        //   url: "/inbound/scan",
-        // },
       ],
     },
     {
@@ -142,14 +128,6 @@ const data = {
           title: "List Inventory",
           url: "/inventory/list",
         },
-        // {
-        //   title: "Transfer Location",
-        //   url: "/inventory/transfer",
-        // },
-        // {
-        //   title: "STO",
-        //   url: "/inventory/sto",
-        // },
       ],
     },
     {
@@ -166,10 +144,26 @@ const data = {
           title: "List Outbound",
           url: "/outbound/list",
         },
-        // {
-        //   title: "Scan Outbound",
-        //   url: "/outbound/scan",
-        // },
+      ],
+    },
+    {
+      title: "Stock Take",
+      url: "#",
+      icon: Frame,
+      isActive: true,
+      items: [
+        {
+          title: "Generate Stock Take",
+          url: "/stock-take/generate",
+        },
+        {
+          title: "Progress Stock Take",
+          url: "/stock-take/progress",
+        },
+        {
+          title: "List Stock Take",
+          url: "/stock-take/list",
+        },
       ],
     },
     {
@@ -201,6 +195,30 @@ const data = {
         {
           title: "Home",
           url: "/mobile/home",
+        },
+      ],
+    },
+    {
+      title: "Configuration",
+      url: "#",
+      icon: SettingsIcon,
+      isActive: true,
+      items: [
+        {
+          title: "Users",
+          url: "/master/user",
+        },
+        {
+          title: "Roles",
+          url: "/master/role",
+        },
+        {
+          title: "Permissions",
+          url: "/master/permissions",
+        },
+        {
+          title: "Role Permissions",
+          url: "/master/role-permission",
         },
       ],
     },
