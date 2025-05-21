@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// hooks/useAuth.ts
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { useRouter } from "next/router";

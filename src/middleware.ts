@@ -11,10 +11,10 @@ export function middleware(req: NextRequest) {
 
 export const config = {
     matcher: [
-        '/dashboard/:path*',
-        '/master/:path*',
-        '/inbound/:path*',
-        '/outbound/:path*',
-        '/rf/:path*',
+        // '/dashboard/:path*',
+        // '/master/:path*',
+        // '/inbound/:path*',
+        // '/outbound/:path*',
+        // '/rf/:path*',
     ],
 };

@@ -7,7 +7,7 @@ const guestApi = axios.create({
 });
 
 guestApi.interceptors.request.use((config) => {
-  eventBus.emit("loading", true); // Mulai loading
+  eventBus.emit("loading", true); 
   const token = document.cookie
     .split("; ")
     .find((row) => row.startsWith("token="))
