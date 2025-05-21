@@ -6,16 +6,16 @@ const guestApi = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// guestApi.interceptors.request.use((config) => {
-//   eventBus.emit("loading", true); // Mulai loading
-//   const token = document.cookie
-//     .split("; ")
-//     .find((row) => row.startsWith("token="))
-//     ?.split("=")[1];
+guestApi.interceptors.request.use((config) => {
+  eventBus.emit("loading", true); // Mulai loading
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1];
 
-//   if (token) config.headers.Authorization = `Bearer ${token}`;
-//   return config;
-// });
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
 guestApi.interceptors.response.use(
   (response) => {
