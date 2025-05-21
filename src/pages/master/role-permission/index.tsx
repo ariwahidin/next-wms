@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 "use client";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ export default function RolePermissionPage() {
   const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>(
     []
   );
+  const [loading, setLoading] = useState(false);
 
   // Fetch all roles with their permissions
   const fetchRoles = async () => {
@@ -35,16 +36,28 @@ export default function RolePermissionPage() {
     setRoles(res.data.data);
   };
 
-  // Fetch all available permissions
-  // const fetchPermissions = async () => {
-  //   const res = await api.get("/permissions", { withCredentials: true });
-  //   setPermissions(res.data.data);
-  // };
-
   useEffect(() => {
     // Promise.all([fetchRoles(), fetchPermissions()])
-    fetchRoles();
+    // fetchRoles();
     // fetchPermissions();
+
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [rolesRes, permissionsRes] = await Promise.all([
+          api.get("/roles", { withCredentials: true }),
+          api.get("/permissions", { withCredentials: true }),
+        ]);
+        setRoles(rolesRes.data.data);
+        setPermissions(permissionsRes.data.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handleSelectRole = (roleId: number) => {
@@ -91,47 +104,53 @@ export default function RolePermissionPage() {
       <div className="p-6 space-y-6 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold">Role-Permission Management</h1>
 
-        <div className="grid grid-cols-2 gap-6">
-          <Card>
-            <CardContent className="p-4">
-              <h2 className="text-lg font-semibold mb-2">Roles</h2>
-              {roles.map((role) => (
-                <Button
-                  key={role.ID}
-                  variant={selectedRole?.ID === role.ID ? "default" : "outline"}
-                  onClick={() => handleSelectRole(role.ID)}
-                  className="w-full mb-2"
-                >
-                  {role.name}
-                </Button>
-              ))}
-            </CardContent>
-          </Card>
-
-          {selectedRole && (
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-6">
             <Card>
-              <CardContent className="p-4 space-y-2">
-                <h2 className="text-lg font-semibold mb-2">
-                  Permissions for {selectedRole?.name}
-                </h2>
-                {permissions.map((perm) => (
-                  <div key={perm.ID} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`perm-${perm.ID}`}
-                      checked={selectedPermissionIds.includes(perm.ID)}
-                      onCheckedChange={() => handleTogglePermission(perm.ID)}
-                    />
-                    <Label htmlFor={`perm-${perm.ID}`}>{perm.name}</Label>
-                  </div>
+              <CardContent className="p-4">
+                <h2 className="text-lg font-semibold mb-2">Roles</h2>
+                {roles.map((role) => (
+                  <Button
+                    key={role.ID}
+                    variant={
+                      selectedRole?.ID === role.ID ? "default" : "outline"
+                    }
+                    onClick={() => handleSelectRole(role.ID)}
+                    className="w-full mb-2"
+                  >
+                    {role.name}
+                  </Button>
                 ))}
-
-                <Button onClick={handleSave} className="mt-4">
-                  Save Permissions
-                </Button>
               </CardContent>
             </Card>
-          )}
-        </div>
+
+            {selectedRole && (
+              <Card>
+                <CardContent className="p-4 space-y-2">
+                  <h2 className="text-lg font-semibold mb-2">
+                    Permissions for {selectedRole?.name}
+                  </h2>
+                  {permissions.map((perm) => (
+                    <div key={perm.ID} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`perm-${perm.ID}`}
+                        checked={selectedPermissionIds.includes(perm.ID)}
+                        onCheckedChange={() => handleTogglePermission(perm.ID)}
+                      />
+                      <Label htmlFor={`perm-${perm.ID}`}>{perm.name}</Label>
+                    </div>
+                  ))}
+
+                  <Button onClick={handleSave} className="mt-4">
+                    Save Permissions
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
       </div>
     </Layout>
   );
