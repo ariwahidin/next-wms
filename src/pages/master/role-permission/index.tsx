@@ -41,8 +41,9 @@ export default function RolePermissionPage() {
   };
 
   useEffect(() => {
-    fetchRoles();
-    fetchPermissions();
+    Promise.all([fetchRoles(), fetchPermissions()])
+    // fetchRoles();
+    // fetchPermissions();
   }, []);
 
   const handleSelectRole = (roleId: number) => {
