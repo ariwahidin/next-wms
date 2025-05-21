@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 "use client";
 import { useEffect, useState } from "react";
@@ -36,29 +37,26 @@ export default function RolePermissionPage() {
     setRoles(res.data.data);
   };
 
-  useEffect(() => {
-    // Promise.all([fetchRoles(), fetchPermissions()])
-    // fetchRoles();
-    // fetchPermissions();
+  // useEffect(() => {
 
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [rolesRes, permissionsRes] = await Promise.all([
-          api.get("/roles", { withCredentials: true }),
-          api.get("/permissions", { withCredentials: true }),
-        ]);
-        setRoles(rolesRes.data.data);
-        setPermissions(permissionsRes.data.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  //   const fetchData = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const [rolesRes, permissionsRes] = await Promise.all([
+  //         api.get("/roles", { withCredentials: true }),
+  //         api.get("/permissions", { withCredentials: true }),
+  //       ]);
+  //       setRoles(rolesRes.data.data);
+  //       setPermissions(permissionsRes.data.data);
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchData();
-  }, []);
+  //   fetchData();
+  // }, []);
 
   const handleSelectRole = (roleId: number) => {
     const role = roles.find((r) => r.ID === roleId);
