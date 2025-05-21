@@ -118,8 +118,6 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AlertContext.Provider value={{ showAlert, notify }}>
       {children}
-
-      {/* 7. Render Alert Dialog untuk konfirmasi */}
       <Dialog open={alert.isOpen} onOpenChange={closeAlert}>
         <DialogContent className="sm:max-w-lg bg-white">
           <DialogHeader>

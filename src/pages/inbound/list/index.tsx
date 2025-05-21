@@ -53,11 +53,7 @@ export default function Page() {
   }
 
   async function handleSave() {
-    console.log("Supplier Selected : ", selectedSupplier);
-    console.log("Inbound Date : ", inboundDate);
-    const newDetailItems = await getDetailItems(); // Menunggu hasil API
-    console.log("Detail Items : ", newDetailItems);
-
+    // const newDetailItems = await getDetailItems(); 
     try {
       const res = await api.post(
         "/inbound",
@@ -78,7 +74,6 @@ export default function Page() {
 
   // set title
   useEffect(() => {
-    // Fetch list suppliers
     api.get("/suppliers", { withCredentials: true }).then((res) => {
       setListSuppliers(res.data.data);
       setOptionsSupplier(
@@ -91,7 +86,7 @@ export default function Page() {
   }, []);
 
   return (
-    <Layout title="Create Inbound" subTitle="List Inbound">
+    <Layout title="Inbound" subTitle="List inbound">
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
         <InboundTable setEditData={setEditData} />
       </div>

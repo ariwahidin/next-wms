@@ -11,6 +11,7 @@ import useSWR, { mutate } from "swr";
 import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./ProductTable.module.css";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import router from "next/router";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -62,9 +63,12 @@ const ProductTable = ({
     {
       headerName: "Actions",
       field: "ID",
+      pinned: "right",
+      headerClass: "header-center",
+      width: 100,
       cellRenderer: (params) => {
         return (
-          <div>
+          <div style={{ textAlign: "center" }}>
             <Button
               onClick={() => {
                 setFormItem(params.data);
@@ -73,7 +77,7 @@ const ProductTable = ({
               }}
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 mr-2 bg-green-500 text-white hover:bg-green-600"
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -81,7 +85,7 @@ const ProductTable = ({
               onClick={() => HandleDelete(params.data.inbound_detail_id)}
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 mr-2 bg-red-500 text-white hover:bg-red-600"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -111,6 +115,8 @@ const ProductTable = ({
       console.error("Gagal menghapus produk:", error);
     }
   };
+
+  
 
   return (
     <Card>

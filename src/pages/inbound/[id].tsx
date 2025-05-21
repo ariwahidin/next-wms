@@ -81,7 +81,7 @@ export default function Page() {
 
           console.log(form.data.data?.form_header.inbound_no)
 
-          setSubtitle("Inbound - " + form.data.data?.form_header.inbound_no);
+          setSubtitle("" + form.data.data?.form_header.inbound_no);
           setLoading(false);
         }
       } catch (error) {
@@ -96,7 +96,7 @@ export default function Page() {
   return loading ? (
     <p>Loading...</p>
   ) : (
-    <Layout title="Inbound" subTitle={subtitle}>
+    <Layout title="List inbound" titleLink="/inbound/list" subTitle={subtitle}>
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
         <Tabs defaultValue="account" className="w-full">
           <TabsList>

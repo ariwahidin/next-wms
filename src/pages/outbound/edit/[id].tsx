@@ -36,6 +36,7 @@ import api from "@/lib/api";
 import { useRouter } from "next/router";
 import HeaderForm from "../HeaderForm";
 import { useAlert } from "@/contexts/AlertContext";
+import Layout from "@/components/layout";
 
 export default function Page() {
   useAuth();
@@ -94,82 +95,50 @@ export default function Page() {
   }, [id]);
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Outbound</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{formHeader?.outbound_no}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-          <div style={{ marginLeft: "auto" }}>
-            <Button
-              variant="outline"
-              className="me-2"
-              onClick={() => router.back()}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSave} className="me-4">
-              Save
-            </Button>
-          </div>
-        </header>
-        <div className="border-t border-gray-200"></div>
+    <Layout title="Outbound" titleLink="/outbound/list" subTitle="Edit">
+      <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
+        <Tabs defaultValue="account" className="w-full">
+          <TabsList>
+            <TabsTrigger value="account">Header</TabsTrigger>
+            <TabsTrigger value="password">Items</TabsTrigger>
+          </TabsList>
+          <TabsContent value="account">
+            <Card>
+              {/* <CardHeader></CardHeader> */}
+              <CardContent>
+                <HeaderForm
+                  formHeader={formHeader}
+                  setFormHeader={setFormHeader}
+                  dataForm={undefined}
+                  setDataForm={undefined}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="password">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="col-span-2">
+                <ProductTable
+                  headerData={headerData}
+                  formItem={formItem}
+                  setFormItem={setFormItem}
+                />
+              </div>
 
-        <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
-          <Tabs defaultValue="account" className="w-full">
-            <TabsList>
-              <TabsTrigger value="account">Header</TabsTrigger>
-              <TabsTrigger value="password">Items</TabsTrigger>
-            </TabsList>
-            <TabsContent value="account">
-              <Card>
-                {/* <CardHeader></CardHeader> */}
-                <CardContent>
-                  <HeaderForm
+              {headerData.status === "open" && (
+                <div className="col-span-1">
+                  <ProductForm
                     formHeader={formHeader}
                     setFormHeader={setFormHeader}
-                    dataForm={undefined}
-                    setDataForm={undefined}
+                    formItem={formItem}
+                    setFormItem={setFormItem}
                   />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="password">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="col-span-2">
-                  <ProductTable headerData={headerData} formItem={formItem} setFormItem={setFormItem} />
                 </div>
-
-                {headerData.status === "open" && (
-                  <div className="col-span-1">
-                    <ProductForm
-                      formHeader={formHeader}
-                      setFormHeader={setFormHeader}
-                      formItem={formItem}
-                      setFormItem={setFormItem}
-                    />
-                  </div>
-                )}
-
-
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </Layout>
   );
 }

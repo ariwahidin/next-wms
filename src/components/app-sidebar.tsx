@@ -28,6 +28,19 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
+import * as Icons from "lucide-react";
+import api from "@/lib/api";
+import { useEffect, useState } from "react";
+
+import { useSelector } from "react-redux";
+import { RootState } from "@/store"; // Pastikan ini pointing ke konfigurasi store-mu
+
+// helper untuk ambil icon berdasarkan nama
+function getIcon(name: string) {
+  const LucideIcon = Icons[name as keyof typeof Icons];
+  return LucideIcon || Icons.HelpCircle; // fallback kalau tidak ada
+}
+
 // This is sample data.
 const data = {
   user: {
@@ -87,15 +100,6 @@ const data = {
           title: "Origin",
           url: "/master/origin",
         },
-
-        // {
-        //   title: "Master Items",
-        //   url: "/master/item",
-        // },
-        // {
-        //   title: "Dashboard",
-        //   url: "/dashboard",
-        // },
       ],
     },
     {
@@ -214,11 +218,15 @@ const data = {
         },
         {
           title: "Permissions",
-          url: "/master/permissions",
+          url: "/configuration/permissions",
         },
         {
           title: "Role Permissions",
           url: "/master/role-permission",
+        },
+        {
+          title: "Menu",
+          url: "/menu",
         },
       ],
     },
@@ -243,6 +251,24 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const menus = useSelector((state: RootState) => state.user.menus);
+
+  // const [menus, setMenus] = useState<any[]>([]);
+
+  // useEffect(() => {
+  //   const fetchMenus = async () => {
+  //     try {
+  //       const roleId = 1; // atau ambil dari context/auth
+  //       const res = await api.get(`/menus/user`, { withCredentials: true });
+  //       setMenus(res.data.data);
+  //     } catch (err) {
+  //       console.error("Failed to fetch menus", err);
+  //     }
+  //   };
+
+  //   fetchMenus();
+  // }, []);
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -250,6 +276,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* <TeamSwitcher teams={data.teams} /> */}
       </SidebarHeader>
       <SidebarContent>
+        {/* <NavMain items={menus} /> */}
         <NavMain items={data.navMain} />
         {/* <NavProjects projects={data.projects} /> */}
       </SidebarContent>

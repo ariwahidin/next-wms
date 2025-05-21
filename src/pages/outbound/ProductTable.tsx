@@ -69,10 +69,13 @@ const ProductTable = ({ headerData, formItem, setFormItem }) => {
     {
       headerName: "Actions",
       field: "ID",
+      pinned: "right",
+      headerClass: "header-center",
+      width: 100,
       cellRenderer: (params) => {
         if (headerData?.status === "open") {
           return (
-            <div>
+            <div style={{ textAlign: "center" }}>
               <Button
                 onClick={() => {
                   setFormItem({
@@ -89,11 +92,10 @@ const ProductTable = ({ headerData, formItem, setFormItem }) => {
                     whs_code: params.data.whs_code,
                     barcode: params.data.barcode,
                   });
-                  console.log("Dari table", params.data);
                 }}
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 mr-2 bg-green-500 text-white hover:bg-green-600"
               >
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -101,7 +103,7 @@ const ProductTable = ({ headerData, formItem, setFormItem }) => {
                 onClick={() => HandleDelete(params.data.ID)}
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 mr-2 bg-red-500 text-white hover:bg-red-600"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

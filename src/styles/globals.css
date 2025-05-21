@@ -122,6 +122,10 @@ body {
   font-family: "Roboto", sans-serif;
 }
 
+.ag-center-header {
+  text-align: center !important;
+}
+
 .header-center .ag-header-cell-label {
   justify-content: center !important;
 }

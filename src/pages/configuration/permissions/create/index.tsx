@@ -25,12 +25,12 @@ const CreatePermissionPage = () => {
         description: res.data.message,
         type: "success",
       });
-      router.push("/master/permissions");
+      router.push("/configuration/permissions");
     }
   };
 
   return (
-    <Layout title="Master" subTitle="Permissions">
+    <Layout title="Configuration" subTitle="Permissions">
       <div className="container mx-auto p-4">
         <Title>Create Permission</Title>
         <PermissionForm mode="create" onSubmit={handleSubmit} />

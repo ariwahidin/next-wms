@@ -12,7 +12,7 @@ import api from "@/lib/api";
 
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import { Button } from "@/components/ui/button";
-import { Edit, Printer, PrinterIcon } from "lucide-react";
+import { Edit, Eye, LineChart, MapIcon, MapPinCheckInsideIcon, MapPlus, Printer, PrinterIcon, TrainTrackIcon } from "lucide-react";
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 export default function OrderListPage() {
@@ -34,22 +34,26 @@ export default function OrderListPage() {
       },
     },
 
-    { field: "order_no", headerName: "Order ID", flex: 1 },
-    // { field: "delivery_number", headerName: "Delivery Number", flex: 1 },
-    { field: "qty", headerName: "Quantity", width: 120 },
-    { field: "volume", headerName: "Volume", width: 120 },
+    { field: "order_no", headerName: "SPK No.", width: 200 },
+    { field: "status", headerName: "Status", width: 120 },
+    { field: "transporter", headerName: "Transporter", width: 200 },
+    { field: "driver", headerName: "Driver", width: 200 },
+    { field: "truck_no", headerName: "Truck No", width: 120 },
+    { field: "total_order", headerName: "Total Order", width: 120 },
     {
       headerName: "Action",
+      pinned: "right",
+      headerClass: "header-center",
       field: "action",
-      width: 120,
+      width: 150,
       cellRenderer: (params: any) => {
         return (
-          <div>
+          <div className="flex justify-center">
             <Button
               onClick={() => {
                 router.push(`/shipping/surat-jalan`);
               }}
-              className=""
+              className="h-8 w-8 mr-2 bg-blue-200 text-black hover:bg-blue-400"
               variant="ghost"
             >
               <Printer></Printer>
@@ -58,10 +62,19 @@ export default function OrderListPage() {
               onClick={() =>
                 router.push(`/shipping/order-list/${params.data.order_no}`)
               }
-              className=""
+              className="h-8 w-8 mr-2 bg-green-500 text-white hover:bg-green-600"
               variant="ghost"
             >
               <Edit />
+            </Button>
+            <Button
+              onClick={() =>
+                router.push(`/shipping/tracking/${params.data.order_no}`)
+              }
+              className="h-8 w-8 mr-2 bg-yellow-500 text-black hover:bg-green-600"
+              variant="ghost"
+            >
+              <Eye />
             </Button>
           </div>
         );

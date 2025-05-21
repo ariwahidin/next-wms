@@ -33,14 +33,14 @@ export default function OrderPage() {
       headerCheckboxSelection: true, // Checkbox in the header to select all rows
       checkboxSelection: true, // Checkbox in each row for individual selection
       field: "outbound_id",
-      headerName: "Order ID",
+      headerName: "Delivery No.",
       width: 150,
       pinned: "left",
       valueGetter: (params) => {
         return params.data.delivery_number;
       },
     },
-    { field: "customer_name", headerName: "Customer", flex: 1 },
+    { field: "customer_name", headerName: "Customer", width: 300 },
     { field: "total_item", headerName: "Total Item", width: 100 },
     { field: "total_qty", headerName: "Quantity", width: 100 },
     { field: "volume", headerName: "Volume", width: 100 },

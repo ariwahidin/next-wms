@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { ChevronsUpDown, LogOut, User } from "lucide-react";
@@ -24,6 +23,11 @@ import {
 import api from "@/lib/api";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { useAppSelector } from "@/hooks/useAppSelector";
+
+import { useDispatch } from "react-redux";
+import { persistor } from "@/store";
+import { logout } from "@/store/userSlice";
 
 export function NavUser({
   user,
@@ -38,40 +42,57 @@ export function NavUser({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUser = async () => {
-    const response = await api.get("/user/profile", {
-      withCredentials: true,
-    });
+  const userRedux = useAppSelector((state) => state.user);
 
-    if (response.data.success === true) {
-      const profile = response.data.data;
-      user.name = profile.name;
-      user.email = profile.email;
-      user.avatar = profile.avatar;
-      setIsLoading(false);
-    }
-  };
+  // const fetchUser = async () => {
+  //   const response = await api.get("/user/profile", {
+  //     withCredentials: true,
+  //   });
+
+  //   if (response.data.success === true) {
+  //     const profile = response.data.data;
+  //     user.name = profile.name;
+  //     user.email = profile.email;
+  //     user.avatar = profile.avatar;
+  //     setIsLoading(false);
+  //   }
+  // };
 
   useEffect(() => {
-    fetchUser();
+    // fetchUser();
   }, []);
+
+  // const handleLogout = () => {
+  //   api
+  //     .get("/logout", { withCredentials: true })
+  //     .then((res) => {
+  //       console.log(res);
+  //       if (res.data.success === true) {
+  //         router.push("/auth/login");
+  //       }
+  //     })
+  //     .catch((err) => console.log(err));
+  // };
+
+  const dispatch = useDispatch();
 
   const handleLogout = () => {
     api
       .get("/logout", { withCredentials: true })
       .then((res) => {
-        console.log(res);
         if (res.data.success === true) {
-          // window.location.href = "/auth/login";
-          router.push("/auth/login");
+          // 1. Hapus user dari Redux state
+          dispatch(logout());
+
+          // 2. Hapus Redux Persist dari localStorage
+          persistor.purge().then(() => {
+            // 3. Redirect ke login
+            router.push("/auth/login");
+          });
         }
       })
       .catch((err) => console.log(err));
   };
-
-  // if (isLoading) {
-  //   return <div>Loading</div>;
-  // }
 
   return (
     <SidebarMenu>
@@ -92,8 +113,8 @@ export function NavUser({
                 )}
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-semibold">{userRedux.name}</span>
+                <span className="truncate text-xs">{userRedux.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>

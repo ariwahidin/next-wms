@@ -30,11 +30,11 @@ const PermissionListPage = () => {
 
   return (
 
-    <Layout title="Master" subTitle="Permissions">
+    <Layout title="Configuration" subTitle="Permissions">
 
     <div className="container mx-auto p-4">
       <Title>Permission List</Title>
-      <Button onClick={() => router.push("/master/permissions/create")}>
+      <Button onClick={() => router.push("/configuration/permissions/create")}>
         Create Permission
       </Button>
       <div className="mt-6">
@@ -55,7 +55,7 @@ const PermissionListPage = () => {
                 <td className="border p-2">{perm.description}</td>
                 <td className="border p-2">
                   <Button
-                    onClick={() => router.push(`/master/permissions/edit/${perm.ID}`)}
+                    onClick={() => router.push(`/configuration/permissions/edit/${perm.ID}`)}
                   >
                     Edit
                   </Button>

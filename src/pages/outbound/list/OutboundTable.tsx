@@ -11,6 +11,7 @@ import {
   CheckCheck,
   CheckCircle2,
   CheckSquareIcon,
+  Forklift,
   Hand,
   HandIcon,
   Pencil,
@@ -60,43 +61,43 @@ const HandleDelete = (id: number) => {
 
 const HandlePreviewPDF = (id: number) => {
   console.log("Preview PDF ID:", id);
-  // window.open(`/outbound/print/picking_sheet/${id}`, "_blank");
-  router.push(`/outbound/print/picking_sheet/${id}`);
+  window.open(`/outbound/print/picking_sheet/${id}`, "_blank");
+  // router.push(`/outbound/print/picking_sheet/${id}`);
 };
 
-const handleCompletePicking = async (id: number) => {
-  console.log("Complete Picking ID:", id);
+// const handleCompletePicking = async (id: number) => {
+//   console.log("Complete Picking ID:", id);
 
-  try {
-    const response = await api.post(
-      `/outbound/picking/complete/${id}`,
-      { outbound_id: id },
-      { withCredentials: true }
-    );
+//   try {
+//     const response = await api.post(
+//       `/outbound/picking/complete/${id}`,
+//       { outbound_id: id },
+//       { withCredentials: true }
+//     );
 
-    console.log("Response Object:", response); // Debugging
+//     console.log("Response Object:", response); // Debugging
 
-    const data = await response.data;
+//     const data = await response.data;
 
-    if (data.success) {
-      eventBus.emit("showAlert", {
-        title: "Success!",
-        description: data.message,
-        type: "success",
-      });
+//     if (data.success) {
+//       eventBus.emit("showAlert", {
+//         title: "Success!",
+//         description: data.message,
+//         type: "success",
+//       });
 
-      setTimeout(() => {
-        window.location.href = "/outbound/list";
-      }, 500);
-    }
+//       setTimeout(() => {
+//         window.location.href = "/outbound/list";
+//       }, 500);
+//     }
 
-    return data;
-  } catch (error) {
-    console.error("Error saving inbound:", error);
-  }
-};
+//     return data;
+//   } catch (error) {
+//     console.error("Error saving inbound:", error);
+//   }
+// };
 
-const InboundTable = ({ setEditData }) => {
+const OutboundTable = ({ setEditData }) => {
   const { data: rowData, error, mutate } = useSWR("/outbound", fetcher);
 
   const { showAlert, notify } = useAlert();
@@ -122,9 +123,8 @@ const InboundTable = ({ setEditData }) => {
                 type: "success",
               });
 
-              setTimeout(() => {
-                window.location.href = "/outbound/list";
-              }, 500);
+              // reload data
+              mutate("/outbound");
             }
           })
           .catch((error) => {
@@ -133,14 +133,46 @@ const InboundTable = ({ setEditData }) => {
           });
       }
     );
+  };
 
-    // window.location.href = `/inbound/complete/${id}`; // Ganti dengan URL yang sesuai
+  const HandlePickingComplete = (id: number) => {
+    showAlert(
+      "Picking Complete Confirmation",
+      "Are you sure you want to save this data?",
+      "error",
+      () => {
+
+        api
+          .post(
+            `/outbound/picking/complete/${id}`,
+            { outbound_id: id },
+            { withCredentials: true }
+          )
+          .then((res) => {
+            if (res.data.success) {
+              eventBus.emit("showAlert", {
+                title: "Success!",
+                description: res.data.message,
+                type: "success",
+              });
+
+              // reload data
+              mutate("/outbound");
+            }
+          })
+          .catch((error) => {
+            console.error("Error saving inbound:", error);
+            alert("Gagal menyimpan inbound");
+          });
+      }
+    );
   };
 
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
     {
       headerName: "Actions",
+      pinned: "right",
       headerClass: "header-center",
       cellStyle: { textAlign: "center" },
       field: "ID",
@@ -153,20 +185,20 @@ const InboundTable = ({ setEditData }) => {
                 onClick={() => HandlePicking(params.data.ID)}
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 mr-2 bg-green-200 text-black hover:bg-green-600"
                 title="Picking"
               >
-                <Hand className="h-4 w-4" />
+                <Forklift className="h-4 w-4" />
               </Button>
             )}
 
             {params.data.status === "picking" && (
               <>
                 <Button
-                  onClick={() => handleCompletePicking(params.data.ID)}
+                  onClick={() => HandlePickingComplete(params.data.ID)}
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 mr-2 bg-blue-500 text-white hover:bg-blue-600"
                   title="Complete Picking"
                 >
                   <CheckCheck className="h-4 w-4" />
@@ -180,7 +212,7 @@ const InboundTable = ({ setEditData }) => {
                   onClick={() => HandlePreviewPDF(params.data.ID)}
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 mr-2 bg-blue-100 text-black hover:bg-blue-200"
                   title="Print Picking Sheet"
                 >
                   <Printer className="h-4 w-4" />
@@ -189,21 +221,14 @@ const InboundTable = ({ setEditData }) => {
             )}
 
             <Button
+              title="View or Edit"
               onClick={() => HandleEdit(params.data.ID)}
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 mr-2 bg-green-500 text-white hover:bg-green-600"
             >
               <Pencil className="h-4 w-4" />
             </Button>
-            {/* <Button
-              onClick={() => HandleDelete(params.data.id)}
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button> */}
           </div>
         );
       },
@@ -307,4 +332,4 @@ const InboundTable = ({ setEditData }) => {
   );
 };
 
-export default InboundTable;
+export default OutboundTable;

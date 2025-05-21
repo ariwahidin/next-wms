@@ -10,15 +10,23 @@ import {
   Check,
   CheckCheck,
   CheckCircle2,
+  CheckCircle2Icon,
   CheckSquareIcon,
+  FireExtinguisher,
+  Forklift,
+  ForkliftIcon,
+  LucideForklift,
   Pencil,
+  Printer,
   Trash2,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import useSWR, { mutate } from "swr";
 import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./InboundTable.module.css";
 import { useAlert } from "@/contexts/AlertContext";
 import { useRouter } from "next/router";
+import eventBus from "@/utils/eventBus";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -55,67 +63,83 @@ const InboundTable = ({ setEditData }) => {
   };
 
   const HandleComplete = (id: number) => {
-    console.log("Complete ID:", id);
-
     showAlert(
-      "Konfirmasi Simpan",
-      "Apakah Anda yakin ingin menyimpan data ini?",
+      "Confirm Putaway",
+      "Are you sure you want to save this data?",
       "error",
-      () => {
-        console.log(id);
-        api
-          .post(
-            `/inbound/complete/${id}`,
-            { inbound_id: id },
-            { withCredentials: true }
-          )
-          .then((res) => {
-            if (res.data.success) {
-              notify("Berhasil!", "Successfully", "success");
-              setTimeout(() => {
-                // window.location.href = "/inbound/list";
-                router.push("/inbound/list");
-                console.log("hah");
-              }, 1000);
-            }
-          })
-          .catch((error) => {
-            console.error("Error saving inbound:", error);
-            alert("Gagal menyimpan inbound");
+      async () => {
+        const response = await api.post(
+          `/inbound/complete/${id}`,
+          { inbound_id: id },
+          { withCredentials: true }
+        );
+
+        if (response.data.success) {
+          eventBus.emit("showAlert", {
+            title: "Success!",
+            description: "berhassss",
+            type: "success",
           });
+
+          // reload data
+          mutate("/inbound");
+        }
       }
     );
+  };
+
+  const HandlePreviewPDF = (id: number) => {
+    window.open(`/inbound/putaway-sheet/${id}`, "_blank");
+    // router.push(`/inbound/putaway-sheet/${id}`);
   };
 
   const [columnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
     {
       headerName: "Actions",
+      pinned: "right",
+      headerClass: "header-center",
+      width: 200,
       field: "ID",
       cellRenderer: (params) => {
         return (
-          <div>
+          <div style={{ textAlign: "center" }}>
+            {params.data.status === "open" && (
+              <Button
+                title="Confirm Putaway"
+                onClick={() => HandleComplete(params.data.id)}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 mr-2  bg-blue-500 text-white hover:bg-blue-600"
+              >
+                <CheckCheck className="h-4 w-4" />
+              </Button>
+            )}
+
             <Button
-              onClick={() => HandleComplete(params.data.id)}
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-            </Button>
-            <Button
+              title="View or Edit"
               onClick={() => HandleEdit(params.data.id)}
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 mr-2 bg-green-500 text-white hover:bg-green-600"
             >
               <Pencil className="h-4 w-4" />
             </Button>
             <Button
+              title="Print Putaway Slip"
+              onClick={() => HandlePreviewPDF(params.data.id)}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 mr-2 bg-green-100 text-black hover:bg-green-600"
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
+            <Button
+              title="Delete or Cancel"
               onClick={() => HandleDelete(params.data.id)}
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 bg-red-500 text-white hover:bg-red-600"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -123,10 +147,37 @@ const InboundTable = ({ setEditData }) => {
         );
       },
     },
-    { field: "inbound_date", headerName: "Inbound Date", width: 120 },
-    { field: "inbound_no", headerName: "Inbound No", width: 170 },
-    { field: "supplier_name", headerName: "Supplier Name" },
-    { field: "status", headerName: "Status", width: 100 },
+    { field: "inbound_date", headerName: "Date", width: 120 },
+    { field: "inbound_no", headerName: "Inbound No.", width: 170 },
+    { field: "po_no", headerName: "PO No.", width: 150 },
+    { field: "supplier_name", headerName: "Supplier" },
+    // { field: "status", headerName: "Status", width: 100 },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      cellRenderer: (params) => {
+        if (!params.value) return null;
+
+        let color = "bg-gray-500"; // Default warna abu-abu
+        switch (params.value.toLowerCase()) {
+          case "open":
+            color = "bg-blue-500 text-white"; // Biru]"; // Kuning
+            break;
+          case "complete":
+            color = "bg-yellow-500 text-black";
+            break;
+          case "completed":
+            color = "bg-green-500"; // Hijau
+            break;
+          case "canceled":
+            color = "bg-red-500"; // Merah
+            break;
+        }
+
+        return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
+      },
+    },
     { field: "transporter_name", headerName: "Transporter" },
     { field: "truck_no", headerName: "Truck No.", width: 100 },
     { field: "total_line", headerName: "Total Line", width: 100 },

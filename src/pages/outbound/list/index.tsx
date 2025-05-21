@@ -17,7 +17,7 @@ import {
 import useAuth from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import api from "@/lib/api";;
-import InboundTable from "./InboundTable";
+import OutboundTable from "./OutboundTable";
 import Layout from "@/components/layout";
 
 export default function Page() {
@@ -37,7 +37,6 @@ export default function Page() {
 
   const handleSupplierChange = (selectedOption) => {
     setSelectedSupplier(selectedOption.value);
-    console.log(selectedSupplier);
   };
 
   function generateOrderNumber() {
@@ -105,7 +104,7 @@ export default function Page() {
   return (
     <Layout title="Outbound" subTitle="List Outbound">
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
-        <InboundTable setEditData={setEditData} />
+        <OutboundTable setEditData={setEditData} />
       </div>
     </Layout>
   );

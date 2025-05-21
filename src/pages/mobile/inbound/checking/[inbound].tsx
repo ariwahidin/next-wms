@@ -116,6 +116,11 @@ const CheckingPage = () => {
     });
     const data = await response.data;
     if (data.success) {
+      eventBus.emit("showAlert", {
+        title: "Success!",
+        description: data.message,
+        type: "success",
+      })
       fetchInboundDetail();
     }
   };
