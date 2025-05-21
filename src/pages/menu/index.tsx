@@ -216,7 +216,7 @@ export default function MenuPage() {
     <Layout title={"Configuration"} subTitle="Menu">
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Menu Management</h1>
+          <h1 className="text-2xl font-bold">Menu Management S</h1>
           <Dialog>
             <DialogTrigger asChild>
               <Button onClick={() => setSelectedMenu(null)}>+ Add Menu</Button>
