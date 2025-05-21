@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -35,25 +36,19 @@ export default function RolePermissionPage() {
   };
 
   // Fetch all available permissions
-  const fetchPermissions = async () => {
-    const res = await api.get("/permissions", { withCredentials: true });
-    setPermissions(res.data.data);
-  };
+  // const fetchPermissions = async () => {
+  //   const res = await api.get("/permissions", { withCredentials: true });
+  //   setPermissions(res.data.data);
+  // };
 
   useEffect(() => {
-    Promise.all([fetchRoles(), fetchPermissions()])
-    // fetchRoles();
+    // Promise.all([fetchRoles(), fetchPermissions()])
+    fetchRoles();
     // fetchPermissions();
   }, []);
 
   const handleSelectRole = (roleId: number) => {
-    console.log("roles => ", roles);
-    console.log("Selected role ID:", roleId);
-
     const role = roles.find((r) => r.ID === roleId);
-
-    console.log("role:", role);
-
     setSelectedRole(role || null);
     setSelectedPermissionIds(role?.Permissions?.map((p) => p.ID) || []);
   };
