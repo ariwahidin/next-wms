@@ -82,6 +82,10 @@ export function LoginForm({
             })
           );
 
+          document.cookie = `token_public=${res.data.token}; path=/; max-age=${
+            60 * 60 * 24
+          }; secure; samesite=None`;
+
           // Navigasi berdasarkan base_url
           if (res.data.user.base_url === "/dashboard") {
             router.push("/home");

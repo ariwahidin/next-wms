@@ -8,13 +8,21 @@ export function middleware(req: NextRequest) {
     // }
     // return authMiddleware(req) || NextResponse.next();
 
+
+    const allCookies = req.cookies.getAll();
+
+    console.log("✅ All cookies received in middleware:", allCookies);
+
     const token = req.cookies.get('token')?.value;
+    // const tokenPublic = req.cookies.get('token_public')?.value;
     const response = NextResponse.next();
 
     // Tambahkan custom header untuk response
     response.headers.set('x-custom-headerx', token ?? 'no-token');
-    console.log('🛑 Middleware berjalan untuk:', req.nextUrl.pathname);
-    console.log('🔐 Token:', token);
+    // console.log('🛑 Middleware berjalan untuk:', req.nextUrl.pathname);
+    // console.log('🔐 Token Public:', tokenPublic);
+    // console.log('🔐 Token:', token);
+    console.log('🔐 All cookies:', allCookies);
     return response;
 }
 
