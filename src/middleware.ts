@@ -14,6 +14,7 @@ export function middleware(req: NextRequest) {
     // Tambahkan custom header untuk response
     response.headers.set('x-custom-headerx', token ?? 'no-token');
     console.log('🛑 Middleware berjalan untuk:', req.nextUrl.pathname);
+    console.log('🔐 Token:', token);
     return response;
 }
 

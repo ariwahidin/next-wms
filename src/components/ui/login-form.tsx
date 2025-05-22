@@ -74,7 +74,7 @@ export function LoginForm({
           // Simpan user ke Redux
           dispatch(
             setUser({
-              name: res.data.user.name, // sesuaikan fieldnya
+              name: res.data.user.name,
               email: res.data.user.email,
               base_url: res.data.user.base_url,
               token: res.data.token,
