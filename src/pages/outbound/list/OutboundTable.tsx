@@ -42,9 +42,9 @@ const fetcher = (url: string) =>
     return [];
   });
 
-const HandleEdit = (id: number) => {
-  console.log("Edit ID:", id);
-  window.location.href = `/outbound/edit/${id}`;
+const HandleEdit = (item: any) => {
+  console.log("Edit ID:", item.outbound_no);
+  window.location.href = `/outbound/edit-manual/${item.outbound_no}`;
 };
 
 const HandleDelete = (id: number) => {
@@ -141,7 +141,6 @@ const OutboundTable = ({ setEditData }) => {
       "Are you sure you want to save this data?",
       "error",
       () => {
-
         api
           .post(
             `/outbound/picking/complete/${id}`,
@@ -222,7 +221,7 @@ const OutboundTable = ({ setEditData }) => {
 
             <Button
               title="View or Edit"
-              onClick={() => HandleEdit(params.data.ID)}
+              onClick={() => HandleEdit(params.data)}
               variant="ghost"
               size="icon"
               className="h-8 w-8 mr-2 bg-green-500 text-white hover:bg-green-600"
@@ -278,10 +277,14 @@ const OutboundTable = ({ setEditData }) => {
     },
     { field: "customer_code", headerName: "Customer Code", width: 140 },
     { field: "customer_name", headerName: "Customer Name", width: 180 },
-    { field: "total_line", headerName: "Total Line", width: 100 },
-    { field: "total_qty_req", headerName: "Req Qty", width: 100 },
-    { field: "plan_pick", headerName: "Plan Pick", width: 100 },
-    { field: "picked_qty", headerName: "Picked Qty", width: 100 },
+    { field: "total_item", headerName: "Total Item", width: 100 },
+    { field: "qty_req", headerName: "Qty Req", width: 100 },
+    { field: "qty_plan", headerName: "Qty Plan", width: 100 },
+    { field: "qty_pack", headerName: "Qty Pack", width: 100 },
+    // { field: "total_line", headerName: "Total Line", width: 100 },
+    // { field: "total_qty_req", headerName: "Req Qty", width: 100 },
+    // { field: "plan_pick", headerName: "Plan Pick", width: 100 },
+    // { field: "picked_qty", headerName: "Picked Qty", width: 100 },
   ]);
 
   const [quickFilterText, setQuickFilterText] = useState<string>();

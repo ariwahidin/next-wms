@@ -1,38 +1,3 @@
-// import { createContext, useContext, ReactNode, useEffect } from "react";
-// import { toast } from "sonner";
-// import eventBus from "@/utils/eventBus";
-
-// interface AlertContextType {
-//   showAlert: (title: string, description?: string, type?: "error" | "success") => void;
-// }
-
-// const AlertContext = createContext<AlertContextType | undefined>(undefined);
-
-// export const AlertProvider = ({ children }: { children: ReactNode }) => {
-//   useEffect(() => {
-//     // Dengarkan event 'showAlert'
-//     eventBus.on("showAlert", ({ title, description, type = "error" }) => {
-//       toast[type](title, { description });
-//     });
-
-//     return () => {
-//       eventBus.off("showAlert");
-//     };
-//   }, []);
-
-//   const showAlert = (title: string, description?: string, type: "error" | "success" = "error") => {
-//     eventBus.emit("showAlert", { title, description, type });
-//   };
-
-//   return <AlertContext.Provider value={{ showAlert }}>{children}</AlertContext.Provider>;
-// };
-
-// export const useAlert = () => {
-//   const context = useContext(AlertContext);
-//   if (!context) throw new Error("useAlert harus digunakan dalam AlertProvider");
-//   return context;
-// };
-
 import {
   createContext,
   useContext,
@@ -59,7 +24,11 @@ interface AlertContextType {
     type?: "error" | "success" | "info",
     onConfirm?: () => void // ✅ Callback ketika OK ditekan
   ) => void;
-  notify: (title: string, description?: string, type?: "error" | "success") => void;
+  notify: (
+    title: string,
+    description?: string,
+    type?: "error" | "success"
+  ) => void;
 }
 
 // 2. Buat Context
@@ -84,7 +53,28 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
   // 4. Listen event untuk toast notification
   useEffect(() => {
     eventBus.on("showAlert", ({ title, description, type = "error" }) => {
-      toast[type](title, { description });
+      // toast[type](title, { description });
+      const styles = {
+        error: {
+          style: {
+            background: "#fee2e2", // light red
+            color: "#dc2626",
+            border: "1px solid #fecaca",
+          },
+        },
+        success: {
+          style: {
+            background: "#dcfce7", // light green
+            color: "#16a34a",
+            border: "1px solid #bbf7d0",
+          },
+        },
+      };
+
+      toast[type](title, {
+        description,
+        ...styles[type],
+      });
     });
 
     return () => {
@@ -99,6 +89,7 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
     type: "error" | "success" | "info" = "info",
     onConfirm?: () => void
   ) => {
+    console.log("Event listener untuk showAlert telah di-setup");
     if (onConfirm) {
       setAlert({ title, description, type, onConfirm, isOpen: true });
     } else {
@@ -106,8 +97,57 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const notify = (title: string, description?: string, type: "error" | "success" = "error") => {
-    toast[type](title, { description });
+  // const notify = (title: string, description?: string, type: "error" | "success" = "error") => {
+  //   toast[type](title, { description });
+  // };
+
+  // const notify = (
+  //   title: string,
+  //   description?: string,
+  //   type: "error" | "success" = "error"
+  // ) => {
+  //   const styles = {
+  //     error: {
+  //       style: {
+  //         background: "#fee2e2", // light red
+  //         color: "#dc2626",
+  //         border: "1px solid #fecaca",
+  //       },
+  //     },
+  //     success: {
+  //       style: {
+  //         background: "#dcfce7", // light green
+  //         color: "#16a34a",
+  //         border: "1px solid #bbf7d0",
+  //       },
+  //     },
+  //   };
+
+  //   toast[type](title, {
+  //     description,
+  //     ...styles[type],
+  //   });
+  // };
+
+  const notify = (
+    title: string,
+    description?: string,
+    type: "error" | "success" = "error"
+  ) => {
+    const config = {
+      error: {
+        description,
+        variant: "destructive" as const,
+        className: "bg-red-100 border-red-300",
+      },
+      success: {
+        description,
+        variant: "default" as const,
+        className: "bg-green-100 border-green-300",
+      },
+    };
+
+    toast[type](title, config[type]);
   };
 
   // 6. Fungsi untuk menutup dialog

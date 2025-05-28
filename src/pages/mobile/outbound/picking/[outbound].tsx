@@ -226,38 +226,6 @@ const CheckingPage = () => {
     }
   };
 
-  // const handleConfirmPutaway = async (inbound_no: string) => {
-  //   const dataToPost = {
-  //     inboundNo: inbound_no,
-  //     location: scanLocation,
-  //   };
-
-  //   // try {
-  //   //   const response = await api.put(
-  //   //     "/mobile/inbound/scan/putaway/" + inbound_no,
-  //   //     dataToPost,
-  //   //     {
-  //   //       withCredentials: true,
-  //   //     }
-  //   //   );
-
-  //   //   const data = await response.data;
-
-  //   //   if (data.success) {
-  //   //     // fetchScannedItems();
-  //   //     setShowConfirmModal(false);
-
-  //   //     eventBus.emit("showAlert", {
-  //   //       title: "Success!",
-  //   //       description: data,
-  //   //       type: "success",
-  //   //     });
-  //   //   }
-  //   // } catch (error) {
-  //   //   console.error("Error fetching data:", error);
-  //   // }
-  // };
-
   const filteredItems =
     listOutboundDetail.filter(
       (item) =>

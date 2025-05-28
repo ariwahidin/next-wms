@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import axios from "axios";
 import eventBus from "@/utils/eventBus";
+import router from "next/router";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
 const api = axios.create({
@@ -12,6 +14,13 @@ api.interceptors.request.use((config) => {
     .split("; ")
     .find((row) => row.startsWith("token="))
     ?.split("=")[1];
+
+  console.log("token AT API", token);
+
+  // if (!token) {
+  //   router.push("/auth/login");
+  //   return;
+  // }
 
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;

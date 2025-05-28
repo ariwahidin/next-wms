@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2 } from "lucide-react";
+import { Car, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -76,6 +76,7 @@ const CheckingPage = () => {
   const [scanLocation, setScanLocation] = useState("");
   const [scanBarcode, setScanBarcode] = useState("");
   const [scanSerial, setScanSerial] = useState("");
+  const [serialInputs, setSerialInputs] = useState([""]); // mulai dengan 1 input
   const [searchInboundDetail, setSearchInboundDetail] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -91,12 +92,32 @@ const CheckingPage = () => {
   );
 
   const handleScan = async () => {
+    // if (!scanLocation.trim() || !scanBarcode.trim() || !scanSerial.trim())
+    if (
+      !scanLocation.trim() ||
+      !scanBarcode.trim() ||
+      serialInputs.length === 0
+    )
+      return;
+
+    let serialNumber =
+      serialInputs.length > 1
+        ? serialInputs.filter((s) => s.trim() !== "").join("-")
+        : serialInputs[0].trim();
+
     if (scanType === "BARCODE") {
-      setScanSerial(scanBarcode);
+      // setScanSerial(scanBarcode);
+      serialNumber = scanBarcode.trim();
     }
 
-    if (!scanLocation.trim() || !scanBarcode.trim() || !scanSerial.trim())
+    if (serialNumber === "") {
+      eventBus.emit("showAlert", {
+        title: "Error!",
+        description: "Serial number cannot be empty.",
+        type: "error",
+      });
       return;
+    }
 
     const newItem: ScanItem = {
       inboundNo: Array.isArray(inbound) ? inbound[0] : inbound,
@@ -106,7 +127,7 @@ const CheckingPage = () => {
       scanType: scanType,
       whsCode: scanWhs,
       qaStatus: scanQa,
-      serial: scanSerial.trim(),
+      serial: serialNumber,
       qtyScan: scanQty,
       uploaded: false,
     };
@@ -120,7 +141,7 @@ const CheckingPage = () => {
         title: "Success!",
         description: data.message,
         type: "success",
-      })
+      });
       fetchInboundDetail();
     }
   };
@@ -263,20 +284,23 @@ const CheckingPage = () => {
     <>
       <PageHeader title={`Checking ${inbound}`} showBackButton />
       <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24">
-        <Card>
+        <Card className="mb-4">
           <CardContent className="p-4 space-y-3">
             <div className="relative flex gap-2">
-              <Select value={scanType} onValueChange={setScanType}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Scan Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="SERIAL">Serial</SelectItem>
-                  <SelectItem value="BARCODE">Barcode</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 flex-1">
+                <label className="text-sm text-gray-600">Type : </label>
+                <Select value={scanType} onValueChange={setScanType}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Scan Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SERIAL">Serial</SelectItem>
+                    <SelectItem value="BARCODE">Barcode</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select value={scanWhs} onValueChange={setScanWhs}>
+              {/* <Select value={scanWhs} onValueChange={setScanWhs}>
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Scan Warehouse" />
                 </SelectTrigger>
@@ -284,30 +308,41 @@ const CheckingPage = () => {
                   <SelectItem value="CKY">CKY</SelectItem>
                   <SelectItem value="CKZ">CKZ</SelectItem>
                 </SelectContent>
-              </Select>
+              </Select> */}
 
-              <Select value={scanQa} onValueChange={setScanQa}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Scan Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="A">A</SelectItem>
-                  <SelectItem value="B">B</SelectItem>
-                  <SelectItem value="C">C</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 flex-1">
+                <label htmlFor="scanQa" className="text-sm text-gray-600">
+                  Status :
+                </label>
+                <Select value={scanQa} onValueChange={setScanQa}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Scan Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A">A</SelectItem>
+                    <SelectItem value="B">B</SelectItem>
+                    <SelectItem value="C">C</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
             <div className="relative">
+              <label htmlFor="location" className="text-sm text-gray-600">
+                Receive Location :{" "}
+              </label>
               <Input
+                autoComplete="off"
+                className="w-full mt-1"
                 id="location"
-                placeholder="Location ..."
+                // placeholder="Location ..."
                 value={scanLocation}
                 onChange={(e) => setScanLocation(e.target.value)}
               />
               {scanLocation && (
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-11 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   onClick={() => {
                     setScanLocation("");
                     document.getElementById("location")?.focus();
@@ -319,16 +354,21 @@ const CheckingPage = () => {
             </div>
 
             <div className="relative">
+              <label htmlFor="barcode" className="text-sm text-gray-600">
+                Barcode :{" "}
+              </label>
               <Input
+                autoComplete="off"
                 id="barcode"
-                placeholder="Scan barcode ..."
+                className="w-full mt-1"
+                // placeholder="Scan barcode ..."
                 value={scanBarcode}
                 onChange={(e) => setScanBarcode(e.target.value)}
               />
               {scanBarcode && (
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-11 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   onClick={() => {
                     setScanBarcode("");
                     document.getElementById("barcode")?.focus();
@@ -341,16 +381,20 @@ const CheckingPage = () => {
 
             {scanType === "BARCODE" && (
               <div className="relative">
+                <label htmlFor="qty" className="text-sm text-gray-600">
+                  Qty :{" "}
+                </label>
                 <Input
+                  className="w-full mt-1"
                   id="qty"
-                  placeholder="Qty ..."
+                  // placeholder="Qty ..."
                   value={scanQty}
                   onChange={(e) => setScanQty(Number(e.target.value))}
                 />
                 {scanQty && (
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-11 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     onClick={() => {
                       setScanQty(1);
                       document.getElementById("qty")?.focus();
@@ -362,18 +406,21 @@ const CheckingPage = () => {
               </div>
             )}
 
-            {scanType === "SERIAL" && (
+            {/* {scanType === "SERIAL" && (
               <div className="relative">
+                <label htmlFor="serial" className="text-sm text-gray-600">Serial Number : </label>
                 <Input
+                  autoComplete="off"
+                  className="w-full mt-1"
                   id="serial"
-                  placeholder="Serial number ..."
+                  // placeholder="Serial number ..."
                   value={scanSerial}
                   onChange={(e) => setScanSerial(e.target.value)}
                 />
                 {scanSerial && (
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-11 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     onClick={() => {
                       setScanSerial("");
                       document.getElementById("serial")?.focus();
@@ -381,6 +428,75 @@ const CheckingPage = () => {
                   >
                     <XCircle size={18} />
                   </button>
+                )}
+              </div>
+            )} */}
+
+            {scanType === "SERIAL" && (
+              <div className="space-y-3">
+                <label className="text-sm text-gray-600">Serial Numbers:</label>
+
+                {serialInputs.map((serial, index) => (
+                  <div key={index} className="relative">
+                    <Input
+                      autoComplete="off"
+                      className="w-full pr-20"
+                      id={`serial-${index}`}
+                      value={serial}
+                      onChange={(e) => {
+                        const newSerials = [...serialInputs];
+                        newSerials[index] = e.target.value;
+                        setSerialInputs(newSerials);
+                      }}
+                    />
+                    {serial && (
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          const newSerials = [...serialInputs];
+                          newSerials[index] = "";
+                          setSerialInputs(newSerials);
+                          document.getElementById(`serial-${index}`)?.focus();
+                        }}
+                      >
+                        <XCircle size={18} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+
+                <div className="flex justify-between items-center">
+                  <button
+                    type="button"
+                    className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                    onClick={() => setSerialInputs([...serialInputs, ""])}
+                  >
+                    + Add Serial
+                  </button>
+                </div>
+
+                {serialInputs.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="text-red-600 hover:text-red-800 text-sm font-semibold mt-2"
+                      onClick={() => {
+                        const newSerials = serialInputs.filter(
+                          (_, i) => i !== serialInputs.length - 1
+                        );
+                        setSerialInputs(newSerials);
+                      }}
+                    >
+                     - Remove Last Serial
+                    </button>
+
+                    {/* Menampilkan gabungan serial */}
+                    <div className="text-sm text-gray-500">
+                      Combined:{" "}
+                      {serialInputs.filter((s) => s.trim() !== "").join("-")}
+                    </div>
+                  </>
                 )}
               </div>
             )}

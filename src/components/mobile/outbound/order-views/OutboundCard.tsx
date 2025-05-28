@@ -1,23 +1,16 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { OutboundItem } from "@/types/outbound";
 import { Package, ScanBarcode } from "lucide-react";
 import router from "next/router";
 
-type OutboundItem = {
-  id: number;
-  outbound_no: string;
-  customer_name: string;
-  delivery_no: string;
-  qty_req : number;
-  qty_scan : number;
-  status: "fully received" | "partial" | "open";
-};
 
 export default function OutboundCard({ data }: { data: OutboundItem }) {
-  const { outbound_no, customer_name, status, qty_req, qty_scan, delivery_no } = data;
-
+  const { outbound_no, customer_name, status, qty_req, qty_scan, qty_pack, delivery_no } = data;
+  
   // const statusColor = {
   //   "open": "bg-red-100 text-red-600",
   //   "partial": "bg-yellow-100 text-yellow-600",
@@ -40,7 +33,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
         </div>
         <div className="flex items-center space-x-1 text-gray-500 text-xs">
           <ScanBarcode size={16} />
-          <span>{qty_scan}</span>
+          <span>{qty_pack}</span>
         </div>
       </div>
       <CardContent className="p-0 space-y-1">
@@ -52,6 +45,8 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
 
         <div className="mt-3 flex gap-2">
           <Button
+            style={{ display: "none" }}
+            disabled
             className="w-full"
             onClick={() => handlePickingClick(outbound_no)}
           >

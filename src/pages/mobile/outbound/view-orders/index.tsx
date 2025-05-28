@@ -5,16 +5,8 @@ import { Input } from "@/components/ui/input";
 import PageHeader from "@/components/mobile/PageHeader";
 import api from "@/lib/api";
 import OutboundCard from "@/components/mobile/outbound/order-views/OutboundCard";
+import { OutboundItem } from "@/types/outbound";
 
-interface OutboundItem {
-  id: number;
-  delivery_no : string, 
-  qty_req : number, 
-  qty_scan : number,
-  outbound_no: string;
-  customer_name: string;
-  status: "fully received" | "partial" | "open";
-}
 
 export default function InboundListPage() {
   const [search, setSearch] = useState("");

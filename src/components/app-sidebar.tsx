@@ -110,8 +110,12 @@ const data = {
       items: [
         {
           title: "Create Inbound",
-          url: "/inbound/create",
+          url: "/inbound/create-manual",
         },
+        // {
+        //   title: "Create Inbound",
+        //   url: "/inbound/create",
+        // },
         {
           title: "Upload Inbound",
           url: "/inbound/create/upload",
@@ -140,6 +144,10 @@ const data = {
       icon: Archive,
       isActive: true,
       items: [
+        {
+          title: "Create Outbound Manual",
+          url: "/outbound/create-manual",
+        },
         {
           title: "Create Outbound",
           url: "/outbound/create",
@@ -176,6 +184,10 @@ const data = {
       icon: Truck,
       isActive: true,
       items: [
+        {
+          title: "Create DN Manual",
+          url: "/shipping/create-dn-manual",
+        },
         {
           title: "Combine DN",
           url: "/shipping/combine-dn",
@@ -227,6 +239,18 @@ const data = {
         {
           title: "Menu",
           url: "/menu",
+        },
+      ],
+    },
+    {
+      title: "Example Pages",
+      url: "#",
+      icon: Settings2,
+      isActive: true,
+      items: [
+        {
+          title: "Tanstack Table",
+          url: "/example/table/tanstack",
         },
       ],
     },

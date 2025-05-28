@@ -58,8 +58,8 @@ const InboundTable = ({ setEditData }) => {
   const { showAlert, notify } = useAlert();
   const router = useRouter();
 
-  const HandleEdit = (id: number) => {
-    router.push(`/inbound/${id}`);
+  const HandleEdit = (no : string) => {
+    router.push(`/inbound/edit-manual/${no}`);
   };
 
   const HandleComplete = (id: number) => {
@@ -118,7 +118,7 @@ const InboundTable = ({ setEditData }) => {
 
             <Button
               title="View or Edit"
-              onClick={() => HandleEdit(params.data.id)}
+              onClick={() => HandleEdit(params.data.inbound_no)}
               variant="ghost"
               size="icon"
               className="h-8 w-8 mr-2 bg-green-500 text-white hover:bg-green-600"
@@ -149,7 +149,7 @@ const InboundTable = ({ setEditData }) => {
     },
     { field: "inbound_date", headerName: "Date", width: 120 },
     { field: "inbound_no", headerName: "Inbound No.", width: 170 },
-    { field: "po_no", headerName: "PO No.", width: 150 },
+    { field: "po_number", headerName: "PO Number", width: 150 },
     { field: "supplier_name", headerName: "Supplier" },
     // { field: "status", headerName: "Status", width: 100 },
     {
@@ -178,8 +178,6 @@ const InboundTable = ({ setEditData }) => {
         return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
       },
     },
-    { field: "transporter_name", headerName: "Transporter" },
-    { field: "truck_no", headerName: "Truck No.", width: 100 },
     { field: "total_line", headerName: "Total Line", width: 100 },
     { field: "total_qty", headerName: "Total Qty", width: 100 },
     { field: "qty_scan", headerName: "Scan Qty", width: 100 },
@@ -234,3 +232,6 @@ const InboundTable = ({ setEditData }) => {
 };
 
 export default InboundTable;
+
+// ===============================================================================================================================================
+

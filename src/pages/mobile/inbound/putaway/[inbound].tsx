@@ -156,16 +156,19 @@ const PutawayPage = () => {
         <Card>
           <CardContent className="p-4 space-y-3">
             <div className="relative">
+              <label htmlFor="location" className="text-sm text-gray-600">Receive Location : </label>
               <Input
+                className="w-full mt-1"
+                autoComplete="off"
                 id="location"
-                placeholder="From Location..."
+                // placeholder="From Location..."
                 value={scanLocation}
                 onChange={(e) => setScanLocation(e.target.value)}
               />
               {scanLocation && (
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-11 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   onClick={() => {
                     setScanLocation("");
                     setListInboundScanned([]);
@@ -178,16 +181,19 @@ const PutawayPage = () => {
             </div>
 
             <div className="relative">
+              <label htmlFor="barcode" className="text-sm text-gray-600">Barcode : </label>
               <Input
+                className="w-full mt-1"
+                autoComplete="off"
                 id="barcode"
-                placeholder="Barcode..."
+                // placeholder="Barcode..."
                 value={scanBarcode}
                 onChange={(e) => setScanBarcode(e.target.value)}
               />
               {scanBarcode && (
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-11 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   onClick={() => {
                     setScanBarcode("");
                     setListInboundScanned([]); // Clear the scanned items
@@ -228,7 +234,7 @@ const PutawayPage = () => {
               />
 
               <div className="text-sm">
-                <span>{filteredScannedItems.length} items, Total Qty Scanned: {filteredScannedItems.reduce((total, item) => total + item.quantity, 0)}</span>
+                <span>Item : {filteredScannedItems.length}, Qty: {filteredScannedItems.reduce((total, item) => total + item.quantity, 0)}</span>
               </div>
 
               {/* ListView */}
@@ -237,7 +243,7 @@ const PutawayPage = () => {
                   filteredScannedItems.map((item, index) => (
                     <div
                       key={index}
-                      className={`p-2 border rounded-md hover:bg-gray-100 cursor-pointer ${
+                      className={`p-2 border rounded-md cursor-pointer ${
                         item.status === "in stock"
                           ? "bg-green-100"
                           : "bg-blue-100"
@@ -319,10 +325,11 @@ const PutawayPage = () => {
             </DialogHeader>
 
             <div className="relative">
+              <label htmlFor="location2" className="text-sm text-gray-600">Destination Location</label>
               <Input
+                className="w-full mt-1 relative"
                 autoComplete="off"
                 id="location2"
-                placeholder="Destination Location..."
                 value={scanLocation2}
                 onChange={(e) => setScanLocation2(e.target.value)}
               />
