@@ -145,13 +145,13 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Create Outbound Manual",
+          title: "Create Outbound",
           url: "/outbound/create-manual",
         },
-        {
-          title: "Create Outbound",
-          url: "/outbound/create",
-        },
+        // {
+        //   title: "Create Outbound",
+        //   url: "/outbound/create",
+        // },
         {
           title: "List Outbound",
           url: "/outbound/list",
