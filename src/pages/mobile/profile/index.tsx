@@ -8,7 +8,7 @@ export default function ProfilePage() {
   return (
     <>
       <PageHeader title="Akun Saya" showBackButton={false} />
-      <div className="min-h-screen bg-gray-50 pt-4 pb-20 px-4">
+      <div className="min-h-screen bg-gray-50 pt-4 pb-20 px-4 max-w-md mx-auto">
         <div className="bg-white rounded-2xl shadow p-4 mb-4">
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl font-bold">

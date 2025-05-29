@@ -61,7 +61,7 @@ export default function InboundMenuPage() {
   return (
     <>
       <PageHeader title="Inbound" showBackButton />
-      <div className="min-h-screen bg-gray-50 px-4 pt-4 pb-20">
+      <div className="min-h-screen bg-gray-50 px-4 pt-4 pb-20 max-w-md mx-auto">
         <div className="space-y-3">
           {inboundMenus.map((menu, idx) => (
             <InboundMenuCard

@@ -40,7 +40,7 @@ export default function InboundListPage() {
   return (
     <>
       <PageHeader title="Outbound Orders" showBackButton />
-      <div className="min-h-screen pb-20 px-4 pt-4 bg-gray-50">
+      <div className="min-h-screen pb-20 px-4 pt-4 bg-gray-50 max-w-md mx-auto">
         <Input
           placeholder="Search Outbound No"
           type="text"

@@ -48,7 +48,7 @@ export default function TransferBySerialPage() {
   return (
     <>
       <PageHeader title="Transfer by Serial" showBackButton />
-      <div className="px-6 pt-6 pb-16 min-h-screen bg-gray-50">
+      <div className="px-6 pt-6 pb-16 min-h-screen bg-gray-50 max-w-md mx-auto">
         <p className="text-gray-700 text-lg mb-6">Transfer items based on serial number to another location.</p>
 
         <div className="space-y-4">

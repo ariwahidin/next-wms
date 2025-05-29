@@ -232,7 +232,7 @@ const TransferPage = () => {
   return (
     <>
       <PageHeader title={`Transfer Location`} showBackButton />
-      <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24">
+      <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
         <Card>
           <CardContent className="p-4 space-y-3">
             <div className="relative">

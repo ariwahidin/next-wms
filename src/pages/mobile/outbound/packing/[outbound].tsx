@@ -159,7 +159,7 @@ export default function PackinPage() {
         no_koli: kolis.find((k) => k.ID === selectedKoliId)?.no_koli,
         // outbound_detail_id: selectedItemId,
         barcode: barcode,
-        serial_number: serialNumber,
+        serial_number: scanType == "BARCODE" ? barcode : serialNumber,
         serial_number2: serialNumber2,
         qty: qty,
         scan_type: scanType,
@@ -470,13 +470,20 @@ export default function PackinPage() {
                               value={barcode}
                               onChange={(e) => setBarcode(e.target.value)}
                             />
-                            <Label>SerialNumber</Label>
-                            <Input
-                              id="serialNumber"
-                              type="text"
-                              value={serialNumber}
-                              onChange={(e) => setSerialNumber(e.target.value)}
-                            />
+
+                            {scanType === "SERIAL" && (
+                              <>
+                                <Label>SerialNumber</Label>
+                                <Input
+                                  id="serialNumber"
+                                  type="text"
+                                  value={serialNumber}
+                                  onChange={(e) =>
+                                    setSerialNumber(e.target.value)
+                                  }
+                                />
+                              </>
+                            )}
 
                             {scanType === "SET" && (
                               <>

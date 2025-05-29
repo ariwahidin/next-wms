@@ -25,7 +25,7 @@ export default function HomePage() {
   return (
     <>
       <PageHeader title="Beranda" />
-      <div className="min-h-screen bg-gray-50 pb-20 px-4 pt-4 space-y-6">
+      <div className="min-h-screen bg-gray-50 pb-20 px-4 pt-4 space-y-6 max-w-md mx-auto">
         {/* Greeting */}
         <div className="text-lg font-semibold">{greeting}, Budi 👋</div>
 

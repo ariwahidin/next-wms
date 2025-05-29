@@ -63,7 +63,7 @@ export default function OutboundMenuPage() {
   return (
     <>
       <PageHeader title="Outbound" showBackButton />
-      <div className="min-h-screen bg-gray-50 px-4 pt-4 pb-20">
+      <div className="min-h-screen bg-gray-50 px-4 pt-4 pb-20 max-w-md mx-auto">
         <div className="space-y-3">
           {outboundMenus.map((menu, idx) => (
             <OutboundMenuCard
