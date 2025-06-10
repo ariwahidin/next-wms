@@ -12,7 +12,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  XCircle,
+} from "lucide-react";
 import { useRouter } from "next/router";
 import PageHeader from "@/components/mobile/PageHeader";
 import api from "@/lib/api";
@@ -62,6 +69,7 @@ export default function PackinPage() {
   const [serialNumber, setSerialNumber] = useState<string>("");
   const [serialNumber2, setSerialNumber2] = useState<string>("");
   const [qty, setQty] = useState<number>(1);
+  const [serialInputs, setSerialInputs] = useState([""]);
 
   const [modalDeleteKoli, setModalDeleteKoli] = useState(false);
 
@@ -133,9 +141,13 @@ export default function PackinPage() {
   };
 
   const openAddItemModal = (koliId: number) => {
+
+    console.log("koli id : ", koliId);
+    console.log("items selected : ", items);
+    console.log("scan type : ", scanType);
     setSelectedKoliId(koliId);
-    setSelectedItemId(items[0].ID);
-    setModalQty(items[0].quantity);
+    // setSelectedItemId(items[0].ID);
+    // setModalQty(items[0].quantity);
   };
 
   // const closeAddItemModal = () => {
@@ -152,15 +164,19 @@ export default function PackinPage() {
   };
 
   const addItemToKoli = async () => {
+
+    const serialNumberValue =
+      serialInputs.length > 1
+        ? serialInputs.filter((s) => s.trim() !== "").join("-")
+        : serialInputs[0].trim();
+
     if (selectedKoliId !== null && selectedItemId !== null) {
       const dataToSend = {
         outbound_no: outbound,
         koli_id: selectedKoliId,
         no_koli: kolis.find((k) => k.ID === selectedKoliId)?.no_koli,
-        // outbound_detail_id: selectedItemId,
         barcode: barcode,
-        serial_number: scanType == "BARCODE" ? barcode : serialNumber,
-        serial_number2: serialNumber2,
+        serial_number: scanType == "BARCODE" ? barcode : serialNumberValue,
         qty: qty,
         scan_type: scanType,
       };
@@ -190,73 +206,8 @@ export default function PackinPage() {
 
         fetchData();
       }
-
-      // try {
-      //   // Kirim data ke backend
-
-      //   // Update UI local setelah berhasil
-      //   // setKolis((prev) =>
-      //   //   prev.map((k) => {
-      //   //     if (k. === selectedKoliId) {
-      //   //       const existing = k.items.find((i) => i.itemId === selectedItemId);
-      //   //       if (existing) {
-      //   //         return {
-      //   //           ...k,
-      //   //           items: k.items.map((i) =>
-      //   //             i.itemId === selectedItemId
-      //   //               ? { ...i, quantity: modalQty }
-      //   //               : i
-      //   //           ),
-      //   //         };
-      //   //       } else {
-      //   //         return {
-      //   //           ...k,
-      //   //           items: [
-      //   //             ...k.items,
-      //   //             { itemId: selectedItemId, quantity: modalQty },
-      //   //           ],
-      //   //         };
-      //   //       }
-      //   //     }
-      //   //     return k;
-      //   //   })
-      //   // );
-      // } catch (err) {
-      //   console.error("Error:", err);
-      //   // alert("Gagal menambahkan item ke koli.");
-      // }
     }
   };
-
-  // const addItemToKoli = () => {
-  //   if (selectedKoliId !== null && selectedItemId !== null) {
-  //     setKolis((prev) =>
-  //       prev.map((k) => {
-  //         if (k.id === selectedKoliId) {
-  //           const existing = k.items.find((i) => i.itemId === selectedItemId);
-  //           if (existing) {
-  //             return {
-  //               ...k,
-  //               items: k.items.map((i) =>
-  //                 i.itemId === selectedItemId ? { ...i, quantity: modalQty } : i
-  //               ),
-  //             };
-  //           } else {
-  //             return {
-  //               ...k,
-  //               items: [
-  //                 ...k.items,
-  //                 { itemId: selectedItemId, quantity: modalQty },
-  //               ],
-  //             };
-  //           }
-  //         }
-
-  //         return k;
-  //       })
-  //     );
-  //   }
-  // };
 
   const removeItemFromKoli = async (koliID: number, itemID: number) => {
     console.log("Remove item from koli:", { koliID, itemID });
@@ -269,10 +220,6 @@ export default function PackinPage() {
           withCredentials: true,
         }),
       ]);
-
-      // if (!deleteItemFromKoli.data.success) {
-      //   throw new Error("Gagal menghapus item dari koli");
-      // }
 
       if (deleteItemFromKoli.data.success) {
         eventBus.emit("showAlert", {
@@ -287,14 +234,6 @@ export default function PackinPage() {
       console.error("Error:", err);
       alert("Gagal menghapus item dari koli.");
     }
-
-    // setKolis((prev) =>
-    //   prev.map((k) =>
-    //     k.ID === koliId
-    //       ? { ...k, items: k.items.filter((i) => i.itemId !== itemId) }
-    //       : k
-    //   )
-    // );
   };
 
   const fetchData = async () => {
@@ -448,20 +387,15 @@ export default function PackinPage() {
                               className="w-full border rounded px-2 py-1"
                               onChange={(e) => {
                                 setScanType(e.target.value);
-
-                                setBarcode("");
-                                setSerialNumber("");
-                                setSerialNumber2("");
-
                                 if (e.target.value === "SERIAL") {
                                   setQty(1);
                                 }
                               }}
-                              // value={selectedItemId || ""}
+                              value={scanType}
                             >
-                              <option value="SERIAL">SERIAL</option>
-                              <option value="BARCODE">BARCODE</option>
-                              <option value="SET">SET</option>
+                              <option value="SERIAL">YES</option>
+                              <option value="BARCODE">NO</option>
+                              {/* <option value="SET">SET</option> */}
                             </select>
                             <Label>Barcode Ean</Label>
                             <Input
@@ -474,27 +408,84 @@ export default function PackinPage() {
                             {scanType === "SERIAL" && (
                               <>
                                 <Label>SerialNumber</Label>
-                                <Input
+                                {/* <Input
                                   id="serialNumber"
                                   type="text"
                                   value={serialNumber}
                                   onChange={(e) =>
                                     setSerialNumber(e.target.value)
                                   }
-                                />
-                              </>
-                            )}
+                                /> */}
 
-                            {scanType === "SET" && (
-                              <>
-                                <Label>SerialNumber 2</Label>
-                                <Input
-                                  type="text"
-                                  value={serialNumber2}
-                                  onChange={(e) =>
-                                    setSerialNumber2(e.target.value)
-                                  }
-                                />
+                                {serialInputs.map((serial, index) => (
+                                  <div key={index} className="relative">
+                                    <Input
+                                      autoComplete="off"
+                                      className="w-full pr-20"
+                                      id={`serial-${index}`}
+                                      value={serial}
+                                      onChange={(e) => {
+                                        const newSerials = [...serialInputs];
+                                        newSerials[index] = e.target.value;
+                                        setSerialInputs(newSerials);
+                                      }}
+                                    />
+                                    {serial && (
+                                      <button
+                                        type="button"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        onClick={() => {
+                                          const newSerials = [...serialInputs];
+                                          newSerials[index] = "";
+                                          setSerialInputs(newSerials);
+                                          document
+                                            .getElementById(`serial-${index}`)
+                                            ?.focus();
+                                        }}
+                                      >
+                                        <XCircle size={18} />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+
+                                <div className="flex justify-between items-center">
+                                  <button
+                                    type="button"
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                                    onClick={() =>
+                                      setSerialInputs([...serialInputs, ""])
+                                    }
+                                  >
+                                    + Add Serial
+                                  </button>
+                                </div>
+
+                                {serialInputs.length > 1 && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="text-red-600 hover:text-red-800 text-sm font-semibold mt-2"
+                                      onClick={() => {
+                                        const newSerials = serialInputs.filter(
+                                          (_, i) =>
+                                            i !== serialInputs.length - 1
+                                        );
+                                        setSerialInputs(newSerials);
+                                      }}
+                                    >
+                                      - Remove Last Serial
+                                    </button>
+
+                                    {/* Menampilkan gabungan serial */}
+                                    <div className="text-sm text-gray-500">
+                                      Combined:{" "}
+                                      {serialInputs
+                                        .filter((s) => s.trim() !== "")
+                                        .join("-")}
+                                    </div>
+                                  </>
+                                )}
                               </>
                             )}
 
@@ -502,6 +493,7 @@ export default function PackinPage() {
                               <>
                                 <Label>Qty</Label>
                                 <Input
+                                  // min={1}
                                   type="number"
                                   value={qty}
                                   onChange={(e) =>

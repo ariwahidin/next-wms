@@ -21,6 +21,7 @@ import "swiper/css/navigation";
 
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { setUser } from "@/store/userSlice";
+import { BusinessUnit } from "@/types/bu";
 
 export function LoginForm({
   className,
@@ -30,9 +31,10 @@ export function LoginForm({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error] = useState<string | null>(null);
+  const [buOptions, setBuOptions] = useState<BusinessUnit[]>([]);
+  const [bu, setBu] = useState("");
 
   // const dispatch = useAppDispatch();
-
   // const handleLogin = (e) => {
   //   e.preventDefault();
   //   api
@@ -62,10 +64,11 @@ export function LoginForm({
     e.preventDefault();
     api
       .post(
-        "/login",
+        "/auth/login",
         {
           email: username,
           password,
+          business_unit: bu,
         },
         { withCredentials: true }
       )
@@ -79,14 +82,13 @@ export function LoginForm({
               base_url: res.data.user.base_url,
               token: res.data.token,
               menus: res.data.menus,
+              unit: res.data.user.unit
             })
           );
 
           document.cookie = `token_public=${res.data.token}; path=/; max-age=${
             60 * 60 * 24
           }; secure; samesite=None`;
-
-          // Navigasi berdasarkan base_url
           if (res.data.user.base_url === "/dashboard") {
             router.push("/home");
           } else {
@@ -97,15 +99,32 @@ export function LoginForm({
       .catch((err) => console.log(err));
   };
 
+  const fetchData = async () => {
+    try {
+      const response = await api.get("/configurations/get-all-bu", { withCredentials: true });
+      const data = await response.data;
+      if (data.success === false) return;
+      setBuOptions(data.data);
+    } catch (error) {
+      console.error("Error fetching menus:", error);
+    } finally {
+      // setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     api
-      .get("/isLoggedIn", { withCredentials: true })
+      .get("/auth/isLoggedIn", { withCredentials: true })
       .then((res) => {
         if (res.data.success === true) {
           window.location.href = "/home";
         }
       })
       .catch((err) => console.log(err));
+  }, []);
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   return (
@@ -149,6 +168,25 @@ export function LoginForm({
                   required
                 />
               </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="bu">Business Unit</Label>
+                <select
+                  id="bu"
+                  className="border rounded px-2 py-1"
+                  value={bu}
+                  onChange={(e) => setBu(e.target.value)}
+                  required
+                >
+                  <option value="">-- Select BU --</option>
+                  {buOptions?.map((bu) => (
+                    <option key={bu.ID} value={bu.db_name}>
+                      {bu.db_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <Button type="submit" className="w-full">
                 Login
               </Button>

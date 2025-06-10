@@ -178,13 +178,13 @@ const OutboundTable = ({ setEditData }) => {
       maxWidth: 160,
       cellRenderer: (params) => {
         return (
-          <div>
+          <div className="flex justify-center space-x-1 pt-2">
             {params.data.status === "open" && (
               <Button
                 onClick={() => HandlePicking(params.data.ID)}
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 mr-2 bg-green-200 text-black hover:bg-green-600"
+                className="h-6 w-6 mr-2 bg-green-200 text-black hover:bg-green-600"
                 title="Picking"
               >
                 <Forklift className="h-4 w-4" />
@@ -197,7 +197,7 @@ const OutboundTable = ({ setEditData }) => {
                   onClick={() => HandlePickingComplete(params.data.ID)}
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 mr-2 bg-blue-500 text-white hover:bg-blue-600"
+                  className="h-6 w-6 mr-2 bg-blue-500 text-white hover:bg-blue-600"
                   title="Complete Picking"
                 >
                   <CheckCheck className="h-4 w-4" />
@@ -211,7 +211,7 @@ const OutboundTable = ({ setEditData }) => {
                   onClick={() => HandlePreviewPDF(params.data.ID)}
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 mr-2 bg-blue-100 text-black hover:bg-blue-200"
+                  className="h-6 w-6 mr-2 bg-blue-100 text-black hover:bg-blue-200"
                   title="Print Picking Sheet"
                 >
                   <Printer className="h-4 w-4" />
@@ -224,7 +224,7 @@ const OutboundTable = ({ setEditData }) => {
               onClick={() => HandleEdit(params.data)}
               variant="ghost"
               size="icon"
-              className="h-8 w-8 mr-2 bg-green-500 text-white hover:bg-green-600"
+              className="h-6 w-6 mr-2 bg-green-500 text-white hover:bg-green-600"
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -279,7 +279,7 @@ const OutboundTable = ({ setEditData }) => {
     { field: "customer_name", headerName: "Customer Name", width: 180 },
     { field: "total_item", headerName: "Total Item", width: 100 },
     { field: "qty_req", headerName: "Qty Req", width: 100 },
-    { field: "qty_plan", headerName: "Qty Plan", width: 100 },
+    { field: "qty_plan", headerName: "Qty Pick", width: 100 },
     { field: "qty_pack", headerName: "Qty Pack", width: 100 },
     // { field: "total_line", headerName: "Total Line", width: 100 },
     // { field: "total_qty_req", headerName: "Req Qty", width: 100 },

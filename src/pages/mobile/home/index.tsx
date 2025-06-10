@@ -11,9 +11,11 @@ import {
   Bell,
   Clock,
 } from "lucide-react";
+import { useAppSelector } from "@/hooks/useAppSelector";
 
 export default function HomePage() {
   const [greeting, setGreeting] = useState("");
+  const userRedux = useAppSelector((state) => state.user);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -27,7 +29,7 @@ export default function HomePage() {
       <PageHeader title="Beranda" />
       <div className="min-h-screen bg-gray-50 pb-20 px-4 pt-4 space-y-6 max-w-md mx-auto">
         {/* Greeting */}
-        <div className="text-lg font-semibold">{greeting}, Budi 👋</div>
+        <div className="text-lg font-semibold">{greeting}, {userRedux.name} 👋</div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3">

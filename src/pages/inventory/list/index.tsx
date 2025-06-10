@@ -209,7 +209,6 @@ const InventorySummaryTable = () => {
 };
 
 export default function Page() {
-  useAuth();
   const [editData, setEditData] = useState(null);
   const [activeTab, setActiveTab] = useState<"location" | "item">("location");
 

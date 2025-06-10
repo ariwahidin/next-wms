@@ -21,12 +21,16 @@ import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getEnabledCategories } from "trace_events";
 import Select from "react-select";
+import { ItemOptions } from "@/types/inbound";
+import { Category } from "@/types/category";
 
 export default function ProductForm({ editData, setEditData }) {
   const [itemCode, setItemCode] = useState("");
   const [itemName, setItemName] = useState("");
   const [gmc, setGmc] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<ItemOptions[]>([]);
+  const [category, setCategory] = useState(null);
 
   const [serialOptions, setSerialOptions] = useState([
     { value: "Y", label: "YES" },
@@ -37,8 +41,6 @@ export default function ProductForm({ editData, setEditData }) {
 
   useEffect(() => {
     if (editData) {
-
-
       console.log("Edit Data Di Form : ", editData);
 
       console.log("uom Options : ", uomOptions);
@@ -46,8 +48,12 @@ export default function ProductForm({ editData, setEditData }) {
       setItemCode(editData.item_code);
       setItemName(editData.item_name);
       setGmc(editData.gmc);
+      categoryOptions.find((option) => {
+        if (option.value === editData.category) {
+          setCategory(option);
+        }
+      });
       serialOptions.find((option) => {
-        console.log(editData.has_serial);
         if (option.value === editData.has_serial) {
           setSelectedSerial(option);
         }
@@ -55,13 +61,11 @@ export default function ProductForm({ editData, setEditData }) {
 
       uomOptions.find((option) => {
         if (option.value === editData.uom) {
-          console.log("papapa")
           setSelectedUom(option);
         }
       });
     }
   }, [editData]);
-
 
   const AllUOM = async () => {
     try {
@@ -80,17 +84,43 @@ export default function ProductForm({ editData, setEditData }) {
       const data = await AllUOM();
       if (data.success) {
         setUoms(data.data);
-        setUomOptions(data.data.map((uom) => ({ value: uom.code, label: uom.code })));
+        setUomOptions(
+          data.data.map((uom) => ({ value: uom.code, label: uom.code }))
+        );
       }
     }
     fetchData();
   }, []);
 
-  useEffect(()=> {
-    if(uoms.length > 0) {
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get("/categories", {
+          withCredentials: true,
+        });
+        return response.data;
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchCategories().then((categories) => {
+      if (categories.success) {
+        setCategoryOptions(
+          categories.data.map((category: Category) => ({
+            value: category.code,
+            label: category.name,
+          }))
+        );
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (uoms.length > 0) {
       setSelectedUom(uomOptions[0]);
     }
-  },[uoms]);
+  }, [uoms]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -112,10 +142,10 @@ export default function ProductForm({ editData, setEditData }) {
         console.log("Focus set to gmc");
         document.getElementById("uom")?.focus();
       }
-        console.log("Focus set to serial");
+      console.log("Focus set to serial");
       return;
     }
-        console.log("Focus set to uom");
+    console.log("Focus set to uom");
 
     try {
       setError(null); // Reset error message jika form valid;
@@ -128,11 +158,11 @@ export default function ProductForm({ editData, setEditData }) {
             item_name: itemName,
             gmc: gmc,
             cbm: 1.0,
-            category: "Book",
+            category: category.value,
 
             group: "Book",
             serial: selectedSerial.value,
-            uom: selectedUom.value
+            uom: selectedUom.value,
           },
           { withCredentials: true }
         );
@@ -145,17 +175,17 @@ export default function ProductForm({ editData, setEditData }) {
             item_name: itemName,
             gmc: gmc,
             cbm: 1.0,
-            category: "Book",
+            category: category.value,
             group: "Book",
             serial: selectedSerial.value,
-            uom: selectedUom.value
+            uom: selectedUom.value,
           },
           { withCredentials: true }
         );
       }
 
       mutate("/products");
-      // setEditData(null); 
+      // setEditData(null);
       // setItemCode("");
       // setItemName("");
       // setGmc("");
@@ -228,7 +258,7 @@ export default function ProductForm({ editData, setEditData }) {
               />
             </div>
             <div className="flex flex-col space-y-1.5">
-              <Label>GMC</Label>
+              <Label>Barcode</Label>
               <Input
                 id="gmc"
                 onChange={(e) => setGmc(e.target.value)}
@@ -251,11 +281,21 @@ export default function ProductForm({ editData, setEditData }) {
               <Select
                 options={serialOptions}
                 defaultValue={selectedSerial}
-                onChange={(selectedOption) =>
-                  setSelectedSerial(selectedOption)
-                }
+                onChange={(selectedOption) => setSelectedSerial(selectedOption)}
                 value={selectedSerial}
                 placeholder="Select serial"
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label>Category</Label>
+              <Select
+                options={categoryOptions}
+                defaultValue={category}
+                onChange={(selectedOption) => {
+                  setCategory(selectedOption);
+                }}
+                value={category}
+                placeholder="Select category"
               />
             </div>
           </div>

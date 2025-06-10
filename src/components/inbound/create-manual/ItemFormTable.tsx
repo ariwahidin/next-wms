@@ -19,6 +19,7 @@ import api from "@/lib/api";
 import { Warehouse } from "@/types/warehouse";
 import { Supplier } from "@/types/supplier";
 import eventBus from "@/utils/eventBus";
+import dayjs from "dayjs";
 
 // Skema validasi Yup
 const muatanSchema = yup.object().shape({
@@ -283,7 +284,7 @@ export default function ItemFormTable({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Items List</h2>
+        <h2 className="text-lg font-semibold">Requested Items</h2>
         {headerForm.status !== "complete" && (
           <div className="space-x-2">
             <Button
@@ -450,7 +451,8 @@ export default function ItemFormTable({
                     <td className="p-2 border text-center">{item.quantity}</td>
                     <td className="p-2 border text-center">{item.whs_code}</td>
                     <td className="p-2 border text-center">
-                      {new Date(item.received_date).toLocaleDateString()}
+                      {/* {new Date(item.received_date).toLocaleDateString()} */}
+                      {dayjs(item.received_date).format("D MMMM YYYY")}
                     </td>
                     <td className="p-2 border">{item.remarks}</td>
                     <td

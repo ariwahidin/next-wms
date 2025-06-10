@@ -99,19 +99,27 @@ const UserForm: React.FC<UserFormProps> = ({ mode, userData }) => {
     e.preventDefault();
     const url = mode === "create" ? "/users" : `/users/${userData.data.ID}`;
 
-    if (!form.username || !form.password || !form.name || !form.email) {
-      eventBus.emit("showAlert", {
-        title: "Failed!",
-        description: "Harap isi semua field.",
-        type: "error",
-      });
-      return;
-    }
-
     let res;
     if (mode === "create") {
+      if (!form.username || !form.password || !form.name || !form.email) {
+        eventBus.emit("showAlert", {
+          title: "Failed!",
+          description: "Harap isi semua field.",
+          type: "error",
+        });
+        return;
+      }
+
       res = await api.post(url, form, { withCredentials: true });
     } else {
+      if (!form.username || !form.name || !form.email) {
+        eventBus.emit("showAlert", {
+          title: "Failed!",
+          description: "Harap isi semua field.",
+          type: "error",
+        });
+        return;
+      }
       res = await api.put(url, form, { withCredentials: true });
     }
 

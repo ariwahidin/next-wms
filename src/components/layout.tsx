@@ -21,6 +21,9 @@ import { useEffect } from "react";
 
 import { Inter } from "next/font/google";
 import { useRouter } from "next/navigation";
+// import { Badge } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useAppSelector } from "@/hooks/useAppSelector";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -32,6 +35,7 @@ export default function Layout({
   [props: string]: any;
 }) {
   const router = useRouter();
+  const userRedux = useAppSelector((state) => state.user);
   useEffect(() => {
     if (props.subTitle) {
       window.document.title = props.subTitle;
@@ -54,6 +58,9 @@ export default function Layout({
                   </BreadcrumbLink>
                 </BreadcrumbItem> */}
                 <BreadcrumbItem className="hidden md:block">
+                  <span className="mr-2 absolute top-5 right-2">
+                    <Badge className="bg-gray-500 text-white capitalize">{userRedux.unit}</Badge>
+                  </span>
                   <span
                     className="cursor-pointer text-sm font-medium text-muted-foreground hover:underline"
                     onClick={() => router.push(props.titleLink || "#")}

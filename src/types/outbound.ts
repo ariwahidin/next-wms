@@ -47,3 +47,12 @@ export interface OutboundItem {
   qty_pack: number;
   status: "fully received" | "partial" | "open";
 }
+
+export interface KoliItem {
+  ID : number
+  item_code : string
+  barcode : number
+  serial_number : string
+  qty : number
+  created_at : string
+}

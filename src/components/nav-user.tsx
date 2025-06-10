@@ -78,7 +78,7 @@ export function NavUser({
 
   const handleLogout = () => {
     api
-      .get("/logout", { withCredentials: true })
+      .get("/auth/logout", { withCredentials: true })
       .then((res) => {
         if (res.data.success === true) {
           // 1. Hapus user dari Redux state

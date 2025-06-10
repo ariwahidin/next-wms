@@ -8,11 +8,7 @@ import InboundTable from "./InboundTable";
 import Layout from "@/components/layout";
 
 export default function Page() {
-  useAuth();
   const [editData, setEditData] = useState(null);
-
- 
-
   const [listSuppliers, setListSuppliers] = useState([]);
   const [optionsSupplier, setOptionsSupplier] = useState([]);
   const [selectedSupplier, setSelectedSupplier] = useState(null);

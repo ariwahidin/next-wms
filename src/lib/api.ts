@@ -9,7 +9,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  eventBus.emit("loading", true); // Mulai loading
+  // eventBus.emit("loading", true); // Mulai loading
   const token = document.cookie
     .split("; ")
     .find((row) => row.startsWith("token="))
@@ -28,13 +28,20 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => {
-    eventBus.emit("loading", false); // Selesai loading
+    // eventBus.emit("loading", false); // Selesai loading
     const newToken = response.headers["x-new-token"];
     if (newToken) document.cookie = `token=${newToken}; path=/;`;
     return response;
   },
   (error) => {
-    eventBus.emit("loading", false);
+    // eventBus.emit("loading", false);
+
+    console.log(error.status)
+
+    if (error.status === 401) {
+      router.push("/auth/login");
+    }
+
     eventBus.emit("showAlert", {
       title: "Error!",
       description:

@@ -6,13 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ItemFormTable from "./ItemFormTable";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
-import { HeaderFormProps, ItemFormProps, ItemOptions } from "@/types/inbound";
+import { RefreshCcw, Save } from "lucide-react";
+import {
+  HeaderFormProps,
+  ItemFormProps,
+  ItemOptions,
+  ItemReceived,
+} from "@/types/inbound";
 import { Supplier } from "@/types/supplier";
 import api from "@/lib/api";
 import Select from "react-select";
 import eventBus from "@/utils/eventBus";
 import { useRouter } from "next/router";
+import ItemScannedTable from "./ItemScannedTable";
+import { time } from "console";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -31,6 +38,7 @@ export default function ManualForm() {
   const [muatan, setMuatan] = useState<ItemFormProps[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [supplierOptions, setSupplierOptions] = useState<ItemOptions[]>([]);
+  const [itemsReceived, setItemsReceived] = useState<ItemReceived[]>([]);
 
   const fetchData = async () => {
     try {
@@ -111,31 +119,80 @@ export default function ManualForm() {
     fetchData();
   }, []);
 
+  // useEffect(() => {
+  //   if (no) {
+  //     const fetchInbound = async () => {
+  //       try {
+  //         const res = await api.get(`/inbound/${no}`, {
+  //           withCredentials: true,
+  //         });
+  //         if (res.data.success) {
+  //           setFormData(res.data.data);
+  //           setMuatan(res.data.data.items);
+  //           setItemsReceived(res.data.data.received_items);
+  //         }
+  //       } catch (error) {
+  //         console.error("Error fetching inbound:", error);
+  //       }
+  //     };
+  //     fetchInbound();
+  //   }
+  // }, [no]);
+
   useEffect(() => {
-    if (no) {
-      const fetchInbound = async () => {
-        try {
-          const res = await api.get(`/inbound/${no}`, {
-            withCredentials: true,
-          });
-          if (res.data.success) {
-            setFormData(res.data.data);
-            setMuatan(res.data.data.items);
-          }
-        } catch (error) {
-          console.error("Error fetching inbound:", error);
+    if (!no) return;
+
+
+
+    const fetchInbound = async () => {
+      eventBus.emit("loading", true);
+      try {
+        const res = await api.get(`/inbound/${no}`, {
+          withCredentials: true,
+        });
+        if (res.data.success) {
+          setFormData(res.data.data);
+          setMuatan(res.data.data.items);
+          setItemsReceived(res.data.data.received_items);
+          eventBus.emit("loading", false);
         }
-      };
+      } catch (error) {
+        console.error("Error fetching inbound:", error);
+      }
+    };
+
+    // Panggil saat komponen mount / no berubah
+    fetchInbound();
+
+    // Dengarkan event `refreshData`
+    const handleRefresh = () => {
       fetchInbound();
-    }
+    };
+    eventBus.on("refreshData", handleRefresh);
+
+    // Cleanup
+    return () => {
+      eventBus.off("refreshData", handleRefresh);
+    };
   }, [no]);
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Create Inbound</h2>
-        {formData.status !== "complete" && (
-          <div className="space-x-2">
+
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            className="bg-green-500 text-white hover:bg-green-600"
+            onClick={() => {
+              eventBus.emit("refreshData");
+            }}
+          >
+            <RefreshCcw className="mr-1" />
+            Refresh
+          </Button>
+          {formData.status !== "complete" && (
             <Button
               variant="outline"
               className="bg-blue-500 text-white hover:bg-blue-600"
@@ -144,8 +201,8 @@ export default function ManualForm() {
               <Save className="mr-2" />
               Save
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       <hr className="my-4" />
       <form className="space-y-6">
@@ -233,6 +290,8 @@ export default function ManualForm() {
         headerForm={formData}
         setHeaderForm={setFormData}
       />
+      <hr className="my-6 mb-4" />
+      <ItemScannedTable itemsReceived={itemsReceived} />
     </div>
   );
 }

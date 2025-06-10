@@ -21,7 +21,7 @@ import OutboundTable from "./OutboundTable";
 import Layout from "@/components/layout";
 
 export default function Page() {
-  useAuth();
+  // useAuth();
   const [setEditData] = useState(null);
 
   

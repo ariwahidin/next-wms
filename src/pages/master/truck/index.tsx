@@ -1,13 +1,12 @@
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import useAuth from "@/hooks/useAuth";
+
 import { useEffect, useState } from "react";
 import Layout from "@/components/layout";
 import TruckTable from "./TruckTable";
 import TruckForm from "./TruckForm";
 
 export default function Page() {
-  useAuth();
   const [editData, setEditData] = useState(null);
   return (
     <Layout title="Master" subTitle="Truck">

@@ -252,6 +252,42 @@ const data = {
           title: "Tanstack Table",
           url: "/example/table/tanstack",
         },
+        {
+          title: "New Inbound",
+          url: "/example/inbound/new",
+        },
+        {
+          title: "List Inbound",
+          url: "/example/inbound/list",
+        },
+        {
+          title: "Putaway",
+          url: "/example/putaway",
+        },
+        {
+          title: "Stock",
+          url: "/example/putaway/stock",
+        },
+        {
+          title: "Outbound",
+          url: "/example/outbound",
+        },
+        {
+          title: "New Outbound",
+          url: "/example/outbound/new",
+        },
+        {
+          title: "Picking",
+          url: "/example/picking",
+        },
+        {
+          title: "New BU",
+          url: "/example/create-bu",
+        },
+        {
+          title: "DB Migrate",
+          url: "/example/db-migrate",
+        },
       ],
     },
   ],

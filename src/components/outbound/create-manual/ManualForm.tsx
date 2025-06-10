@@ -13,6 +13,8 @@ import api from "@/lib/api";
 import Select from "react-select";
 import eventBus from "@/utils/eventBus";
 import { useRouter } from "next/router";
+import { Item } from "@radix-ui/react-dropdown-menu";
+import ItemScannedTable from "./ItemScannedTable";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -233,6 +235,8 @@ export default function ManualForm() {
         headerForm={formData}
         setHeaderForm={setFormData}
       />
+      <hr className="my-6 mb-4" />
+      <ItemScannedTable itemsReceived={[]} />
     </div>
   );
 }

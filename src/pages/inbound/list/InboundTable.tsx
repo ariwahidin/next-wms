@@ -27,6 +27,7 @@ import styles from "./InboundTable.module.css";
 import { useAlert } from "@/contexts/AlertContext";
 import { useRouter } from "next/router";
 import eventBus from "@/utils/eventBus";
+import dayjs from "dayjs";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -58,13 +59,13 @@ const InboundTable = ({ setEditData }) => {
   const { showAlert, notify } = useAlert();
   const router = useRouter();
 
-  const HandleEdit = (no : string) => {
+  const HandleEdit = (no: string) => {
     router.push(`/inbound/edit-manual/${no}`);
   };
 
   const HandleComplete = (id: number) => {
     showAlert(
-      "Confirm Putaway",
+      "Complete Confirmation",
       "Are you sure you want to save this data?",
       "error",
       async () => {
@@ -94,23 +95,23 @@ const InboundTable = ({ setEditData }) => {
   };
 
   const [columnDefs] = useState<ColDef[]>([
-    { field: "no", headerName: "No. ", maxWidth: 70 },
+    { field: "no", headerName: "No. ", maxWidth: 60 },
     {
       headerName: "Actions",
       pinned: "right",
       headerClass: "header-center",
-      width: 200,
+      width: 150,
       field: "ID",
       cellRenderer: (params) => {
         return (
-          <div style={{ textAlign: "center" }}>
+          <div className="flex justify-center space-x-1 pt-2">
             {params.data.status === "open" && (
               <Button
-                title="Confirm Putaway"
+                title="Complete Inbound"
                 onClick={() => HandleComplete(params.data.id)}
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 mr-2  bg-blue-500 text-white hover:bg-blue-600"
+                className="h-6 w-6 bg-blue-500 text-white hover:bg-blue-600"
               >
                 <CheckCheck className="h-4 w-4" />
               </Button>
@@ -121,25 +122,27 @@ const InboundTable = ({ setEditData }) => {
               onClick={() => HandleEdit(params.data.inbound_no)}
               variant="ghost"
               size="icon"
-              className="h-8 w-8 mr-2 bg-green-500 text-white hover:bg-green-600"
+              className="h-6 w-6 bg-green-500 text-white hover:bg-green-600"
             >
               <Pencil className="h-4 w-4" />
             </Button>
+
             <Button
               title="Print Putaway Slip"
               onClick={() => HandlePreviewPDF(params.data.id)}
               variant="ghost"
               size="icon"
-              className="h-8 w-8 mr-2 bg-green-100 text-black hover:bg-green-600"
+              className="h-6 w-6 bg-green-100 text-black hover:bg-green-600"
             >
               <Printer className="h-4 w-4" />
             </Button>
+
             <Button
               title="Delete or Cancel"
               onClick={() => HandleDelete(params.data.id)}
               variant="ghost"
               size="icon"
-              className="h-8 w-8 bg-red-500 text-white hover:bg-red-600"
+              className="h-6 w-6 bg-red-500 text-white hover:bg-red-600"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -147,10 +150,19 @@ const InboundTable = ({ setEditData }) => {
         );
       },
     },
-    { field: "inbound_date", headerName: "Date", width: 120 },
-    { field: "inbound_no", headerName: "Inbound No.", width: 170 },
+    // { field: "inbound_date", headerName: "Date", width: 120 },
+    {
+      field: "inbound_date",
+      headerName: "Date",
+      width: 120,
+      cellRenderer: (params) => {
+        return <div>{dayjs(params.value).format("D MMMM YYYY")}</div>;
+      },
+    },
+
+    { field: "inbound_no", headerName: "Inbound No.", width: 130 },
     { field: "po_number", headerName: "PO Number", width: 150 },
-    { field: "supplier_name", headerName: "Supplier" },
+    { field: "supplier_name", headerName: "Supplier", width: 250 },
     // { field: "status", headerName: "Status", width: 100 },
     {
       field: "status",
@@ -178,9 +190,9 @@ const InboundTable = ({ setEditData }) => {
         return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
       },
     },
-    { field: "total_line", headerName: "Total Line", width: 100 },
-    { field: "total_qty", headerName: "Total Qty", width: 100 },
-    { field: "qty_scan", headerName: "Scan Qty", width: 100 },
+    { field: "total_line", headerName: "Items", width: 80 },
+    { field: "total_qty", headerName: "Request", width: 90 },
+    { field: "qty_scan", headerName: "Received", width: 90 },
   ]);
 
   const [quickFilterText, setQuickFilterText] = useState<string>();
@@ -219,6 +231,7 @@ const InboundTable = ({ setEditData }) => {
         </div>
       </div>
       <AgGridReact
+        // className="font-sans text-sm font-medium text-gray-900 dark:text-gray-100"
         rowData={rowData}
         columnDefs={columnDefs}
         quickFilterText={quickFilterText}
@@ -234,4 +247,3 @@ const InboundTable = ({ setEditData }) => {
 export default InboundTable;
 
 // ===============================================================================================================================================
-

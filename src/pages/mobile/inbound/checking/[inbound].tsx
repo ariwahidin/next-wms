@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Car, Trash2 } from "lucide-react";
+import { Car, Edit, Save, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -82,6 +82,8 @@ const CheckingPage = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showModalDetail, setShowModalDetail] = useState(false);
   const [scanQty, setScanQty] = useState(1);
+  const [editInboundBarcode, setEditInboundBarcode] = useState(false);
+  const [itemEditBarcode, setItemEditBarcode] = useState<ScannedItem>(null);
 
   const [listInboundDetail, setListInboundDetail] = useState<InboundDetail[]>(
     []
@@ -106,7 +108,6 @@ const CheckingPage = () => {
         : serialInputs[0].trim();
 
     if (scanType === "BARCODE") {
-      // setScanSerial(scanBarcode);
       serialNumber = scanBarcode.trim();
     }
 
@@ -280,6 +281,12 @@ const CheckingPage = () => {
     }
   }, [scanType]);
 
+  useEffect(() => {
+    if (!showModalDetail && inbound) {
+      fetchInboundDetail();
+    }
+  }, [showModalDetail]);
+
   return (
     <>
       <PageHeader title={`Checking ${inbound}`} showBackButton />
@@ -288,27 +295,17 @@ const CheckingPage = () => {
           <CardContent className="p-4 space-y-3">
             <div className="relative flex gap-2">
               <div className="flex items-center gap-2 flex-1">
-                <label className="text-sm text-gray-600">Type : </label>
+                <label className="text-sm text-gray-600">With Serial :</label>
                 <Select value={scanType} onValueChange={setScanType}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Scan Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SERIAL">Serial</SelectItem>
-                    <SelectItem value="BARCODE">Barcode</SelectItem>
+                    <SelectItem value="SERIAL">Yes</SelectItem>
+                    <SelectItem value="BARCODE">No</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* <Select value={scanWhs} onValueChange={setScanWhs}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Scan Warehouse" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CKY">CKY</SelectItem>
-                  <SelectItem value="CKZ">CKZ</SelectItem>
-                </SelectContent>
-              </Select> */}
 
               <div className="flex items-center gap-2 flex-1">
                 <label htmlFor="scanQa" className="text-sm text-gray-600">
@@ -320,8 +317,6 @@ const CheckingPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="A">A</SelectItem>
-                    <SelectItem value="B">B</SelectItem>
-                    <SelectItem value="C">C</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -329,20 +324,50 @@ const CheckingPage = () => {
 
             <div className="relative">
               <label htmlFor="location" className="text-sm text-gray-600">
-                Receive Location :{" "}
+                Receive Location :
               </label>
-              <Input
-                autoComplete="off"
-                className="w-full mt-1"
-                id="location"
-                // placeholder="Location ..."
-                value={scanLocation}
-                onChange={(e) => setScanLocation(e.target.value)}
-              />
+              <div className="flex items-center mt-1">
+                <Input
+                  autoComplete="off"
+                  className="w-full pr-10"
+                  id="location"
+                  value={scanLocation}
+                  onChange={(e) => setScanLocation(e.target.value)}
+                />
+                {/* Tombol + untuk generate lokasi */}
+                <button
+                  type="button"
+                  className="ml-3 text-green-600 hover:text-green-800 font-bold text-lg"
+                  onClick={() => {
+                    const generateLocation = async () => {
+
+
+                      const res = await api.get(
+                        '/mobile/inbound/barcode/getlocation/'+inbound,
+                        {
+                          withCredentials: true,
+                        }
+                      )
+
+                      if (res.data.success) {
+                        setScanLocation(res.data.data);
+                      }
+
+                    };
+
+                    generateLocation();
+                    document.getElementById("location")?.focus();
+                  }}
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Tombol clear (X) */}
               {scanLocation && (
                 <button
                   type="button"
-                  className="absolute right-3 top-11 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-8 top-11 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   onClick={() => {
                     setScanLocation("");
                     document.getElementById("location")?.focus();
@@ -488,7 +513,7 @@ const CheckingPage = () => {
                         setSerialInputs(newSerials);
                       }}
                     >
-                     - Remove Last Serial
+                      - Remove Last Serial
                     </button>
 
                     {/* Menampilkan gabungan serial */}
@@ -616,31 +641,102 @@ const CheckingPage = () => {
                         : "bg-blue-100"
                     }`}
                   >
-                    <div className="text-sm space-y-1">
+                    <div
+                      className="text-sm"
+                      style={{ color: "black", fontSize: "12px" }}
+                    >
                       <div>
-                        <strong>Barcode:</strong> {item.barcode}
+                        <span className="font-semibold mr-2">Barcode:</span>{" "}
+                        {item.barcode}
                       </div>
                       <div>
-                        <strong>Serial:</strong> {item.serial_number}
+                        <span className="font-semibold mr-2">Serial:</span>{" "}
+                        {item.serial_number}
                       </div>
                       <div>
-                        <strong>Location:</strong> {item.location}
+                        <span className="font-semibold mr-2">Location:</span>{" "}
+                        {item.location}
+                      </div>
+                      <div className="flex items-center">
+                        <span className="font-semibold mr-2">Qty:</span>{" "}
+                        {editInboundBarcode ? (
+                          <Input
+                            id={"dummy" + item.id}
+                            key={item.id}
+                            defaultValue={item.quantity}
+                            // value={item.quantity}
+                            type="number"
+                            className="w-20 h-8 text-center border rounded-md"
+                            onChange={(e) => {
+                              setItemEditBarcode({
+                                ...item,
+                                quantity: parseInt(e.target.value),
+                              });
+                            }}
+                          />
+                        ) : (
+                          item.quantity
+                        )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-4 mt-2">
                       {/* Tombol berada di kolom 1 dan 2 */}
                       <div className="col-span-2 flex items-center">
                         {item.status === "pending" ? (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() =>
-                              handleRemoveItem(item.id, item.inbound_detail_id)
-                            }
-                          >
-                            <Trash2 size={16} />
-                          </Button>
+                          <>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() =>
+                                handleRemoveItem(
+                                  item.id,
+                                  item.inbound_detail_id
+                                )
+                              }
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                            {editInboundBarcode &&
+                            item.scan_type === "BARCODE" ? (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="ml-2"
+                                onClick={async () => {
+                                  const res = await api.put(
+                                    `/mobile/inbound/barcode/${item.id}`,
+                                    itemEditBarcode,
+                                    {
+                                      withCredentials: true,
+                                    }
+                                  );
+
+                                  if (res.data.success) {
+                                    setEditInboundBarcode(false);
+                                    item.quantity = res.data.data.quantity;
+                                  }
+                                }}
+                              >
+                                <Save size={16} />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="ml-2"
+                                onClick={() => {
+                                  setEditInboundBarcode(true);
+                                  setItemEditBarcode(item);
+                                  document
+                                    .getElementById("dummy" + item.id)
+                                    ?.focus();
+                                }}
+                              >
+                                <Edit size={16} />
+                              </Button>
+                            )}
+                          </>
                         ) : (
                           <></>
                         )}

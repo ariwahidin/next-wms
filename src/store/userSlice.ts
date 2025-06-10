@@ -8,6 +8,7 @@ interface UserState {
     base_url: string;
     isLoggedIn: boolean;
     token: string;
+    unit: string;
     menus: any[];
 }
 
@@ -17,6 +18,7 @@ const initialState: UserState = {
     base_url: '',
     isLoggedIn: false,
     token: '',
+    unit : '',
     menus: [],
 };
 
@@ -24,11 +26,12 @@ const userSlice = createSlice({
     name: 'user',
     initialState,
     reducers: {
-        setUser(state, action: PayloadAction<{ name: string; email: string; base_url: string; token: string; menus: any[] }>) {
+        setUser(state, action: PayloadAction<{ name: string; email: string; base_url: string; token: string; unit: string; menus: any[] }>) {
             state.name = action.payload.name;
             state.email = action.payload.email;
             state.base_url = action.payload.base_url;
             state.token = action.payload.token;
+            state.unit = action.payload.unit;
             state.menus = action.payload.menus;
             state.isLoggedIn = true;
         },
@@ -37,6 +40,7 @@ const userSlice = createSlice({
             state.email = '';
             state.base_url = '';
             state.token = '';
+            state.unit = '';
             state.menus = [];
             state.isLoggedIn = false;
         },

@@ -1,11 +1,10 @@
-import useAuth from "@/hooks/useAuth";
+
 import { useState } from "react";
 import Layout from "@/components/layout";
 import OriginForm from "./OriginForm";
 import OriginTable from "./OriginTable";
 
 export default function Page() {
-  useAuth();
   const [editData, setEditData] = useState(null);
   return (
     <Layout title="Master" subTitle="Origin">

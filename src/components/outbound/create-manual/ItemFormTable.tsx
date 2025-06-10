@@ -283,7 +283,7 @@ export default function ItemFormTable({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Items List</h2>
+        <h2 className="text-lg font-semibold">Requested Items</h2>
         {headerForm.status !== "complete" && (
           <div className="space-x-2">
             <Button

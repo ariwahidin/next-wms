@@ -44,7 +44,8 @@ const ProductTable = ({ setEditData }) => {
     { field: "no", headerName: "No. ", maxWidth: 70 },
     { field: "item_code", headerName: "Item Code" },
     { field: "item_name", headerName: "Item Name" },
-    { field: "gmc", headerName: "GMC" },
+    { field: "category", headerName: "Category" },
+    { field: "barcode", headerName: "Barcode" },
     { field: "uom", headerName: "UOM" },
     { field: "has_serial", headerName: "SN", width: 70 },
     {
