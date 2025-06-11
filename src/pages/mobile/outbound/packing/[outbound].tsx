@@ -146,7 +146,7 @@ export default function PackinPage() {
     console.log("items selected : ", items);
     console.log("scan type : ", scanType);
     setSelectedKoliId(koliId);
-    // setSelectedItemId(items[0].ID);
+    setSelectedItemId(items[0].ID);
     // setModalQty(items[0].quantity);
   };
 
@@ -164,6 +164,8 @@ export default function PackinPage() {
   };
 
   const addItemToKoli = async () => {
+
+    console.log("run")
 
     const serialNumberValue =
       serialInputs.length > 1
@@ -189,9 +191,6 @@ export default function PackinPage() {
         }),
       ]);
 
-      // if (!addItemToKoli.data.success) {
-      //   throw new Error("Gagal menyimpan ke server");
-      // }
 
       if (addItemToKoli.data.success) {
         eventBus.emit("showAlert", {
