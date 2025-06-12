@@ -84,7 +84,7 @@
 
 "use client";
 
-import { ChevronRight, Home, type LucideIcon } from "lucide-react";
+import { ChevronRight, LayoutDashboard, type LucideIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -126,9 +126,9 @@ export function NavMain({
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link href="/home">
-              <Home />
-              Home
+            <Link href="/wms/dashboard">
+              <LayoutDashboard />
+              Dashboard
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>

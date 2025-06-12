@@ -373,7 +373,7 @@ export default function PackinPage() {
                             <Plus className="w-4 h-4 mr-1" /> Add Item
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px] bg-white max-h-[90vh] overflow-y-auto">
+                        <DialogContent className="sm:max-w-[425px] bg-white top-[25%] max-h-[90vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle>
                               Koli{" "}

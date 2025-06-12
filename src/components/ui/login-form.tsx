@@ -90,7 +90,7 @@ export function LoginForm({
             60 * 60 * 24
           }; secure; samesite=None`;
           if (res.data.user.base_url === "/dashboard") {
-            router.push("/home");
+            router.push("/wms/dashboard");
           } else {
             router.push("/mobile/home");
           }
@@ -117,7 +117,7 @@ export function LoginForm({
       .get("/auth/isLoggedIn", { withCredentials: true })
       .then((res) => {
         if (res.data.success === true) {
-          window.location.href = "/home";
+          window.location.href = "/wms/dashboard";
         }
       })
       .catch((err) => console.log(err));

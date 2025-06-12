@@ -82,7 +82,7 @@ export default function ManualForm() {
             description: res.data.message,
             type: "success",
           });
-          router.push("/inbound/list");
+          router.push("/wms/inbound/data");
         }
       } catch (error) {
         console.error("Error saving inbound:", error);
@@ -106,7 +106,7 @@ export default function ManualForm() {
             description: res.data.message,
             type: "success",
           });
-          router.push("/inbound/list");
+          router.push("/wms/inbound/data");
         }
       } catch (error) {
         console.error("Error updating inbound:", error);
@@ -179,8 +179,7 @@ export default function ManualForm() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Create Inbound</h2>
-
+        {/* <h2 className="text-lg font-semibold">Create Inbound</h2> */}
         <div className="space-x-2">
           <Button
             variant="outline"

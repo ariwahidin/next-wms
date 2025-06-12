@@ -74,31 +74,31 @@ const data = {
       items: [
         {
           title: "Product",
-          url: "/master/product",
+          url: "/wms/master/product",
         },
         {
           title: "Supplier",
-          url: "/master/supplier",
+          url: "/wms/master/supplier",
         },
         {
           title: "Customer",
-          url: "/master/customer",
+          url: "/wms/master/customer",
         },
         {
           title: "Handling",
-          url: "/master/handling",
+          url: "/wms/master/handling",
         },
         {
           title: "Transporter",
-          url: "/master/transporter",
+          url: "/wms/master/transporter",
         },
         {
           title: "Truck",
-          url: "/master/truck",
+          url: "/wms/master/truck",
         },
         {
           title: "Origin",
-          url: "/master/origin",
+          url: "/wms/master/origin",
         },
       ],
     },
@@ -109,20 +109,8 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Create Inbound",
-          url: "/inbound/create-manual",
-        },
-        // {
-        //   title: "Create Inbound",
-        //   url: "/inbound/create",
-        // },
-        {
-          title: "Upload Inbound",
-          url: "/inbound/create/upload",
-        },
-        {
-          title: "List Inbound",
-          url: "/inbound/list",
+          title: "Data",
+          url: "/wms/inbound/data",
         },
       ],
     },
@@ -133,8 +121,8 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "List Inventory",
-          url: "/inventory/list",
+          title: "Data",
+          url: "/wms/inventory/data",
         },
       ],
     },
@@ -145,16 +133,8 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Create Outbound",
-          url: "/outbound/create-manual",
-        },
-        // {
-        //   title: "Create Outbound",
-        //   url: "/outbound/create",
-        // },
-        {
-          title: "List Outbound",
-          url: "/outbound/list",
+          title: "Data",
+          url: "/wms/outbound/data",
         },
       ],
     },
