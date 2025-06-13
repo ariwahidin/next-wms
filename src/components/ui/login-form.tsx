@@ -80,13 +80,13 @@ export function LoginForm({
               name: res.data.user.name,
               email: res.data.user.email,
               base_url: res.data.user.base_url,
-              token: res.data.token,
+              token: res.data.x_token,
               menus: res.data.menus,
               unit: res.data.user.unit
             })
           );
 
-          document.cookie = `next-auth-token=${res.data.token}; path=/; max-age=${
+          document.cookie = `next-auth-token=${res.data.x_token}; path=/; max-age=${
             60 * 60 * 24
           }; secure; samesite=None`;
           if (res.data.user.base_url === "/dashboard") {
