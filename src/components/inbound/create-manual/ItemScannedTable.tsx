@@ -268,13 +268,13 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
             <DialogTitle>Putaway Confirmation</DialogTitle>
           </DialogHeader>
           <div className="text-sm text-muted-foreground">
-            Are you sure you want to putaway {selectedItems.length} item?
+            Are you sure you want to putaway {selectedItems.length} item{selectedItems.length === 1 ? "" : "s"}?
           </div>
           <DialogFooter className="mt-4">
             <Button variant="secondary" onClick={() => setShowModal(false)}>
-              Batal
+              Cancel
             </Button>
-            <Button onClick={handleConfirm}>Konfirmasi</Button>
+            <Button onClick={handleConfirm}>Confirm</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -49,6 +49,8 @@ interface InboundDetail {
   barcode: string;
   quantity: number;
   scan_qty: number;
+  is_serial: boolean;
+  uom ?: string;
 }
 
 interface ScannedItem {
@@ -64,6 +66,7 @@ interface ScannedItem {
   scan_type: string;
   quantity: number;
   status?: string;
+  is_serial?: boolean;
 }
 
 const CheckingPage = () => {
@@ -161,6 +164,8 @@ const CheckingPage = () => {
         barcode: item.barcode,
         quantity: item.quantity,
         scan_qty: item.scan_qty,
+        is_serial: item.is_serial,
+        uom : item.uom
       }));
 
       setListInboundDetail(filtered);
@@ -188,6 +193,7 @@ const CheckingPage = () => {
         scan_type: item.scan_type,
         quantity: item.quantity,
         status: item.status,
+
       }));
 
       setListInboundScanned(filtered);
@@ -340,19 +346,16 @@ const CheckingPage = () => {
                   className="ml-3 text-green-600 hover:text-green-800 font-bold text-lg"
                   onClick={() => {
                     const generateLocation = async () => {
-
-
                       const res = await api.get(
-                        '/mobile/inbound/barcode/getlocation/'+inbound,
+                        "/mobile/inbound/barcode/getlocation/" + inbound,
                         {
                           withCredentials: true,
                         }
-                      )
+                      );
 
                       if (res.data.success) {
                         setScanLocation(res.data.data);
                       }
-
                     };
 
                     generateLocation();
@@ -557,16 +560,20 @@ const CheckingPage = () => {
                     className={`flex flex-col sm:flex-row sm:items-center sm:justify-between border p-3 rounded cursor-pointer hover:bg-gray-100`}
                   >
                     {/* Info Barang */}
-                    <div className="text-sm space-y-1">
-                      <div>
-                        <strong>Item Code:</strong> {item.item_code}
-                      </div>
-                      <div>
-                        <strong>Barcode:</strong> {item.barcode}
-                      </div>
-                      <div>
-                        <strong>Scanned:</strong> {item.scan_qty} /{" "}
-                        {item.quantity}
+                    <div className="text-sm space-y-1 relative">
+                      <div className="flex justify-between">
+                        <div>
+                          <span className="text-gray-600">Item Code:</span>{" "}
+                          {item.item_code} <br />
+                          <span className="text-gray-600">Barcode:</span>{" "}
+                          {item.barcode} <br />
+                          <span className="text-gray-600">Scanned:</span>{" "}
+                          {item.scan_qty} / {item.quantity} {" "} <span className="text-gray-600">{item.uom.toLowerCase()}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-gray-600">Serial :</span> {" "} 
+                          {item.is_serial ? "Yes" : "No"}
+                        </div>
                       </div>
                     </div>
                   </li>

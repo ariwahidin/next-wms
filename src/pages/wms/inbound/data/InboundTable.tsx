@@ -65,7 +65,7 @@ const InboundTable = () => {
 
   const HandleComplete = (id: number) => {
     showAlert(
-      "Complete Confirmation",
+      "Inbound Complete Confirmation",
       "Are you sure you want to save this data?",
       "error",
       async () => {
