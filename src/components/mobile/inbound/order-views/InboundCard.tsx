@@ -2,11 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Package,
-  BoxesIcon,
-  ScanBarcode,
-} from "lucide-react"; // Import icon
+import { Package, BoxesIcon, ScanBarcode } from "lucide-react"; // Import icon
 import router from "next/router";
 
 type InboundItem = {
@@ -75,26 +71,28 @@ export default function InboundCard({ data }: { data: InboundItem }) {
         <div className="absolute top-2">
           <div className="text-sm font-semibold">
             {inbound_no}
-            <span className="ml-2 text-xs text-gray-500 rounded px-2 py-1 w-max mt-1 bg-green-100">{status}</span>
+            <span className="ml-2 text-xs text-gray-500 rounded px-2 py-1 w-max mt-1 bg-green-100">
+              {status}
+            </span>
           </div>
           <div className="text-sm text-gray-500">{supplier_name}</div>
           <div className="text-sm text-gray-500">{invoice_no}</div>
           <div className="text-sm text-gray-400">{receive_status}</div>
-
-          <div className="mt-1 flex gap-2 items-center">
-            <Button
-              className="w-100"
-              onClick={() => handleCheckingClick(inbound_no)}
-            >
-              Checking
-            </Button>
-            <Button
-              className="w-100"
-              onClick={() => handlePutawayClick(inbound_no)}
-            >
-              Putaway
-            </Button>
-          </div>
+        </div>
+        <div className="pt-9">
+          <Button
+            className="w-full"
+            onClick={() => handleCheckingClick(inbound_no)}
+          >
+            Checking
+          </Button>
+          <Button
+            style={{ display: "none" }}
+            className="w-100"
+            onClick={() => handlePutawayClick(inbound_no)}
+          >
+            Putaway
+          </Button>
         </div>
       </CardContent>
     </Card>

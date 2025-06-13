@@ -195,11 +195,15 @@ const data = {
       ],
     },
     {
-      title: "Configuration",
+      title: "Settings",
       url: "#",
       icon: SettingsIcon,
       isActive: true,
       items: [
+        {
+          title: "User Manual",
+          url: "/wms/settings/user-manual",
+        },
         {
           title: "Users",
           url: "/master/user",

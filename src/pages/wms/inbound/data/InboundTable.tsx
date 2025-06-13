@@ -78,7 +78,7 @@ const InboundTable = () => {
         if (response.data.success) {
           eventBus.emit("showAlert", {
             title: "Success!",
-            description: "berhassss",
+            description: response.data.message,
             type: "success",
           });
 
