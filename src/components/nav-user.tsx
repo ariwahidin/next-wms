@@ -77,21 +77,37 @@ export function NavUser({
   const dispatch = useDispatch();
 
   const handleLogout = () => {
-    api
-      .get("/auth/logout", { withCredentials: true })
-      .then((res) => {
-        if (res.data.success === true) {
-          // 1. Hapus user dari Redux state
-          dispatch(logout());
+    // api
+    //   .get("/auth/logout", { withCredentials: true })
+    //   .then((res) => {
+    //     if (res.data.success === true) {
+    //       // 1. Hapus user dari Redux state
+    //       dispatch(logout());
 
-          // 2. Hapus Redux Persist dari localStorage
-          persistor.purge().then(() => {
-            // 3. Redirect ke login
-            router.push("/auth/login");
-          });
-        }
-      })
-      .catch((err) => console.log(err));
+    //       // 2. Hapus Redux Persist dari localStorage
+    //       persistor.purge().then(() => {
+    //         // 3. Redirect ke login
+    //         router.push("/auth/login");
+    //       });
+    //     }
+    //   })
+    //   .catch((err) => console.log(err));
+
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("next-auth-token="))
+      ?.split("=")[1];
+    console.log("Next Auth Token:", token);
+    if (token) {
+      document.cookie = `next-auth-token=; path=/; max-age=0; secure; samesite=None`;
+      // 1. Hapus user dari Redux state
+      dispatch(logout());
+      // 2. Hapus Redux Persist dari localStorage
+      persistor.purge().then(() => {
+        // 3. Redirect ke login
+        router.push("/auth/login");
+      });
+    }
   };
 
   return (

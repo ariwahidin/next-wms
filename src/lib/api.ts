@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import axios from "axios";
 import eventBus from "@/utils/eventBus";
 import router from "next/router";
@@ -9,34 +8,30 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  // eventBus.emit("loading", true); // Mulai loading
-  const token = document.cookie
+
+  const next_token = document.cookie
     .split("; ")
-    .find((row) => row.startsWith("token="))
+    .find((row) => row.startsWith("next-auth-token="))
     ?.split("=")[1];
 
-  console.log("token AT API", token);
+  console.log("next_auth_token AT API", next_token);
 
   // if (!token) {
   //   router.push("/auth/login");
   //   return;
   // }
 
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (next_token) config.headers.Authorization = `Bearer ${next_token}`;
   return config;
 });
 
 api.interceptors.response.use(
   (response) => {
-    // eventBus.emit("loading", false); // Selesai loading
     const newToken = response.headers["x-new-token"];
     if (newToken) document.cookie = `token=${newToken}; path=/;`;
     return response;
   },
   (error) => {
-    // eventBus.emit("loading", false);
-
-    console.log(error.status)
 
     if (error.status === 401) {
       router.push("/auth/login");
@@ -48,7 +43,7 @@ api.interceptors.response.use(
         error.response?.data?.error ||
         error.response?.data?.message ||
         error.message ||
-        "Terjadi kesalahan pada server.",
+        "Something went wrong with the request",
       type: "error",
     });
 
@@ -56,7 +51,7 @@ api.interceptors.response.use(
       success: false,
       data: {},
       error: true,
-      message: error.response?.data?.message || "Terjadi kesalahan",
+      message: error.response?.data?.message || "Something went wrong",
     });
   }
 );

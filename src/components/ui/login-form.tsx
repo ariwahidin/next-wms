@@ -86,7 +86,7 @@ export function LoginForm({
             })
           );
 
-          document.cookie = `token_public=${res.data.token}; path=/; max-age=${
+          document.cookie = `next-auth-token=${res.data.token}; path=/; max-age=${
             60 * 60 * 24
           }; secure; samesite=None`;
           if (res.data.user.base_url === "/dashboard") {
@@ -112,16 +112,16 @@ export function LoginForm({
     }
   };
 
-  useEffect(() => {
-    api
-      .get("/auth/isLoggedIn", { withCredentials: true })
-      .then((res) => {
-        if (res.data.success === true) {
-          window.location.href = "/wms/dashboard";
-        }
-      })
-      .catch((err) => console.log(err));
-  }, []);
+  // useEffect(() => {
+  //   api
+  //     .get("/auth/isLoggedIn", { withCredentials: true })
+  //     .then((res) => {
+  //       if (res.data.success === true) {
+  //         window.location.href = "/wms/dashboard";
+  //       }
+  //     })
+  //     .catch((err) => console.log(err));
+  // }, []);
 
   useEffect(() => {
     fetchData();

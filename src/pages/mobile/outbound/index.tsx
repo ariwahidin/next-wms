@@ -23,40 +23,40 @@ const outboundMenus = [
     href: "/mobile/outbound/create-order",
   },
   {
-    label: "View Outbound Orders",
+    label: "Outbound Orders",
     icon: <Truck />,
     href: "/mobile/outbound/view-orders",
   },
-  {
-    label: "Schedule Pickup",
-    icon: <ClipboardCheck />,
-    href: "/mobile/outbound/schedule-pickup",
-  },
-  {
-    label: "Shipping Report",
-    icon: <FileText />,
-    href: "/mobile/outbound/shipping-report",
-  },
-  {
-    label: "Track Shipment",
-    icon: <ArrowRightCircle />,
-    href: "/mobile/outbound/track-shipment",
-  },
-  {
-    label: "Outbound History",
-    icon: <ClipboardCheck />,
-    href: "/mobile/outbound/history",
-  },
-  {
-    label: "Outbound Calendar",
-    icon: <Calendar />,
-    href: "/mobile/outbound/calendar",
-  },
-  {
-    label: "Scan Shipment",
-    icon: <Scan />,
-    href: "/mobile/outbound/scan-shipment",
-  },
+  // {
+  //   label: "Schedule Pickup",
+  //   icon: <ClipboardCheck />,
+  //   href: "/mobile/outbound/schedule-pickup",
+  // },
+  // {
+  //   label: "Shipping Report",
+  //   icon: <FileText />,
+  //   href: "/mobile/outbound/shipping-report",
+  // },
+  // {
+  //   label: "Track Shipment",
+  //   icon: <ArrowRightCircle />,
+  //   href: "/mobile/outbound/track-shipment",
+  // },
+  // {
+  //   label: "Outbound History",
+  //   icon: <ClipboardCheck />,
+  //   href: "/mobile/outbound/history",
+  // },
+  // {
+  //   label: "Outbound Calendar",
+  //   icon: <Calendar />,
+  //   href: "/mobile/outbound/calendar",
+  // },
+  // {
+  //   label: "Scan Shipment",
+  //   icon: <Scan />,
+  //   href: "/mobile/outbound/scan-shipment",
+  // },
 ];
 
 export default function OutboundMenuPage() {

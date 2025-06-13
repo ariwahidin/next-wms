@@ -13,46 +13,51 @@ import {
   History,
   FileText,
   ScanBarcode,
+  SearchCheck,
+  SearchCheckIcon,
+  SearchXIcon,
+  Search,
+  LocateFixedIcon,
 } from "lucide-react";
 
 const inventoryMenus = [
   {
-    label: "Location Transfer",
+    label: "Internal Transfer",
     icon: <MoveRight />,
     href: "/mobile/inventory/transfer",
   },
-  {
-    label: "Location Transfer by Serial",
-    icon: <Barcode />,
-    href: "/mobile/inventory/transfer-serial",
-  },
-  {
-    label: "Stock Opname",
-    icon: <ClipboardList />,
-    href: "/mobile/inventory/stock-opname",
-  }, // bisa juga diganti jadi "Physical Stock Count"
-  {
-    label: "Stock Adjustment",
-    icon: <SlidersHorizontal />,
-    href: "/mobile/inventory/adjustment",
-  },
-  {
-    label: "Item Mutation",
-    icon: <Repeat />,
-    href: "/mobile/inventory/mutation",
-  }, // bisa juga "Item Movement"
-  {
-    label: "Stock History",
-    icon: <History />,
-    href: "/mobile/inventory/history",
-  },
-  {
-    label: "Stock Report",
-    icon: <FileText />,
-    href: "/mobile/inventory/report",
-  },
-  { label: "Scan Item", icon: <ScanBarcode />, href: "/mobile/inventory/scan-item" },
-  { label: "Scan Location", icon: <ScanBarcode />, href: "/mobile/inventory/scan-location" },
+  // {
+  //   label: "Location Transfer by Serial",
+  //   icon: <Barcode />,
+  //   href: "/mobile/inventory/transfer-serial",
+  // },
+  // {
+  //   label: "Stock Opname",
+  //   icon: <ClipboardList />,
+  //   href: "/mobile/inventory/stock-opname",
+  // }, // bisa juga diganti jadi "Physical Stock Count"
+  // {
+  //   label: "Stock Adjustment",
+  //   icon: <SlidersHorizontal />,
+  //   href: "/mobile/inventory/adjustment",
+  // },
+  // {
+  //   label: "Item Mutation",
+  //   icon: <Repeat />,
+  //   href: "/mobile/inventory/mutation",
+  // }, // bisa juga "Item Movement"
+  // {
+  //   label: "Stock History",
+  //   icon: <History />,
+  //   href: "/mobile/inventory/history",
+  // },
+  // {
+  //   label: "Stock Report",
+  //   icon: <FileText />,
+  //   href: "/mobile/inventory/report",
+  // },
+  { label: "Search Item", icon: <Search />, href: "/mobile/inventory/scan-item" },
+  { label: "Search Location", icon: <LocateFixedIcon />, href: "/mobile/inventory/scan-location" },
 ];
 
 export default function InventoryMenuPage() {

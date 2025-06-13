@@ -12,6 +12,7 @@ import {
   FileText,
   Calendar,
   Scan,
+  InboxIcon,
 } from "lucide-react";
 
 const inboundMenus = [
@@ -21,40 +22,40 @@ const inboundMenus = [
     href: "/mobile/inbound/create-order",
   },
   {
-    label: "View Inbound Orders",
-    icon: <Truck />,
+    label: "Inbound Orders",
+    icon: <InboxIcon />,
     href: "/mobile/inbound/view-orders",
   },
-  {
-    label: "Goods Receipt",
-    icon: <ClipboardCheck />,
-    href: "/mobile/inbound/goods-receipt",
-  },
-  {
-    label: "Inventory Receipt Report",
-    icon: <FileText />,
-    href: "/mobile/inbound/inventory-receipt-report",
-  },
-  {
-    label: "Goods Arrival Confirmation",
-    icon: <Archive />,
-    href: "/mobile/inbound/goods-arrival-confirmation",
-  },
-  {
-    label: "Inbound History",
-    icon: <ClipboardCheck />,
-    href: "/mobile/inbound/history",
-  },
-  {
-    label: "Inbound Calendar",
-    icon: <Calendar />,
-    href: "/mobile/inbound/calendar",
-  },
-  {
-    label: "Scan Inbound Items",
-    icon: <Scan />,
-    href: "/mobile/inbound/scan-items",
-  },
+  // {
+  //   label: "Goods Receipt",
+  //   icon: <ClipboardCheck />,
+  //   href: "/mobile/inbound/goods-receipt",
+  // },
+  // {
+  //   label: "Inventory Receipt Report",
+  //   icon: <FileText />,
+  //   href: "/mobile/inbound/inventory-receipt-report",
+  // },
+  // {
+  //   label: "Goods Arrival Confirmation",
+  //   icon: <Archive />,
+  //   href: "/mobile/inbound/goods-arrival-confirmation",
+  // },
+  // {
+  //   label: "Inbound History",
+  //   icon: <ClipboardCheck />,
+  //   href: "/mobile/inbound/history",
+  // },
+  // {
+  //   label: "Inbound Calendar",
+  //   icon: <Calendar />,
+  //   href: "/mobile/inbound/calendar",
+  // },
+  // {
+  //   label: "Scan Inbound Items",
+  //   icon: <Scan />,
+  //   href: "/mobile/inbound/scan-items",
+  // },
 ];
 
 export default function InboundMenuPage() {

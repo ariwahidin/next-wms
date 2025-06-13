@@ -8,13 +8,17 @@ export function middleware(req: NextRequest) {
     // }
     // return authMiddleware(req) || NextResponse.next();
 
-
     const allCookies = req.cookies.getAll();
-
     console.log("✅ All cookies received in middleware:", allCookies);
 
-    const token = req.cookies.get('token')?.value;
+    const token = req.cookies.get('next-auth-token')?.value;
     // const tokenPublic = req.cookies.get('token_public')?.value;
+
+    if (!token) {
+        const url = new URL('/auth/login', req.nextUrl.origin);
+        return NextResponse.redirect(url);
+    }
+
     const response = NextResponse.next();
 
     // Tambahkan custom header untuk response
@@ -28,8 +32,9 @@ export function middleware(req: NextRequest) {
 
 export const config = {
     matcher: [
+        '/wms/:path*',
+        '/mobile/:path*',
         // '/dashboard/:path*',
-        '/master/:path*',
         // '/inbound/:path*',
         // '/outbound/:path*',
         // '/rf/:path*',

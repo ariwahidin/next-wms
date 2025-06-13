@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import PageHeader from "@/components/mobile/PageHeader";
 
 import {
-  ArrowBigRight,
+  Check,
   CheckCheck,
   Loader2,
   Search,
@@ -38,6 +38,7 @@ interface ScannedItem {
   scan_type: string;
   quantity: number;
   status?: string;
+  rec_date?: string;
 }
 
 const TransferPage = () => {
@@ -90,6 +91,7 @@ const TransferPage = () => {
           scan_type: item.scan_type,
           quantity: item.qty_available,
           status: item.status,
+          rec_date: item.rec_date,
         }));
 
         setListInboundScanned(filtered);
@@ -231,7 +233,7 @@ const TransferPage = () => {
 
   return (
     <>
-      <PageHeader title={`Transfer Location`} showBackButton />
+      <PageHeader title={`Internal Transfer`} showBackButton />
       <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -337,24 +339,40 @@ const TransferPage = () => {
                   filteredScannedItems.map((item, index) => (
                     <div
                       key={index}
-                      className={`p-2 border rounded-md hover:bg-gray-100 cursor-pointer ${
-                        item.status === "in stock"
+                      className={`p-2 border rounded-md cursor-pointer ${
+                        item.qa_status === "A"
                           ? "bg-green-100"
                           : "bg-blue-100"
                       }`}
                     >
-                      <div className="text-sm space-y-1">
-                        <div>
-                          <strong>Barcode:</strong> {item.barcode}
+                      <div className="flex justify-between items-start text-sm">
+                        <div className="space-y-1">
+                          <div>
+                            <span className="text-gray-600">Location:</span>{" "}
+                            {item.location}
+                            <br />
+                            <span className="text-gray-600">Barcode:</span>{" "}
+                            {item.barcode}
+                            <br />
+                            <span className="text-gray-600">Serial:</span>{" "}
+                            {item.serial_number}
+                            <br />
+                            <span className="text-gray-600">
+                              Rcv Date:
+                            </span>{" "}
+                            {item.rec_date}
+                            <br />
+                          </div>
                         </div>
-                        <div>
-                          <strong>Serial:</strong> {item.serial_number}
-                        </div>
-                        <div>
-                          <strong>Location:</strong> {item.location}
-                        </div>
-                        <div>
-                          <strong>Available:</strong> {item.quantity}
+                        <div className="text-right">
+                          <span className="text-gray-600">QA: </span>{" "}
+                          {item.qa_status}
+                          <br />
+                          <span className="text-gray-600">Whs: </span>{" "}
+                          {item.whs_code}
+                          <br />
+                          <span className="text-gray-600">Available:</span>{" "}
+                          {item.quantity}
                         </div>
                       </div>
 
@@ -366,8 +384,8 @@ const TransferPage = () => {
                           setQtyTransfer(item.quantity);
                         }}
                       >
-                        <ArrowBigRight size={18} />
-                        Move to
+                        <Check size={18} />
+                        Transfer
                       </Button>
                     </div>
                   ))
