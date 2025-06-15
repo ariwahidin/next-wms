@@ -4,6 +4,8 @@ export interface HeaderFormProps {
   inbound_date: string;
   supplier: string;
   po_number: string;
+  invoice?: string;
+  type?: string;
   status?: string;
   remarks?: string;
   mode?: "create" | "edit";
@@ -16,6 +18,7 @@ export interface ItemFormProps {
   quantity: number;
   whs_code: string;
   uom: string;
+  is_serial?: string;
   received_date?: string;
   remarks?: string;
   mode?: string;

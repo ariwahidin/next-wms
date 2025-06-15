@@ -45,7 +45,7 @@ export default function ManualForm() {
         setCustomerOptions(
           suppliers.data.data.map((item: Customer) => ({
             value: item.customer_code,
-            label: item.customer_code,
+            label: item.customer_name,
           }))
         );
       }
@@ -150,7 +150,7 @@ export default function ManualForm() {
         )}
       </div>
       <hr className="my-4" />
-      <form className="space-y-6">
+      {/* <form className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div style={{ display: "none" }}>
             <Label htmlFor="OutboundID">Outbound ID</Label>
@@ -224,7 +224,123 @@ export default function ManualForm() {
               }
             />
           </div>
-          {/* Tambahkan input header lainnya di sini */}
+        </div>
+      </form> */}
+
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Outbound ID (hidden) */}
+          <div className="hidden">
+            <div className="flex items-center gap-4">
+              <Label className="w-32 text-left shrink-0">Outbound ID</Label>
+              <span className="shrink-0">:</span>
+              <Input
+                id="OutboundID"
+                value={formData.ID}
+                onChange={(e) =>
+                  setFormData({ ...formData, ID: Number(e.target.value) })
+                }
+              />
+            </div>
+          </div>
+
+          {/* Outbound No */}
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">No. / Date</Label>
+            <span className="shrink-0">:</span>
+            <Input
+              readOnly
+              id="OutboundNo"
+              className="flex-1"
+              value={formData.outbound_no}
+              onChange={(e) =>
+                setFormData({ ...formData, outbound_no: e.target.value })
+              }
+            />
+            <Input
+              type="date"
+              id="OutboundDate"
+              className="flex-1"
+              value={formData.outbound_date}
+              onChange={(e) =>
+                setFormData({ ...formData, outbound_date: e.target.value })
+              }
+            />
+          </div>
+
+          {/* DO Number */}
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">DO Number</Label>
+            <span className="shrink-0">:</span>
+            <Input
+              id="DeliveryNo"
+              className="flex-1"
+              value={formData.delivery_no}
+              onChange={(e) =>
+                setFormData({ ...formData, delivery_no: e.target.value })
+              }
+            />
+          </div>
+
+          {/* Customer */}
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">Customer</Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <Select
+                value={customerOptions.find(
+                  (option) => option.value === formData.customer
+                )}
+                options={customerOptions}
+                onChange={(selectedOption) => {
+                  if (selectedOption) {
+                    setFormData({
+                      ...formData,
+                      customer: selectedOption.value,
+                    });
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Remarks */}
+          <div className="flex items-start gap-4">
+            <Label
+              className="w-32 text-left shrink-0 pt-2"
+              htmlFor="RemarksHeader"
+            >
+              Remarks
+            </Label>
+            <span className="shrink-0 pt-2">:</span>
+            <textarea
+              id="RemarksHeader"
+              className="flex-1 border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              rows={2}
+              // value={formData.remarksHeader}
+              // onChange={(e) =>
+              //   setFormData({ ...formData, remarksHeader: e.target.value })
+              // }
+            />
+          </div>
+
+          {/* Mode (hidden) */}
+          <div className="hidden">
+            <div className="flex items-center gap-4">
+              <Label className="w-32 text-left shrink-0">Mode</Label>
+              <span className="shrink-0">:</span>
+              <Input
+                id="Mode"
+                value={formData.mode}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    mode: e.target.value as "create" | "edit",
+                  })
+                }
+              />
+            </div>
+          </div>
         </div>
       </form>
 

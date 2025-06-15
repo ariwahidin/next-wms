@@ -20,6 +20,8 @@ import eventBus from "@/utils/eventBus";
 import { useRouter } from "next/router";
 import ItemScannedTable from "./ItemScannedTable";
 import { time } from "console";
+import { Textarea } from "@/components/ui/textarea";
+import { AgInputTextArea } from "ag-grid-community";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -32,6 +34,8 @@ export default function ManualForm() {
     inbound_date: new Date().toISOString().split("T")[0],
     supplier: "",
     po_number: "",
+    invoice: "",
+    type: "normal",
     mode: "create",
   });
 
@@ -39,6 +43,10 @@ export default function ManualForm() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [supplierOptions, setSupplierOptions] = useState<ItemOptions[]>([]);
   const [itemsReceived, setItemsReceived] = useState<ItemReceived[]>([]);
+  const [inboundTypeOptions, setInboundTypeOptions] = useState<ItemOptions[]>([
+    { value: "normal", label: "Normal" },
+    { value: "return", label: "Return" },
+  ]);
 
   const fetchData = async () => {
     try {
@@ -51,7 +59,7 @@ export default function ManualForm() {
         setSupplierOptions(
           suppliers.data.data.map((item: Supplier) => ({
             value: item.supplier_code,
-            label: item.supplier_code,
+            label: item.supplier_name,
           }))
         );
       }
@@ -63,6 +71,16 @@ export default function ManualForm() {
   const handleSave = async () => {
     console.log("Data yang disimpan:", formData, muatan);
     // return;
+
+
+    if (muatan.length === 0) {
+      eventBus.emit("showAlert", {
+        title: "Error!",
+        description: "Please add at least one item",
+        type: "error",
+      })
+      return;
+    }
 
     if (formData.ID === 0) {
       try {
@@ -119,30 +137,8 @@ export default function ManualForm() {
     fetchData();
   }, []);
 
-  // useEffect(() => {
-  //   if (no) {
-  //     const fetchInbound = async () => {
-  //       try {
-  //         const res = await api.get(`/inbound/${no}`, {
-  //           withCredentials: true,
-  //         });
-  //         if (res.data.success) {
-  //           setFormData(res.data.data);
-  //           setMuatan(res.data.data.items);
-  //           setItemsReceived(res.data.data.received_items);
-  //         }
-  //       } catch (error) {
-  //         console.error("Error fetching inbound:", error);
-  //       }
-  //     };
-  //     fetchInbound();
-  //   }
-  // }, [no]);
-
   useEffect(() => {
     if (!no) return;
-
-
 
     const fetchInbound = async () => {
       eventBus.emit("loading", true);
@@ -178,8 +174,8 @@ export default function ManualForm() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center">
-        {/* <h2 className="text-lg font-semibold">Create Inbound</h2> */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">{formData.mode === "create" ? "Create" : "Update"} Inbound</h2>
         <div className="space-x-2">
           <Button
             variant="outline"
@@ -204,81 +200,120 @@ export default function ManualForm() {
         </div>
       </div>
       <hr className="my-4" />
-      <form className="space-y-6">
+
+      <form className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div style={{ display: "none" }}>
-            <Label htmlFor="InboundID">Inbound ID</Label>
-            <Input
-              id="InboundID"
-              value={formData.ID}
-              onChange={(e) =>
-                setFormData({ ...formData, ID: Number(e.target.value) })
-              }
-            />
-          </div>
-          <div>
-            <Label htmlFor="InboundNo">Inbound No</Label>
+          {/* Inbound No */}
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">No. / Type</Label>
+            <span className="shrink-0">:</span>
             <Input
               readOnly
               id="InboundNo"
+              className="flex-1"
               value={formData.inbound_no}
               onChange={(e) =>
                 setFormData({ ...formData, inbound_no: e.target.value })
               }
             />
+            <Select
+              id="InboundType"
+              options={inboundTypeOptions}
+              defaultValue={inboundTypeOptions.find(
+                (option) => option.value === "normal"
+              )}
+              value={inboundTypeOptions.find(
+                (option) => option.value === formData.type
+              )}
+              onChange={(selectedOption) => {
+                if (selectedOption) {
+                  setFormData({
+                    ...formData,
+                    type: selectedOption.value,
+                  });
+                }
+              }}
+            />
           </div>
-          <div>
-            <Label htmlFor="InboundDate">Inbound Date</Label>
+
+          {/* Inbound Date */}
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">Date</Label>
+            <span className="shrink-0">:</span>
             <Input
               type="date"
               id="InboundDate"
+              className="flex-1"
               value={formData.inbound_date}
               onChange={(e) =>
                 setFormData({ ...formData, inbound_date: e.target.value })
               }
             />
           </div>
-          <div>
-            <Label htmlFor="PONumber">PO Number</Label>
+
+          {/* PO Number */}
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">PO / Invoice</Label>
+            <span className="shrink-0">:</span>
             <Input
               id="PONumber"
+              className="flex-1"
               value={formData.po_number}
               onChange={(e) =>
                 setFormData({ ...formData, po_number: e.target.value })
               }
             />
-          </div>
-          <div>
-            <Label htmlFor="Supplier">Supplier</Label>
-            <Select
-              value={supplierOptions.find(
-                (option) => option.value === formData.supplier
-              )}
-              options={supplierOptions}
-              onChange={(selectedOption) => {
-                if (selectedOption) {
-                  setFormData({
-                    ...formData,
-                    supplier: selectedOption.value,
-                  });
-                }
-              }}
-            />
-          </div>
-          <div style={{ display: "none" }}>
-            <Label htmlFor="Mode">Mode</Label>
             <Input
-              id="Mode"
-              value={formData.mode}
+              id="Invoice"
+              className="flex-1"
+              value={formData.invoice}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  mode: e.target.value as "create" | "edit",
-                })
+                setFormData({ ...formData, invoice: e.target.value })
               }
             />
           </div>
-          {/* Tambahkan input header lainnya di sini */}
+
+          {/* Supplier */}
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">Supplier</Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <Select
+                value={supplierOptions.find(
+                  (option) => option.value === formData.supplier
+                )}
+                options={supplierOptions}
+                onChange={(selectedOption) => {
+                  if (selectedOption) {
+                    setFormData({
+                      ...formData,
+                      supplier: selectedOption.value,
+                    });
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Remarks */}
+          <div className="flex items-start gap-4">
+            <Label
+              className="w-32 text-left shrink-0 pt-2"
+              htmlFor="RemarksHeader"
+            >
+              Remarks
+            </Label>
+            <span className="shrink-0 pt-2">:</span>
+            <textarea
+              id="RemarksHeader"
+              className="flex-1 border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              rows={2}
+              value={formData.remarks}
+              onChange={(e) =>
+                setFormData({ ...formData, remarks: e.target.value })
+              }
+            />
+          </div>
         </div>
       </form>
 

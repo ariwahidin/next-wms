@@ -43,7 +43,7 @@ export default function Page() {
         if (data.success === false) {
           return;
         }
-        setTransactions(data.data.transactions);
+        setTransactions(data.data?.transactions);
       } catch (error) {
         console.error("Error fetching orders:", error);
       } finally {

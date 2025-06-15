@@ -49,7 +49,6 @@ export default function ItemFormTable({
 }: CombinedInboundProps) {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  // const [muatan, setMuatan] = useState<ItemFormProps[]>([]);
 
   const [itemCodeOptions, setItemCodeOptions] = useState<ItemOptions[]>([]);
   const [whsCodeOptions, setWhsCodeOptions] = useState<ItemOptions[]>([]);
@@ -92,6 +91,21 @@ export default function ItemFormTable({
     fetchData();
   }, []);
 
+  // useEffect(() => {
+  //   console.log("Muatan:", muatan);
+  //   muatan.map((m) => {
+  //     if (m.item_code) {
+  //       const selectedProduct = products.find(
+  //         (product) => product.item_code === m.item_code
+  //       );
+  //       if (selectedProduct) {
+  //         m.uom = selectedProduct.uom;
+  //         m.is_serial = selectedProduct.has_serial == "Y" ? "Yes" : "No";
+  //       }
+  //     }
+  //   });
+  // }, [muatan, products]);
+
   const handleAdd = () => {
     const newRow = {
       ID: Date.now(), // Gunakan timestamp sebagai ID unik
@@ -104,9 +118,6 @@ export default function ItemFormTable({
       remarks: "",
       mode: "create",
     };
-
-    console.log("Muatan sebelum penambahan:", muatan);
-
     setMuatan([...muatan, newRow]);
     setEditingId(newRow.ID);
   };
@@ -116,35 +127,39 @@ export default function ItemFormTable({
     field: keyof ItemFormProps,
     value: string | number
   ) => {
-    setMuatan((prev) =>
-      prev.map((m) =>
-        m.ID === id
-          ? { ...m, [field]: field === "quantity" ? Number(value) : value }
-          : m
-      )
-    );
+    console.log("ID:", id);
+    console.log("Field:", field);
+    console.log("Value:", value);
+
+    if (field === "item_code") {
+      const selectedProduct = products.find(
+        (product) => product.item_code === value
+      );
+      console.log("Produk yang dipilih:", selectedProduct);
+      if (selectedProduct) {
+        setMuatan((prev) =>
+          prev.map((m) =>
+            m.ID === id
+              ? {
+                  ...m,
+                  item_code: selectedProduct.item_code,
+                  uom: selectedProduct.uom,
+                  is_serial: selectedProduct.has_serial,
+                }
+              : m
+          )
+        );
+      }
+    } else {
+      setMuatan((prev) =>
+        prev.map((m) =>
+          m.ID === id
+            ? { ...m, [field]: field === "quantity" ? Number(value) : value }
+            : m
+        )
+      );
+    }
   };
-
-  // const handleSave = () => {
-  //   setEditingId(null);
-  // };
-
-  // const handleSave = async () => {
-  //   try {
-  //     await yup.array().of(muatanSchema).validate(muatan, { abortEarly: false });
-  //     setErrors({});
-  //     console.log("Data yang disimpan:", muatan);
-  //   } catch (validationError: any) {
-  //     const fieldErrors: { [id: number]: { [key: string]: string } } = {};
-  //     validationError.inner.forEach((err: any) => {
-  //       if (err.path) {
-  //         const id = muatan[Number(err.path.split(".")[1])].id;
-  //         fieldErrors[id] = { ...fieldErrors[id], [err.path.split(".")[2]]: err.message };
-  //       }
-  //     });
-  //     setErrors(fieldErrors);
-  //   }
-  // }
 
   const handleSaveItem = async () => {
     const editingItem = muatan.find((m) => m.ID === editingId);
@@ -200,6 +215,7 @@ export default function ItemFormTable({
   };
 
   const handleEdit = (id: number) => {
+    console.log("Editing item with ID:", id);
     setEditingId(id);
   };
 
@@ -316,6 +332,12 @@ export default function ItemFormTable({
             <th className="p-2 border" style={{ width: "300px" }}>
               Item Code
             </th>
+            <th className="p-2 border" style={{ width: "30px" }}>
+              Serial
+            </th>
+            <th className="p-2 border" style={{ width: "50px" }}>
+              UoM
+            </th>
             <th className="p-2 border" style={{ width: "100px" }}>
               Qty
             </th>
@@ -367,6 +389,38 @@ export default function ItemFormTable({
                       )}
                     </td>
                     <td className="p-2 border">
+                      <Input
+                        readOnly
+                        type="text"
+                        className="w-14"
+                        value={item.is_serial}
+                        // onChange={(e) =>
+                        //   handleChange(item.ID, "remarks", e.target.value)
+                        // }
+                      />
+                      {/* {errors[item.ID]?.remarks && (
+                        <small className="text-red-500">
+                          {errors[item.ID].remarks}
+                        </small>
+                      )} */}
+                    </td>
+                    <td className="p-2 border">
+                      <Input
+                        readOnly
+                        type="text"
+                        className="w-14"
+                        value={item.uom}
+                        // onChange={(e) =>
+                        //   handleChange(item.ID, "remarks", e.target.value)
+                        // }
+                      />
+                      {/* {errors[item.ID]?.remarks && (
+                        <small className="text-red-500">
+                          {errors[item.ID].remarks}
+                        </small>
+                      )} */}
+                    </td>
+                    <td className="p-2 border">
                       <div>
                         <Input
                           type="number"
@@ -415,6 +469,7 @@ export default function ItemFormTable({
                     </td>
                     <td className="p-2 border">
                       <Input
+                        className="w-full"
                         type="text"
                         value={item.remarks}
                         onChange={(e) =>
@@ -431,9 +486,11 @@ export default function ItemFormTable({
                       className="p-2 border space-x-2 text-center"
                       style={{ width: "160px" }}
                     >
-                      <Button size="sm" onClick={handleSaveItem}>
-                        <Save size={14} />
-                      </Button>
+                      {headerForm.mode != "create" && (
+                        <Button size="sm" onClick={handleSaveItem}>
+                          <Save size={14} />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -448,10 +505,11 @@ export default function ItemFormTable({
                 ) : (
                   <>
                     <td className="p-2 border">{item.item_code}</td>
+                    <td className="p-2 border text-center">{item.is_serial}</td>
+                    <td className="p-2 border text-center">{item.uom}</td>
                     <td className="p-2 border text-center">{item.quantity}</td>
                     <td className="p-2 border text-center">{item.whs_code}</td>
                     <td className="p-2 border text-center">
-                      {/* {new Date(item.received_date).toLocaleDateString()} */}
                       {dayjs(item.received_date).format("D MMMM YYYY")}
                     </td>
                     <td className="p-2 border">{item.remarks}</td>
@@ -486,7 +544,7 @@ export default function ItemFormTable({
         </tbody>
         <tfoot>
           <tr className="bg-gray-100 font-semibold">
-            <td className="p-2 border" colSpan={3}>
+            <td className="p-2 border" colSpan={5}>
               Total
             </td>
             <td className="p-2 border text-center">{totalQty}</td>

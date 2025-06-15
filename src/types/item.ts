@@ -7,4 +7,5 @@ export interface Product {
     length: number;
     height: number;
     uom: string;
+    has_serial?: string;
 }
