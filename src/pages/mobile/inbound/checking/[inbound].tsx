@@ -136,9 +136,7 @@ const CheckingPage = () => {
       uploaded: false,
     };
 
-    const response = await api.post("/mobile/inbound/scan", newItem, {
-      withCredentials: true,
-    });
+    const response = await api.post("/mobile/inbound/scan", newItem);
     const data = await response.data;
     if (data.success) {
       eventBus.emit("showAlert", {
@@ -151,9 +149,7 @@ const CheckingPage = () => {
   };
 
   const fetchInboundDetail = async () => {
-    const response = await api.get("/mobile/inbound/detail/" + inbound, {
-      withCredentials: true,
-    });
+    const response = await api.get("/mobile/inbound/detail/" + inbound);
     const data = await response.data;
     // return data;
     if (data.success) {
@@ -175,9 +171,7 @@ const CheckingPage = () => {
   const fetchScannedItems = async (id?: number) => {
     console.log("ID Inbound Detail:", id);
 
-    const response = await api.get("/mobile/inbound/scan/" + id, {
-      withCredentials: true,
-    });
+    const response = await api.get("/mobile/inbound/scan/" + id);
     const data = await response.data;
     if (data.success) {
       const filtered = data.data.map((item: any) => ({
@@ -204,9 +198,7 @@ const CheckingPage = () => {
     console.log("ID Inbound Barcod :", index, inbound_detail_id);
 
     try {
-      const response = await api.delete("/mobile/inbound/scan/" + index, {
-        withCredentials: true,
-      });
+      const response = await api.delete("/mobile/inbound/scan/" + index);
       const data = await response.data;
       if (data.success) {
         fetchScannedItems(inbound_detail_id);
@@ -227,9 +219,6 @@ const CheckingPage = () => {
       const response = await api.put(
         "/mobile/inbound/scan/putaway/" + inbound_no,
         dataToPost,
-        {
-          withCredentials: true,
-        }
       );
 
       const data = await response.data;
@@ -301,7 +290,7 @@ const CheckingPage = () => {
           <CardContent className="p-4 space-y-3">
             <div className="relative flex gap-2">
               <div className="flex items-center gap-2 flex-1">
-                <label className="text-sm text-gray-600">With Serial :</label>
+                <label className="text-sm text-gray-600">With SN :</label>
                 <Select value={scanType} onValueChange={setScanType}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Scan Type" />
@@ -348,9 +337,6 @@ const CheckingPage = () => {
                     const generateLocation = async () => {
                       const res = await api.get(
                         "/mobile/inbound/barcode/getlocation/" + inbound,
-                        {
-                          withCredentials: true,
-                        }
                       );
 
                       if (res.data.success) {
@@ -571,7 +557,7 @@ const CheckingPage = () => {
                           {item.scan_qty} / {item.quantity} {" "} <span className="text-gray-600">{item.uom.toLowerCase()}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-gray-600">Serial :</span> {" "} 
+                          <span className="text-gray-600">SN :</span> {" "} 
                           {item.is_serial ? "Yes" : "No"}
                         </div>
                       </div>
@@ -704,7 +690,7 @@ const CheckingPage = () => {
                             >
                               <Trash2 size={16} />
                             </Button>
-                            {editInboundBarcode &&
+                            {/* {editInboundBarcode &&
                             item.scan_type === "BARCODE" ? (
                               <Button
                                 variant="default"
@@ -714,9 +700,6 @@ const CheckingPage = () => {
                                   const res = await api.put(
                                     `/mobile/inbound/barcode/${item.id}`,
                                     itemEditBarcode,
-                                    {
-                                      withCredentials: true,
-                                    }
                                   );
 
                                   if (res.data.success) {
@@ -742,7 +725,7 @@ const CheckingPage = () => {
                               >
                                 <Edit size={16} />
                               </Button>
-                            )}
+                            )} */}
                           </>
                         ) : (
                           <></>

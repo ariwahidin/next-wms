@@ -3,6 +3,10 @@ export interface HeaderFormProps {
   inbound_no?: string;
   inbound_date: string;
   supplier: string;
+  transporter?: string;
+  no_truck?: string;
+  driver?: string;
+  container?: string;
   po_number: string;
   invoice?: string;
   type?: string;
@@ -19,9 +23,18 @@ export interface ItemFormProps {
   whs_code: string;
   uom: string;
   is_serial?: string;
-  received_date?: string;
+  rec_date?: string;
   remarks?: string;
   mode?: string;
+  index?: number;
+  ref_id?: number;
+  ref_no?: string;
+}
+
+export interface InboundReference {
+  ID: number;
+  inbound_id: number;
+  ref_no: string;
 }
 
 export interface ItemReceived {
@@ -33,7 +46,7 @@ export interface ItemReceived {
   whs_code: string;
   status: string;
   qa_status: string;
-  qty: number;
+  quantity: number;
   created_at: string;
 }
 
@@ -47,9 +60,26 @@ export interface PropsHeader {
   setHeaderForm: React.Dispatch<React.SetStateAction<HeaderFormProps>>;
 }
 
-export interface CombinedInboundProps extends ItemFormTableProps, PropsHeader { }
+export interface InboundReferenceProps {
+  inboundReferences: InboundReference;
+  setInboundReferences: React.Dispatch<React.SetStateAction<InboundReference>>;
+}
+
+export interface CombinedInboundProps extends ItemFormTableProps, PropsHeader, InboundReferenceProps { }
 
 export interface ItemOptions {
   value: string;
   label: string;
 }
+
+export type InboundItem = {
+  id: number;
+  inbound_no: string;
+  supplier_name: string;
+  po_number: string;
+  receive_status: string;
+  req_qty: number;
+  qty_stock: number;
+  scan_qty: number;
+  status: "fully received" | "partial" | "open";
+};

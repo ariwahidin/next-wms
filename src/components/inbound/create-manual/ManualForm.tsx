@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ItemFormTable from "./ItemFormTable";
 import { Button } from "@/components/ui/button";
-import { RefreshCcw, Save } from "lucide-react";
+import { Plus, RefreshCcw, Save, Trash2 } from "lucide-react";
 import {
   HeaderFormProps,
+  InboundReference,
   ItemFormProps,
   ItemOptions,
   ItemReceived,
@@ -22,6 +23,7 @@ import ItemScannedTable from "./ItemScannedTable";
 import { time } from "console";
 import { Textarea } from "@/components/ui/textarea";
 import { AgInputTextArea } from "ag-grid-community";
+import { Transporter } from "@/types/transporter";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -35,6 +37,10 @@ export default function ManualForm() {
     supplier: "",
     po_number: "",
     invoice: "",
+    transporter: "",
+    no_truck: "",
+    driver: "",
+    container: "",
     type: "normal",
     mode: "create",
   });
@@ -42,16 +48,56 @@ export default function ManualForm() {
   const [muatan, setMuatan] = useState<ItemFormProps[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [supplierOptions, setSupplierOptions] = useState<ItemOptions[]>([]);
+  const [transporters, setTransporters] = useState<Transporter[]>([]);
+  const [transporterOptions, setTransporterOptions] = useState<ItemOptions[]>(
+    []
+  );
   const [itemsReceived, setItemsReceived] = useState<ItemReceived[]>([]);
   const [inboundTypeOptions, setInboundTypeOptions] = useState<ItemOptions[]>([
     { value: "normal", label: "Normal" },
     { value: "return", label: "Return" },
   ]);
 
+  const [references, setReferences] = useState<InboundReference[]>([
+    {
+      ID: Date.now(),
+      inbound_id: 0,
+      ref_no: "",
+    },
+  ]);
+
+  const handleAddInvoice = () => {
+    setReferences([
+      ...references,
+      {
+        ID: Date.now(),
+        inbound_id: 0,
+        ref_no: "",
+      },
+    ]);
+  };
+
+  const handleRemoveInvoice = (index: number) => {
+    const newReferences = [...references];
+    newReferences.splice(index, 1);
+    setReferences(newReferences);
+  };
+
+  const handleInvoiceChange = (index: number, value: string) => {
+    const newReferences = [...references];
+    newReferences[index].ref_no = value;
+    console.log("newReferences", newReferences);
+    setReferences(newReferences);
+    setMuatan((prev) =>
+      prev.map((m) => (m.ref_id === index ? { ...m, ref_no: value } : m))
+    );
+  };
+
   const fetchData = async () => {
     try {
-      const [suppliers] = await Promise.all([
+      const [suppliers, transporters] = await Promise.all([
         api.get("/suppliers", { withCredentials: true }),
+        api.get("/transporters", { withCredentials: true }),
       ]);
 
       if (suppliers.data.success) {
@@ -62,6 +108,16 @@ export default function ManualForm() {
             label: item.supplier_name,
           }))
         );
+
+        if (transporters.data.success) {
+          setTransporters(transporters.data.data);
+          setTransporterOptions(
+            transporters.data.data.map((item: Transporter) => ({
+              value: item.transporter_code,
+              label: item.transporter_name,
+            }))
+          );
+        }
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -69,31 +125,30 @@ export default function ManualForm() {
   };
 
   const handleSave = async () => {
-    console.log("Data yang disimpan:", formData, muatan);
-    // return;
+    const newMuatan = muatan.map((m) => ({
+      ...m,
+      ref_no: references.find((ref) => ref.ID === m.ref_id)?.ref_no,
+    }));
 
+    console.log("Data yang disimpan:", formData, references, newMuatan);
+    // return;
 
     if (muatan.length === 0) {
       eventBus.emit("showAlert", {
         title: "Error!",
         description: "Please add at least one item",
         type: "error",
-      })
+      });
       return;
     }
 
     if (formData.ID === 0) {
       try {
-        const res = await api.post(
-          "/inbound",
-          {
-            ...formData,
-            items: muatan,
-          },
-          {
-            withCredentials: true,
-          }
-        );
+        const res = await api.post("/inbound", {
+          ...formData,
+          references,
+          items: newMuatan,
+        });
         if (res.data.success) {
           eventBus.emit("showAlert", {
             title: "Success!",
@@ -148,8 +203,9 @@ export default function ManualForm() {
         });
         if (res.data.success) {
           setFormData(res.data.data);
-          setMuatan(res.data.data.items);
-          setItemsReceived(res.data.data.received_items);
+          setReferences(res.data.data.references);
+          setMuatan(res.data.data.details);
+          setItemsReceived(res.data.data.received);
           eventBus.emit("loading", false);
         }
       } catch (error) {
@@ -173,9 +229,11 @@ export default function ManualForm() {
   }, [no]);
 
   return (
-    <div className="p-6">
+    <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">{formData.mode === "create" ? "Create" : "Update"} Inbound</h2>
+        <h2 className="text-lg font-semibold">
+          {formData.mode === "create" ? "Create" : "Update"} Inbound
+        </h2>
         <div className="space-x-2">
           <Button
             variant="outline"
@@ -251,33 +309,11 @@ export default function ManualForm() {
             />
           </div>
 
-          {/* PO Number */}
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">PO / Invoice</Label>
-            <span className="shrink-0">:</span>
-            <Input
-              id="PONumber"
-              className="flex-1"
-              value={formData.po_number}
-              onChange={(e) =>
-                setFormData({ ...formData, po_number: e.target.value })
-              }
-            />
-            <Input
-              id="Invoice"
-              className="flex-1"
-              value={formData.invoice}
-              onChange={(e) =>
-                setFormData({ ...formData, invoice: e.target.value })
-              }
-            />
-          </div>
-
           {/* Supplier */}
           <div className="flex items-center gap-4">
             <Label className="w-32 text-left shrink-0">Supplier</Label>
             <span className="shrink-0">:</span>
-            <div className="flex-1">
+            <div className="flex-1 ">
               <Select
                 value={supplierOptions.find(
                   (option) => option.value === formData.supplier
@@ -291,6 +327,37 @@ export default function ManualForm() {
                     });
                   }
                 }}
+              />
+            </div>
+          </div>
+          {/* Transporter */}
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">
+              Trucker / No Truck
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex flex-1 items-center gap-4">
+              <Select
+                className="w-60"
+                value={transporterOptions.find(
+                  (option) => option.value === formData.transporter
+                )}
+                options={transporterOptions}
+                onChange={(selectedOption) => {
+                  if (selectedOption) {
+                    setFormData({
+                      ...formData,
+                      transporter: selectedOption.value,
+                    });
+                  }
+                }}
+              />
+              <Input
+                className="flex-1"
+                value={formData.no_truck}
+                onChange={(e) =>
+                  setFormData({ ...formData, no_truck: e.target.value })
+                }
               />
             </div>
           </div>
@@ -314,18 +381,93 @@ export default function ManualForm() {
               }
             />
           </div>
+
+          {/* Driver / Container */}
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">
+              Driver / Container
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex flex-1 items-center gap-4">
+              <Input
+                className="flex-1"
+                value={formData.driver}
+                onChange={(e) =>
+                  setFormData({ ...formData, driver: e.target.value })
+                }
+              />
+              <Input
+                className="flex-1"
+                value={formData.container}
+                onChange={(e) =>
+                  setFormData({ ...formData, container: e.target.value })
+                }
+              />
+            </div>
+          </div>
         </div>
       </form>
 
-      <hr className="my-6" />
-      <ItemFormTable
-        muatan={muatan}
-        setMuatan={setMuatan}
-        headerForm={formData}
-        setHeaderForm={setFormData}
-      />
-      <hr className="my-6 mb-4" />
-      <ItemScannedTable itemsReceived={itemsReceived} />
+      <hr className="my-4" />
+
+      <div className="flex justify-between items-center mb-4">
+        {/* <h2 className="text-lg font-semibold">Detail Items</h2> */}
+        <div className="space-x-2">
+          <Button
+            className="item-end"
+            variant="default"
+            onClick={() => handleAddInvoice()}
+          >
+            <Plus className="mr-2" />
+            Add Invoice
+          </Button>
+        </div>
+      </div>
+
+      {references.map((item, index) => (
+        <div
+          key={item.ID}
+          className="rounded-2xl shadow-md border border-gray-200 p-6 mb-6 bg-white"
+        >
+          <div key={index} className="flex justify-between items-center mb-4">
+            <Label className="w-32 text-left shrink-0">Invoice</Label>
+            <span className="shrink-0">:</span>
+            <Input
+              className="flex-1 ml-2 mr-2 w-1/3"
+              value={references[index].ref_no}
+              onChange={(e) => handleInvoiceChange(index, e.target.value)}
+            />
+
+            {references.length > 1 && (
+              <div className="space-x-2">
+                <Button
+                  variant="outline"
+                  className="bg-red-500 text-white hover:bg-red-600"
+                  onClick={() => handleRemoveInvoice(index)}
+                >
+                  <Trash2 className="mr-2" />
+                  Remove
+                </Button>
+              </div>
+            )}
+            {index !== references.length - 1 && <hr className="my-4" />}
+          </div>
+
+          {/* <hr className="my-6" /> */}
+          <ItemFormTable
+            muatan={muatan}
+            setMuatan={setMuatan}
+            headerForm={formData}
+            setHeaderForm={setFormData}
+            inboundReferences={references[index]}
+            setInboundReferences={setReferences[index]}
+          />
+          {/* <hr className="my-6 mb-4" /> */}
+        </div>
+      ))}
+      {itemsReceived.length > 0 && (
+        <ItemScannedTable itemsReceived={itemsReceived} />
+      )}
     </div>
   );
 }

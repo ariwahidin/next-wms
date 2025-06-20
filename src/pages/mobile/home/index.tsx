@@ -32,9 +32,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await api.get("/dashboard", {
-          withCredentials: true,
-        });
+        const response = await api.get("/dashboard");
         const data = await response.data;
         if (data.success === false) {
           return;

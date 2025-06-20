@@ -1,15 +1,11 @@
 import InboundTable from "./InboundTable";
 import Layout from "@/components/layout";
-import { Button } from "@/components/ui/button";
-import { Plus, Upload } from "lucide-react";
-import { useRouter } from "next/router";
 
 export default function Page() {
-  const router = useRouter();
   return (
     <Layout title="Inbound" subTitle="Inbound Data">
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-1">
-        <div className="justify-self-start">
+        {/* <div className="justify-self-start">
           <Button onClick={() => {
             router.push("/wms/inbound/add");
           }}>
@@ -22,7 +18,7 @@ export default function Page() {
             <Upload className="mr-1 h-4 w-4" />
             Import
           </Button>
-        </div>
+        </div> */}
         <InboundTable/>
       </div>
     </Layout>

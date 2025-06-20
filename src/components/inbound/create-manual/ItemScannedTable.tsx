@@ -60,75 +60,6 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
     setShowModal(true);
   };
 
-  // const handleConfirm = async () => {
-  //   if (selectedItems.length === 0) return;
-
-  //   setIsLoading(true); // ⏳ Start loading
-
-  //   try {
-  //     setShowModal(false);
-  //     const results = await Promise.allSettled(
-  //       selectedItems.map((id) =>
-  //         api.put(
-  //           `/inbound/putaway/item/${id}`,
-  //           { ID: id },
-  //           { withCredentials: true }
-  //         )
-  //       )
-  //     );
-
-  //     results.forEach((result, index) => {
-  //       const id = selectedItems[index];
-  //       if (result.status === "fulfilled" && result.value.data.success) {
-  //         eventBus.emit("showAlert", {
-  //           title: "Success!",
-  //           description: result.value.data.message,
-  //           type: "success",
-  //         });
-  //       } else {
-  //         eventBus.emit("showAlert", {
-  //           title: "Error",
-  //           description: `Gagal putaway ID ${id}`,
-  //           type: "error",
-  //         });
-  //       }
-  //     });
-
-  //     setSelectedItems([]); // ✅ Reset setelah semua selesai
-  //   } catch (err) {
-  //     eventBus.emit("showAlert", {
-  //       title: "Error",
-  //       description: "Terjadi kesalahan saat proses putaway " + err,
-  //       type: "error",
-  //     });
-  //   } finally {
-  //     setIsLoading(false); // ⏹️ Selesai loading
-  //   }
-  // };
-
-  // const handleConfirm = async () => {
-  //   // handle actual confirm logic
-
-  //   console.log("Selected Items:", selectedItems);
-  //   selectedItems.forEach(async (id) => {
-  //     const res = await api.put(
-  //       `/inbound/putaway/item/` + id,
-  //       { ID: id },
-  //       {
-  //         withCredentials: true,
-  //       }
-  //     );
-  //     if (res.data.success) {
-
-  //       eventBus.emit("showAlert", {
-  //         title: "Success!",
-  //         description: res.data.message,
-  //         type: "success",
-  //       })
-  //       // setSelectedItems([]); // Reset selected items after confirmation
-  //     }
-  //   });
-  // };
 
   const handleConfirm = async () => {
     if (selectedItems.length === 0) return;
@@ -161,7 +92,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
       if (successCount > 0) {
         eventBus.emit("showAlert", {
           title: "Success!",
-          description: `${successCount} item berhasil diputaway.`,
+          description: `Successfully putaway ${successCount} item${successCount > 1 ? "s" : ""}. `,
           type: "success",
         });
         eventBus.emit("refreshData");
@@ -169,13 +100,13 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
         setSelectedItems([]);
       }
 
-      if (failedIDs.length > 0) {
-        eventBus.emit("showAlert", {
-          title: "Error",
-          description: `Gagal putaway ID: ${failedIDs.join(", ")}`,
-          type: "error",
-        });
-      }
+      // if (failedIDs.length > 0) {
+      //   eventBus.emit("showAlert", {
+      //     title: "Error",
+      //     description: `Gagal putaway ID: ${failedIDs.join(", ")}`,
+      //     type: "error",
+      //   });
+      // }
 
       setSelectedItems([]);
     } catch (error) {
@@ -189,15 +120,14 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
     }
   };
 
-  const totalQty = itemsReceived.reduce((acc, item) => acc + Number(item.qty), 0);
+  const totalQty = itemsReceived.reduce((acc, item) => acc + Number(item.quantity), 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-4 mb-4">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Received Items</h2>
         {selectedItems.length > 0 && (
           <div>
-            {/* <Button onClick={confirmPutaway}>Putaway Confirm</Button> */}
             <Button
               onClick={confirmPutaway}
               disabled={isLoading || selectedItems.length === 0}
@@ -244,7 +174,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
               <TableCell className="text-sm">{item.location}</TableCell>
               <TableCell className="text-sm">{item.whs_code}</TableCell>
               <TableCell className="text-sm">{item.status}</TableCell>
-              <TableCell className="text-sm">{item.qty}</TableCell>
+              <TableCell className="text-sm">{item.quantity}</TableCell>
               <TableCell className="text-sm">
                 {dayjs(item.created_at).format("D MMMM YYYY, HH:mm")}
               </TableCell>
@@ -257,7 +187,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
               Total
             </TableCell>
             <TableCell className="font-bold">{totalQty}</TableCell>
-            <TableCell /> {/* kosongkan sel terakhir */}
+            <TableCell />
           </TableRow>
         </TableFooter>
       </Table>

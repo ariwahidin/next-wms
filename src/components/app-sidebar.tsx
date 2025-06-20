@@ -73,8 +73,12 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Product",
+          title: "Items",
           url: "/wms/master/product",
+        },
+        {
+          title: "UoM Conversion",
+          url: "/wms/master/uom-conversion",
         },
         {
           title: "Supplier",

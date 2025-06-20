@@ -30,7 +30,7 @@ const muatanSchema = yup.object().shape({
     .positive("Qty harus lebih dari 0")
     .required("Qty wajib diisi"),
   // uom: yup.string().required("UOM wajib diisi"),
-  received_date: yup
+  rec_date: yup
     .string()
     .required("Tanggal penerimaan wajib diisi")
     .test("is-date", "Tanggal tidak valid", (value) => {
@@ -46,6 +46,8 @@ export default function ItemFormTable({
   setMuatan,
   headerForm,
   setHeaderForm,
+  inboundReferences,
+  setInboundReferences,
 }: CombinedInboundProps) {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -91,30 +93,17 @@ export default function ItemFormTable({
     fetchData();
   }, []);
 
-  // useEffect(() => {
-  //   console.log("Muatan:", muatan);
-  //   muatan.map((m) => {
-  //     if (m.item_code) {
-  //       const selectedProduct = products.find(
-  //         (product) => product.item_code === m.item_code
-  //       );
-  //       if (selectedProduct) {
-  //         m.uom = selectedProduct.uom;
-  //         m.is_serial = selectedProduct.has_serial == "Y" ? "Yes" : "No";
-  //       }
-  //     }
-  //   });
-  // }, [muatan, products]);
-
-  const handleAdd = () => {
+  const handleAdd = (index: number) => {
     const newRow = {
-      ID: Date.now(), // Gunakan timestamp sebagai ID unik
+      ID: Date.now(),
       inbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
       item_code: "",
       quantity: 0,
       whs_code: "",
+      ref_id: inboundReferences.ID,
+      ref_no: inboundReferences.ref_no,
       uom: "",
-      received_date: new Date().toISOString().split("T")[0], // Tanggal hari ini
+      received_date: new Date().toISOString().split("T")[0],
       remarks: "",
       mode: "create",
     };
@@ -193,9 +182,7 @@ export default function ItemFormTable({
           type: "success",
         });
 
-        setMuatan((prev) =>
-          prev.map((m) => (m.ID === editingItem.ID ? res.data.data : m))
-        );
+        eventBus.emit("refreshData");
         setErrors((prev) => ({ ...prev, [editingItem.ID]: {} }));
         setEditingId(null);
       }
@@ -223,20 +210,24 @@ export default function ItemFormTable({
     if (item.mode === "create") {
       setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
     } else {
-      try {
-        const res = await api.get(`/inbound/item/` + item.ID, {
-          withCredentials: true,
-        });
-        if (res.data.success) {
-          setMuatan((prev) =>
-            prev.map((m) => (m.ID === item.ID ? res.data.data : m))
-          );
-          setEditingId(null);
-          setErrors({});
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
+      // try {
+      //   const res = await api.get(`/inbound/item/` + item.ID, {
+      //     withCredentials: true,
+      //   });
+      //   if (res.data.success) {
+      //     setMuatan((prev) =>
+      //       prev.map((m) => (m.ID === item.ID ? res.data.data : m))
+      //     );
+      //     setEditingId(null);
+      //     setErrors({});
+      //   }
+      // } catch (error) {
+      //   console.error("Error fetching data:", error);
+      // }
+
+      eventBus.emit("refreshData");
+      setErrors((prev) => ({ ...prev, [item.ID]: {} }));
+      setEditingId(null);
     }
   };
 
@@ -300,7 +291,7 @@ export default function ItemFormTable({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Requested Items</h2>
+        {/* <h2 className="text-lg font-semibold">Requested Items</h2> */}
         {headerForm.status !== "complete" && (
           <div className="space-x-2">
             <Button
@@ -310,7 +301,10 @@ export default function ItemFormTable({
             >
               Delete Selected
             </Button>
-            <Button type="button" onClick={handleAdd}>
+            <Button
+              type="button"
+              onClick={() => handleAdd(inboundReferences.ID)}
+            >
               Add Item
             </Button>
           </div>
@@ -333,15 +327,15 @@ export default function ItemFormTable({
               Item Code
             </th>
             <th className="p-2 border" style={{ width: "30px" }}>
-              Serial
+              SN
             </th>
             <th className="p-2 border" style={{ width: "50px" }}>
               UoM
             </th>
-            <th className="p-2 border" style={{ width: "100px" }}>
+            <th className="p-2 border" style={{ width: "80px" }}>
               Qty
             </th>
-            <th className="p-2 border" style={{ width: "160px" }}>
+            <th className="p-2 border" style={{ width: "130px" }}>
               Whs Code
             </th>
             <th className="p-2 border" style={{ width: "140px" }}>
@@ -354,193 +348,201 @@ export default function ItemFormTable({
           </tr>
         </thead>
         <tbody>
-          {muatan?.map((item, index) => {
-            const isEditing = editingId === item.ID;
-            return (
-              <tr key={item.ID} className="border-t">
-                <td className="p-2 border text-center">
-                  <input
-                    disabled={headerForm.status === "complete"}
-                    type="checkbox"
-                    checked={selectedIds.includes(item.ID)}
-                    onChange={(e) => handleSelect(item.ID, e.target.checked)}
-                  />
-                </td>
-                <td className="p-2 border text-center">{index + 1}</td>
+          {muatan
+            .filter((item) => item.ref_id === inboundReferences.ID)
+            .map((item, index) => {
+              const isEditing = editingId === item.ID;
+              return (
+                <tr key={item.ID} className="border-t">
+                  <td className="p-2 border text-center">
+                    <input
+                      disabled={headerForm.status === "complete"}
+                      type="checkbox"
+                      checked={selectedIds.includes(item.ID)}
+                      onChange={(e) => handleSelect(item.ID, e.target.checked)}
+                    />
+                  </td>
+                  <td className="p-2 border text-center">{index + 1}</td>
 
-                {isEditing || item.mode === "create" ? (
-                  <>
-                    <td className="p-2 border">
-                      <div key={item.ID}>
-                        <Select
-                          value={itemCodeOptions.find(
-                            (option) => option.value === item.item_code
-                          )}
-                          options={itemCodeOptions}
-                          onChange={(value) =>
-                            handleChange(item.ID, "item_code", value?.value)
-                          }
-                        />
-                      </div>
-                      {errors[item.ID]?.item_code && (
-                        <small className="text-red-500">
-                          {errors[item.ID].item_code}
-                        </small>
-                      )}
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        readOnly
-                        type="text"
-                        className="w-14"
-                        value={item.is_serial}
-                        // onChange={(e) =>
-                        //   handleChange(item.ID, "remarks", e.target.value)
-                        // }
-                      />
-                      {/* {errors[item.ID]?.remarks && (
-                        <small className="text-red-500">
-                          {errors[item.ID].remarks}
-                        </small>
-                      )} */}
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        readOnly
-                        type="text"
-                        className="w-14"
-                        value={item.uom}
-                        // onChange={(e) =>
-                        //   handleChange(item.ID, "remarks", e.target.value)
-                        // }
-                      />
-                      {/* {errors[item.ID]?.remarks && (
-                        <small className="text-red-500">
-                          {errors[item.ID].remarks}
-                        </small>
-                      )} */}
-                    </td>
-                    <td className="p-2 border">
-                      <div>
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleChange(item.ID, "quantity", e.target.value)
-                          }
-                        />
-                      </div>
-                      {errors[item.ID]?.item_code && (
-                        <small className="text-red-500">
-                          {errors[item.ID].item_code}
-                        </small>
-                      )}
-                    </td>
-                    <td className="p-2 border">
-                      <Select
-                        value={whsCodeOptions.find(
-                          (option) => option.value === item.whs_code
+                  {isEditing || item.mode === "create" ? (
+                    <>
+                      <td className="p-2 border">
+                        <div key={item.ID}>
+                          <Select
+                            value={itemCodeOptions.find(
+                              (option) => option.value === item.item_code
+                            )}
+                            options={itemCodeOptions}
+                            onChange={(value) =>
+                              handleChange(item.ID, "item_code", value?.value)
+                            }
+                          />
+                        </div>
+                        {errors[item.ID]?.item_code && (
+                          <small className="text-red-500">
+                            {errors[item.ID].item_code}
+                          </small>
                         )}
-                        options={whsCodeOptions}
-                        onChange={(value) =>
-                          handleChange(item.ID, "whs_code", value?.value)
-                        }
-                      />
-
-                      {errors[item.ID]?.whs_code && (
-                        <small className="text-red-500">
-                          {errors[item.ID].whs_code}
-                        </small>
-                      )}
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        type="date"
-                        value={item.received_date}
-                        onChange={(e) =>
-                          handleChange(item.ID, "received_date", e.target.value)
-                        }
-                      />
-                      {errors[item.ID]?.received_date && (
-                        <small className="text-red-500">
-                          {errors[item.ID].received_date}
-                        </small>
-                      )}
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        className="w-full"
-                        type="text"
-                        value={item.remarks}
-                        onChange={(e) =>
-                          handleChange(item.ID, "remarks", e.target.value)
-                        }
-                      />
-                      {errors[item.ID]?.remarks && (
+                      </td>
+                      <td className="p-2 border">
+                        <Input
+                          readOnly
+                          type="text"
+                          className="w-14"
+                          value={item.is_serial}
+                          // onChange={(e) =>
+                          //   handleChange(item.ID, "remarks", e.target.value)
+                          // }
+                        />
+                        {/* {errors[item.ID]?.remarks && (
                         <small className="text-red-500">
                           {errors[item.ID].remarks}
                         </small>
-                      )}
-                    </td>
-                    <td
-                      className="p-2 border space-x-2 text-center"
-                      style={{ width: "160px" }}
-                    >
-                      {headerForm.mode != "create" && (
-                        <Button size="sm" onClick={handleSaveItem}>
-                          <Save size={14} />
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          handleCancel(item);
-                        }}
+                      )} */}
+                      </td>
+                      <td className="p-2 border">
+                        <Input
+                          readOnly
+                          type="text"
+                          className="w-14"
+                          value={item.uom}
+                          // onChange={(e) =>
+                          //   handleChange(item.ID, "remarks", e.target.value)
+                          // }
+                        />
+                        {/* {errors[item.ID]?.remarks && (
+                        <small className="text-red-500">
+                          {errors[item.ID].remarks}
+                        </small>
+                      )} */}
+                      </td>
+                      <td className="p-2 border">
+                        <div>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              handleChange(item.ID, "quantity", e.target.value)
+                            }
+                          />
+                        </div>
+                        {errors[item.ID]?.item_code && (
+                          <small className="text-red-500">
+                            {errors[item.ID].item_code}
+                          </small>
+                        )}
+                      </td>
+                      <td className="p-2 border">
+                        <Select
+                          value={whsCodeOptions.find(
+                            (option) => option.value === item.whs_code
+                          )}
+                          options={whsCodeOptions}
+                          onChange={(value) =>
+                            handleChange(item.ID, "whs_code", value?.value)
+                          }
+                        />
+
+                        {errors[item.ID]?.whs_code && (
+                          <small className="text-red-500">
+                            {errors[item.ID].whs_code}
+                          </small>
+                        )}
+                      </td>
+                      <td className="p-2 border">
+                        <Input
+                          type="date"
+                          value={item.rec_date}
+                          onChange={(e) =>
+                            handleChange(item.ID, "rec_date", e.target.value)
+                          }
+                        />
+                        {errors[item.ID]?.rec_date && (
+                          <small className="text-red-500">
+                            {errors[item.ID].rec_date}
+                          </small>
+                        )}
+                      </td>
+                      <td className="p-2 border">
+                        <Input
+                          className="w-full"
+                          type="text"
+                          value={item.remarks}
+                          onChange={(e) =>
+                            handleChange(item.ID, "remarks", e.target.value)
+                          }
+                        />
+                        {errors[item.ID]?.remarks && (
+                          <small className="text-red-500">
+                            {errors[item.ID].remarks}
+                          </small>
+                        )}
+                      </td>
+                      <td
+                        className="p-2 border space-x-2 text-center"
+                        style={{ width: "160px" }}
                       >
-                        <X size={14} />
-                      </Button>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td className="p-2 border">{item.item_code}</td>
-                    <td className="p-2 border text-center">{item.is_serial}</td>
-                    <td className="p-2 border text-center">{item.uom}</td>
-                    <td className="p-2 border text-center">{item.quantity}</td>
-                    <td className="p-2 border text-center">{item.whs_code}</td>
-                    <td className="p-2 border text-center">
-                      {dayjs(item.received_date).format("D MMMM YYYY")}
-                    </td>
-                    <td className="p-2 border">{item.remarks}</td>
-                    <td
-                      className="p-2 border space-x-2 text-center"
-                      style={{ width: "160px" }}
-                    >
-                      {headerForm.status !== "complete" && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(item.ID)}
-                          >
-                            <Pencil size={14} />
+                        {headerForm.mode != "create" && (
+                          <Button size="sm" onClick={handleSaveItem}>
+                            <Save size={14} />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(item.ID)}
-                          >
-                            <Trash size={14} />
-                          </Button>
-                        </>
-                      )}
-                    </td>
-                  </>
-                )}
-              </tr>
-            );
-          })}
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            handleCancel(item);
+                          }}
+                        >
+                          <X size={14} />
+                        </Button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-2 border">{item.item_code}</td>
+                      <td className="p-2 border text-center">
+                        {item.is_serial}
+                      </td>
+                      <td className="p-2 border text-center">{item.uom}</td>
+                      <td className="p-2 border text-center">
+                        {item.quantity}
+                      </td>
+                      <td className="p-2 border text-center">
+                        {item.whs_code}
+                      </td>
+                      <td className="p-2 border text-center">
+                        {dayjs(item.rec_date).format("D MMMM YYYY")}
+                      </td>
+                      <td className="p-2 border">{item.remarks}</td>
+                      <td
+                        className="p-2 border space-x-2 text-center"
+                        style={{ width: "160px" }}
+                      >
+                        {headerForm.status !== "complete" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(item.ID)}
+                            >
+                              <Pencil size={14} />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDelete(item.ID)}
+                            >
+                              <Trash size={14} />
+                            </Button>
+                          </>
+                        )}
+                      </td>
+                    </>
+                  )}
+                </tr>
+              );
+            })}
         </tbody>
         <tfoot>
           <tr className="bg-gray-100 font-semibold">

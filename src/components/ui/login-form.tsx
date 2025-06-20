@@ -170,7 +170,7 @@ export function LoginForm({
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="bu">Business Unit</Label>
+                <Label htmlFor="bu">Environment</Label>
                 <select
                   id="bu"
                   className="border rounded px-2 py-1"
@@ -178,7 +178,7 @@ export function LoginForm({
                   onChange={(e) => setBu(e.target.value)}
                   required
                 >
-                  <option value="">-- Select BU --</option>
+                  <option value="">-- Select Environment --</option>
                   {buOptions?.map((bu) => (
                     <option key={bu.ID} value={bu.db_name}>
                       {bu.db_name}

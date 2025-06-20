@@ -224,9 +224,9 @@ export default function ProductForm({ editData, setEditData }) {
   return (
     <Card className="w-[400px]">
       <CardHeader>
-        <CardTitle>Product Form</CardTitle>
+        {/* <CardTitle>Product Form</CardTitle> */}
         <CardDescription>
-          {editData ? "Edit Product" : "Add Product"}
+          <h1 className="text-1xl font-bold">{editData ? "Edit Product" : "Add Product"}</h1>
         </CardDescription>
         {error && (
           <Alert variant="destructive">

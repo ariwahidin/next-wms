@@ -5,18 +5,9 @@ import { Input } from "@/components/ui/input";
 import PageHeader from "@/components/mobile/PageHeader";
 import InboundCard from "@/components/mobile/inbound/order-views/InboundCard";
 import api from "@/lib/api";
+import { InboundItem } from "@/types/inbound";
 
-interface InboundItem {
-  id: number;
-  invoice_no : string, 
-  req_qty : number, 
-  qty_stock : number, 
-  scan_qty : number,
-  inbound_no: string;
-  supplier_name: string;
-  receive_status: string;
-  status: "fully received" | "partial" | "open";
-}
+
 
 export default function InboundListPage() {
   const [search, setSearch] = useState("");

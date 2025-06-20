@@ -2,26 +2,17 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { InboundItem } from "@/types/inbound";
 import { Package, BoxesIcon, ScanBarcode } from "lucide-react"; // Import icon
 import router from "next/router";
 
-type InboundItem = {
-  id: number;
-  inbound_no: string;
-  supplier_name: string;
-  invoice_no: string;
-  receive_status: string;
-  req_qty: number;
-  qty_stock: number;
-  scan_qty: number;
-  status: "fully received" | "partial" | "open";
-};
+
 
 export default function InboundCard({ data }: { data: InboundItem }) {
   const {
     inbound_no,
     supplier_name,
-    invoice_no,
+    po_number,
     receive_status,
     req_qty,
     qty_stock,
@@ -76,7 +67,7 @@ export default function InboundCard({ data }: { data: InboundItem }) {
             </span>
           </div>
           <div className="text-sm text-gray-500">{supplier_name}</div>
-          <div className="text-sm text-gray-500">{invoice_no}</div>
+          <div className="text-sm text-gray-500">{po_number}</div>
           <div className="text-sm text-gray-400">{receive_status}</div>
         </div>
         <div className="pt-9">
