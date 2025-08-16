@@ -15,7 +15,9 @@ import {
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import api from "@/lib/api";
-import { useRouter } from 'next/router';
+import router, { useRouter } from "next/router";
+import { Button } from "@/components/ui/button";
+import { ArrowBigLeft } from "lucide-react";
 
 // const data = [
 //   {
@@ -111,13 +113,13 @@ function ProgressStockTable({ sto }: { sto: string }) {
     progressStockTake.length;
   total_progress_location = Math.round(total_progress_location * 100) / 100;
 
-
   let total_progress_qty =
     progressStockTake.reduce((sum, d) => sum + d.progress_qty, 0) /
     progressStockTake.length;
   total_progress_qty = Math.round(total_progress_qty * 100) / 100;
 
   const fetchData = async () => {
+    if (!sto) return;
     try {
       const res = await api.get(`/stock-take/progress/${sto}`, {
         withCredentials: true,
@@ -131,123 +133,135 @@ function ProgressStockTable({ sto }: { sto: string }) {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    console.log("Fetching progress for STO:", sto);
+    if (sto) {
+      fetchData();
+    }
+  }, [sto]);
 
   return (
-    <div className="overflow-auto rounded-xl border shadow-sm">
-      <Table className="text-sm border border-gray-200">
-        <TableHeader>
-          <TableRow>
-            <TableHead rowSpan={2} className="border border-gray-200">
-              Category
-            </TableHead>
-            <TableHead
-              colSpan={3}
-              className="text-center border border-gray-200"
-            >
-              Stock System
-            </TableHead>
-            <TableHead
-              colSpan={3}
-              className="text-center border border-gray-200"
-            >
-              Data STO
-            </TableHead>
-            <TableHead
-              colSpan={3}
-              className="text-center border border-gray-200"
-            >
-              Progress (%)
-            </TableHead>
-          </TableRow>
-          <TableRow>
-            <TableHead className="border border-gray-200">Location</TableHead>
-            <TableHead className="border border-gray-200">Barcode</TableHead>
-            <TableHead className="border border-gray-200">Qty</TableHead>
-            <TableHead className="border border-gray-200">Location</TableHead>
-            <TableHead className="border border-gray-200">Barcode</TableHead>
-            <TableHead className="border border-gray-200">Qty</TableHead>
-            <TableHead className="border border-gray-200">Location</TableHead>
-            <TableHead className="border border-gray-200">Barcode</TableHead>
-            <TableHead className="border border-gray-200">Qty</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {progressStockTake.map((row, idx) => (
-            <TableRow key={idx}>
-              <TableCell className="border border-gray-200">
-                {row.barcode_system}
-              </TableCell>
-              <TableCell className="border border-gray-200">
-                {row.count_location_system}
-              </TableCell>
-              <TableCell className="border border-gray-200">
-                {row.count_barcode_system}
-              </TableCell>
-              <TableCell className="border border-gray-200">
-                {row.total_qty_system}
-              </TableCell>
-              <TableCell className="border border-gray-200">
-                {row.count_location_sto}
-              </TableCell>
-              <TableCell className="border border-gray-200">
-                {row.count_barcode_sto}
-              </TableCell>
-              <TableCell className="border border-gray-200">
-                {row.total_qty_sto}
-              </TableCell>
-              <TableCell className="border border-gray-200">
-                {row.progress_location}%
-              </TableCell>
-              <TableCell className="border border-gray-200">
-                {row.progress_barcode}%
-              </TableCell>
-              <TableCell className="border border-gray-200">
-                {row.progress_qty}%
-              </TableCell>
+    <>
+      {/* Back Button */}
+      <div className="pb-4">
+        <Button variant="outline" onClick={() => router.back()}>
+          <ArrowBigLeft className="" />
+          Back
+        </Button>
+      </div>
+      <div className="overflow-auto rounded-xl border shadow-sm">
+        <Table className="text-sm border border-gray-200">
+          <TableHeader>
+            <TableRow>
+              <TableHead rowSpan={2} className="border border-gray-200">
+                Category
+              </TableHead>
+              <TableHead
+                colSpan={3}
+                className="text-center border border-gray-200"
+              >
+                Stock System
+              </TableHead>
+              <TableHead
+                colSpan={3}
+                className="text-center border border-gray-200"
+              >
+                Data STO
+              </TableHead>
+              <TableHead
+                colSpan={3}
+                className="text-center border border-gray-200"
+              >
+                Progress (%)
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-        <TableFooter>
-          <TableRow className="font-semibold bg-muted">
-            <TableCell className="border border-gray-200">Total</TableCell>
-            {/* <TableCell
+            <TableRow>
+              <TableHead className="border border-gray-200">Location</TableHead>
+              <TableHead className="border border-gray-200">Barcode</TableHead>
+              <TableHead className="border border-gray-200">Qty</TableHead>
+              <TableHead className="border border-gray-200">Location</TableHead>
+              <TableHead className="border border-gray-200">Barcode</TableHead>
+              <TableHead className="border border-gray-200">Qty</TableHead>
+              <TableHead className="border border-gray-200">Location</TableHead>
+              <TableHead className="border border-gray-200">Barcode</TableHead>
+              <TableHead className="border border-gray-200">Qty</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {progressStockTake.map((row, idx) => (
+              <TableRow key={idx}>
+                <TableCell className="border border-gray-200">
+                  {row.barcode_system}
+                </TableCell>
+                <TableCell className="border border-gray-200">
+                  {row.count_location_system}
+                </TableCell>
+                <TableCell className="border border-gray-200">
+                  {row.count_barcode_system}
+                </TableCell>
+                <TableCell className="border border-gray-200">
+                  {row.total_qty_system}
+                </TableCell>
+                <TableCell className="border border-gray-200">
+                  {row.count_location_sto}
+                </TableCell>
+                <TableCell className="border border-gray-200">
+                  {row.count_barcode_sto}
+                </TableCell>
+                <TableCell className="border border-gray-200">
+                  {row.total_qty_sto}
+                </TableCell>
+                <TableCell className="border border-gray-200">
+                  {row.progress_location}%
+                </TableCell>
+                <TableCell className="border border-gray-200">
+                  {row.progress_barcode}%
+                </TableCell>
+                <TableCell className="border border-gray-200">
+                  {row.progress_qty}%
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter>
+            <TableRow className="font-semibold bg-muted">
+              <TableCell className="border border-gray-200">Total</TableCell>
+              {/* <TableCell
               colSpan={2}
               className="border border-gray-200"
             ></TableCell> */}
-            <TableCell className="border border-gray-200">
-              {total_location_system}
-            </TableCell>
-            <TableCell className="border border-gray-200">
-              {total_barcode_system}
-            </TableCell>
-            <TableCell className="border border-gray-200">
-              {total_qty_system}
-            </TableCell>
-            <TableCell className="border border-gray-200">
-              {total_location_sto}
-            </TableCell>
-            <TableCell className="border border-gray-200">
-              {total_barcode_sto}
-            </TableCell>
+              <TableCell className="border border-gray-200">
+                {total_location_system}
+              </TableCell>
+              <TableCell className="border border-gray-200">
+                {total_barcode_system}
+              </TableCell>
+              <TableCell className="border border-gray-200">
+                {total_qty_system}
+              </TableCell>
+              <TableCell className="border border-gray-200">
+                {total_location_sto}
+              </TableCell>
+              <TableCell className="border border-gray-200">
+                {total_barcode_sto}
+              </TableCell>
 
-            <TableCell className="border border-gray-200">
-              {total_qty_sto}
-            </TableCell>
-            <TableCell className="border border-gray-200">
-              {total_progress_location}%
-            </TableCell>
-            <TableCell className="border border-gray-200">
-              {total_progress_barcode}%
-            </TableCell>
-            <TableCell className="border border-gray-200">
-              {total_progress_qty}%
-            </TableCell>
-          </TableRow>
-        </TableFooter>
-      </Table>
-    </div>
+              <TableCell className="border border-gray-200">
+                {total_qty_sto}
+              </TableCell>
+              <TableCell className="border border-gray-200">
+                {total_progress_location}%
+              </TableCell>
+              <TableCell className="border border-gray-200">
+                {total_progress_barcode}%
+              </TableCell>
+              <TableCell className="border border-gray-200">
+                {total_progress_qty}%
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </div>
+    </>
   );
 }
 

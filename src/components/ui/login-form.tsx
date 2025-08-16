@@ -34,30 +34,6 @@ export function LoginForm({
   const [buOptions, setBuOptions] = useState<BusinessUnit[]>([]);
   const [bu, setBu] = useState("");
 
-  // const dispatch = useAppDispatch();
-  // const handleLogin = (e) => {
-  //   e.preventDefault();
-  //   api
-  //     .post(
-  //       "/login",
-  //       {
-  //         email: username,
-  //         password,
-  //       },
-  //       { withCredentials: true }
-  //     )
-  //     .then((res) => {
-  //       if (res.data.success === true) {
-  //         if (res.data.user.base_url === "/dashboard") {
-  //           router.push("/home");
-  //         } else {
-  //           router.push("/mobile/home");
-  //         }
-  //       }
-  //     })
-  //     .catch((err) => console.log(err));
-  // };
-
   const dispatch = useAppDispatch();
 
   const handleLogin = (e: React.FormEvent) => {
@@ -111,17 +87,6 @@ export function LoginForm({
       // setIsLoading(false);
     }
   };
-
-  // useEffect(() => {
-  //   api
-  //     .get("/auth/isLoggedIn", { withCredentials: true })
-  //     .then((res) => {
-  //       if (res.data.success === true) {
-  //         window.location.href = "/wms/dashboard";
-  //       }
-  //     })
-  //     .catch((err) => console.log(err));
-  // }, []);
 
   useEffect(() => {
     fetchData();

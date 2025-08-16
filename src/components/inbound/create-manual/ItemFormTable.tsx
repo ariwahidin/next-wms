@@ -20,6 +20,10 @@ import { Warehouse } from "@/types/warehouse";
 import { Supplier } from "@/types/supplier";
 import eventBus from "@/utils/eventBus";
 import dayjs from "dayjs";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { format, parseISO } from "date-fns";
+import { id } from "date-fns/locale";
 
 // Skema validasi Yup
 const muatanSchema = yup.object().shape({
@@ -61,14 +65,21 @@ export default function ItemFormTable({
     [id: number]: { [key: string]: string };
   }>({});
 
+  const [defaultOptions, setDefaultOptions] = useState([]);
+
   const fetchData = async () => {
     try {
-      const [products, warehouses] = await Promise.all([
-        api.get("/products", { withCredentials: true }),
-        api.get("/warehouses", { withCredentials: true }),
+      const [products, warehouses, uoms] = await Promise.all([
+        api.get("/products"),
+        api.get("/warehouses"),
+        api.get("/uoms"),
       ]);
 
-      if (products.data.success && warehouses.data.success) {
+      if (
+        products.data.success &&
+        warehouses.data.success &&
+        uoms.data.success
+      ) {
         setProducts(products.data.data);
         setItemCodeOptions(
           products.data.data.map((item: Product) => ({
@@ -83,6 +94,13 @@ export default function ItemFormTable({
             label: item.code,
           }))
         );
+        // Set default UOM options
+        const defaultUoms = uoms.data.data.map((item: any) => ({
+          value: item.code,
+          label: item.code,
+        }));
+
+        setDefaultOptions(defaultUoms);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -99,11 +117,12 @@ export default function ItemFormTable({
       inbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
       item_code: "",
       quantity: 0,
-      whs_code: "",
+      rcv_location: "",
       ref_id: inboundReferences.ID,
       ref_no: inboundReferences.ref_no,
       uom: "",
-      received_date: new Date().toISOString().split("T")[0],
+      division: "REGULAR",
+      rec_date: new Date().toISOString().split("T")[0],
       remarks: "",
       mode: "create",
     };
@@ -175,7 +194,6 @@ export default function ItemFormTable({
       );
       if (res.data.success) {
         console.log("Data yang telah disimpan:", res.data.data);
-
         eventBus.emit("showAlert", {
           title: "Success!",
           description: res.data.message,
@@ -284,6 +302,52 @@ export default function ItemFormTable({
     // setSelectedIds([]);
   };
 
+  const [options, setOptions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectStates, setSelectStates] = useState({});
+
+  const handleFocus = async (itemCode: string, itemId: string | number) => {
+    if (!itemCode || itemCode.trim() === "") return;
+
+    // Set loading true untuk item tertentu
+    setSelectStates((prev) => ({
+      ...prev,
+      [itemId]: {
+        ...(prev[itemId] || {}),
+        loading: true,
+      },
+    }));
+
+    try {
+      const response = await api.post("/uoms/item", { item_code: itemCode });
+      const uoms = response?.data?.data || [];
+
+      const mappedOptions = uoms.map((item) => ({
+        value: item.from_uom,
+        label: item.from_uom,
+      }));
+
+      // Update options hanya untuk item tersebut
+      setSelectStates((prev) => ({
+        ...prev,
+        [itemId]: {
+          loading: false,
+          options: mappedOptions,
+        },
+      }));
+    } catch (error) {
+      console.error("Failed to fetch UOMs:", error);
+      // Tetap kosongkan jika gagal
+      setSelectStates((prev) => ({
+        ...prev,
+        [itemId]: {
+          loading: false,
+          options: [],
+        },
+      }));
+    }
+  };
+
   const totalQty = muatan?.reduce((sum, item) => sum + item.quantity, 0);
   const allSelected =
     muatan?.length > 0 && selectedIds.length === muatan.length;
@@ -311,7 +375,7 @@ export default function ItemFormTable({
         )}
       </div>
 
-      <table className="w-full border font-normal text-sm">
+      <table className="w-full border font-normal text-sm" style={{ fontSize: "12px" }}>
         <thead className="bg-gray-100">
           <tr>
             <th className="p-2 border text-center w-8">
@@ -332,17 +396,19 @@ export default function ItemFormTable({
             <th className="p-2 border" style={{ width: "50px" }}>
               UoM
             </th>
-            <th className="p-2 border" style={{ width: "80px" }}>
+            <th className="p-2 border" style={{ width: "100px" }}>
               Qty
             </th>
             <th className="p-2 border" style={{ width: "130px" }}>
-              Whs Code
+              Rcv Location
             </th>
             <th className="p-2 border" style={{ width: "140px" }}>
               Rcv Date
             </th>
-            <th className="p-2 border">Remarks</th>
-            <th className="p-2 border" style={{ width: "160px" }}>
+            <th className="p-2 border" style={{ width: "140px" }}>
+              Remarks
+            </th>
+            <th className="p-2 border" style={{ width: "100px" }}>
               Action
             </th>
           </tr>
@@ -364,7 +430,8 @@ export default function ItemFormTable({
                   </td>
                   <td className="p-2 border text-center">{index + 1}</td>
 
-                  {isEditing || item.mode === "create" ? (
+                  {/* {isEditing || item.mode === "create" ? ( */}
+                  {headerForm.status == "open" || headerForm.mode == "create" ? (
                     <>
                       <td className="p-2 border">
                         <div key={item.ID}>
@@ -386,6 +453,7 @@ export default function ItemFormTable({
                       </td>
                       <td className="p-2 border">
                         <Input
+                          style={{ fontSize: "12px" }}
                           readOnly
                           type="text"
                           className="w-14"
@@ -401,15 +469,34 @@ export default function ItemFormTable({
                       )} */}
                       </td>
                       <td className="p-2 border">
-                        <Input
-                          readOnly
-                          type="text"
-                          className="w-14"
-                          value={item.uom}
-                          // onChange={(e) =>
-                          //   handleChange(item.ID, "remarks", e.target.value)
-                          // }
+                        <Select
+                          key={item.ID}
+                          className="w-40"
+                          options={
+                            selectStates[item.ID]?.options ?? defaultOptions
+                          }
+                          onFocus={() => handleFocus(item.item_code, item.ID)}
+                          isLoading={selectStates[item.ID]?.loading ?? false}
+                          value={(
+                            selectStates[item.ID]?.options ?? defaultOptions
+                          ).find((option) => option.value === item.uom)}
+                          onChange={(value) =>
+                            handleChange(item.ID, "uom", value?.value)
+                          }
                         />
+
+                        {/* <Select
+                          className="w-24"
+                          options={options}
+                          onFocus={handleFocus.bind(null, item.item_code)}
+                          isLoading={loading}
+                          value={options.find(
+                            (option) => option.value === item.uom
+                          )}
+                          onChange={(value) =>
+                            handleChange(item.ID, "uom", value?.value)
+                          }
+                        /> */}
                         {/* {errors[item.ID]?.remarks && (
                         <small className="text-red-500">
                           {errors[item.ID].remarks}
@@ -419,6 +506,7 @@ export default function ItemFormTable({
                       <td className="p-2 border">
                         <div>
                           <Input
+                            style={{ fontSize: "12px" }}
                             type="number"
                             value={item.quantity}
                             onChange={(e) =>
@@ -433,30 +521,57 @@ export default function ItemFormTable({
                         )}
                       </td>
                       <td className="p-2 border">
-                        <Select
-                          value={whsCodeOptions.find(
-                            (option) => option.value === item.whs_code
-                          )}
-                          options={whsCodeOptions}
-                          onChange={(value) =>
-                            handleChange(item.ID, "whs_code", value?.value)
-                          }
-                        />
+                        <div>
+                          <Input
+                            style={{ fontSize: "12px" }}
+                            type="text"
+                            value={item.rcv_location}
+                            onChange={(e) =>
+                              handleChange(
+                                item.ID,
+                                "rcv_location",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
-                        {errors[item.ID]?.whs_code && (
+                        {/* {errors[item.ID]?.whs_code && (
                           <small className="text-red-500">
                             {errors[item.ID].whs_code}
                           </small>
-                        )}
+                        )} */}
                       </td>
                       <td className="p-2 border">
-                        <Input
+                        <DatePicker
+                          selected={
+                            item.rec_date ? parseISO(item.rec_date) : null
+                          }
+                          onChange={(date: Date | null) => {
+                            if (date) {
+                              handleChange(
+                                item.ID,
+                                "rec_date",
+                                format(date, "yyyy-MM-dd")
+                              );
+                            }
+                          }}
+                          dateFormat="dd/MM/yyyy"
+                          locale={id}
+                          customInput={
+                            <Input className="w-[120px] cursor-pointer" style={{ fontSize: "12px" }} />
+                          }
+                          placeholderText="Pilih tanggal"
+                          popperPlacement="bottom-start"
+                        />
+
+                        {/* <Input
                           type="date"
                           value={item.rec_date}
                           onChange={(e) =>
                             handleChange(item.ID, "rec_date", e.target.value)
                           }
-                        />
+                        /> */}
                         {errors[item.ID]?.rec_date && (
                           <small className="text-red-500">
                             {errors[item.ID].rec_date}
@@ -465,6 +580,7 @@ export default function ItemFormTable({
                       </td>
                       <td className="p-2 border">
                         <Input
+                          style={{ fontSize: "12px" }}
                           className="w-full"
                           type="text"
                           value={item.remarks}
@@ -480,22 +596,27 @@ export default function ItemFormTable({
                       </td>
                       <td
                         className="p-2 border space-x-2 text-center"
-                        style={{ width: "160px" }}
+                        style={{ width: "100px" }}
                       >
-                        {headerForm.mode != "create" && (
-                          <Button size="sm" onClick={handleSaveItem}>
-                            <Save size={14} />
+                        {item.mode == "create" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              handleCancel(item);
+                            }}
+                          >
+                            <X size={14} />
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDelete(item.ID)}
+                          >
+                            <Trash size={14} />
                           </Button>
                         )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            handleCancel(item);
-                          }}
-                        >
-                          <X size={14} />
-                        </Button>
                       </td>
                     </>
                   ) : (
@@ -509,7 +630,7 @@ export default function ItemFormTable({
                         {item.quantity}
                       </td>
                       <td className="p-2 border text-center">
-                        {item.whs_code}
+                        {item.rcv_location}
                       </td>
                       <td className="p-2 border text-center">
                         {dayjs(item.rec_date).format("D MMMM YYYY")}

@@ -11,7 +11,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +22,6 @@ import { ItemReceived } from "@/types/inbound";
 import dayjs from "dayjs";
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
-import { Loader2 } from "lucide-react";
 import { useRouter } from "next/router";
 import { KoliItem } from "@/types/outbound";
 
@@ -39,15 +37,9 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [koliItems, setKoliItems] = useState<KoliItem[]>([]);
-
   const router = useRouter();
-
   const {no} = router.query
-
   console.log('no', no);
-  
-
-
   const toggleSelectAll = () => {
     const newSelectAll = !selectAll;
     setSelectAll(newSelectAll);

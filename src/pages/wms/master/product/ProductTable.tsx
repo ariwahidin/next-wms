@@ -41,23 +41,33 @@ const ProductTable = ({ setEditData }) => {
   const { data: rowData, error, mutate } = useSWR("/products", fetcher);
 
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
-    { field: "no", headerName: "No. ", maxWidth: 70 },
+    {
+      field: "no",
+      headerName: "No. ",
+      maxWidth: 70,
+      sortable: false,
+      filter: false,
+    },
     { field: "item_code", headerName: "Item Code" },
-    { field: "item_name", headerName: "Item Name" },
-    { field: "category", headerName: "Category" },
+    { field: "item_name", headerName: "Item Name", flex: 1 },
+    { field: "category", headerName: "Category", width: 150 },
     { field: "barcode", headerName: "Barcode" },
-    { field: "uom", headerName: "UOM" },
+    { field: "uom", headerName: "UOM", width: 100 },
     { field: "has_serial", headerName: "SN", width: 70 },
     {
+      cellStyle: { textAlign: "center" },
       headerName: "Actions",
       field: "ID",
+      pinned: "right",
+      width: 100,
+      sortable: false,
+      filter: false,
       cellRenderer: (params) => {
         return (
           <div>
             <Button
               onClick={() => {
                 setEditData(params.data);
-                // console.log(params.data);
               }}
               variant="ghost"
               size="icon"
@@ -122,6 +132,12 @@ const ProductTable = ({ setEditData }) => {
         paginationPageSize={10} // Set jumlah data per halaman
         paginationPageSizeSelector={[10, 25, 50]} // Opsional: Dropdown pilihan page size
         domLayout="autoHeight"
+        defaultColDef={{
+          sortable: true,
+          filter: true,
+          resizable: true,
+          editable: true,
+        }}
       />
     </div>
   );

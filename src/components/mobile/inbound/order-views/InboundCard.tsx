@@ -12,19 +12,13 @@ export default function InboundCard({ data }: { data: InboundItem }) {
   const {
     inbound_no,
     supplier_name,
-    po_number,
+    receipt_id,
     receive_status,
     req_qty,
     qty_stock,
     scan_qty,
     status,
   } = data;
-
-  // const statusColor = {
-  //   open: "bg-red-100 text-red-600",
-  //   partial: "bg-yellow-100 text-yellow-600",
-  //   "fully received": "bg-green-100 text-green-600",
-  // };
 
   const handleCheckingClick = (noDO: string) => {
     router.push(`/mobile/inbound/checking/${noDO}`);
@@ -33,16 +27,8 @@ export default function InboundCard({ data }: { data: InboundItem }) {
     router.push(`/mobile/inbound/putaway/${noDO}`);
   };
 
-  // Data dummy angka
-  // const dummyCounts = {
-  //   packages: 12,
-  //   trucks: 5,
-  //   checked: 8,
-  // };
-
   return (
     <Card className="p-3 relative">
-      {/* Icons di pojok kanan atas */}
       <div className="absolute top-2 right-2 flex gap-3">
         <div className="flex items-center space-x-1 text-gray-500 text-xs">
           <Package size={16} />
@@ -67,7 +53,7 @@ export default function InboundCard({ data }: { data: InboundItem }) {
             </span>
           </div>
           <div className="text-sm text-gray-500">{supplier_name}</div>
-          <div className="text-sm text-gray-500">{po_number}</div>
+          <div className="text-sm text-gray-500">{receipt_id}</div>
           <div className="text-sm text-gray-400">{receive_status}</div>
         </div>
         <div className="pt-9">

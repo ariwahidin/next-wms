@@ -73,32 +73,6 @@ const InboundTable = () => {
     router.push(`/wms/inbound/edit/${no}`);
   };
 
-  // const HandleComplete = (id: number) => {
-  //   showAlert(
-  //     "Inbound Complete Confirmation",
-  //     "Are you sure you want to save this data?",
-  //     "error",
-  //     async () => {
-  //       const response = await api.post(
-  //         `/inbound/complete/${id}`,
-  //         { inbound_id: id },
-  //         { withCredentials: true }
-  //       );
-
-  //       if (response.data.success) {
-  //         eventBus.emit("showAlert", {
-  //           title: "Success!",
-  //           description: response.data.message,
-  //           type: "success",
-  //         });
-
-  //         // reload data
-  //         mutate("/inbound");
-  //       }
-  //     }
-  //   );
-  // };
-
   const HandlePreviewPDF = (id: number) => {
     window.open(`/wms/inbound/putaway-sheet/${id}`, "_blank");
     // router.push(`/inbound/putaway-sheet/${id}`);
@@ -113,6 +87,7 @@ const InboundTable = () => {
       suppressSizeToFit: true,
     },
     { field: "no", headerName: "No. ", maxWidth: 60 },
+    { field: "inbound_no", headerName: "Inbound No. ", maxWidth: 150 },
     {
       headerName: "Actions",
       pinned: "right",
@@ -125,18 +100,6 @@ const InboundTable = () => {
             className="flex justify-center space-x-1 pt-2"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* {params.data.status === "open" && (
-              <Button
-                title="Complete Inbound"
-                onClick={() => HandleComplete(params.data.id)}
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 bg-blue-500 text-white hover:bg-blue-600"
-              >
-                <CheckCheck className="h-4 w-4" />
-              </Button>
-            )} */}
-
             <Button
               title="View or Edit"
               onClick={() => HandleEdit(params.data.inbound_no)}
@@ -178,15 +141,21 @@ const InboundTable = () => {
         return <div>{dayjs(params.value).format("D MMMM YYYY")}</div>;
       },
     },
-    { field: "inbound_no", headerName: "Inbound No.", width: 130 },
+    { field: "receipt_id", headerName: "Receipt ID", width: 130 },
     {
       field: "type",
       headerName: "IB Type",
       width: 120,
       cellRenderer: (params) => params.value.toUpperCase(),
     },
+    {
+      field: "owner_code",
+      headerName: "Owner",
+      width: 120,
+      cellRenderer: (params) => params.value.toUpperCase(),
+    },
     { field: "supplier_name", headerName: "Supplier", width: 250 },
-    { field: "invoice", headerName: "Invoice", width: 180 },
+    // { field: "invoice", headerName: "Invoice", width: 180 },
     {
       field: "status",
       headerName: "Status",
@@ -231,33 +200,33 @@ const InboundTable = () => {
   const [dialogType, setDialogType] = useState<
     "complete" | "cancel" | "checking" | null
   >(null);
-  const exportToExcel = () => {
-    // contoh dummy
-    console.log("Exporting rows:", selectedRows);
-    notify("Success", "Export feature not implemented yet!");
-  };
+  // const exportToExcel = () => {
+  //   // contoh dummy
+  //   console.log("Exporting rows:", selectedRows);
+  //   notify("Success", "Export feature not implemented yet!");
+  // };
 
-  const handleAction = (type: string) => {
-    // setDialogType("checking");
-    // setIsDialogOpen(true);
-    switch (type) {
-      case "checking":
-        setDialogType("checking");
-        setIsDialogOpen(true);
-        break;
-      case "complete":
-        setDialogType("complete");
-        setIsDialogOpen(true);
-        break;
-      case "cancel":
-        setDialogType("cancel");
-        setIsDialogOpen(true);
-        break;
-      case "export":
-        exportToExcel();
-        break;
-    }
-  };
+  // const handleAction = (type: string) => {
+  //   // setDialogType("checking");
+  //   // setIsDialogOpen(true);
+  //   switch (type) {
+  //     case "checking":
+  //       setDialogType("checking");
+  //       setIsDialogOpen(true);
+  //       break;
+  //     case "complete":
+  //       setDialogType("complete");
+  //       setIsDialogOpen(true);
+  //       break;
+  //     case "cancel":
+  //       setDialogType("cancel");
+  //       setIsDialogOpen(true);
+  //       break;
+  //     case "export":
+  //       exportToExcel();
+  //       break;
+  //   }
+  // };
 
   const handleChecking = () => {
     // setIsDialogOpen(true);
@@ -302,13 +271,57 @@ const InboundTable = () => {
     }
   };
 
+  const handleChecked = () => {
+    console.log("handleChecked");
+    console.log(selectedRows);
+    // for (const row of selectedRows) {
+    //   api
+    //     .post("/inbound/checked", { inbound_no: row.inbound_no })
+    //     .then((response) => {
+    //       if (response.data.success) {
+    //         notify("Success", response.data.message, "success");
+    //         mutate("/inbound");
+    //       } else {
+    //         // notify("Error", response.data.message, "error");
+    //       }
+    //     })
+    //     .catch((error) => {
+    //       console.error("Error checking inbound:", error);
+    //     });
+    // }
+  };
+
+  const handlePutaway = () => {
+    // setIsDialogOpen(true);
+    console.log("handlePutaway");
+    console.log(selectedRows);
+
+    for (const row of selectedRows) {
+      api
+        .post("/inbound/handle-putaway", { inbound_no: row.inbound_no })
+        .then((response) => {
+          if (response.data.success) {
+            notify("Success", response.data.message, "success");
+            mutate("/inbound");
+          } else {
+            // notify("Error", response.data.message, "error");
+          }
+        })
+        .catch((error) => {
+          console.error("Error putaway inbound:", error);
+        });
+    }
+  };
+
   const handleComplete = () => {
     console.log("handleComplete");
     console.log(selectedRows);
 
     for (const row of selectedRows) {
       api
-        .post("/inbound/complete/" + row.id, { inbound_id: row.id })
+        .post("/inbound/complete/" + row.inbound_no, {
+          inbound_no: row.inbound_no,
+        })
         .then((response) => {
           if (response.data.success) {
             notify("Success", response.data.message);
@@ -376,17 +389,22 @@ const InboundTable = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="cursor-pointer"
+                    onClick={() => handleChecked()}
+                  >
+                    Mark as Checked
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => handlePutaway()}
+                  >
+                    Confirm Putaway
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
                     onClick={() => handleComplete()}
                   >
                     Mark as Complete
                   </DropdownMenuItem>
-
-                  {/* <DropdownMenuItem onClick={() => handleAction("cancel")}>
-                    Cancel Selected
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleAction("export")}>
-                    Export to Excel
-                  </DropdownMenuItem> */}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -424,9 +442,9 @@ const InboundTable = () => {
         rowData={rowData}
         columnDefs={columnDefs}
         quickFilterText={quickFilterText}
-        pagination={true} // Mengaktifkan pagination
-        paginationPageSize={10} // Set jumlah data per halaman
-        paginationPageSizeSelector={[10, 25, 50]} // Opsional: Dropdown pilihan page size
+        pagination={true}
+        paginationPageSize={10}
+        paginationPageSizeSelector={[10, 25, 50]}
         domLayout="autoHeight"
         onSelectionChanged={(e) => {
           const selected = e.api.getSelectedRows();
@@ -455,18 +473,9 @@ const InboundTable = () => {
             </Button>
             <Button
               onClick={async () => {
-                // for (const row of selectedRows) {
-                //   if (dialogType === "complete") {
-                //     await api.post(...);
-                //   } else if (dialogType === "cancel") {
-                //     await api.post(...);
-                //   }
-                // }
                 console.log(selectedRows);
-
                 setIsDialogOpen(false);
                 setSelectedRows([]);
-                // mutate("/inbound");
                 notify("Success", "Data saved successfully!");
               }}
             >

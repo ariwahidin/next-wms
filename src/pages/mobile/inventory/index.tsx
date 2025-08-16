@@ -32,11 +32,7 @@ const inventoryMenus = [
   //   icon: <Barcode />,
   //   href: "/mobile/inventory/transfer-serial",
   // },
-  // {
-  //   label: "Stock Opname",
-  //   icon: <ClipboardList />,
-  //   href: "/mobile/inventory/stock-opname",
-  // }, // bisa juga diganti jadi "Physical Stock Count"
+  
   // {
   //   label: "Stock Adjustment",
   //   icon: <SlidersHorizontal />,
@@ -59,6 +55,11 @@ const inventoryMenus = [
   // },
   { label: "Search Item", icon: <Search />, href: "/mobile/inventory/scan-item" },
   { label: "Search Location", icon: <LocateFixedIcon />, href: "/mobile/inventory/scan-location" },
+  {
+    label: "Stock Take",
+    icon: <ClipboardList />,
+    href: "/mobile/inventory/stock-opname",
+  }, // bisa juga diganti jadi "Physical Stock Count"
 ];
 
 export default function InventoryMenuPage() {

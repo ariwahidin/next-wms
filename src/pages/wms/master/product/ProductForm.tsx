@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
-import * as React from "react";
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,8 +22,9 @@ import { getEnabledCategories } from "trace_events";
 import Select from "react-select";
 import { ItemOptions } from "@/types/inbound";
 import { Category } from "@/types/category";
+import { set } from "date-fns";
 
-export default function ProductForm({ editData, setEditData }) {
+export default function ProductForm({ editData, setEditData, onClose }) {
   const [itemCode, setItemCode] = useState("");
   const [itemName, setItemName] = useState("");
   const [gmc, setGmc] = useState("");
@@ -47,7 +47,9 @@ export default function ProductForm({ editData, setEditData }) {
 
       setItemCode(editData.item_code);
       setItemName(editData.item_name);
-      setGmc(editData.gmc);
+      setGmc(editData.barcode);
+      setCategory({ value: editData.category, label: editData.category });
+      
       categoryOptions.find((option) => {
         if (option.value === editData.category) {
           setCategory(option);
@@ -185,31 +187,23 @@ export default function ProductForm({ editData, setEditData }) {
       }
 
       mutate("/products");
-      // setEditData(null);
-      // setItemCode("");
-      // setItemName("");
-      // setGmc("");
-      // document.getElementById("itemCode")?.focus();
+      onClose(); // Tutup modal
     } catch (err: any) {
-      // Tangani error dengan cara yang lebih ramah
       if (err.response) {
-        // Backend memberikan response error (misal status 400)
         if (err.response.status === 400) {
           setError("Data yang dimasukkan tidak valid.");
         } else {
           setError("Terjadi kesalahan, coba lagi nanti.");
         }
       } else {
-        // Tidak ada response dari backend (misalnya jaringan error)
         setError("Tidak ada respon dari server.");
       }
     }
   }
 
-  // Menangani tombol Enter untuk submit
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
-      handleSubmit(e); // Submit form saat Enter
+      handleSubmit(e);
     }
   };
 
@@ -219,28 +213,34 @@ export default function ProductForm({ editData, setEditData }) {
     setItemCode("");
     setItemName("");
     setGmc("");
+    onClose(); // Tutup modal
   };
 
   return (
-    <Card className="w-[400px]">
-      <CardHeader>
-        {/* <CardTitle>Product Form</CardTitle> */}
-        <CardDescription>
-          <h1 className="text-1xl font-bold">{editData ? "Edit Product" : "Add Product"}</h1>
+    <Card>
+      <CardHeader style={{ paddingBottom: "0" }}>
+        <CardDescription style={{ display: "none" }}>
+          {/* <h1 className="text-1xl font-bold">
+            {editData ? "Edit Product" : "Add Product"}
+          </h1> */}
         </CardDescription>
+        
+      </CardHeader>
+      <CardContent>
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-      </CardHeader>
-      <CardContent>
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
           <div className="grid w-full items-center gap-4">
-            <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="item_code">Item Code</Label>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0" htmlFor="item_code">
+                Item Code
+              </Label>
+              <span className="shrink-0">:</span>
               <Input
                 id="itemCode"
                 onChange={(e) => setItemCode(e.target.value)}
@@ -248,8 +248,11 @@ export default function ProductForm({ editData, setEditData }) {
                 placeholder=""
               />
             </div>
-            <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="item_name">Item Name</Label>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0" htmlFor="item_name">
+                Item Name
+              </Label>
+              <span className="shrink-0">:</span>
               <Input
                 id="itemName"
                 onChange={(e) => setItemName(e.target.value)}
@@ -257,8 +260,11 @@ export default function ProductForm({ editData, setEditData }) {
                 placeholder=""
               />
             </div>
-            <div className="flex flex-col space-y-1.5">
-              <Label>Barcode</Label>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0" htmlFor="gmc">
+                Barcode
+              </Label>
+              <span className="shrink-0">:</span>
               <Input
                 id="gmc"
                 onChange={(e) => setGmc(e.target.value)}
@@ -266,8 +272,9 @@ export default function ProductForm({ editData, setEditData }) {
                 placeholder=""
               />
             </div>
-            <div className="flex flex-col space-y-1.5">
-              <Label>Base UOM</Label>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0">Base UOM</Label>
+              <span className="shrink-0">:</span>
               <Select
                 options={uomOptions}
                 defaultValue={selectedUom}
@@ -276,8 +283,9 @@ export default function ProductForm({ editData, setEditData }) {
                 value={selectedUom}
               />
             </div>
-            <div className="flex flex-col space-y-1.5">
-              <Label>Has Serial</Label>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0">Has Serial</Label>
+              <span className="shrink-0">:</span>
               <Select
                 options={serialOptions}
                 defaultValue={selectedSerial}
@@ -286,8 +294,9 @@ export default function ProductForm({ editData, setEditData }) {
                 placeholder="Select serial"
               />
             </div>
-            <div className="flex flex-col space-y-1.5">
-              <Label>Category</Label>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0">Category</Label>
+              <span className="shrink-0">:</span>
               <Select
                 options={categoryOptions}
                 defaultValue={category}
@@ -307,7 +316,6 @@ export default function ProductForm({ editData, setEditData }) {
         </Button>
         <Button onClick={handleSubmit} type="submit">
           {" "}
-          {/* Tombol submit */}
           {editData ? "Update" : "Add"}
         </Button>
       </CardFooter>

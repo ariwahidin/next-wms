@@ -59,14 +59,16 @@ export default function ItemFormTable({
     [id: number]: { [key: string]: string };
   }>({});
 
+  const [defaultUoms, setDefaultUoms] = useState([]);
+
   const fetchData = async () => {
     try {
-      const [products, warehouses] = await Promise.all([
-        api.get("/products", { withCredentials: true }),
-        api.get("/warehouses", { withCredentials: true }),
+      const [products, uoms] = await Promise.all([
+        api.get("/products"),
+        api.get("/uoms"),
       ]);
 
-      if (products.data.success && warehouses.data.success) {
+      if (products.data.success && uoms.data.success) {
         setProducts(products.data.data);
         setItemCodeOptions(
           products.data.data.map((item: Product) => ({
@@ -74,13 +76,12 @@ export default function ItemFormTable({
             label: item.item_code,
           }))
         );
-        setWarehouses(warehouses.data.data);
-        setWhsCodeOptions(
-          warehouses.data.data.map((item: Warehouse) => ({
-            value: item.code,
-            label: item.code,
-          }))
-        );
+        // Set default UOM options
+        const defaultUoms = uoms.data.data.map((item: any) => ({
+          value: item.code,
+          label: item.code,
+        }));
+        setDefaultUoms(defaultUoms);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -96,9 +97,11 @@ export default function ItemFormTable({
       ID: Date.now(), // Gunakan timestamp sebagai ID unik
       outbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
       item_code: "",
+      item_name: "",
+      barcode: "",
       quantity: 0,
-      whs_code: "",
       uom: "",
+      location: "",
       outbound_date: new Date().toISOString().split("T")[0], // Tanggal hari ini
       remarks: "",
       mode: "create",
@@ -110,40 +113,60 @@ export default function ItemFormTable({
     setEditingId(newRow.ID);
   };
 
+  // const handleChange = (
+  //   id: number,
+  //   field: keyof ItemFormProps,
+  //   value: string | number
+  // ) => {
+  //   setMuatan((prev) =>
+  //     prev.map((m) =>
+  //       m.ID === id
+  //         ? { ...m, [field]: field === "quantity" ? Number(value) : value }
+  //         : m
+  //     )
+  //   );
+  // };
+
   const handleChange = (
     id: number,
     field: keyof ItemFormProps,
     value: string | number
   ) => {
-    setMuatan((prev) =>
-      prev.map((m) =>
-        m.ID === id
-          ? { ...m, [field]: field === "quantity" ? Number(value) : value }
-          : m
-      )
-    );
+    console.log("ID:", id);
+    console.log("Field:", field);
+    console.log("Value:", value);
+
+    if (field === "item_code") {
+      const selectedProduct = products.find(
+        (product) => product.item_code === value
+      );
+      console.log("Produk yang dipilih:", selectedProduct);
+      if (selectedProduct) {
+        setMuatan((prev) =>
+          prev.map((m) =>
+            m.ID === id
+              ? {
+                  ...m,
+                  item_code: selectedProduct.item_code,
+                  uom: selectedProduct.uom,
+                  item_name: selectedProduct.item_name,
+                  barcode: selectedProduct.barcode,
+                  sn: selectedProduct.has_serial,
+                }
+              : m
+          )
+        );
+      }
+    } else {
+      setMuatan((prev) =>
+        prev.map((m) =>
+          m.ID === id
+            ? { ...m, [field]: field === "quantity" ? Number(value) : value }
+            : m
+        )
+      );
+    }
   };
-
-  // const handleSave = () => {
-  //   setEditingId(null);
-  // };
-
-  // const handleSave = async () => {
-  //   try {
-  //     await yup.array().of(muatanSchema).validate(muatan, { abortEarly: false });
-  //     setErrors({});
-  //     console.log("Data yang disimpan:", muatan);
-  //   } catch (validationError: any) {
-  //     const fieldErrors: { [id: number]: { [key: string]: string } } = {};
-  //     validationError.inner.forEach((err: any) => {
-  //       if (err.path) {
-  //         const id = muatan[Number(err.path.split(".")[1])].id;
-  //         fieldErrors[id] = { ...fieldErrors[id], [err.path.split(".")[2]]: err.message };
-  //       }
-  //     });
-  //     setErrors(fieldErrors);
-  //   }
-  // }
 
   const handleSaveItem = async () => {
     const editingItem = muatan.find((m) => m.ID === editingId);
@@ -286,13 +309,13 @@ export default function ItemFormTable({
         <h2 className="text-lg font-semibold">Requested Items</h2>
         {headerForm.status !== "complete" && (
           <div className="space-x-2">
-            <Button
+            {/* <Button
               variant="destructive"
               onClick={handleDeleteSelected}
               disabled={selectedIds.length === 0}
             >
               Delete Selected
-            </Button>
+            </Button> */}
             <Button type="button" onClick={handleAdd}>
               Add Item
             </Button>
@@ -300,38 +323,184 @@ export default function ItemFormTable({
         )}
       </div>
 
-      <table className="w-full border font-normal text-sm">
+      <table className="w-full border font-normal text-xs">
         <thead className="bg-gray-100">
           <tr>
-            <th className="p-2 border text-center w-8">
+            {/* <th className="p-2 border text-center w-8">
               <input
                 type="checkbox"
                 checked={allSelected}
                 onChange={(e) => handleSelectAll(e.target.checked)}
               />
-            </th>
+            </th> */}
             <th className="p-2 border w-12 text-center">No.</th>
             <th className="p-2 border" style={{ width: "300px" }}>
               Item Code
             </th>
+            <th className="p-2 border" style={{ width: "300px" }}>
+              Item Name
+            </th>
+            <th className="p-2 border" style={{ width: "150px" }}>
+              Barcode
+            </th>
             <th className="p-2 border" style={{ width: "100px" }}>
               Qty
             </th>
-            <th className="p-2 border" style={{ width: "160px" }}>
-              Whs Code
+            <th className="p-2 border" style={{ width: "55px" }}>
+              SN
             </th>
-            {/* <th className="p-2 border" style={{ width: "140px" }}>
-              Rcv Date
-            </th> */}
+            <th className="p-2 border" style={{ width: "120px" }}>
+              UoM
+            </th>
+            <th className="p-2 border">Inv. Location</th>
             <th className="p-2 border">Remarks</th>
             <th className="p-2 border" style={{ width: "160px" }}>
               Action
             </th>
           </tr>
         </thead>
+
         <tbody>
           {muatan?.map((item, index) => {
-            const isEditing = editingId === item.ID;
+            return (
+              <tr key={item.ID} className="border-t">
+                {/* <td className="p-2 border text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(item.ID)}
+                    onChange={(e) => handleSelect(item.ID, e.target.checked)}
+                  />
+                </td> */}
+                <td className="p-2 border text-center">{index + 1}</td>
+                <td className="p-2 border">
+                  <div key={item.ID}>
+                    <Select
+                      value={itemCodeOptions.find(
+                        (option) => option.value === item.item_code
+                      )}
+                      options={itemCodeOptions}
+                      onChange={(value) =>
+                        handleChange(item.ID, "item_code", value?.value)
+                      }
+                    />
+                  </div>
+                  {errors[item.ID]?.item_code && (
+                    <small className="text-red-500">
+                      {errors[item.ID].item_code}
+                    </small>
+                  )}
+                </td>
+                <td className="p-2 border">
+                  <Input
+                    style={{ fontSize: "12px" }}
+                    readOnly
+                    type="text"
+                    value={item.item_name}
+                  />
+                </td>
+                <td className="p-2 border">
+                  <Input
+                    style={{ fontSize: "12px" }}
+                    readOnly
+                    type="text"
+                    value={item.barcode}
+                  />
+                </td>
+                <td className="p-2 border">
+                  <div>
+                    <Input
+                      style={{ fontSize: "12px", textAlign: "center" }}
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        handleChange(item.ID, "quantity", e.target.value)
+                      }
+                    />
+                  </div>
+                  {errors[item.ID]?.item_code && (
+                    <small className="text-red-500">
+                      {errors[item.ID].item_code}
+                    </small>
+                  )}
+                </td>
+                <td className="p-2 border">
+                  <Input style={{ fontSize : "12px" }} readOnly type="text" value={item.sn} />
+                </td>
+                <td className="p-2 border">
+                  <Select
+                    value={defaultUoms.find(
+                      (option) => option.value === item.uom
+                    )}
+                    options={defaultUoms}
+                    onChange={(value) =>
+                      handleChange(item.ID, "uom", value?.value)
+                    }
+                  />
+                </td>
+                <td className="p-2 border">
+                  <Input
+                    type="text"
+                    value={item.location}
+                    onChange={(e) =>
+                      handleChange(item.ID, "location", e.target.value)
+                    }
+                  />
+                </td>
+                <td className="p-2 border">
+                  <Input
+                    type="text"
+                    value={item.remarks}
+                    onChange={(e) =>
+                      handleChange(item.ID, "remarks", e.target.value)
+                    }
+                  />
+                  {errors[item.ID]?.remarks && (
+                    <small className="text-red-500">
+                      {errors[item.ID].remarks}
+                    </small>
+                  )}
+                </td>
+                <td
+                  className="p-2 border space-x-2 text-center"
+                  style={{ width: "160px" }}
+                >
+                  {headerForm.status == "open" || item.mode == "create" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        handleCancel(item);
+                      }}
+                    >
+                      <X size={14} />
+                    </Button>
+                  ) : (
+                    <></>
+                    // <Button
+                    //   size="sm"
+                    //   variant="destructive"
+                    //   onClick={() => handleDelete(item.ID)}
+                    // >
+                    //   <Trash size={14} />
+                    // </Button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr className="bg-gray-100 font-semibold">
+            <td className="p-2 border" colSpan={5}>
+              Total
+            </td>
+            <td className="p-2 border text-center">{totalQty}</td>
+            <td className="p-2 border" colSpan={2}></td>
+          </tr>
+        </tfoot>
+
+        {/* <tbody>
+          {muatan?.map((item, index) => {
             return (
               <tr key={item.ID} className="border-t">
                 <td className="p-2 border text-center">
@@ -342,8 +511,7 @@ export default function ItemFormTable({
                   />
                 </td>
                 <td className="p-2 border text-center">{index + 1}</td>
-
-                {isEditing || item.mode === "create" ? (
+                {headerForm.status == "open" || headerForm.mode == "create" ? (
                   <>
                     <td className="p-2 border">
                       <div key={item.ID}>
@@ -364,6 +532,20 @@ export default function ItemFormTable({
                       )}
                     </td>
                     <td className="p-2 border">
+                      <Input
+                        readOnly
+                        type="text"
+                        value={item.item_name}
+                      />
+                    </td>
+                    <td className="p-2 border">
+                      <Input
+                        readOnly
+                        type="text"
+                        value={item.barcode}
+                      />
+                    </td>
+                    <td className="p-2 border">
                       <div>
                         <Input
                           type="number"
@@ -380,36 +562,32 @@ export default function ItemFormTable({
                       )}
                     </td>
                     <td className="p-2 border">
-                      <Select
-                        value={whsCodeOptions.find(
-                          (option) => option.value === item.whs_code
-                        )}
-                        options={whsCodeOptions}
-                        onChange={(value) =>
-                          handleChange(item.ID, "whs_code", value?.value)
-                        }
-                      />
-
-                      {errors[item.ID]?.whs_code && (
-                        <small className="text-red-500">
-                          {errors[item.ID].whs_code}
-                        </small>
-                      )}
-                    </td>
-                    {/* <td className="p-2 border">
                       <Input
-                        type="date"
-                        value={item.}
-                        onChange={(e) =>
-                          handleChange(item.ID, "received_date", e.target.value)
+                        readOnly
+                        type="text"
+                        value={item.sn}
+                      />
+                    </td>
+                    <td className="p-2 border">
+                      <Select
+                        value={defaultUoms.find(
+                          (option) => option.value === item.uom
+                        )}
+                        options={defaultUoms}
+                        onChange={(value) =>
+                          handleChange(item.ID, "uom", value?.value)
                         }
                       />
-                      {errors[item.ID]?.received_date && (
-                        <small className="text-red-500">
-                          {errors[item.ID].received_date}
-                        </small>
-                      )}
-                    </td> */}
+                    </td>
+                    <td className="p-2 border">
+                      <Input
+                        type="text"
+                        value={item.location}
+                        onChange={(e) =>
+                          handleChange(item.ID, "location", e.target.value)
+                        }
+                      />
+                    </td>
                     <td className="p-2 border">
                       <Input
                         type="text"
@@ -428,28 +606,33 @@ export default function ItemFormTable({
                       className="p-2 border space-x-2 text-center"
                       style={{ width: "160px" }}
                     >
-                      <Button size="sm" onClick={handleSaveItem}>
-                        <Save size={14} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          handleCancel(item);
-                        }}
-                      >
-                        <X size={14} />
-                      </Button>
+                      {item.mode === "create" ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            handleCancel(item);
+                          }}
+                        >
+                          <X size={14} />
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(item.ID)}
+                        >
+                          <Trash size={14} />
+                        </Button>
+                      )}
                     </td>
                   </>
                 ) : (
                   <>
                     <td className="p-2 border">{item.item_code}</td>
+                    <td className="p-2 border text-center">{item.item_name}</td>
                     <td className="p-2 border text-center">{item.quantity}</td>
-                    <td className="p-2 border text-center">{item.whs_code}</td>
-                    {/* <td className="p-2 border text-center">
-                      {new Date(item.received_date).toLocaleDateString()}
-                    </td> */}
+                    <td className="p-2 border text-center">{item.uom}</td>
                     <td className="p-2 border">{item.remarks}</td>
                     <td
                       className="p-2 border space-x-2 text-center"
@@ -457,20 +640,6 @@ export default function ItemFormTable({
                     >
                       {headerForm.status !== "complete" && (
                         <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(item.ID)}
-                          >
-                            <Pencil size={14} />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(item.ID)}
-                          >
-                            <Trash size={14} />
-                          </Button>
                         </>
                       )}
                     </td>
@@ -482,13 +651,13 @@ export default function ItemFormTable({
         </tbody>
         <tfoot>
           <tr className="bg-gray-100 font-semibold">
-            <td className="p-2 border" colSpan={3}>
+            <td className="p-2 border" colSpan={4}>
               Total
             </td>
             <td className="p-2 border text-center">{totalQty}</td>
             <td className="p-2 border" colSpan={2}></td>
           </tr>
-        </tfoot>
+        </tfoot> */}
       </table>
     </div>
   );

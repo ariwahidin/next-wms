@@ -55,38 +55,43 @@ export default function StockOpnamePage() {
   return (
     <>
       <PageHeader title="Stock Opname" showBackButton />
-      <div className="px-4 pt-4 pb-20 min-h-screen bg-gray-50">
-        <Input
-          placeholder="Search STO..."
-          className="mb-4"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
 
-        {filteredItems.length > 0 && (
-          <p className="text-sm text-gray-500 mb-3">
-            {filteredItems.length} item{filteredItems.length > 1 && "s"} found
-          </p>
-        )}
+      <div className="min-h-screen bg-gray-50 px-4 pt-4 pb-20 max-w-md mx-auto">
+        <div className="space-y-3">
+          <Input
+            placeholder="Search STO..."
+            className="mb-4"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
 
-        <div className="space-y-4">
-          {filteredItems.map((item) => {
-            return (
-              <Card
-                key={item.ID}
-                className="p-4"
-                onClick={() => router.push(`/mobile/inventory/stock-opname/${item.code}`)}
-              >
-                <h3 className="font-semibold text-lg mb-1">{item.code}</h3>
-                <p className="text-sm text-gray-500">{item.status}</p>
-              </Card>
-            );
-          })}
+          {filteredItems.length > 0 && (
+            <p className="text-sm text-gray-500 mb-3">
+              {filteredItems.length} item{filteredItems.length > 1 && "s"} found
+            </p>
+          )}
+
+          <div className="space-y-4">
+            {filteredItems.map((item) => {
+              return (
+                <Card
+                  key={item.ID}
+                  className="p-4"
+                  onClick={() =>
+                    router.push(`/mobile/inventory/stock-opname/${item.code}`)
+                  }
+                >
+                  <h3 className="font-semibold text-lg mb-1">{item.code}</h3>
+                  <p className="text-sm text-gray-500">{item.status}</p>
+                </Card>
+              );
+            })}
+          </div>
+
+          {filteredItems.length === 0 && (
+            <p className="text-center text-gray-500 mt-8">No items found.</p>
+          )}
         </div>
-
-        {filteredItems.length === 0 && (
-          <p className="text-center text-gray-500 mt-8">No items found.</p>
-        )}
       </div>
     </>
   );

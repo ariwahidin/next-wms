@@ -9,7 +9,7 @@ import router from "next/router";
 
 
 export default function OutboundCard({ data }: { data: OutboundItem }) {
-  const { outbound_no, customer_name, status, qty_req, qty_scan, qty_pack, delivery_no } = data;
+  const { outbound_no, customer_name, status, qty_req, qty_scan, qty_pack, shipment_id } = data;
   
   // const statusColor = {
   //   "open": "bg-red-100 text-red-600",
@@ -41,7 +41,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
         <span className="ml-2 text-xs text-gray-500 rounded px-2 py-1 w-max mt-1 bg-green-100">{status}</span>
         </div>
         <div className="text-sm text-gray-500">{customer_name}</div>
-        <div className="text-sm text-gray-500">{delivery_no}</div>
+        <div className="text-sm text-gray-500">{shipment_id}</div>
 
         <div className="mt-3 flex gap-2">
           <Button

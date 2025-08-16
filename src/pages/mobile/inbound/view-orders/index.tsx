@@ -16,7 +16,8 @@ export default function InboundListPage() {
   const filtered = listInbound.filter(
     (item) =>
       item.inbound_no.toLowerCase().includes(search.toLowerCase()) ||
-      item.supplier_name.toLowerCase().includes(search.toLowerCase())
+      item.supplier_name.toLowerCase().includes(search.toLowerCase()) ||
+      item.receipt_id.toLowerCase().includes(search.toLowerCase())
   );
 
   useEffect(() => {

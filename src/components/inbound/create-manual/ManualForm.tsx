@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
@@ -6,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ItemFormTable from "./ItemFormTable";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCcw, Save, Trash2 } from "lucide-react";
+import { ArrowBigLeft, Plus, RefreshCcw, Save, Trash2 } from "lucide-react";
 import {
   HeaderFormProps,
   InboundReference,
@@ -20,10 +22,12 @@ import Select from "react-select";
 import eventBus from "@/utils/eventBus";
 import { useRouter } from "next/router";
 import ItemScannedTable from "./ItemScannedTable";
-import { time } from "console";
-import { Textarea } from "@/components/ui/textarea";
-import { AgInputTextArea } from "ag-grid-community";
 import { Transporter } from "@/types/transporter";
+
+import DatePicker from "react-datepicker";
+import { format, parseISO } from "date-fns";
+import { id } from "date-fns/locale";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -34,6 +38,7 @@ export default function ManualForm() {
     ID: 0,
     inbound_no: no ? no.toString() : "Auto Generate",
     inbound_date: new Date().toISOString().split("T")[0],
+    receipt_id: "",
     supplier: "",
     po_number: "",
     invoice: "",
@@ -41,7 +46,9 @@ export default function ManualForm() {
     no_truck: "",
     driver: "",
     container: "",
-    type: "normal",
+    owner_code: "",
+    whs_code: "",
+    type: "NORMAL",
     mode: "create",
   });
 
@@ -54,8 +61,16 @@ export default function ManualForm() {
   );
   const [itemsReceived, setItemsReceived] = useState<ItemReceived[]>([]);
   const [inboundTypeOptions, setInboundTypeOptions] = useState<ItemOptions[]>([
-    { value: "normal", label: "Normal" },
-    { value: "return", label: "Return" },
+    { value: "NORMAL", label: "NORMAL" },
+    { value: "RETURN", label: "RETURN" },
+  ]);
+  const [ownerOptions, setOwnerOptions] = useState<ItemOptions[]>([]);
+  const [whsCodeOptions, setWhsCodeOptions] = useState<ItemOptions[]>([]);
+  const [divisionOptions, setDivisionOptions] = useState<ItemOptions[]>([
+    { value: "REGULAR", label: "REGULAR" },
+    { value: "SALES", label: "SALES" },
+    { value: "ECOM", label: "ECOM" },
+    { value: "PROJECT", label: "PROJECT" },
   ]);
 
   const [references, setReferences] = useState<InboundReference[]>([
@@ -95,9 +110,11 @@ export default function ManualForm() {
 
   const fetchData = async () => {
     try {
-      const [suppliers, transporters] = await Promise.all([
-        api.get("/suppliers", { withCredentials: true }),
-        api.get("/transporters", { withCredentials: true }),
+      const [suppliers, transporters, warehouses, owners] = await Promise.all([
+        api.get("/suppliers"),
+        api.get("/transporters"),
+        api.get("/warehouses"),
+        api.get("/owners"),
       ]);
 
       if (suppliers.data.success) {
@@ -118,6 +135,25 @@ export default function ManualForm() {
             }))
           );
         }
+
+        if (warehouses.data.success) {
+          setWhsCodeOptions(
+            warehouses.data.data.map((item: any) => ({
+              value: item.code,
+              label: item.code,
+            }))
+          );
+        }
+
+        if (owners.data.success) {
+          setOwnerOptions(
+            owners.data.data.map((item: any) => ({
+              value: item.code,
+              label: item.name,
+            }))
+          );
+        }
+
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -228,13 +264,65 @@ export default function ManualForm() {
     };
   }, [no]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault(); // cegah browser save
+        console.log("Trigger tombol save manual");
+
+        // Misalnya trigger fungsi handleSave()
+        handleSave();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [muatan, formData, references]);
+
   return (
-    <div className="p-4">
+    <div className="p-4" style={{ fontSize: "12px" }}>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">
-          {formData.mode === "create" ? "Create" : "Update"} Inbound
-        </h2>
-        <div className="space-x-2">
+        <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">Date</Label>
+            <span className="shrink-0">:</span>
+
+            <DatePicker
+              selected={
+                formData.inbound_date ? parseISO(formData.inbound_date) : null
+              }
+              onChange={(date: Date | null) => {
+                if (date) {
+                  setFormData({
+                    ...formData,
+                    inbound_date: format(date, "yyyy-MM-dd"), // simpan format ISO
+                  });
+                }
+              }}
+              dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
+              locale={id} // Bahasa Indonesia
+              customInput={
+                <Input id="InboundDate" style={{ width: "160px", fontSize: "12px" }} />
+              }
+              placeholderText="Pilih tanggal"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="bg-black-500 text-black hover:bg-gray-200"
+            onClick={() => {
+              // eventBus.emit("refreshData");
+              router.push("/wms/inbound/data");
+            }}
+          >
+            <ArrowBigLeft className="mr-0" />
+            Back
+          </Button>
           <Button
             variant="outline"
             className="bg-green-500 text-white hover:bg-green-600"
@@ -259,61 +347,100 @@ export default function ManualForm() {
       </div>
       <hr className="my-4" />
 
-      <form className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Inbound No */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white-200 p-0 space-y-1">
           <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">No. / Type</Label>
+            <Label className="w-32 text-left shrink-0">Receipt ID</Label>
             <span className="shrink-0">:</span>
             <Input
-              readOnly
-              id="InboundNo"
-              className="flex-1"
-              value={formData.inbound_no}
+              id="ReceiptID"
+              style={{ width: "160px", fontSize: "12px" }}
+              value={formData.receipt_id}
               onChange={(e) =>
-                setFormData({ ...formData, inbound_no: e.target.value })
+                setFormData({ ...formData, receipt_id: e.target.value })
               }
             />
-            <Select
-              id="InboundType"
-              options={inboundTypeOptions}
-              defaultValue={inboundTypeOptions.find(
-                (option) => option.value === "normal"
-              )}
-              value={inboundTypeOptions.find(
-                (option) => option.value === formData.type
-              )}
-              onChange={(selectedOption) => {
-                if (selectedOption) {
-                  setFormData({
-                    ...formData,
-                    type: selectedOption.value,
-                  });
-                }
-              }}
-            />
-          </div>
-
-          {/* Inbound Date */}
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">Date</Label>
+            <Label className="text-left shrink-0" style={{ width: "70px" }}>
+              IB Type
+            </Label>
             <span className="shrink-0">:</span>
-            <Input
-              type="date"
-              id="InboundDate"
-              className="flex-1"
-              value={formData.inbound_date}
-              onChange={(e) =>
-                setFormData({ ...formData, inbound_date: e.target.value })
-              }
-            />
+            <div className="flex-1">
+              <Select
+                id="InboundType"
+                options={inboundTypeOptions}
+                defaultValue={inboundTypeOptions.find(
+                  (option) => option.value === "NORMAL"
+                )}
+                value={inboundTypeOptions.find(
+                  (option) => option.value === formData.type
+                )}
+                onChange={(selectedOption) => {
+                  if (selectedOption) {
+                    setFormData({
+                      ...formData,
+                      type: selectedOption.value,
+                    });
+                  }
+                }}
+              />
+            </div>
           </div>
 
-          {/* Supplier */}
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">Owner</Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <Select
+                // className="w-40"
+                options={ownerOptions}
+                defaultValue={ownerOptions.find(
+                  (option) => option.value === "YMID"
+                )}
+                value={ownerOptions.find(
+                  (option) => option.value === formData.owner_code
+                )}
+                onChange={(selectedOption) => {
+                  if (selectedOption) {
+                    setFormData({
+                      ...formData,
+                      owner_code: selectedOption.value,
+                    });
+                  }
+                }}
+              />
+            </div>
+
+            <Label className="text-left shrink-0" style={{ width: "70px" }}>
+              Whs Code
+            </Label>
+            <span className="shrink-0">:</span>
+
+            <div className="flex-1">
+              <Select
+                // className="w-28"
+                options={whsCodeOptions}
+                defaultValue={whsCodeOptions.find(
+                  (option) => option.value === "NGK"
+                )}
+                value={whsCodeOptions.find(
+                  (option) => option.value === formData.whs_code
+                )}
+                onChange={(selectedOption) => {
+                  if (selectedOption) {
+                    setFormData({
+                      ...formData,
+                      whs_code: selectedOption.value,
+                    });
+                  }
+                }}
+              />
+            </div>
+          </div>
+
           <div className="flex items-center gap-4">
             <Label className="w-32 text-left shrink-0">Supplier</Label>
             <span className="shrink-0">:</span>
-            <div className="flex-1 ">
+            <div className="flex-1">
               <Select
                 value={supplierOptions.find(
                   (option) => option.value === formData.supplier
@@ -330,15 +457,33 @@ export default function ManualForm() {
               />
             </div>
           </div>
-          {/* Transporter */}
           <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">
-              Trucker / No Truck
+            <Label
+              className="w-32 text-left shrink-0 pt-2"
+              htmlFor="RemarksHeader"
+            >
+              Remarks
             </Label>
+            <span className="shrink-0 pt-2">:</span>
+            <textarea
+              style={{ fontSize: "12px" }}
+              id="RemarksHeader"
+              className="flex-1 border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              rows={2}
+              value={formData.remarks}
+              onChange={(e) =>
+                setFormData({ ...formData, remarks: e.target.value })
+              }
+            />
+          </div>
+        </div>
+        <div className="bg-white-200 p-0 space-y-1">
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">Trucker</Label>
             <span className="shrink-0">:</span>
             <div className="flex flex-1 items-center gap-4">
               <Select
-                className="w-60"
+                className="w-full"
                 value={transporterOptions.find(
                   (option) => option.value === formData.transporter
                 )}
@@ -352,65 +497,52 @@ export default function ManualForm() {
                   }
                 }}
               />
-              <Input
-                className="flex-1"
-                value={formData.no_truck}
-                onChange={(e) =>
-                  setFormData({ ...formData, no_truck: e.target.value })
-                }
-              />
             </div>
           </div>
-
-          {/* Remarks */}
-          <div className="flex items-start gap-4">
-            <Label
-              className="w-32 text-left shrink-0 pt-2"
-              htmlFor="RemarksHeader"
-            >
-              Remarks
-            </Label>
-            <span className="shrink-0 pt-2">:</span>
-            <textarea
-              id="RemarksHeader"
-              className="flex-1 border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              rows={2}
-              value={formData.remarks}
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-left shrink-0">Truck No.</Label>
+            <span className="shrink-0">:</span>
+            <Input
+              style={{ fontSize: "12px" }}
+              className="flex-1"
+              value={formData.no_truck}
               onChange={(e) =>
-                setFormData({ ...formData, remarks: e.target.value })
+                setFormData({ ...formData, no_truck: e.target.value })
               }
             />
           </div>
-
-          {/* Driver / Container */}
           <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">
-              Driver / Container
-            </Label>
+            <Label className="w-32 text-left shrink-0">Driver</Label>
             <span className="shrink-0">:</span>
-            <div className="flex flex-1 items-center gap-4">
-              <Input
-                className="flex-1"
-                value={formData.driver}
-                onChange={(e) =>
-                  setFormData({ ...formData, driver: e.target.value })
-                }
-              />
-              <Input
-                className="flex-1"
-                value={formData.container}
-                onChange={(e) =>
-                  setFormData({ ...formData, container: e.target.value })
-                }
-              />
-            </div>
+            <Input
+              style={{ fontSize: "12px" }}
+              className="flex-1"
+              value={formData.driver}
+              onChange={(e) =>
+                setFormData({ ...formData, driver: e.target.value })
+              }
+            />
+
+            <Label className="w-32 text-left shrink-0">Container No.</Label>
+            <span className="shrink-0">:</span>
+            <Input
+              style={{ fontSize: "12px" }}
+              className="flex-1"
+              value={formData.container}
+              onChange={(e) =>
+                setFormData({ ...formData, container: e.target.value })
+              }
+            />
           </div>
         </div>
-      </form>
+      </div>
 
       <hr className="my-4" />
 
-      <div className="flex justify-between items-center mb-4">
+      <div
+        className="flex justify-between items-center mb-4"
+        style={{ display: "none" }}
+      >
         {/* <h2 className="text-lg font-semibold">Detail Items</h2> */}
         <div className="space-x-2">
           <Button
@@ -425,47 +557,50 @@ export default function ManualForm() {
       </div>
 
       {references.map((item, index) => (
-        <div
-          key={item.ID}
-          className="rounded-2xl shadow-md border border-gray-200 p-6 mb-6 bg-white"
-        >
+        <>
           <div key={index} className="flex justify-between items-center mb-4">
-            <Label className="w-32 text-left shrink-0">Invoice</Label>
-            <span className="shrink-0">:</span>
-            <Input
-              className="flex-1 ml-2 mr-2 w-1/3"
-              value={references[index].ref_no}
-              onChange={(e) => handleInvoiceChange(index, e.target.value)}
-            />
+            <div className="flex items-center gap-4">
+              <Label className="w-32 text-left shrink-0">Invoice</Label>
+              <span className="shrink-0">:</span>
+              <Input
+                style={{ fontSize: "12px" }}
+                value={references[index].ref_no}
+                onChange={(e) => handleInvoiceChange(index, e.target.value)}
+              />
 
-            {references.length > 1 && (
-              <div className="space-x-2">
-                <Button
-                  variant="outline"
-                  className="bg-red-500 text-white hover:bg-red-600"
-                  onClick={() => handleRemoveInvoice(index)}
-                >
-                  <Trash2 className="mr-2" />
-                  Remove
-                </Button>
-              </div>
-            )}
-            {index !== references.length - 1 && <hr className="my-4" />}
+              {references?.length > 1 && (
+                <div className="flex-1">
+                  <Button
+                    variant="outline"
+                    className="bg-red-500 text-white hover:bg-red-600"
+                    onClick={() => handleRemoveInvoice(index)}
+                  >
+                    <Trash2 className="mr-2" />
+                    Remove
+                  </Button>
+                </div>
+              )}
+            </div>
+            {index !== references?.length - 1 && <hr className="my-4" />}
           </div>
-
-          {/* <hr className="my-6" /> */}
-          <ItemFormTable
-            muatan={muatan}
-            setMuatan={setMuatan}
-            headerForm={formData}
-            setHeaderForm={setFormData}
-            inboundReferences={references[index]}
-            setInboundReferences={setReferences[index]}
-          />
-          {/* <hr className="my-6 mb-4" /> */}
-        </div>
+          <div
+            key={item.ID}
+            className="rounded-2xl shadow-md border border-gray-200 p-6 mb-6 bg-white"
+          >
+            {/* <hr className="my-6" /> */}
+            <ItemFormTable
+              muatan={muatan}
+              setMuatan={setMuatan}
+              headerForm={formData}
+              setHeaderForm={setFormData}
+              inboundReferences={references[index]}
+              setInboundReferences={setReferences[index]}
+            />
+            {/* <hr className="my-6 mb-4" /> */}
+          </div>
+        </>
       ))}
-      {itemsReceived.length > 0 && (
+      {itemsReceived?.length > 0 && (
         <ItemScannedTable itemsReceived={itemsReceived} />
       )}
     </div>

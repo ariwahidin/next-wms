@@ -230,7 +230,7 @@ export default function UomConversionPage() {
   return (
     <Layout title="Master" subTitle="UOM Conversion Management">
       <div className="p-6 space-y-6">
-        <h1 className="text-xl font-semibold">UOM Conversion Management</h1>
+        {/* <h1 className="text-xl font-semibold">UOM Conversion Management</h1> */}
 
         {/* FORM */}
         <div className="p-4 border rounded-lg space-y-4 bg-gray-50">

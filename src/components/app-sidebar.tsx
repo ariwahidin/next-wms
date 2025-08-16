@@ -26,12 +26,14 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 import * as Icons from "lucide-react";
 import api from "@/lib/api";
 import { useEffect, useState } from "react";
-
+import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store"; // Pastikan ini pointing ke konfigurasi store-mu
 
@@ -77,6 +79,14 @@ const data = {
           url: "/wms/master/product",
         },
         {
+          title: "Item & Handling",
+          url: "/wms/master/item-handling",
+        },
+        {
+          title: "Location",
+          url: "/wms/master/location",
+        },
+        {
           title: "UoM Conversion",
           url: "/wms/master/uom-conversion",
         },
@@ -113,7 +123,7 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Data",
+          title: "Inbound Activity",
           url: "/wms/inbound/data",
         },
       ],
@@ -124,9 +134,13 @@ const data = {
       icon: Box,
       isActive: true,
       items: [
+        // {
+        //   title: "Data",
+        //   url: "/wms/inventory/data",
+        // },
         {
-          title: "Data",
-          url: "/wms/inventory/data",
+          title: "Inventory Stock",
+          url: "/wms/inventory/data/inventory-management",
         },
       ],
     },
@@ -137,8 +151,12 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Data",
+          title: "Outbound Activity",
           url: "/wms/outbound/data",
+        },
+        {
+          title: "Outbound Handling",
+          url: "/wms/outbound/handling",
         },
       ],
     },
@@ -149,17 +167,17 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Generate Stock Take",
-          url: "/stock-take/generate",
+          title: "Stock Take Activity",
+          url: "/wms/stock-take/data",
         },
         {
-          title: "Progress Stock Take",
-          url: "/stock-take/progress",
+          title: "Stock Card",
+          url: "/wms/stock-take/stock-card",
         },
-        {
-          title: "List Stock Take",
-          url: "/stock-take/list",
-        },
+        // {
+        //   title: "List Stock Take",
+        //   url: "/stock-take/list",
+        // },
       ],
     },
     {
@@ -300,36 +318,69 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const menus = useSelector((state: RootState) => state.user.menus);
+  const pathname = usePathname();
+  const { setOpen } = useSidebar();
+  const hasAutoCollapsed = React.useRef(false); // Flag biar cuma jalan sekali
 
-  // const [menus, setMenus] = useState<any[]>([]);
+  useEffect(() => {
+    const collapsedPaths = [
+      "/wms/outbound/add", 
+      "/wms/outbound/edit", 
+      "/wms/outbound/handling/edit",
+      "/wms/inbound/edit",
+    ];
 
-  // useEffect(() => {
-  //   const fetchMenus = async () => {
-  //     try {
-  //       const roleId = 1; // atau ambil dari context/auth
-  //       const res = await api.get(`/menus/user`, { withCredentials: true });
-  //       setMenus(res.data.data);
-  //     } catch (err) {
-  //       console.error("Failed to fetch menus", err);
-  //     }
-  //   };
-
-  //   fetchMenus();
-  // }, []);
+    if (collapsedPaths.some(path => pathname.startsWith(path)) && !hasAutoCollapsed.current) {
+      setOpen(false); // Tutup sekali saja
+      hasAutoCollapsed.current = true; // Tandai sudah auto collapse
+    } else if (!collapsedPaths.some(path => pathname.startsWith(path))) {
+      hasAutoCollapsed.current = false; // Reset flag kalau keluar dari path itu
+    }
+  }, [pathname, setOpen]);
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <NavUser user={data.user} />
-        {/* <TeamSwitcher teams={data.teams} /> */}
       </SidebarHeader>
       <SidebarContent>
-        {/* <NavMain items={menus} /> */}
         <NavMain items={data.navMain} />
-        {/* <NavProjects projects={data.projects} /> */}
       </SidebarContent>
-      <SidebarFooter>{/* <NavUser user={data.user} /> */}</SidebarFooter>
+      <SidebarFooter />
       <SidebarRail />
     </Sidebar>
   );
 }
+
+
+// export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+//   const menus = useSelector((state: RootState) => state.user.menus);
+
+//   const pathname = usePathname();
+//   const { open, setOpen } = useSidebar()
+
+//   useEffect(() => {
+//     if (pathname.startsWith("/wms/outbound/edit") || pathname.startsWith("/wms/inbound/edit")) {
+//       setOpen(true); // false = collapse, true = expand
+//     }
+
+//     // setOpen(false);
+//   }, [pathname, setOpen]);
+
+//   return (
+//     <Sidebar collapsible="icon" {...props}>
+//       <SidebarHeader>
+//         {/* <SidebarTrigger /> */}
+//         <NavUser user={data.user} />
+//         {/* <TeamSwitcher teams={data.teams} /> */}
+//       </SidebarHeader>
+//       <SidebarContent>
+//         {/* <NavMain items={menus} /> */}
+//         <NavMain items={data.navMain} />
+//         {/* <NavProjects projects={data.projects} /> */}
+//       </SidebarContent>
+//       <SidebarFooter>{/* <NavUser user={data.user} /> */}</SidebarFooter>
+//       <SidebarRail />
+//     </Sidebar>
+//   );
+// }

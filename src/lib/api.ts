@@ -78,7 +78,7 @@ api.interceptors.response.use(
     eventBus.emit("showAlert", {
       title: "Error!",
       description:
-        // err.response?.data?.error || // ini error asli dari backend
+        err.response?.data?.error || // ini error asli dari backend
         err.response?.data?.message || // ini error custom dari backend
         err.message ||
         "Something went wrong with the request",

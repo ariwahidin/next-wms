@@ -66,8 +66,8 @@ export default function PackinPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [scanType, setScanType] = useState<string>("SERIAL");
   const [barcode, setBarcode] = useState<string>("");
-  const [serialNumber, setSerialNumber] = useState<string>("");
-  const [serialNumber2, setSerialNumber2] = useState<string>("");
+  // const [serialNumber, setSerialNumber] = useState<string>("");
+  // const [serialNumber2, setSerialNumber2] = useState<string>("");
   const [qty, setQty] = useState<number>(1);
   const [serialInputs, setSerialInputs] = useState([""]);
 
@@ -200,7 +200,7 @@ export default function PackinPage() {
         });
 
         setBarcode("");
-        setSerialNumber("");
+        setSerialInputs([""]);
         document.getElementById("barcode")?.focus();
 
         fetchData();
@@ -394,7 +394,6 @@ export default function PackinPage() {
                             >
                               <option value="SERIAL">YES</option>
                               <option value="BARCODE">NO</option>
-                              {/* <option value="SET">SET</option> */}
                             </select>
                             <Label>Barcode Ean</Label>
                             <Input
@@ -407,14 +406,6 @@ export default function PackinPage() {
                             {scanType === "SERIAL" && (
                               <>
                                 <Label>SerialNumber</Label>
-                                {/* <Input
-                                  id="serialNumber"
-                                  type="text"
-                                  value={serialNumber}
-                                  onChange={(e) =>
-                                    setSerialNumber(e.target.value)
-                                  }
-                                /> */}
 
                                 {serialInputs.map((serial, index) => (
                                   <div key={index} className="relative">

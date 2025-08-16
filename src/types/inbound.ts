@@ -3,6 +3,7 @@ export interface HeaderFormProps {
   inbound_no?: string;
   inbound_date: string;
   supplier: string;
+  receipt_id: string;
   transporter?: string;
   no_truck?: string;
   driver?: string;
@@ -11,6 +12,8 @@ export interface HeaderFormProps {
   invoice?: string;
   type?: string;
   status?: string;
+  owner_code?: string;
+  whs_code?: string;
   remarks?: string;
   mode?: "create" | "edit";
 }
@@ -20,7 +23,8 @@ export interface ItemFormProps {
   inbound_id: number;
   item_code: string;
   quantity: number;
-  whs_code: string;
+  rcv_location? :string;
+  division?: string;
   uom: string;
   is_serial?: string;
   rec_date?: string;
@@ -35,6 +39,8 @@ export interface InboundReference {
   ID: number;
   inbound_id: number;
   ref_no: string;
+  owner?: string;
+  division?: string;
 }
 
 export interface ItemReceived {
@@ -76,7 +82,7 @@ export type InboundItem = {
   id: number;
   inbound_no: string;
   supplier_name: string;
-  po_number: string;
+  receipt_id: string;
   receive_status: string;
   req_qty: number;
   qty_stock: number;

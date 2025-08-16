@@ -85,7 +85,7 @@ const PickingSheetPrint = () => {
           <strong>Picking ID:</strong> {data.outbound_no}
         </p>
         <p>
-          <strong>Delivery No:</strong> {data.delivery_no}
+          <strong>Shipment ID:</strong> {data.shipment_id}
         </p>
         <p>
           <strong>Customer:</strong> {data.customer_name}
@@ -111,7 +111,7 @@ const PickingSheetPrint = () => {
             {/* <th style={th}>Item Name</th> */}
             {/* <th style={th}>WH Code</th> */}
             <th style={th}>Qty</th>
-            {/* <th style={th}>Rec Date</th> */}
+            <th style={th}>Rec Date</th>
             <th style={th}>Location</th>
           </tr>
         </thead>
@@ -131,7 +131,7 @@ const PickingSheetPrint = () => {
               {/* <td style={td}>{item.item_name}</td> */}
               {/* <td style={td}>{item.whs_code}</td> */}
               <td style={{ ...td, textAlign: "center" }}>{item.quantity}</td>
-              {/* <td style={td}>{item.rec_date}</td> */}
+              <td style={td}>{item.rec_date}</td>
               <td style={td}>
                 <span className="text-xs text-gray-500">{item.location}</span>
                 <canvas

@@ -1,4 +1,4 @@
-/* eslint-disable prefer-const */
+
 import React, { useState } from "react";
 import {
   Table,
@@ -60,67 +60,42 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
     setShowModal(true);
   };
 
-
   const handleConfirm = async () => {
-    if (selectedItems.length === 0) return;
-
+    console.log("Confirming putaway for items:", selectedItems);
     setIsLoading(true);
-
     try {
-      const results = await Promise.allSettled(
-        selectedItems.map((id) =>
-          api.put(
-            `/inbound/putaway/item/${id}`,
-            { ID: id },
-            { withCredentials: true }
-          )
-        )
+      const res = await api.post(
+        `/inbound/putaway-bulk`,
+        { item_ids: selectedItems },
+        { withCredentials: true }
       );
-
-      let successCount = 0;
-      let failedIDs: number[] = [];
-
-      results.forEach((result, index) => {
-        const id = selectedItems[index];
-        if (result.status === "fulfilled" && result.value.data.success) {
-          successCount++;
-        } else {
-          failedIDs.push(id);
-        }
+      console.log("Success:", res.data);
+      eventBus.emit("showAlert", {
+        title: "Success!",
+        description: res.data.message,
+        type: "success",
       });
-
-      if (successCount > 0) {
-        eventBus.emit("showAlert", {
-          title: "Success!",
-          description: `Successfully putaway ${successCount} item${successCount > 1 ? "s" : ""}. `,
-          type: "success",
-        });
-        eventBus.emit("refreshData");
-        setShowModal(false);
-        setSelectedItems([]);
-      }
-
-      // if (failedIDs.length > 0) {
-      //   eventBus.emit("showAlert", {
-      //     title: "Error",
-      //     description: `Gagal putaway ID: ${failedIDs.join(", ")}`,
-      //     type: "error",
-      //   });
-      // }
-
+      eventBus.emit("refreshData");
+      setShowModal(false);
       setSelectedItems([]);
-    } catch (error) {
+      setIsLoading(false);
+    } catch (err) {
+      console.error("Error:", err.response?.data || err.message);
       eventBus.emit("showAlert", {
         title: "Error",
-        description: "Terjadi kesalahan saat putaway " + error,
+        description: err.response?.data.message || "An error occurred",
         type: "error",
       });
+      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const totalQty = itemsReceived.reduce((acc, item) => acc + Number(item.quantity), 0);
+  const totalQty = itemsReceived.reduce(
+    (acc, item) => acc + Number(item.quantity),
+    0
+  );
 
   return (
     <div className="space-y-4 mt-4 mb-4">
@@ -198,7 +173,8 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
             <DialogTitle>Putaway Confirmation</DialogTitle>
           </DialogHeader>
           <div className="text-sm text-muted-foreground">
-            Are you sure you want to putaway {selectedItems.length} item{selectedItems.length === 1 ? "" : "s"}?
+            Are you sure you want to putaway {selectedItems.length} item
+            {selectedItems.length === 1 ? "" : "s"}?
           </div>
           <DialogFooter className="mt-4">
             <Button variant="secondary" onClick={() => setShowModal(false)}>

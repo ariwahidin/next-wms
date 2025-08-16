@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -164,6 +165,8 @@ const TransferPage = () => {
 
     console.log("Data to Post:", dataToPost);
 
+    // return;
+
     if (qtyTransfer <= 0) {
       eventBus.emit("showAlert", {
         title: "Error!",
@@ -193,7 +196,7 @@ const TransferPage = () => {
 
     try {
       const response = await api.post(
-        "/mobile/inventory/transfer/location/serial",
+        "/mobile/inventory/transfer-by-inventory-id",
         dataToPost,
         {
           withCredentials: true,
@@ -302,11 +305,11 @@ const TransferPage = () => {
         {!loading && (
           <Card>
             <CardContent className="p-4 space-y-4">
-              <div className="relative">
+              {/* <div className="relative">
                 <Input
                   id="search"
                   className="w-full"
-                  placeholder="Search Serial..."
+                  placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -323,10 +326,9 @@ const TransferPage = () => {
                     <XCircle size={18} />
                   </button>
                 )}
-              </div>
+              </div> */}
 
               {/* Item Count */}
-
               <div className="text-sm">
                 <span className="text-gray-600">
                   Item : {filteredScannedItems.length}
@@ -354,9 +356,9 @@ const TransferPage = () => {
                             <span className="text-gray-600">Barcode:</span>{" "}
                             {item.barcode}
                             <br />
-                            <span className="text-gray-600">Serial:</span>{" "}
+                            {/* <span className="text-gray-600">Serial:</span>{" "}
                             {item.serial_number}
-                            <br />
+                            <br /> */}
                             <span className="text-gray-600">
                               Rcv Date:
                             </span>{" "}
@@ -391,7 +393,7 @@ const TransferPage = () => {
                   ))
                 ) : (
                   <div className="text-gray-500 text-sm">
-                    Tidak ada barang ditemukan.
+                    No items found.
                   </div>
                 )}
               </div>

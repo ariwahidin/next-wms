@@ -76,42 +76,6 @@ export default function StockTakePage() {
             {loading ? "Processing..." : "Generate Stock Take"}
           </Button>
         </div>
-        {/* <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created At</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center">
-                    No stock take found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                data.map((stk, index) => (
-                  <TableRow
-                    key={stk.code}
-                    onClick={() => router.push(`/stock-take/${stk.code}`)}
-                    className="hover:bg-muted cursor-pointer"
-                  >
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>{stk.code}</TableCell>
-                    <TableCell>{stk.status}</TableCell>
-                    <TableCell>
-                      {format(new Date(stk.CreatedAt), "yyyy-MM-dd HH:mm")}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent> */}
       </Card>
     </Layout>
   );

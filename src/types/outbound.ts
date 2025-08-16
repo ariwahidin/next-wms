@@ -2,8 +2,10 @@ export interface HeaderFormProps {
   ID: number;
   outbound_no?: string;
   outbound_date: string;
-  customer: string;
-  delivery_no: string;
+  customer_code: string;
+  shipment_id: string;
+  whs_code: string;
+  owner_code: string;
   status?: string;
   remarks?: string;
   mode?: "create" | "edit";
@@ -13,11 +15,17 @@ export interface ItemFormProps {
   ID: number;
   outbound_id: number;
   item_code: string;
+  item_name?: string;
+  barcode? :string;
   quantity: number;
-  whs_code: string;
   uom: string;
+  location: string;
+  sn?: string;
+  sn_check?: string;
   remarks?: string;
   mode?: string;
+  // handling?: string | string[];
+  handling?: string | string[] | { Handling: string }[];
 }
 
 export interface ItemFormTableProps {
@@ -41,7 +49,7 @@ export interface OutboundItem {
   id: number;
   outbound_no: string;
   customer_name: string;
-  delivery_no: string;
+  shipment_id: string;
   qty_req: number;
   qty_scan: number;
   qty_pack: number;
