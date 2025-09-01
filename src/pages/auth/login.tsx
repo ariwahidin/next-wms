@@ -37,10 +37,7 @@ export default function LoginPage() {
   );
 }
 
-function LoginForm({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -72,13 +69,19 @@ function LoginForm({
               base_url: res.data.user.base_url,
               token: res.data.x_token,
               menus: res.data.menus,
-              unit: res.data.user.unit
+              unit: res.data.user.unit,
             })
           );
 
-          document.cookie = `next-auth-token=${res.data.x_token}; path=/; max-age=${
-            60 * 60 * 24
-          }; secure; samesite=None`;
+          console.log("Login successful : ", res.data.x_token);
+
+          // document.cookie = `next-auth-token=${res.data.x_token}; path=/; max-age=${
+          //   60 * 60 * 24
+          // }; secure; samesite=None`;
+
+          document.cookie = `next-auth-token=${
+            res.data.x_token
+          }; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
           if (res.data.user.base_url === "/dashboard") {
             router.push("/wms/dashboard");
           } else {
