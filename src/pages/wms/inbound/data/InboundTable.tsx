@@ -84,61 +84,8 @@ const InboundTable = () => {
   };
 
   const [columnDefs] = useState<ColDef[]>([
-    // {
-    //   headerCheckboxSelection: true,
-    //   checkboxSelection: true,
-    //   width: 50,
-    //   pinned: "left",
-    //   suppressSizeToFit: true,
-    // },
     { field: "no", headerName: "No. ", maxWidth: 60 },
     { field: "inbound_no", headerName: "Inbound No. ", maxWidth: 150 },
-    // {
-    //   headerName: "Actions",
-    //   pinned: "right",
-    //   headerClass: "header-center",
-    //   width: 150,
-    //   field: "ID",
-    //   cellRenderer: (params) => {
-    //     return (
-    //       <div
-    //         className="flex justify-center space-x-1 pt-2"
-    //         onClick={(e) => e.stopPropagation()}
-    //       >
-    //         <Button
-    //           title="View or Edit"
-    //           onClick={() => HandleEdit(params.data.inbound_no)}
-    //           variant="ghost"
-    //           size="icon"
-    //           className="h-6 w-6 bg-green-500 text-white hover:bg-green-600"
-    //         >
-    //           <Pencil className="h-4 w-4" />
-    //         </Button>
-
-    //         <Button
-    //           title="Print Putaway Slip"
-    //           onClick={() => HandlePreviewPDF(params.data.id)}
-    //           variant="ghost"
-    //           size="icon"
-    //           className="h-6 w-6 bg-green-100 text-black hover:bg-green-600"
-    //         >
-    //           <Printer className="h-4 w-4" />
-    //         </Button>
-
-    //         <Button
-    //           title="Delete or Cancel"
-    //           onClick={() => HandleDelete(params.data.id)}
-    //           variant="ghost"
-    //           size="icon"
-    //           className="h-6 w-6 bg-red-500 text-white hover:bg-red-600"
-    //         >
-    //           <Trash2 className="h-4 w-4" />
-    //         </Button>
-    //       </div>
-    //     );
-    //   },
-    // },
-
     {
       headerName: "Actions",
       pinned: "right",
@@ -174,24 +121,6 @@ const InboundTable = () => {
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                {/* Mark as Open - untuk status yang bukan open */}
-                {params.data.status !== "open" && (
-                  <>
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpen(params.data.inbound_no);
-                      }}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Cancel
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-
-                {/* Conditional Actions based on status */}
                 {params.data.status === "open" && (
                   <DropdownMenuItem
                     className="cursor-pointer"
@@ -219,6 +148,19 @@ const InboundTable = () => {
                   </DropdownMenuItem>
                 )}
 
+                {params.data.status === "fully received" && (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleComplete(params.data.inbound_no);
+                    }}
+                  >
+                    <CheckCheck className="mr-2 h-4 w-4" />
+                    Confirm Complete
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={(e) => {
@@ -229,32 +171,6 @@ const InboundTable = () => {
                   <PrinterIcon className="mr-2 h-4 w-4" />
                   Print Putaway Sheet
                 </DropdownMenuItem>
-
-                {/* {params.data.status === "picking" && (
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    // onClick={(e) => {
-                    //   e.stopPropagation();
-                    //   HandlePickingComplete(params.data.ID);
-                    // }}
-                  >
-                    <CheckCheck className="mr-2 h-4 w-4" />
-                    Complete Picking
-                  </DropdownMenuItem>
-                )} */}
-
-                {/* {params.data.status !== "open" && (
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      HandlePreviewPDF(params.data.ID);
-                    }}
-                  >
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print Picking Sheet
-                  </DropdownMenuItem>
-                )} */}
 
                 <DropdownMenuSeparator />
 
@@ -268,6 +184,23 @@ const InboundTable = () => {
                   <Pencil className="mr-2 h-4 w-4" />
                   View / Edit
                 </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+                {params.data.status !== "open" && (
+                  <>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpen(params.data.inbound_no);
+                      }}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Cancel
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -341,55 +274,8 @@ const InboundTable = () => {
   const [dialogType, setDialogType] = useState<
     "complete" | "cancel" | "checking" | null
   >(null);
-  // const exportToExcel = () => {
-  //   // contoh dummy
-  //   console.log("Exporting rows:", selectedRows);
-  //   notify("Success", "Export feature not implemented yet!");
-  // };
-
-  // const handleAction = (type: string) => {
-  //   // setDialogType("checking");
-  //   // setIsDialogOpen(true);
-  //   switch (type) {
-  //     case "checking":
-  //       setDialogType("checking");
-  //       setIsDialogOpen(true);
-  //       break;
-  //     case "complete":
-  //       setDialogType("complete");
-  //       setIsDialogOpen(true);
-  //       break;
-  //     case "cancel":
-  //       setDialogType("cancel");
-  //       setIsDialogOpen(true);
-  //       break;
-  //     case "export":
-  //       exportToExcel();
-  //       break;
-  //   }
-  // };
 
   const handleChecking = (inbound_no: string) => {
-    // setIsDialogOpen(true);
-    // console.log("handleChecking");
-    // console.log(selectedRows);
-
-    // for (const row of selectedRows) {
-    //   api
-    //     .post("/inbound/checking", { inbound_no: row.inbound_no })
-    //     .then((response) => {
-    //       if (response.data.success) {
-    //         notify("Success", response.data.message, "success");
-    //         mutate("/inbound");
-    //       } else {
-    //         // notify("Error", response.data.message, "error");
-    //       }
-    //     })
-    //     .catch((error) => {
-    //       console.error("Error checking inbound:", error);
-    //     });
-    // }
-
     api
       .post("/inbound/checking", { inbound_no: inbound_no })
       .then((response) => {
@@ -405,26 +291,6 @@ const InboundTable = () => {
       });
   };
   const handleOpen = (inbound_no: string) => {
-    // setIsDialogOpen(true);
-    // console.log("handleOpen");
-    // console.log(selectedRows);
-
-    // for (const row of selectedRows) {
-    //   api
-    //     .post("/inbound/open", { inbound_no: row.inbound_no })
-    //     .then((response) => {
-    //       if (response.data.success) {
-    //         notify("Success", response.data.message, "success");
-    //         mutate("/inbound");
-    //       } else {
-    //         // notify("Error", response.data.message, "error");
-    //       }
-    //     })
-    //     .catch((error) => {
-    //       console.error("Error open inbound:", error);
-    //     });
-    // }
-
     api
       .post("/inbound/open", { inbound_no: inbound_no })
       .then((response) => {
@@ -440,47 +306,7 @@ const InboundTable = () => {
       });
   };
 
-  const handleChecked = () => {
-    console.log("handleChecked");
-    console.log(selectedRows);
-    // for (const row of selectedRows) {
-    //   api
-    //     .post("/inbound/checked", { inbound_no: row.inbound_no })
-    //     .then((response) => {
-    //       if (response.data.success) {
-    //         notify("Success", response.data.message, "success");
-    //         mutate("/inbound");
-    //       } else {
-    //         // notify("Error", response.data.message, "error");
-    //       }
-    //     })
-    //     .catch((error) => {
-    //       console.error("Error checking inbound:", error);
-    //     });
-    // }
-  };
-
   const handlePutaway = (inbound_no: string) => {
-    // setIsDialogOpen(true);
-    // console.log("handlePutaway");
-    // console.log(selectedRows);
-
-    // for (const row of selectedRows) {
-    //   api
-    //     .post("/inbound/handle-putaway", { inbound_no: row.inbound_no })
-    //     .then((response) => {
-    //       if (response.data.success) {
-    //         notify("Success", response.data.message, "success");
-    //         mutate("/inbound");
-    //       } else {
-    //         // notify("Error", response.data.message, "error");
-    //       }
-    //     })
-    //     .catch((error) => {
-    //       console.error("Error putaway inbound:", error);
-    //     });
-    // }
-
     api
       .post("/inbound/handle-putaway", { inbound_no: inbound_no })
       .then((response) => {
@@ -496,27 +322,41 @@ const InboundTable = () => {
       });
   };
 
-  const handleComplete = () => {
-    console.log("handleComplete");
-    console.log(selectedRows);
+  const handleComplete = (inbound_no: string) => {
+    api
+      .post("/inbound/complete/" + inbound_no, { inbound_no: inbound_no })
+      .then((response) => {
+        if (response.data.success) {
+          notify("Success", response.data.message, "success");
+          mutate("/inbound");
+        } else {
+          // notify("Error", response.data.message, "error");
+        }
+      })
+      .catch((error) => {
+        console.error("Error completing inbound:", error);
+      });
 
-    for (const row of selectedRows) {
-      api
-        .post("/inbound/complete/" + row.inbound_no, {
-          inbound_no: row.inbound_no,
-        })
-        .then((response) => {
-          if (response.data.success) {
-            notify("Success", response.data.message);
-            mutate("/inbound");
-          } else {
-            // notify("Error", response.data.message, "error");
-          }
-        })
-        .catch((error) => {
-          console.error("Error completing inbound:", error);
-        });
-    }
+    // console.log("handleComplete");
+    // console.log(selectedRows);
+
+    // for (const row of selectedRows) {
+    //   api
+    //     .post("/inbound/complete/" + row.inbound_no, {
+    //       inbound_no: row.inbound_no,
+    //     })
+    //     .then((response) => {
+    //       if (response.data.success) {
+    //         notify("Success", response.data.message);
+    //         mutate("/inbound");
+    //       } else {
+    //         // notify("Error", response.data.message, "error");
+    //       }
+    //     })
+    //     .catch((error) => {
+    //       console.error("Error completing inbound:", error);
+    //     });
+    // }
   };
 
   useEffect(() => {
@@ -539,58 +379,6 @@ const InboundTable = () => {
               <Plus className="mr-1 h-4 w-4" />
               Add
             </Button>
-            {/* <Button
-              className="ml-2"
-              onClick={() => {
-                router.push("/wms/inbound/import");
-              }}
-            >
-              <Upload className="mr-1 h-4 w-4" />
-              Import
-            </Button>
-            {selectedRows.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="default" className="ml-2">
-                    Process Selected ({selectedRows.length})
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() => handleOpen()}
-                  >
-                    Mark as Open
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() => handleChecking()}
-                  >
-                    Mark as Checking
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() => handleChecked()}
-                  >
-                    Mark as Checked
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() => handlePutaway()}
-                  >
-                    Confirm Putaway
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() => handleComplete()}
-                  >
-                    Mark as Complete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )} */}
           </div>
         </div>
 

@@ -84,7 +84,7 @@ const PutawaySheetPrint = () => {
           <strong>Inbound ID:</strong> {data.inbound_no}
         </p>
         <p>
-          <strong>PO No:</strong> {data.po_number}
+          <strong>Receipt ID:</strong> {data.receipt_id}
         </p>
         <p>
           <strong>Supplier:</strong> {data.supplier_name}
