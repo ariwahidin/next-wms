@@ -141,7 +141,6 @@ export default function PackinPage() {
   };
 
   const openAddItemModal = (koliId: number) => {
-
     console.log("koli id : ", koliId);
     console.log("items selected : ", items);
     console.log("scan type : ", scanType);
@@ -164,8 +163,7 @@ export default function PackinPage() {
   };
 
   const addItemToKoli = async () => {
-
-    console.log("run")
+    console.log("run");
 
     const serialNumberValue =
       serialInputs.length > 1
@@ -191,7 +189,6 @@ export default function PackinPage() {
         }),
       ]);
 
-
       if (addItemToKoli.data.success) {
         eventBus.emit("showAlert", {
           title: "Success",
@@ -209,7 +206,7 @@ export default function PackinPage() {
   };
 
   const removeItemFromKoli = async (koliID: number, itemID: number) => {
-    console.log("Remove item from koli:", { koliID, itemID });
+    console.log("Remove item from pack no:", { koliID, itemID });
 
     const koliDetailID = itemID;
 
@@ -290,13 +287,13 @@ export default function PackinPage() {
           </div>
 
           <div className="space-y-4">
-            <h2 className="font-semibold">Koli List</h2>
+            <h2 className="font-semibold">Pack List</h2>
             {kolis?.map((koli) => (
               <Card key={koli.ID} className="shadow-md">
                 <CardContent className="p-4 space-y-2">
                   <div className="flex justify-between items-center">
                     <h3 className="font-medium text-sm">
-                      Koli #{koli.no_koli}
+                      Pack #{koli.no_koli}
                     </h3>
                     <div className="flex items-center gap-2">
                       <Button
@@ -373,10 +370,198 @@ export default function PackinPage() {
                             <Plus className="w-4 h-4 mr-1" /> Add Item
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px] bg-white top-[25%] max-h-[90vh] overflow-y-auto">
+                        <DialogContent className="sm:max-w-[425px] bg-white top-[25%] max-h-[90vh] overflow-y-auto text-xs">
+                          <DialogHeader>
+                            <DialogTitle className="text-sm">
+                              Pack{" "}
+                              {kolis.find((k) => k.ID === koli.ID)?.no_koli}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-3">
+                            {/* With Serial Toggle */}
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs font-medium">
+                                With Serial
+                              </Label>
+                              <div className="flex items-center">
+                                <button
+                                  type="button"
+                                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                    scanType === "SERIAL"
+                                      ? "bg-blue-600"
+                                      : "bg-gray-300"
+                                  }`}
+                                  onClick={() => {
+                                    const newType =
+                                      scanType === "SERIAL"
+                                        ? "BARCODE"
+                                        : "SERIAL";
+                                    setScanType(newType);
+                                    if (newType === "SERIAL") {
+                                      setQty(1);
+                                    }
+                                  }}
+                                >
+                                  <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                      scanType === "SERIAL"
+                                        ? "translate-x-4"
+                                        : "translate-x-0.5"
+                                    }`}
+                                  />
+                                </button>
+                                <span className="ml-2 text-xs text-gray-600">
+                                  {scanType === "SERIAL" ? "ON" : "OFF"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Barcode Ean */}
+                            <div className="flex items-center gap-3">
+                              <Label className="text-xs font-medium min-w-[80px]">
+                                Barcode Ean
+                              </Label>
+
+                              <div className="relative flex-1">
+                                <Input
+                                  id="barcode"
+                                  type="text"
+                                  value={barcode}
+                                  onChange={(e) => setBarcode(e.target.value)}
+                                  className="h-8 text-xs pr-6" // kasih padding kanan biar teks ga ketutup tombol X
+                                />
+
+                                {barcode && (
+                                  <button
+                                    type="button"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    onClick={() => setBarcode("")}
+                                  >
+                                    <XCircle size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {scanType === "SERIAL" && (
+                              <>
+                                <div className="flex items-center gap-3">
+                                  <Label className="text-xs font-medium min-w-[80px]">
+                                    Serial Number
+                                  </Label>
+                                  <div className="flex-1">
+                                    <div className="space-y-2">
+                                      {serialInputs.map((serial, index) => (
+                                        <div key={index} className="relative">
+                                          <Input
+                                            autoComplete="off"
+                                            className="w-full pr-8 h-8 text-xs"
+                                            id={`serial-${index}`}
+                                            value={serial}
+                                            onChange={(e) => {
+                                              const newSerials = [
+                                                ...serialInputs,
+                                              ];
+                                              newSerials[index] =
+                                                e.target.value;
+                                              setSerialInputs(newSerials);
+                                            }}
+                                          />
+                                          {serial && (
+                                            <button
+                                              type="button"
+                                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                              onClick={() => {
+                                                const newSerials = [
+                                                  ...serialInputs,
+                                                ];
+                                                newSerials[index] = "";
+                                                setSerialInputs(newSerials);
+                                                document
+                                                  .getElementById(
+                                                    `serial-${index}`
+                                                  )
+                                                  ?.focus();
+                                              }}
+                                            >
+                                              <XCircle size={14} />
+                                            </button>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-between items-center ml-[92px]">
+                                  <button
+                                    type="button"
+                                    className="text-blue-600 hover:text-blue-800 text-xs font-semibold"
+                                    onClick={() =>
+                                      setSerialInputs([...serialInputs, ""])
+                                    }
+                                  >
+                                    + Add Serial
+                                  </button>
+                                </div>
+
+                                {serialInputs.length > 1 && (
+                                  <>
+                                    <div className="ml-[92px]">
+                                      <button
+                                        type="button"
+                                        className="text-red-600 hover:text-red-800 text-xs font-semibold"
+                                        onClick={() => {
+                                          const newSerials =
+                                            serialInputs.filter(
+                                              (_, i) =>
+                                                i !== serialInputs.length - 1
+                                            );
+                                          setSerialInputs(newSerials);
+                                        }}
+                                      >
+                                        - Remove Last Serial
+                                      </button>
+                                    </div>
+                                    <div className="text-xs text-gray-500 ml-[92px]">
+                                      Combined:{" "}
+                                      {serialInputs
+                                        .filter((s) => s.trim() !== "")
+                                        .join("-")}
+                                    </div>
+                                  </>
+                                )}
+                              </>
+                            )}
+
+                            {scanType === "BARCODE" && (
+                              <div className="flex items-center gap-3">
+                                <Label className="text-xs font-medium min-w-[80px]">
+                                  Qty
+                                </Label>
+                                <Input
+                                  type="number"
+                                  value={qty}
+                                  onChange={(e) =>
+                                    setQty(Number(e.target.value))
+                                  }
+                                  className="flex-1 h-8 text-xs"
+                                />
+                              </div>
+                            )}
+
+                            <Button
+                              onClick={addItemToKoli}
+                              className="w-full h-8 text-xs"
+                            >
+                              <Plus className="w-3 h-3 mr-1" /> Add
+                            </Button>
+                          </div>
+                        </DialogContent>
+                        {/* <DialogContent className="sm:max-w-[425px] bg-white top-[25%] max-h-[90vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle>
-                              Koli{" "}
+                              Pack{" "}
                               {kolis.find((k) => k.ID === koli.ID)?.no_koli}
                             </DialogTitle>
                           </DialogHeader>
@@ -466,8 +651,6 @@ export default function PackinPage() {
                                     >
                                       - Remove Last Serial
                                     </button>
-
-                                    {/* Menampilkan gabungan serial */}
                                     <div className="text-sm text-gray-500">
                                       Combined:{" "}
                                       {serialInputs
@@ -483,7 +666,6 @@ export default function PackinPage() {
                               <>
                                 <Label>Qty</Label>
                                 <Input
-                                  // min={1}
                                   type="number"
                                   value={qty}
                                   onChange={(e) =>
@@ -496,7 +678,7 @@ export default function PackinPage() {
                               <Plus className="w-4 h-4 mr-1" /> Add
                             </Button>
                           </div>
-                        </DialogContent>
+                        </DialogContent> */}
                       </Dialog>
                     </div>
                   )}
@@ -506,7 +688,7 @@ export default function PackinPage() {
           </div>
 
           <Button onClick={addKoli} className="w-full flex items-center gap-2">
-            <Plus className="w-4 h-4" /> New Koli
+            <Plus className="w-4 h-4" /> New Pack
           </Button>
 
           <Dialog open={modalDeleteKoli} onOpenChange={setModalDeleteKoli}>
@@ -515,7 +697,7 @@ export default function PackinPage() {
                 <DialogTitle>Confirmation Delete</DialogTitle>
               </DialogHeader>
               <div className="space-y-2">
-                <Label>Are you sure you want to delete this koli?</Label>
+                <Label>Are you sure you want to delete this pack?</Label>
                 <Button
                   onClick={() => {
                     removeKoli();

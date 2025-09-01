@@ -642,7 +642,7 @@ export default function ItemFormTable({
                       >
                         {headerForm.status !== "complete" && (
                           <>
-                            <Button
+                            {/* <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleEdit(item.ID)}
@@ -655,7 +655,7 @@ export default function ItemFormTable({
                               onClick={() => handleDelete(item.ID)}
                             >
                               <Trash size={14} />
-                            </Button>
+                            </Button> */}
                           </>
                         )}
                       </td>

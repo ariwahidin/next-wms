@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
@@ -7,20 +8,27 @@ import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
-  Check,
-  CheckCheck,
-  CheckCircle2,
-  CheckSquareIcon,
-  Forklift,
-  Hand,
-  HandIcon,
+  MoreHorizontal,
   Pencil,
   Plus,
   Printer,
-  Trash2,
+  Forklift,
+  CheckCheck,
+  CheckCircle2,
+  Package,
+  Package2,
+  Blocks,
 } from "lucide-react";
 import useSWR, { mutate } from "swr";
-import { ChangeEvent, useCallback, useState } from "react";
+import {
+  ChangeEvent,
+  useCallback,
+  useState,
+  useMemo,
+  useRef,
+  use,
+  useEffect,
+} from "react";
 import styles from "./OutboundTable.module.css";
 import router, { useRouter } from "next/router";
 import { useAlert } from "@/contexts/AlertContext";
@@ -36,6 +44,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -71,20 +89,23 @@ const HandleDelete = (id: number) => {
 const HandlePreviewPDF = (id: number) => {
   console.log("Preview PDF ID:", id);
   window.open(`/wms/outbound/picking-sheet/${id}`, "_blank");
-  // router.push(`/outbound/print/picking_sheet/${id}`);
 };
 
 const OutboundTable = () => {
   const { data: rowData, error, mutate } = useSWR("/outbound", fetcher);
-
   const { showAlert, notify } = useAlert();
-
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
+
+  // Dialog states
+  const [isScannedItemDialog, setIsScannedItemDialog] = useState(false);
+  const [scannedItemData, setScannedItemData] = useState<any>(null);
+  const [tempLocationName, setTempLocationName] = useState("");
+  const [showTempLocationInput, setShowTempLocationInput] = useState(false);
 
   const HandlePicking = (id: number) => {
     showAlert(
       "Picking Confirmation",
-      "Are you sure you want to save this data?",
+      "The picking process is carried out by the system, are you sure to continue?",
       "error",
       () => {
         console.log(id);
@@ -101,8 +122,6 @@ const OutboundTable = () => {
                 description: res.data.message,
                 type: "success",
               });
-
-              // reload data
               mutate("/outbound");
             }
           })
@@ -133,8 +152,6 @@ const OutboundTable = () => {
                 description: res.data.message,
                 type: "success",
               });
-
-              // reload data
               mutate("/outbound");
             }
           })
@@ -146,14 +163,182 @@ const OutboundTable = () => {
     );
   };
 
-  const [columnDefs, setColumnDefs] = useState<ColDef[]>([
-    {
-      headerCheckboxSelection: true,
-      checkboxSelection: true,
-      width: 50,
-      pinned: "left",
-      suppressSizeToFit: true,
+
+  // Handle open untuk single row dari dropdown action
+  const handleOpenSingle = (rowData: any) => {
+    console.log("handleOpenSingle", rowData);
+
+    try {
+      api
+        .post("/outbound/open", { outbound_no: rowData.outbound_no })
+        .then((response) => {
+          if (response.data.success) {
+            // notify("Success", response.data.message, "success");
+            // mutate("/outbound");
+            setScannedItemData({
+              outbound_no: rowData.outbound_no,
+              scanned_items: rowData.scanned_items || [],
+            });
+            setIsScannedItemDialog(true);
+          } else {
+            // notify("Error", response.data.message, "error");
+          }
+        })
+        .catch((error) => {
+          console.error("Error open outbound:", error);
+        });
+    } catch (error) {
+      console.error("Error open outbound:", error);
+    }
+
+  };
+
+  // Handle pilihan user untuk item yang sudah di-scan
+  const handleScannedItemChoice = (choice: string) => {
+    if (choice === "temp_location") {
+      setShowTempLocationInput(true);
+    } else if (choice === "return_to_rack") {
+      processScannedItems("return_to_rack");
+    }
+  };
+
+  // Process pilihan user
+  const processScannedItems = useCallback(
+    (action: string, locationName: string | null = null) => {
+      const payload = {
+        outbound_no: scannedItemData?.outbound_no,
+        action: action,
+        temp_location_name: locationName,
+      };
+
+      api
+        .post("/outbound/open/process", payload, { withCredentials: true })
+        .then((response) => {
+          if (response.data.success) {
+            notify("Success", response.data.message, "success");
+            mutate("/outbound");
+            closeScannedItemDialog();
+          } else {
+            notify("Error", response.data.message, "error");
+          }
+        })
+        .catch((error) => {
+          console.error("Error handling scanned items:", error);
+          notify("Error", "Terjadi kesalahan saat memproses item", "error");
+        });
     },
+    [scannedItemData?.outbound_no, notify, mutate]
+  );
+
+  // Handle input change dengan ref untuk menghindari re-render
+  const inputRef = useRef<HTMLInputElement>(null);
+
+
+  // Submit temp location tanpa dependency tempLocationName
+  const handleTempLocationSubmit = useCallback(() => {
+    const currentValue = inputRef.current?.value || tempLocationName;
+    console.log("tempLocationName:", currentValue);
+
+    if (!currentValue.trim()) {
+      notify("Error", "Temporary location name is required", "error");
+      return;
+    }
+    processScannedItems("temp_location", currentValue.trim());
+
+  }, [processScannedItems, notify, tempLocationName]);
+
+  // Close dialog dan reset state
+  const closeScannedItemDialog = useCallback(() => {
+    setIsScannedItemDialog(false);
+    setScannedItemData(null);
+    setTempLocationName("");
+    setShowTempLocationInput(false);
+  }, []);
+
+  // Handle back button
+  const handleBackToChoice = useCallback(() => {
+    setShowTempLocationInput(false);
+  }, []);
+
+  // const dialog = document.getElementById("myDialog");
+  // dialog.addEventListener("close", () => {
+
+  // });
+
+  useEffect(() => {
+    if (!isScannedItemDialog) {
+      document.body.style.removeProperty("pointer-events");
+    }
+  }, [isScannedItemDialog]);
+
+  // Simplest approach - no complex memoization
+  const ScannedItemDialog = () => (
+    <Dialog open={isScannedItemDialog} onOpenChange={closeScannedItemDialog}>
+      <DialogContent className="sm:max-w-md bg-white">
+        <DialogHeader>
+          <DialogTitle>This outbound has been picked</DialogTitle>
+          <DialogDescription>
+            Stock inventory has been picked for outbound number{" "}
+            {scannedItemData?.outbound_no}. Select the action to perform:
+          </DialogDescription>
+        </DialogHeader>
+
+        {!showTempLocationInput ? (
+          <DialogFooter className="flex-col sm:flex-col gap-2">
+            <Button
+              onClick={() => handleScannedItemChoice("return_to_rack")}
+              variant="outline"
+              className="w-full"
+              type="button"
+            >
+              Return to origin location
+            </Button>
+            <Button
+              onClick={() => handleScannedItemChoice("temp_location")}
+              className="w-full"
+              type="button"
+            >
+              Move to Temporary Location
+            </Button>
+          </DialogFooter>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleTempLocationSubmit();
+            }}
+          >
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="temp-location">Temporary Location Name</Label>
+                <Input
+                  ref={inputRef}
+                  id="temp-location"
+                  placeholder="Enter the name of the temporary location..."
+                  defaultValue=""
+                  autoComplete="off"
+                  autoFocus
+                  required
+                />
+              </div>
+              <DialogFooter className="gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleBackToChoice}
+                  type="button"
+                >
+                  Back
+                </Button>
+                <Button type="submit">Submit</Button>
+              </DialogFooter>
+            </div>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+
+  const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
     { field: "outbound_no", headerName: "Outbound No", maxWidth: 150 },
     {
@@ -162,55 +347,106 @@ const OutboundTable = () => {
       headerClass: "header-center",
       cellStyle: { textAlign: "center" },
       field: "ID",
-      maxWidth: 160,
-      cellRenderer: (params) => {
+      maxWidth: 80,
+      cellRenderer: (params: any) => {
         return (
-          <div className="flex justify-center space-x-1 pt-2">
-            {params.data.status === "open" && (
-              <Button
-                onClick={() => HandlePicking(params.data.ID)}
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 bg-green-200 text-black hover:bg-green-600"
-                title="Picking"
+          <div
+            className="flex justify-center pt-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-48"
+                onClick={(e) => e.stopPropagation()}
               >
-                <Forklift className="h-4 w-4" />
-              </Button>
-            )}
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
 
-            {params.data.status === "picking" && (
-              <Button
-                onClick={() => HandlePickingComplete(params.data.ID)}
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 bg-blue-500 text-white hover:bg-blue-600"
-                title="Complete Picking"
-              >
-                <CheckCheck className="h-4 w-4" />
-              </Button>
-            )}
+                {/* Mark as Open - untuk status yang bukan open */}
+                {params.data.status !== "open" && (
+                  <>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenSingle(params.data);
+                      }}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Mark as Open
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
 
-            {params.data.status != "open" && (
-              <Button
-                title="Print Picking Sheet"
-                onClick={() => HandlePreviewPDF(params.data.ID)}
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 bg-blue-100 text-black hover:bg-blue-200"
-              >
-                <Printer className="h-4 w-4" />
-              </Button>
-            )}
+                {/* Conditional Actions based on status */}
+                {params.data.status === "open" && (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      HandlePicking(params.data.ID);
+                    }}
+                  >
+                    <Blocks className="mr-2 h-4 w-4" />
+                    Picking
+                  </DropdownMenuItem>
+                )}
 
-            <Button
-              title="View or Edit"
-              onClick={() => HandleEdit(params.data)}
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 mr-2 bg-green-500 text-white hover:bg-green-600"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
+                {params.data.status === "picking" && (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      HandlePickingComplete(params.data.ID);
+                    }}
+                  >
+                    <CheckCheck className="mr-2 h-4 w-4" />
+                    Complete Picking
+                  </DropdownMenuItem>
+                )}
+
+                {params.data.status !== "open" && (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      HandlePreviewPDF(params.data.ID);
+                    }}
+                  >
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print Picking Sheet
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    HandleEdit(params.data);
+                  }}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  View / Edit
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         );
       },
@@ -219,8 +455,8 @@ const OutboundTable = () => {
       field: "outbound_date",
       headerName: "Outbound Date",
       width: 140,
-      valueFormatter: (params) => {
-        if (!params.value) return ""; // Mencegah error jika null atau undefined
+      valueFormatter: (params: any) => {
+        if (!params.value) return "";
         const date = new Date(params.value);
         return date.toLocaleDateString("id-ID", {
           day: "2-digit",
@@ -231,28 +467,26 @@ const OutboundTable = () => {
     },
     { field: "shipment_id", headerName: "Shipment ID", width: 170 },
     { field: "owner_code", headerName: "Owner", width: 100 },
-    // { field: "delivery_no", headerName: "Delivery No", width: 170 },
-    // { field: "status", headerName: "Status", width: 100 },
     {
       field: "status",
       headerName: "Status",
       width: 120,
-      cellRenderer: (params) => {
+      cellRenderer: (params: any) => {
         if (!params.value) return null;
 
-        let color = "bg-gray-500"; // Default warna abu-abu
+        let color = "bg-gray-500";
         switch (params.value.toLowerCase()) {
           case "open":
-            color = "bg-blue-500 text-white"; // Biru]"; // Kuning
+            color = "bg-blue-500 text-white";
             break;
           case "picking":
             color = "bg-yellow-500 text-black";
             break;
           case "completed":
-            color = "bg-green-500"; // Hijau
+            color = "bg-green-500";
             break;
           case "canceled":
-            color = "bg-red-500"; // Merah
+            color = "bg-red-500";
             break;
         }
 
@@ -265,10 +499,6 @@ const OutboundTable = () => {
     { field: "qty_req", headerName: "Qty Req", width: 100 },
     { field: "qty_plan", headerName: "Qty Pick", width: 100 },
     { field: "qty_pack", headerName: "Qty Pack", width: 100 },
-    // { field: "total_line", headerName: "Total Line", width: 100 },
-    // { field: "total_qty_req", headerName: "Req Qty", width: 100 },
-    // { field: "plan_pick", headerName: "Plan Pick", width: 100 },
-    // { field: "picked_qty", headerName: "Picked Qty", width: 100 },
   ]);
 
   const [quickFilterText, setQuickFilterText] = useState<string>();
@@ -278,130 +508,75 @@ const OutboundTable = () => {
     []
   );
 
-  const handleOpen = () => {
-    // setIsDialogOpen(true);
-    console.log("handleOpen");
-    console.log(selectedRows);
-
-    for (const row of selectedRows) {
-      api
-        .post("/outbound/open", { outbound_no: row.outbound_no })
-        .then((response) => {
-          if (response.data.success) {
-            notify("Success", response.data.message, "success");
-            mutate("/outbound/data");
-          } else {
-            // notify("Error", response.data.message, "error");
-          }
-        })
-        .catch((error) => {
-          console.error("Error open inbound:", error);
-        });
+  useEffect(() => {
+    console.log("isScannedItemDialog", isScannedItemDialog);
+    if (!isScannedItemDialog) {
+      setScannedItemData(null);
+      setTempLocationName("");
     }
-  };
+  }, [isScannedItemDialog]);
 
   return (
-    <div style={{ width: "100%", height: "510px" }}>
-      <div className="flex items-center justify-between pb-4">
-        <div className="justify-self-start">
-          <div className="flex items-center">
-            {" "}
-            <Button
-              onClick={() => {
-                router.push("/wms/outbound/add");
-              }}
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Add
-            </Button>
-            {selectedRows.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="default" className="ml-2">
-                    Process Selected ({selectedRows.length})
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() => handleOpen()}
-                  >
-                    Mark as Open
-                  </DropdownMenuItem>
-                  {/* <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => handleChecking()}
-                >
-                  Mark as Checking
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => handleChecked()}
-                >
-                  Mark as Checked
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => handlePutaway()}
-                >
-                  Confirm Putaway
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => handleComplete()}
-                >
-                  Mark as Complete
-                </DropdownMenuItem> */}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+    <>
+      <div style={{ width: "100%", height: "510px" }}>
+        <div className="flex items-center justify-between pb-4">
+          <div className="justify-self-start">
+            <div className="flex items-center">
+              <Button
+                onClick={() => {
+                  router.push("/wms/outbound/add");
+                }}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Add
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <div className="justify-self-end">
-          <div className={styles.inputWrapper}>
-            <svg
-              className={styles.searchIcon}
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M11.5014 7.00039C11.5014 7.59133 11.385 8.1765 11.1588 8.72246C10.9327 9.26843 10.6012 9.7645 10.1833 10.1824C9.76548 10.6002 9.2694 10.9317 8.72344 11.1578C8.17747 11.384 7.59231 11.5004 7.00136 11.5004C6.41041 11.5004 5.82525 11.384 5.27929 11.1578C4.73332 10.9317 4.23725 10.6002 3.81938 10.1824C3.40152 9.7645 3.07005 9.26843 2.8439 8.72246C2.61776 8.1765 2.50136 7.59133 2.50136 7.00039C2.50136 5.80691 2.97547 4.66232 3.81938 3.81841C4.6633 2.97449 5.80789 2.50039 7.00136 2.50039C8.19484 2.50039 9.33943 2.97449 10.1833 3.81841C11.0273 4.66232 11.5014 5.80691 11.5014 7.00039ZM10.6814 11.7404C9.47574 12.6764 7.95873 13.1177 6.43916 12.9745C4.91959 12.8314 3.51171 12.1145 2.50211 10.9698C1.49252 9.8251 0.957113 8.33868 1.0049 6.81314C1.05268 5.28759 1.68006 3.83759 2.75932 2.75834C3.83857 1.67908 5.28856 1.0517 6.81411 1.00392C8.33966 0.956136 9.82608 1.49154 10.9708 2.50114C12.1154 3.51073 12.8323 4.91862 12.9755 6.43819C13.1187 7.95775 12.6773 9.47476 11.7414 10.6804L14.5314 13.4704C14.605 13.539 14.6642 13.6218 14.7051 13.7138C14.7461 13.8058 14.7682 13.9052 14.77 14.0059C14.7717 14.1066 14.7532 14.2066 14.7155 14.3C14.6778 14.3934 14.6216 14.4782 14.5504 14.5494C14.4792 14.6206 14.3943 14.6768 14.301 14.7145C14.2076 14.7522 14.1075 14.7708 14.0068 14.769C13.9061 14.7672 13.8068 14.7452 13.7148 14.7042C13.6228 14.6632 13.54 14.6041 13.4714 14.5304L10.6814 11.7404Z"
-                fill="currentColor"
+          <div className="justify-self-end">
+            <div className={styles.inputWrapper}>
+              <svg
+                className={styles.searchIcon}
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M11.5014 7.00039C11.5014 7.59133 11.385 8.1765 11.1588 8.72246C10.9327 9.26843 10.6012 9.7645 10.1833 10.1824C9.76548 10.6002 9.2694 10.9317 8.72344 11.1578C8.17747 11.384 7.59231 11.5004 7.00136 11.5004C6.41041 11.5004 5.82525 11.384 5.27929 11.1578C4.73332 10.9317 4.23725 10.6002 3.81938 10.1824C3.40152 9.7645 3.07005 9.26843 2.8439 8.72246C2.61776 8.1765 2.50136 7.59133 2.50136 7.00039C2.50136 5.80691 2.97547 4.66232 3.81938 3.81841C4.6633 2.97449 5.80789 2.50039 7.00136 2.50039C8.19484 2.50039 9.33943 2.97449 10.1833 3.81841C11.0273 4.66232 11.5014 5.80691 11.5014 7.00039ZM10.6814 11.7404C9.47574 12.6764 7.95873 13.1177 6.43916 12.9745C4.91959 12.8314 3.51171 12.1145 2.50211 10.9698C1.49252 9.8251 0.957113 8.33868 1.0049 6.81314C1.05268 5.28759 1.68006 3.83759 2.75932 2.75834C3.83857 1.67908 5.28856 1.0517 6.81411 1.00392C8.33966 0.956136 9.82608 1.49154 10.9708 2.50114C12.1154 3.51073 12.8323 4.91862 12.9755 6.43819C13.1187 7.95775 12.6773 9.47476 11.7414 10.6804L14.5314 13.4704C14.605 13.539 14.6642 13.6218 14.7051 13.7138C14.7461 13.8058 14.7682 13.9052 14.77 14.0059C14.7717 14.1066 14.7532 14.2066 14.7155 14.3C14.6778 14.3934 14.6216 14.4782 14.5504 14.5494C14.4792 14.6206 14.3943 14.6768 14.301 14.7145C14.2076 14.7522 14.1075 14.7708 14.0068 14.769C13.9061 14.7672 13.8068 14.7452 13.7148 14.7042C13.6228 14.6632 13.54 14.6041 13.4714 14.5304L10.6814 11.7404Z"
+                  fill="currentColor"
+                />
+              </svg>
+
+              <input
+                type="text"
+                id="filter-text-box"
+                placeholder="Search ..."
+                onInput={onFilterTextBoxChanged}
               />
-            </svg>
-
-            <input
-              type="text"
-              id="filter-text-box"
-              placeholder="Search ..."
-              onInput={onFilterTextBoxChanged}
-            />
+            </div>
           </div>
         </div>
+        <AgGridReact
+          rowData={rowData}
+          columnDefs={columnDefs}
+          quickFilterText={quickFilterText}
+          pagination={true}
+          paginationPageSize={10}
+          paginationPageSizeSelector={[10, 25, 50]}
+          domLayout="autoHeight"
+          onSelectionChanged={(e) => {
+            const selected = e.api.getSelectedRows();
+            setSelectedRows(selected);
+          }}
+          rowSelection={undefined}
+        />
       </div>
-      <AgGridReact
-        rowData={rowData}
-        columnDefs={columnDefs}
-        quickFilterText={quickFilterText}
-        pagination={true} // Mengaktifkan pagination
-        paginationPageSize={10} // Set jumlah data per halaman
-        paginationPageSizeSelector={[10, 25, 50]} // Opsional: Dropdown pilihan page size
-        domLayout="autoHeight"
-        onSelectionChanged={(e) => {
-          const selected = e.api.getSelectedRows();
-          setSelectedRows(selected);
-        }}
-        rowSelection="multiple"
-      />
-    </div>
+      <ScannedItemDialog />
+    </>
   );
 };
 

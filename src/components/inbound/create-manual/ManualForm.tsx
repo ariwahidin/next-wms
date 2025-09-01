@@ -28,6 +28,7 @@ import DatePicker from "react-datepicker";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
+import { parse } from "path";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -50,6 +51,14 @@ export default function ManualForm() {
     whs_code: "",
     type: "NORMAL",
     mode: "create",
+    origin: "",
+    po_date: "",
+    arrival_time: "",
+    start_unloading: "",
+    end_unloading: "",
+    truck_size: "",
+    bl_no: "",
+    koli: 0,
   });
 
   const [muatan, setMuatan] = useState<ItemFormProps[]>([]);
@@ -63,6 +72,10 @@ export default function ManualForm() {
   const [inboundTypeOptions, setInboundTypeOptions] = useState<ItemOptions[]>([
     { value: "NORMAL", label: "NORMAL" },
     { value: "RETURN", label: "RETURN" },
+  ]);
+  const [originOptions, setOriginOptions] = useState<ItemOptions[]>([
+    { value: "INDONESIA", label: "INDONESIA" },
+    { value: "JAPAN", label: "JAPAN" },
   ]);
   const [ownerOptions, setOwnerOptions] = useState<ItemOptions[]>([]);
   const [whsCodeOptions, setWhsCodeOptions] = useState<ItemOptions[]>([]);
@@ -131,7 +144,7 @@ export default function ManualForm() {
           setTransporterOptions(
             transporters.data.data.map((item: Transporter) => ({
               value: item.transporter_code,
-              label: item.transporter_name,
+              label: item.transporter_code + " - " + item.transporter_name,
             }))
           );
         }
@@ -153,7 +166,6 @@ export default function ManualForm() {
             }))
           );
         }
-
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -285,8 +297,8 @@ export default function ManualForm() {
   return (
     <div className="p-4" style={{ fontSize: "12px" }}>
       <div className="flex justify-between items-center mb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
-          <div className="flex items-center gap-4">
+        {/* <div className="grid grid-cols-1 sm:grid-cols-1 gap-4"> */}
+        {/* <div className="flex items-center gap-4">
             <Label className="w-32 text-left shrink-0">Date</Label>
             <span className="shrink-0">:</span>
 
@@ -305,12 +317,15 @@ export default function ManualForm() {
               dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
               locale={id} // Bahasa Indonesia
               customInput={
-                <Input id="InboundDate" style={{ width: "160px", fontSize: "12px" }} />
+                <Input
+                  id="InboundDate"
+                  style={{ width: "160px", fontSize: "12px" }}
+                />
               }
               placeholderText="Pilih tanggal"
             />
-          </div>
-        </div>
+          </div> */}
+        {/* </div> */}
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -345,121 +360,258 @@ export default function ManualForm() {
           )}
         </div>
       </div>
-      <hr className="my-4" />
+      {/* <hr className="my-4" /> */}
 
       <div className="grid grid-cols-2 gap-4">
+        {/* Column 1 */}
         <div className="bg-white-200 p-0 space-y-1">
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">Receipt ID</Label>
-            <span className="shrink-0">:</span>
-            <Input
-              id="ReceiptID"
-              style={{ width: "160px", fontSize: "12px" }}
-              value={formData.receipt_id}
-              onChange={(e) =>
-                setFormData({ ...formData, receipt_id: e.target.value })
-              }
-            />
-            <Label className="text-left shrink-0" style={{ width: "70px" }}>
-              IB Type
-            </Label>
-            <span className="shrink-0">:</span>
-            <div className="flex-1">
-              <Select
-                id="InboundType"
-                options={inboundTypeOptions}
-                defaultValue={inboundTypeOptions.find(
-                  (option) => option.value === "NORMAL"
-                )}
-                value={inboundTypeOptions.find(
-                  (option) => option.value === formData.type
-                )}
-                onChange={(selectedOption) => {
-                  if (selectedOption) {
-                    setFormData({
-                      ...formData,
-                      type: selectedOption.value,
-                    });
+          <div className="grid grid-cols-2 gap-6">
+            {/* Column 1 */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Receive Date
+                </Label>
+                <span className="shrink-0">:</span>
+                <div className="flex-1">
+                  <DatePicker
+                    selected={
+                      formData.inbound_date
+                        ? parseISO(formData.inbound_date)
+                        : null
+                    }
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        setFormData({
+                          ...formData,
+                          inbound_date: format(date, "yyyy-MM-dd"), // simpan format ISO
+                        });
+                      }
+                    }}
+                    dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
+                    locale={id} // Bahasa Indonesia
+                    customInput={
+                      <Input
+                        id="InboundDate"
+                        style={{ width: "160px", fontSize: "12px" }}
+                      />
+                    }
+                    placeholderText="Choose date"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Receipt ID
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  id="ReceiptID"
+                  style={{ fontSize: "12px" }}
+                  className="flex-1"
+                  value={formData.receipt_id}
+                  onChange={(e) =>
+                    setFormData({ ...formData, receipt_id: e.target.value })
                   }
-                }}
-              />
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Owner
+                </Label>
+                <span className="shrink-0">:</span>
+                <div className="flex-1">
+                  <Select
+                    options={ownerOptions}
+                    defaultValue={ownerOptions.find(
+                      (option) => option.value === "YMID"
+                    )}
+                    value={ownerOptions.find(
+                      (option) => option.value === formData.owner_code
+                    )}
+                    onChange={(selectedOption) => {
+                      if (selectedOption) {
+                        setFormData({
+                          ...formData,
+                          owner_code: selectedOption.value,
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Supplier
+                </Label>
+                <span className="shrink-0">:</span>
+                <div className="flex-1">
+                  <Select
+                    value={supplierOptions.find(
+                      (option) => option.value === formData.supplier
+                    )}
+                    options={supplierOptions}
+                    onChange={(selectedOption) => {
+                      if (selectedOption) {
+                        setFormData({
+                          ...formData,
+                          supplier: selectedOption.value,
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Column 2 */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  IB Type
+                </Label>
+                <span className="shrink-0">:</span>
+                <div className="flex-1">
+                  <Select
+                    id="InboundType"
+                    options={inboundTypeOptions}
+                    defaultValue={inboundTypeOptions.find(
+                      (option) => option.value === "NORMAL"
+                    )}
+                    value={inboundTypeOptions.find(
+                      (option) => option.value === formData.type
+                    )}
+                    onChange={(selectedOption) => {
+                      if (selectedOption) {
+                        setFormData({
+                          ...formData,
+                          type: selectedOption.value,
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Whs Code
+                </Label>
+                <span className="shrink-0">:</span>
+                <div className="flex-1">
+                  <Select
+                    options={whsCodeOptions}
+                    defaultValue={whsCodeOptions.find(
+                      (option) => option.value === "NGK"
+                    )}
+                    value={whsCodeOptions.find(
+                      (option) => option.value === formData.whs_code
+                    )}
+                    onChange={(selectedOption) => {
+                      if (selectedOption) {
+                        setFormData({
+                          ...formData,
+                          whs_code: selectedOption.value,
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Origin
+                </Label>
+                <span className="shrink-0">:</span>
+                <div className="flex-1">
+                  <Select
+                    options={originOptions}
+                    // defaultValue={originOptions.find(
+                    //   (option) => option.value === "INDONESIA"
+                    // )}
+                    value={originOptions.find(
+                      (option) => option.value === formData.origin
+                    )}
+                    onChange={(selectedOption) => {
+                      if (selectedOption) {
+                        setFormData({
+                          ...formData,
+                          origin: selectedOption.value,
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  PO Date
+                </Label>
+                <span className="shrink-0">:</span>
+                <div className="flex-1">
+                  <DatePicker
+                    selected={
+                      formData.po_date
+                        ? parseISO(formData.po_date)
+                        : null
+                    }
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        setFormData({
+                          ...formData,
+                          po_date: format(date, "yyyy-MM-dd"), // simpan format ISO
+                        });
+                      }
+                    }}
+                    dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
+                    locale={id} // Bahasa Indonesia
+                    customInput={
+                      <Input
+                        id="PoDate"
+                        style={{ width: "160px", fontSize: "12px" }}
+                      />
+                    }
+                    placeholderText="Choose date"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">Owner</Label>
-            <span className="shrink-0">:</span>
-            <div className="flex-1">
-              <Select
-                // className="w-40"
-                options={ownerOptions}
-                defaultValue={ownerOptions.find(
-                  (option) => option.value === "YMID"
-                )}
-                value={ownerOptions.find(
-                  (option) => option.value === formData.owner_code
-                )}
-                onChange={(selectedOption) => {
-                  if (selectedOption) {
-                    setFormData({
-                      ...formData,
-                      owner_code: selectedOption.value,
-                    });
-                  }
-                }}
-              />
-            </div>
-
-            <Label className="text-left shrink-0" style={{ width: "70px" }}>
-              Whs Code
-            </Label>
-            <span className="shrink-0">:</span>
-
-            <div className="flex-1">
-              <Select
-                // className="w-28"
-                options={whsCodeOptions}
-                defaultValue={whsCodeOptions.find(
-                  (option) => option.value === "NGK"
-                )}
-                value={whsCodeOptions.find(
-                  (option) => option.value === formData.whs_code
-                )}
-                onChange={(selectedOption) => {
-                  if (selectedOption) {
-                    setFormData({
-                      ...formData,
-                      whs_code: selectedOption.value,
-                    });
-                  }
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">Supplier</Label>
-            <span className="shrink-0">:</span>
-            <div className="flex-1">
-              <Select
-                value={supplierOptions.find(
-                  (option) => option.value === formData.supplier
-                )}
-                options={supplierOptions}
-                onChange={(selectedOption) => {
-                  if (selectedOption) {
-                    setFormData({
-                      ...formData,
-                      supplier: selectedOption.value,
-                    });
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
+          {/* Remarks - Full Width */}
+          <div className="flex items-center gap-2 mt-2">
             <Label
-              className="w-32 text-left shrink-0 pt-2"
+              className="w-24 text-left shrink-0 pt-2"
+              style={{ fontSize: "12px" }}
               htmlFor="RemarksHeader"
             >
               Remarks
@@ -477,67 +629,212 @@ export default function ManualForm() {
             />
           </div>
         </div>
-        <div className="bg-white-200 p-0 space-y-1">
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">Trucker</Label>
-            <span className="shrink-0">:</span>
-            <div className="flex flex-1 items-center gap-4">
-              <Select
-                className="w-full"
-                value={transporterOptions.find(
-                  (option) => option.value === formData.transporter
-                )}
-                options={transporterOptions}
-                onChange={(selectedOption) => {
-                  if (selectedOption) {
-                    setFormData({
-                      ...formData,
-                      transporter: selectedOption.value,
-                    });
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">Truck No.</Label>
-            <span className="shrink-0">:</span>
-            <Input
-              style={{ fontSize: "12px" }}
-              className="flex-1"
-              value={formData.no_truck}
-              onChange={(e) =>
-                setFormData({ ...formData, no_truck: e.target.value })
-              }
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">Driver</Label>
-            <span className="shrink-0">:</span>
-            <Input
-              style={{ fontSize: "12px" }}
-              className="flex-1"
-              value={formData.driver}
-              onChange={(e) =>
-                setFormData({ ...formData, driver: e.target.value })
-              }
-            />
 
-            <Label className="w-32 text-left shrink-0">Container No.</Label>
-            <span className="shrink-0">:</span>
-            <Input
-              style={{ fontSize: "12px" }}
-              className="flex-1"
-              value={formData.container}
-              onChange={(e) =>
-                setFormData({ ...formData, container: e.target.value })
-              }
-            />
+        {/* Column 2 */}
+        <div className="bg-white-200 p-0 space-y-1">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Column 1 */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Trucker
+                </Label>
+                <span className="shrink-0">:</span>
+                <div className="flex flex-1 items-center">
+                  <Select
+                    className="w-full"
+                    value={transporterOptions.find(
+                      (option) => option.value === formData.transporter
+                    )}
+                    options={transporterOptions}
+                    onChange={(selectedOption) => {
+                      if (selectedOption) {
+                        setFormData({
+                          ...formData,
+                          transporter: selectedOption.value,
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Truck No.
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  style={{ fontSize: "12px" }}
+                  className="flex-1 form-control-sm"
+                  value={formData.no_truck}
+                  onChange={(e) =>
+                    setFormData({ ...formData, no_truck: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Arrival Time
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  style={{ fontSize: "12px" }}
+                  className="flex-1 form-control-sm"
+                  type="time"
+                  value={formData.arrival_time}
+                  onChange={(e) =>
+                    setFormData({ ...formData, arrival_time: e.target.value })
+                  }
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Start Unloading
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  style={{ fontSize: "12px" }}
+                  className="flex-1 form-control-sm"
+                  type="time"
+                  value={formData.start_unloading}
+                  onChange={(e) =>
+                    setFormData({ ...formData, start_unloading: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Finish Unloading
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  style={{ fontSize: "12px" }}
+                  className="flex-1 form-control-sm"
+                  type="time"
+                  value={formData.end_unloading}
+                  onChange={(e) =>
+                    setFormData({ ...formData, end_unloading: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Column 2 */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Driver
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  style={{ fontSize: "12px" }}
+                  className="flex-1"
+                  value={formData.driver}
+                  onChange={(e) =>
+                    setFormData({ ...formData, driver: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Container No.
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  style={{ fontSize: "12px" }}
+                  className="flex-1"
+                  value={formData.container}
+                  onChange={(e) =>
+                    setFormData({ ...formData, container: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Truck Size
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  style={{ fontSize: "12px" }}
+                  className="flex-1"
+                  value={formData.truck_size}
+                  onChange={(e) =>
+                    setFormData({ ...formData, truck_size: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  BL No.
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  style={{ fontSize: "12px" }}
+                  className="flex-1"
+                  value={formData.bl_no}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bl_no: e.target.value })
+                  }
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Koli
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  style={{ fontSize: "12px" }}
+                  className="flex-1"
+                  type="number"
+                  min="0"
+                  value={formData.koli}
+                  onChange={(e) =>
+                    setFormData({ ...formData, koli : parseInt(e.target.value) })
+                  }
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <hr className="my-4" />
+      {/* <hr className="my-4" /> */}
 
       <div
         className="flex justify-between items-center mb-4"
@@ -558,9 +855,17 @@ export default function ManualForm() {
 
       {references.map((item, index) => (
         <>
-          <div key={index} className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-4">
-              <Label className="w-32 text-left shrink-0">Invoice</Label>
+          <div
+            key={index}
+            className="flex justify-between items-center mb-4 mt-2"
+          >
+            <div className="flex items-center gap-2">
+              <Label
+                className="w-24 text-left shrink-0"
+                style={{ fontSize: "12px" }}
+              >
+                Invoice
+              </Label>
               <span className="shrink-0">:</span>
               <Input
                 style={{ fontSize: "12px" }}

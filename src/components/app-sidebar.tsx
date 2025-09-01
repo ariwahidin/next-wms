@@ -324,6 +324,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   useEffect(() => {
     const collapsedPaths = [
+      "/wms/inbound/add", 
       "/wms/outbound/add", 
       "/wms/outbound/edit", 
       "/wms/outbound/handling/edit",

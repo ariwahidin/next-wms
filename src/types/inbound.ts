@@ -15,6 +15,14 @@ export interface HeaderFormProps {
   owner_code?: string;
   whs_code?: string;
   remarks?: string;
+  origin?: string;
+  po_date?: string;
+  arrival_time?: string;
+  start_unloading?: string;
+  end_unloading?: string;
+  truck_size?: string;
+  bl_no?: string;
+  koli?: number;
   mode?: "create" | "edit";
 }
 

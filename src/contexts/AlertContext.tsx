@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   createContext,
   useContext,
   ReactNode,
   useEffect,
   useState,
+  use,
 } from "react";
 import { toast } from "sonner"; // ✅ Untuk notifikasi
 import eventBus from "@/utils/eventBus";
@@ -154,6 +156,10 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
   const closeAlert = () => {
     setAlert((prev) => ({ ...prev, isOpen: false }));
   };
+
+  useEffect(() => {
+    document.body.style.removeProperty("pointer-events");
+  }, [alert.isOpen]);
 
   return (
     <AlertContext.Provider value={{ showAlert, notify }}>

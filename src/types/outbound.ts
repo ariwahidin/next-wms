@@ -9,6 +9,23 @@ export interface HeaderFormProps {
   status?: string;
   remarks?: string;
   mode?: "create" | "edit";
+  picker_name?: string;
+  cust_address?: string;
+  cust_city?: string;
+  plan_pickup_date?: string;
+  plan_pickup_time?: string;
+  rcv_do_date?: string;
+  rcv_do_time?: string;
+  start_pick_time?: string;
+  end_pick_time?: string;
+  deliv_to?: string;
+  deliv_address?: string;
+  deliv_city?: string;
+  driver?: string;
+  qty_koli?: number;
+  qty_koli_seal?: number;
+  truck_size?: string;
+  truck_no?: string;
 }
 
 export interface ItemFormProps {
