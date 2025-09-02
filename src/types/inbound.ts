@@ -28,6 +28,7 @@ export interface HeaderFormProps {
 
 export interface ItemFormProps {
   ID: number;
+  item_id?: string;
   inbound_id: number;
   item_code: string;
   quantity: number;
@@ -41,6 +42,8 @@ export interface ItemFormProps {
   index?: number;
   ref_id?: number;
   ref_no?: string;
+  group?: string;
+  category?: string;
 }
 
 export interface InboundReference {

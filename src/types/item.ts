@@ -1,5 +1,5 @@
 export interface Product {
-    ID: number;
+    ID: string;
     item_code: string;
     item_name: string;
     barcode: string;
@@ -8,4 +8,6 @@ export interface Product {
     height: number;
     uom: string;
     has_serial?: string;
+    group?: string;
+    category?: string;
 }

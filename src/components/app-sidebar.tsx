@@ -16,6 +16,7 @@ import {
   Settings2,
   Settings,
   SettingsIcon,
+  Wrench,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -213,6 +214,18 @@ const data = {
         {
           title: "Home",
           url: "/mobile/home",
+        },
+      ],
+    },
+    {
+      title: "Utilities",
+      url: "#",
+      icon: Wrench,
+      isActive: true,
+      items: [
+        {
+          title: "Print ST Location",
+          url: "/wms/utilities/print-st-location",
         },
       ],
     },
