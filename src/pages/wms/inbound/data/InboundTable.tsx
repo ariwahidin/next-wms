@@ -169,7 +169,7 @@ const InboundTable = () => {
                   }}
                 >
                   <PrinterIcon className="mr-2 h-4 w-4" />
-                  Print Putaway Sheet
+                  Print Tally Sheet
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
