@@ -291,6 +291,16 @@ const CheckingPage = () => {
     e.preventDefault();
     console.log("Barcode submitted:");
 
+    if (scanBarcode.trim() === "") {
+      document.getElementById("barcode")?.focus();
+      return;
+    }
+
+    if (scanLocation.trim() === "") {
+      document.getElementById("location")?.focus();
+      return;
+    }
+
     const newItem: ScanItem = {
       inboundNo: Array.isArray(inbound) ? inbound[0] : inbound,
       id: 0,
@@ -440,7 +450,9 @@ const CheckingPage = () => {
                     id="location"
                     value={scanLocation}
                     onChange={(e) => setScanLocation(e.target.value)}
-                    onInput={(e) => setScanLocation((e.target as HTMLInputElement).value)}
+                    onInput={(e) =>
+                      setScanLocation((e.target as HTMLInputElement).value)
+                    }
                     onPaste={(e) => {
                       const pastedData = e.clipboardData.getData("text");
                       setScanLocation(pastedData);
@@ -887,7 +899,7 @@ const CheckingPage = () => {
       {/* Modal Dialog */}
       {showDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex  sm:items-center justify-center z-50 p-4 ">
-          <div className="bg-white rounded-b-lg  rounded-t-lg sm:rounded-lg shadow-xl w-full max-w-md max-h-[40vh] sm:max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-b-lg  rounded-t-lg sm:rounded-lg shadow-xl w-full max-w-md max-h-[80vh] sm:max-h-[80vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-2 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-gray-800 pr-4">
                 {/* {currentItem.name} */}
