@@ -358,320 +358,344 @@ export default function ItemFormTable({
     muatan?.length > 0 && selectedIds.length === muatan.length;
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        {headerForm.status !== "complete" && (
-          <div className="flex space-x-2">
-            <Button
-              variant="destructive"
-              onClick={handleDeleteSelected}
-              disabled={selectedIds.length === 0}
-              className="flex items-center gap-2 w-auto"
-            >
-              Delete Selected
-            </Button>
-            <Button
-              type="button"
-              onClick={handleAddItems}
-              className="flex items-center gap-2 w-auto"
-            >
-              Add Items
-            </Button>
-          </div>
-        )}
-      </div>
+    <>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          {headerForm.status !== "complete" && (
+            <div className="flex space-x-2">
+              <Button
+                variant="destructive"
+                onClick={handleDeleteSelected}
+                disabled={selectedIds.length === 0}
+                className="flex items-center gap-2 w-auto"
+              >
+                Delete Selected
+              </Button>
+              <Button
+                type="button"
+                onClick={handleAddItems}
+                className="flex items-center gap-2 w-auto"
+              >
+                Add Items
+              </Button>
+            </div>
+          )}
+        </div>
 
-      <table
-        className="w-full border font-normal text-sm"
-        style={{ fontSize: "12px" }}
-      >
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="p-2 border text-center w-8">
-              <input
-                disabled={headerForm.status === "complete"}
-                type="checkbox"
-                checked={allSelected}
-                onChange={(e) => handleSelectAll(e.target.checked)}
-              />
-            </th>
-            <th className="p-2 border w-12 text-center">No.</th>
-            <th className="p-2 border" style={{ width: "300px" }}>
-              Item Code
-            </th>
-            <th className="p-2 border" style={{ width: "300px" }}>
-              Barcode
-            </th>
-            <th className="p-2 border" style={{ width: "300px" }}>
-              Description
-            </th>
-            <th className="p-2 border" style={{ width: "30px" }}>
-              SN
-            </th>
-            <th className="p-2 border" style={{ width: "50px" }}>
-              UoM
-            </th>
-            <th className="p-2 border" style={{ width: "100px" }}>
-              Qty
-            </th>
-            <th className="p-2 border" style={{ width: "130px" }}>
-              Rcv Location
-            </th>
-            <th className="p-2 border" style={{ width: "140px" }}>
-              Rcv Date
-            </th>
-            <th className="p-2 border" style={{ width: "140px" }}>
-              Remarks
-            </th>
-            <th className="p-2 border" style={{ width: "100px" }}>
-              Action
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {muatan
-            .filter((item) => item.ref_id === inboundReferences.ID)
-            .map((item, index) => {
-              const isEditing = editingId === item.ID;
-              return (
-                <tr key={item.ID} className="border-t">
-                  <td className="p-2 border text-center">
-                    <input
-                      disabled={headerForm.status === "complete"}
-                      type="checkbox"
-                      checked={selectedIds.includes(item.ID)}
-                      onChange={(e) => handleSelect(item.ID, e.target.checked)}
-                    />
-                  </td>
-                  <td className="p-2 border text-center">{index + 1}</td>
+        <table
+          className="w-full border font-normal text-sm"
+          style={{ fontSize: "12px" }}
+        >
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-2 border text-center w-8">
+                <input
+                  disabled={headerForm.status === "complete"}
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                />
+              </th>
+              <th className="p-2 border w-12 text-center">No.</th>
+              <th className="p-2 border" style={{ width: "300px" }}>
+                Item Code
+              </th>
+              <th className="p-2 border" style={{ width: "300px" }}>
+                Barcode
+              </th>
+              <th className="p-2 border" style={{ width: "300px" }}>
+                Description
+              </th>
+              <th className="p-2 border" style={{ width: "30px" }}>
+                SN
+              </th>
+              <th className="p-2 border" style={{ width: "50px" }}>
+                UoM
+              </th>
+              <th className="p-2 border" style={{ width: "100px" }}>
+                Qty
+              </th>
+              <th className="p-2 border" style={{ width: "130px" }}>
+                Rcv Location
+              </th>
+              <th className="p-2 border" style={{ width: "140px" }}>
+                Rcv Date
+              </th>
+              <th className="p-2 border" style={{ width: "140px" }}>
+                Remarks
+              </th>
+              <th className="p-2 border" style={{ width: "100px" }}>
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {muatan
+              .filter((item) => item.ref_id === inboundReferences.ID)
+              .map((item, index) => {
+                const isEditing = editingId === item.ID;
+                return (
+                  <tr key={item.ID} className="border-t">
+                    <td className="p-2 border text-center">
+                      <input
+                        disabled={headerForm.status === "complete"}
+                        type="checkbox"
+                        checked={selectedIds.includes(item.ID)}
+                        onChange={(e) =>
+                          handleSelect(item.ID, e.target.checked)
+                        }
+                      />
+                    </td>
+                    <td className="p-2 border text-center">{index + 1}</td>
 
-                  {headerForm.status == "open" ||
-                  headerForm.mode == "create" ? (
-                    <>
-                      <td className="p-2 border">
-                        <div className="flex items-center gap-2">
+                    {headerForm.status == "open" ||
+                    headerForm.mode == "create" ? (
+                      <>
+                        <td className="p-2 border">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              style={{ fontSize: "12px" }}
+                              type="text"
+                              value={item.item_code}
+                              readOnly
+                              className="flex-1"
+                              placeholder="Click edit to select item..."
+                            />
+                            {item.mode === "create" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditItem(item)}
+                                title="Select item"
+                              >
+                                <Pencil size={12} />
+                              </Button>
+                            )}
+                          </div>
+                          {errors[item.ID]?.item_code && (
+                            <small className="text-red-500">
+                              {errors[item.ID].item_code}
+                            </small>
+                          )}
+                        </td>
+                        <td className="p-2 border">
                           <Input
                             style={{ fontSize: "12px" }}
-                            type="text"
-                            value={item.item_code}
                             readOnly
-                            className="flex-1"
-                            placeholder="Click edit to select item..."
+                            type="text"
+                            //   className="w-14"
+                            value={
+                              products.find(
+                                (p) => p.item_code === item.item_code
+                              )?.barcode || ""
+                            }
                           />
-                          {item.mode === "create" && (
+                        </td>
+                        <td className="p-2 border">
+                          <Input
+                            style={{ fontSize: "12px" }}
+                            readOnly
+                            //   className="w-100"
+                            type="text"
+                            //   className="w-14"
+                            value={
+                              products.find(
+                                (p) => p.item_code === item.item_code
+                              )?.item_name || ""
+                            }
+                          />
+                        </td>
+                        <td className="p-2 border">
+                          <Input
+                            style={{ fontSize: "12px" }}
+                            readOnly
+                            type="text"
+                            className="w-14"
+                            value={item.is_serial || ""}
+                          />
+                        </td>
+                        <td className="p-2 border">
+                          <Select
+                            key={item.ID}
+                            className="w-40"
+                            options={
+                              selectStates[item.ID]?.options ?? defaultOptions
+                            }
+                            onFocus={() => handleFocus(item.item_code, item.ID)}
+                            isLoading={selectStates[item.ID]?.loading ?? false}
+                            value={(
+                              selectStates[item.ID]?.options ?? defaultOptions
+                            ).find((option) => option.value === item.uom)}
+                            onChange={(value) =>
+                              handleChange(item.ID, "uom", value?.value)
+                            }
+                          />
+                        </td>
+                        <td className="p-2 border">
+                          <div>
+                            <Input
+                              className="w-20"
+                              style={{ fontSize: "12px" }}
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) =>
+                                handleChange(
+                                  item.ID,
+                                  "quantity",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
+                          {errors[item.ID]?.quantity && (
+                            <small className="text-red-500">
+                              {errors[item.ID].quantity}
+                            </small>
+                          )}
+                        </td>
+                        <td className="p-2 border">
+                          <div>
+                            <Input
+                              style={{ fontSize: "12px" }}
+                              type="text"
+                              value={item.rcv_location || "STAGING"}
+                              onChange={(e) =>
+                                handleChange(
+                                  item.ID,
+                                  "rcv_location",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
+                        </td>
+                        <td className="p-2 border">
+                          <DatePicker
+                            selected={
+                              item.rec_date ? parseISO(item.rec_date) : null
+                            }
+                            onChange={(date: Date | null) => {
+                              if (date) {
+                                handleChange(
+                                  item.ID,
+                                  "rec_date",
+                                  format(date, "yyyy-MM-dd")
+                                );
+                              }
+                            }}
+                            dateFormat="dd/MM/yyyy"
+                            locale={id}
+                            customInput={
+                              <Input
+                                className="w-[120px] cursor-pointer"
+                                style={{ fontSize: "12px" }}
+                              />
+                            }
+                            placeholderText="Pilih tanggal"
+                            popperPlacement="bottom-start"
+                          />
+                          {errors[item.ID]?.rec_date && (
+                            <small className="text-red-500">
+                              {errors[item.ID].rec_date}
+                            </small>
+                          )}
+                        </td>
+                        <td className="p-2 border">
+                          <Input
+                            style={{ fontSize: "12px" }}
+                            className="w-full"
+                            type="text"
+                            value={item.remarks}
+                            onChange={(e) =>
+                              handleChange(item.ID, "remarks", e.target.value)
+                            }
+                          />
+                          {errors[item.ID]?.remarks && (
+                            <small className="text-red-500">
+                              {errors[item.ID].remarks}
+                            </small>
+                          )}
+                        </td>
+                        <td
+                          className="p-2 border space-x-2 text-center"
+                          style={{ width: "100px" }}
+                        >
+                          {item.mode == "create" ? (
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleEditItem(item)}
-                              title="Select item"
+                              onClick={() => {
+                                handleCancel(item);
+                              }}
                             >
-                              <Pencil size={12} />
+                              <X size={14} />
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDelete(item.ID)}
+                            >
+                              <Trash size={14} />
                             </Button>
                           )}
-                        </div>
-                        {errors[item.ID]?.item_code && (
-                          <small className="text-red-500">
-                            {errors[item.ID].item_code}
-                          </small>
-                        )}
-                      </td>
-                      <td className="p-2 border">
-                        <Input
-                          style={{ fontSize: "12px" }}
-                          readOnly
-                          type="text"
-                        //   className="w-14"
-                          value={products.find((p) => p.item_code === item.item_code)?.barcode || ""}
-                        />
-                      </td>
-                      <td className="p-2 border">
-                        <Input
-                          style={{ fontSize: "12px" }}
-                          readOnly
-                        //   className="w-100"
-                          type="text"
-                        //   className="w-14"
-                          value={products.find((p) => p.item_code === item.item_code)?.item_name || ""}
-                        />
-                      </td>
-                      <td className="p-2 border">
-                        <Input
-                          style={{ fontSize: "12px" }}
-                          readOnly
-                          type="text"
-                          className="w-14"
-                          value={item.is_serial || ""}
-                        />
-                      </td>
-                      <td className="p-2 border">
-                        <Select
-                          key={item.ID}
-                          
-                          className="w-40"
-                          options={
-                            selectStates[item.ID]?.options ?? defaultOptions
-                          }
-                          onFocus={() => handleFocus(item.item_code, item.ID)}
-                          isLoading={selectStates[item.ID]?.loading ?? false}
-                          value={(
-                            selectStates[item.ID]?.options ?? defaultOptions
-                          ).find((option) => option.value === item.uom)}
-                          onChange={(value) =>
-                            handleChange(item.ID, "uom", value?.value)
-                          }
-                        />
-                      </td>
-                      <td className="p-2 border">
-                        <div>
-                          <Input
-                            className="w-20"
-                            style={{ fontSize: "12px" }}
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              handleChange(item.ID, "quantity", e.target.value)
-                            }
-                          />
-                        </div>
-                        {errors[item.ID]?.quantity && (
-                          <small className="text-red-500">
-                            {errors[item.ID].quantity}
-                          </small>
-                        )}
-                      </td>
-                      <td className="p-2 border">
-                        <div>
-                          <Input
-                            style={{ fontSize: "12px" }}
-                            type="text"
-                            value={item.rcv_location || "STAGING"}
-                            onChange={(e) =>
-                              handleChange(
-                                item.ID,
-                                "rcv_location",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-                      </td>
-                      <td className="p-2 border">
-                        <DatePicker
-                          selected={
-                            item.rec_date ? parseISO(item.rec_date) : null
-                          }
-                          onChange={(date: Date | null) => {
-                            if (date) {
-                              handleChange(
-                                item.ID,
-                                "rec_date",
-                                format(date, "yyyy-MM-dd")
-                              );
-                            }
-                          }}
-                          dateFormat="dd/MM/yyyy"
-                          locale={id}
-                          customInput={
-                            <Input
-                              className="w-[120px] cursor-pointer"
-                              style={{ fontSize: "12px" }}
-                            />
-                          }
-                          placeholderText="Pilih tanggal"
-                          popperPlacement="bottom-start"
-                        />
-                        {errors[item.ID]?.rec_date && (
-                          <small className="text-red-500">
-                            {errors[item.ID].rec_date}
-                          </small>
-                        )}
-                      </td>
-                      <td className="p-2 border">
-                        <Input
-                          style={{ fontSize: "12px" }}
-                          className="w-full"
-                          type="text"
-                          value={item.remarks}
-                          onChange={(e) =>
-                            handleChange(item.ID, "remarks", e.target.value)
-                          }
-                        />
-                        {errors[item.ID]?.remarks && (
-                          <small className="text-red-500">
-                            {errors[item.ID].remarks}
-                          </small>
-                        )}
-                      </td>
-                      <td
-                        className="p-2 border space-x-2 text-center"
-                        style={{ width: "100px" }}
-                      >
-                        {item.mode == "create" ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              handleCancel(item);
-                            }}
-                          >
-                            <X size={14} />
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(item.ID)}
-                          >
-                            <Trash size={14} />
-                          </Button>
-                        )}
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="p-2 border">{item.item_code}</td>
-                      
-                      <td className="p-2 border text-center">{products.find((p) => p.item_code === item.item_code)?.barcode}</td>
-                      
-                      <td className="p-2 border text-center">{products.find((p) => p.item_code === item.item_code)?.item_name}</td>
-                      <td className="p-2 border text-center">
-                        {item.is_serial}
-                      </td>
-                      <td className="p-2 border text-center">{item.uom}</td>
-                      <td className="p-2 border text-center">
-                        {item.quantity}
-                      </td>
-                      <td className="p-2 border text-center">
-                        {item.rcv_location}
-                      </td>
-                      <td className="p-2 border text-center">
-                        {dayjs(item.rec_date).format("D MMMM YYYY")}
-                      </td>
-                      <td className="p-2 border">{item.remarks}</td>
-                      <td
-                        className="p-2 border space-x-2 text-center"
-                        style={{ width: "160px" }}
-                      >
-                        {headerForm.status !== "complete" && <></>}
-                      </td>
-                    </>
-                  )}
-                </tr>
-              );
-            })}
-        </tbody>
-        <tfoot>
-          <tr className="bg-gray-100 font-semibold">
-            <td className="p-2 border" colSpan={7}>
-              Total
-            </td>
-            <td className="p-2 border text-center">
-              {muatan.reduce((acc, item) => acc + item.quantity, 0)}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="p-2 border">{item.item_code}</td>
 
+                        <td className="p-2 border text-center">
+                          {
+                            products.find((p) => p.item_code === item.item_code)
+                              ?.barcode
+                          }
+                        </td>
+
+                        <td className="p-2 border text-center">
+                          {
+                            products.find((p) => p.item_code === item.item_code)
+                              ?.item_name
+                          }
+                        </td>
+                        <td className="p-2 border text-center">
+                          {item.is_serial}
+                        </td>
+                        <td className="p-2 border text-center">{item.uom}</td>
+                        <td className="p-2 border text-center">
+                          {item.quantity}
+                        </td>
+                        <td className="p-2 border text-center">
+                          {item.rcv_location}
+                        </td>
+                        <td className="p-2 border text-center">
+                          {dayjs(item.rec_date).format("D MMMM YYYY")}
+                        </td>
+                        <td className="p-2 border">{item.remarks}</td>
+                        <td
+                          className="p-2 border space-x-2 text-center"
+                          style={{ width: "160px" }}
+                        >
+                          {headerForm.status !== "complete" && <></>}
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                );
+              })}
+          </tbody>
+          <tfoot>
+            <tr className="bg-gray-100 font-semibold">
+              <td className="p-2 border" colSpan={7}>
+                Total
+              </td>
+              <td className="p-2 border text-center">
+                {muatan.reduce((acc, item) => acc + item.quantity, 0)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
       <ItemSelectionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -679,6 +703,6 @@ export default function ItemFormTable({
         onApply={handleModalApply}
         selectedItems={muatan}
       />
-    </div>
+    </>
   );
 }

@@ -127,8 +127,8 @@ const PutawaySheetPrint = () => {
             <tr>
               <td style={headerLabel}>Remarks</td>
               <td style={headerValue}>{data.remarks}</td>
-              <td style={headerLabel}>Koli</td>
-              <td style={headerValue}>{data.koli || "-"}</td>
+              <td style={headerLabel}>Container</td>
+              <td style={headerValue}>{data.container || "-"}</td>
             </tr>
             <tr>
               {/* <td style={headerLabel}>End Unloading</td>
@@ -139,6 +139,8 @@ const PutawaySheetPrint = () => {
               </td> */}
               <td></td>
               <td></td>
+              <td style={headerLabel}>Koli</td>
+              <td style={headerValue}>{data.koli || "-"}</td>
             </tr>
           </tbody>
         </table>
@@ -157,6 +159,7 @@ const PutawaySheetPrint = () => {
             <th style={th}>No</th>
             <th style={th}>Item Code</th>
             <th style={th}>Barcode</th>
+            <th style={th}>Whs Code</th>
             <th style={th}>Qty</th>
             <th style={th}>CBM</th>
           </tr>
@@ -174,12 +177,13 @@ const PutawaySheetPrint = () => {
                   }}
                 ></canvas>
               </td>
+              <td style={{ ...td, textAlign: "center" }}>{item.whs_code}</td>
               <td style={{ ...td, textAlign: "center" }}>{item.quantity}</td>
               <td style={{ ...td, textAlign: "center" }}>{item.cbm}</td>
             </tr>
           ))}
           <tr>
-            <td colSpan={3} style={{ ...td, textAlign: "center" }}>
+            <td colSpan={4} style={{ ...td, textAlign: "center" }}>
               Total
             </td>
             <td style={{ ...td, textAlign: "center" }}>
