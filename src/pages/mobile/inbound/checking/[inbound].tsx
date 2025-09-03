@@ -431,7 +431,7 @@ const CheckingPage = () => {
                     value={scanLocation}
                     onChange={(e) => setScanLocation(e.target.value)}
                   /> */}
-                  {/* <Input
+                  <Input
                     autoComplete="off"
                     autoCorrect="off"
                     autoCapitalize="off"
@@ -447,15 +447,6 @@ const CheckingPage = () => {
                     }}
                     inputMode="text"
                     autoFocus
-                  /> */}
-                  <input
-                    // ref={inputRef}
-                    id="location"
-                    type="text"
-                    autoComplete="off"
-                    className="border rounded px-3 py-2 w-full"
-                    value={scanLocation}
-                    onChange={(e) => setScanLocation(e.target.value)}
                   />
                 </div>
 
@@ -484,9 +475,6 @@ const CheckingPage = () => {
                   // placeholder="Scan barcode ..."
                   value={scanBarcode}
                   onChange={(e) => setScanBarcode(e.target.value)}
-                  onInput={(e) =>
-                    setScanLocation((e.target as HTMLInputElement).value)
-                  }
                 />
                 {scanBarcode && (
                   <button
