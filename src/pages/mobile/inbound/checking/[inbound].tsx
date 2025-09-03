@@ -424,12 +424,29 @@ const CheckingPage = () => {
                   Receive Location :
                 </label>
                 <div className="flex items-center mt-1">
-                  <Input
+                  {/* <Input
                     autoComplete="off"
                     className="w-full pr-10"
                     id="location"
                     value={scanLocation}
                     onChange={(e) => setScanLocation(e.target.value)}
+                  /> */}
+                  <Input
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                    className="w-full pr-10"
+                    id="location"
+                    value={scanLocation}
+                    onChange={(e) => setScanLocation(e.target.value)}
+                    onInput={(e) => setScanLocation((e.target as HTMLInputElement).value)}
+                    onPaste={(e) => {
+                      const pastedData = e.clipboardData.getData("text");
+                      setScanLocation(pastedData);
+                    }}
+                    inputMode="text"
+                    autoFocus
                   />
                 </div>
 
@@ -458,6 +475,7 @@ const CheckingPage = () => {
                   // placeholder="Scan barcode ..."
                   value={scanBarcode}
                   onChange={(e) => setScanBarcode(e.target.value)}
+                  onInput={(e) => setScanLocation((e.target as HTMLInputElement).value)}
                 />
                 {scanBarcode && (
                   <button
