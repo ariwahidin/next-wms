@@ -15,7 +15,14 @@ export default function App({ Component, pageProps }: AppProps) {
         <AlertProvider>
           <LoadingProvider>
             <Component {...pageProps} />
-            <Toaster position="top-right" />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  position: "absolute",
+                },
+              }}
+            />
             <LoadingOverlay />
           </LoadingProvider>
         </AlertProvider>
