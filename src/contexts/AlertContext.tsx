@@ -55,7 +55,6 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
   // 4. Listen event untuk toast notification
   useEffect(() => {
     eventBus.on("showAlert", ({ title, description, type = "error" }) => {
-      // toast[type](title, { description });
       const styles = {
         error: {
           style: {
