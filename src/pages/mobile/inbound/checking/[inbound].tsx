@@ -84,7 +84,9 @@ const CheckingPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showModalDetail, setShowModalDetail] = useState(false);
-  const [scanQty, setScanQty] = useState(1);
+  // const [scanQty, setScanQty] = useState(1);
+  const [scanQty, setScanQty] = useState<string | number>(1);
+
   const [editInboundBarcode, setEditInboundBarcode] = useState(false);
   const [itemEditBarcode, setItemEditBarcode] = useState<ScannedItem>(null);
 
@@ -309,7 +311,7 @@ const CheckingPage = () => {
       scanType: scanType,
       qaStatus: scanQa,
       serial: "",
-      qtyScan: scanQty,
+      qtyScan: scanQty as number,
       uploaded: false,
     };
 
@@ -321,16 +323,11 @@ const CheckingPage = () => {
         console.log("Item requires serial:", res);
         setIsSerial(res.is_serial);
         setScanSerial("");
-
         setShowDialog(true);
-        setTimeout(() => {
-          document.getElementById("serialNumber")?.focus();
-        }, 100);
       } else {
         console.log("Item requires serial:", res);
         setIsSerial(res.is_serial);
         setShowDialog(true);
-        document.getElementById("qty")?.focus();
       }
     }
 
@@ -429,23 +426,28 @@ const CheckingPage = () => {
   const [initialFocusDone, setInitialFocusDone] = useState(false);
 
   useEffect(() => {
-    if (
-      showDialog &&
-      isSerial &&
-      !initialFocusDone &&
-      serialInputs.length > 1
-    ) {
-      const firstInput = document.getElementById(
-        "serial-0"
-      ) as HTMLInputElement;
-      firstInput?.focus();
-      setInitialFocusDone(true);
+    if (isSerial) {
+      if (
+        showDialog &&
+        isSerial &&
+        !initialFocusDone &&
+        serialInputs.length > 1
+      ) {
+        const firstInput = document.getElementById(
+          "serial-0"
+        ) as HTMLInputElement;
+        firstInput?.focus();
+        setInitialFocusDone(true);
+      } else {
+        const firstInput = document.getElementById(
+          "serial-0"
+        ) as HTMLInputElement;
+        firstInput?.focus();
+        setInitialFocusDone(false);
+      }
     } else {
-      const firstInput = document.getElementById(
-        "serial-0"
-      ) as HTMLInputElement;
+      const firstInput = document.getElementById("qty") as HTMLInputElement;
       firstInput?.focus();
-      setInitialFocusDone(false);
     }
   }, [showDialog, isSerial, initialFocusDone]);
 
@@ -1092,9 +1094,17 @@ const CheckingPage = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button type="submit" className="w-full mt-4">
+                  <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                    <Button type="submit" className="w-full">
                       Submit
+                    </Button>
+                    <Button
+                      type="button"
+                      className="w-full"
+                      variant="outline"
+                      onClick={closeDialog}
+                    >
+                      Cancel
                     </Button>
                   </div>
                 </form>
@@ -1106,10 +1116,25 @@ const CheckingPage = () => {
                         Qty :{" "}
                       </label>
                       <Input
+                        min={1}
+                        type="number"
                         className="w-full mt-1"
                         id="qty"
                         value={scanQty}
-                        onChange={(e) => setScanQty(Number(e.target.value))}
+                        autoComplete="off"
+                        onChange={(e) => {
+                          const val = e.target.value;
+
+                          // kalau kosong biarkan kosong
+                          if (val === "") {
+                            setScanQty("");
+                            return;
+                          }
+
+                          // kalau angka, paksa minimal 1
+                          const num = Number(val);
+                          setScanQty(num < 1 ? 1 : num);
+                        }}
                       />
                       {scanQty && (
                         <button
@@ -1124,46 +1149,19 @@ const CheckingPage = () => {
                         </button>
                       )}
                     </div>
-
-                    {/* <label
-                        htmlFor="quantity"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Quantity
-                      </label>
-                      <input
-                        type="number"
-                        id="quantity"
-                        // value={quantity}
-                        // onChange={(e) =>
-                        //   setQuantity(Number.parseInt(e.target.value) || 1)
-                        // }
-                        min="1"
-                        className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base sm:text-sm"
-                        // disabled={isLoading}
-                        inputMode="numeric"
-                      /> */}
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-3">
-                    {/* <button
-                        type="button"
-                        // onClick={closeDialog}
-                        // disabled={isLoading}
-                        className="order-2 sm:order-1 flex-1 bg-gray-300 text-gray-700 py-3 sm:py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:bg-gray-200 disabled:cursor-not-allowed text-base sm:text-sm font-medium"
-                      >
-                        Batal
-                      </button> */}
-                    {/* <button
-                        type="submit"
-                        // onClick={handleQuantitySubmit}
-                        disabled={isLoading || scanQty <= 0}
-                        className="order-1 sm:order-2 flex-1 bg-blue-600 text-white py-3 sm:py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed text-base sm:text-sm font-medium"
-                      >
-                        {isLoading ? "Submitting..." : "Submit"}
-                      </button> */}
                     <Button type="submit" className="w-full">
                       Submit
+                    </Button>
+                    <Button
+                      type="button"
+                      className="w-full"
+                      variant="outline"
+                      onClick={closeDialog}
+                    >
+                      Cancel
                     </Button>
                   </div>
                 </form>
