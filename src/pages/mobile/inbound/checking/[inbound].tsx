@@ -139,7 +139,7 @@ const CheckingPage = () => {
       scanType: scanType,
       qaStatus: scanQa,
       serial: serialNumber,
-      qtyScan: scanQty,
+      qtyScan: scanQty as number,
       uploaded: false,
     };
 
