@@ -385,8 +385,20 @@ const CheckingPage = () => {
   };
 
   const handleSerialSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Serial submitted:", scanQty);
+    e.preventDefault(); // ⬅️ cegah submit default
+    // cari index pertama yang kosong
+    const emptyIndex = serialInputs.findIndex((s) => s.trim() === "");
+
+    if (emptyIndex !== -1) {
+      // fokus ke input yang kosong
+      const target = document.getElementById(`serial-${emptyIndex}`);
+      target?.focus();
+      return; // stop submit
+    }
+
+    // kalau semua sudah terisi
+    console.log("Submit:", serialInputs);
+
     handleScan();
   };
   const handleQuantitySubmit = async (e: React.FormEvent) => {
@@ -403,24 +415,28 @@ const CheckingPage = () => {
     setScanBarcode("");
     setScanQty(1);
     document.getElementById("barcode")?.focus();
-    // setLocation("")
-
-    // // Focus kembali ke barcode input
-    // setTimeout(() => {
-    //   if (barcodeInputRef.current) {
-    //     barcodeInputRef.current.focus()
-    //   }
-    // }, 100)
   };
 
+  // useEffect(() => {
+  //   if (showDialog && isSerial && serialInputs.length > 0) {
+  //     const firstInput = document.getElementById(
+  //       "serial-0"
+  //     ) as HTMLInputElement;
+  //     firstInput?.focus();
+  //   }
+  // }, [showDialog, isSerial, serialInputs]);
+
+  const [initialFocusDone, setInitialFocusDone] = useState(false);
+
   useEffect(() => {
-    if (showDialog && isSerial && serialInputs.length > 0) {
+    if (showDialog && isSerial && !initialFocusDone) {
       const firstInput = document.getElementById(
         "serial-0"
       ) as HTMLInputElement;
       firstInput?.focus();
+      setInitialFocusDone(true);
     }
-  }, [showDialog, isSerial, serialInputs]);
+  }, [showDialog, isSerial, initialFocusDone]);
 
   return (
     <>
@@ -748,11 +764,6 @@ const CheckingPage = () => {
           </CardContent>
         </Card>
 
-        {/* <Dialog>
-          <DialogContent className="bg-white">
-          </DialogContent>
-        </Dialog> */}
-
         <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
           <DialogContent className="bg-white">
             <DialogHeader>
@@ -786,7 +797,10 @@ const CheckingPage = () => {
         </Dialog>
 
         <Dialog open={showModalDetail} onOpenChange={setShowModalDetail}>
-          <DialogContent className="bg-white">
+          <DialogContent
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            className="bg-white"
+          >
             <DialogHeader>
               <DialogTitle>Detail Scanned Items</DialogTitle>
             </DialogHeader>
