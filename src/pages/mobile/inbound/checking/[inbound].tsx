@@ -429,12 +429,23 @@ const CheckingPage = () => {
   const [initialFocusDone, setInitialFocusDone] = useState(false);
 
   useEffect(() => {
-    if (showDialog && isSerial && !initialFocusDone) {
+    if (
+      showDialog &&
+      isSerial &&
+      !initialFocusDone &&
+      serialInputs.length > 1
+    ) {
       const firstInput = document.getElementById(
         "serial-0"
       ) as HTMLInputElement;
       firstInput?.focus();
       setInitialFocusDone(true);
+    } else {
+      const firstInput = document.getElementById(
+        "serial-0"
+      ) as HTMLInputElement;
+      firstInput?.focus();
+      setInitialFocusDone(false);
     }
   }, [showDialog, isSerial, initialFocusDone]);
 
@@ -817,7 +828,7 @@ const CheckingPage = () => {
             </div>
 
             {/* ListView */}
-            <div className="max-h-60 overflow-y-auto space-y-2">
+            {/* <div className="max-h-60 overflow-y-auto space-y-2">
               {filteredScannedItems.length > 0 ? (
                 filteredScannedItems.map((item, index) => (
                   <div
@@ -868,7 +879,6 @@ const CheckingPage = () => {
                     </div>
 
                     <div className="grid grid-cols-3 gap-4 mt-2">
-                      {/* Tombol berada di kolom 1 dan 2 */}
                       <div className="col-span-2 flex items-center">
                         {item.status === "pending" ? (
                           <>
@@ -902,6 +912,71 @@ const CheckingPage = () => {
                 ))
               ) : (
                 <div className="text-gray-500 text-sm">Item not found.</div>
+              )}
+            </div> */}
+
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {filteredScannedItems.length > 0 ? (
+                filteredScannedItems.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${
+                      item.status === "in stock" ? "bg-green-50" : "bg-blue-50"
+                    }`}
+                  >
+                    <div className="text-xs space-y-1">
+                      <div className="flex justify-between">
+                        <span>
+                          <strong>Barcode:</strong> {item.barcode}
+                        </span>
+                        <span className="text-gray-400">{item.status}</span>
+                      </div>
+                      <div>
+                        <strong>Serial:</strong> {item.serial_number}
+                      </div>
+                      <div>
+                        <strong>Location:</strong> {item.location}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <strong>Qty:</strong>
+                        {editInboundBarcode ? (
+                          <Input
+                            key={item.id}
+                            defaultValue={item.quantity}
+                            type="number"
+                            className="w-16 h-6 text-xs text-center"
+                            onChange={(e) =>
+                              setItemEditBarcode({
+                                ...item,
+                                quantity: Number.parseInt(e.target.value),
+                              })
+                            }
+                          />
+                        ) : (
+                          item.quantity
+                        )}
+                      </div>
+                    </div>
+
+                    {item.status === "pending" && (
+                      <div className="mt-2 flex justify-start">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() =>
+                            handleRemoveItem(item.id, item.inbound_detail_id)
+                          }
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 text-sm text-center py-4">
+                  No items found
+                </div>
               )}
             </div>
 
