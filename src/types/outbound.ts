@@ -26,6 +26,7 @@ export interface HeaderFormProps {
   qty_koli_seal?: number;
   truck_size?: string;
   truck_no?: string;
+  transporter_code?: string;
 }
 
 export interface ItemFormProps {
@@ -41,8 +42,8 @@ export interface ItemFormProps {
   sn_check?: string;
   remarks?: string;
   mode?: string;
-  // handling?: string | string[];
   handling?: string | string[] | { Handling: string }[];
+  vas_id?: number;
 }
 
 export interface ItemFormTableProps {

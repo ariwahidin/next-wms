@@ -100,8 +100,12 @@ const data = {
           url: "/wms/master/customer",
         },
         {
-          title: "Handling",
-          url: "/wms/master/handling",
+          title: "Vas Main",
+          url: "/wms/master/main-vas",
+        },
+        {
+          title: "Vas",
+          url: "/wms/master/vas",
         },
         {
           title: "Transporter",

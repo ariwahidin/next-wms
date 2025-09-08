@@ -68,7 +68,6 @@ export default function ItemFormTable({
 
   const [defaultOptions, setDefaultOptions] = useState([]);
 
-  // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [editingItem, setEditingItem] = useState<ItemFormProps | null>(null);
@@ -353,7 +352,7 @@ export default function ItemFormTable({
     }
   };
 
-  const totalQty = muatan?.reduce((sum, item) => sum + item.quantity, 0);
+  // const totalQty = muatan?.reduce((sum, item) => sum + item.quantity, 0);
   const allSelected =
     muatan?.length > 0 && selectedIds.length === muatan.length;
 
@@ -483,7 +482,6 @@ export default function ItemFormTable({
                             style={{ fontSize: "12px" }}
                             readOnly
                             type="text"
-                            //   className="w-14"
                             value={
                               products.find(
                                 (p) => p.item_code === item.item_code
@@ -495,9 +493,7 @@ export default function ItemFormTable({
                           <Input
                             style={{ fontSize: "12px" }}
                             readOnly
-                            //   className="w-100"
                             type="text"
-                            //   className="w-14"
                             value={
                               products.find(
                                 (p) => p.item_code === item.item_code

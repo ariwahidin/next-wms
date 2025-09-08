@@ -77,14 +77,10 @@ export default function ManualForm() {
     { value: "INDONESIA", label: "INDONESIA" },
     { value: "JAPAN", label: "JAPAN" },
   ]);
+  
   const [ownerOptions, setOwnerOptions] = useState<ItemOptions[]>([]);
   const [whsCodeOptions, setWhsCodeOptions] = useState<ItemOptions[]>([]);
-  const [divisionOptions, setDivisionOptions] = useState<ItemOptions[]>([
-    { value: "REGULAR", label: "REGULAR" },
-    { value: "SALES", label: "SALES" },
-    { value: "ECOM", label: "ECOM" },
-    { value: "PROJECT", label: "PROJECT" },
-  ]);
+
 
   const [references, setReferences] = useState<InboundReference[]>([
     {
@@ -261,16 +257,13 @@ export default function ManualForm() {
       }
     };
 
-    // Panggil saat komponen mount / no berubah
     fetchInbound();
 
-    // Dengarkan event `refreshData`
     const handleRefresh = () => {
       fetchInbound();
     };
     eventBus.on("refreshData", handleRefresh);
 
-    // Cleanup
     return () => {
       eventBus.off("refreshData", handleRefresh);
     };
@@ -279,10 +272,8 @@ export default function ManualForm() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
-        e.preventDefault(); // cegah browser save
+        e.preventDefault();
         console.log("Trigger tombol save manual");
-
-        // Misalnya trigger fungsi handleSave()
         handleSave();
       }
     };
@@ -297,41 +288,11 @@ export default function ManualForm() {
   return (
     <div className="p-4" style={{ fontSize: "12px" }}>
       <div className="flex justify-between items-center mb-4">
-        {/* <div className="grid grid-cols-1 sm:grid-cols-1 gap-4"> */}
-        {/* <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">Date</Label>
-            <span className="shrink-0">:</span>
-
-            <DatePicker
-              selected={
-                formData.inbound_date ? parseISO(formData.inbound_date) : null
-              }
-              onChange={(date: Date | null) => {
-                if (date) {
-                  setFormData({
-                    ...formData,
-                    inbound_date: format(date, "yyyy-MM-dd"), // simpan format ISO
-                  });
-                }
-              }}
-              dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
-              locale={id} // Bahasa Indonesia
-              customInput={
-                <Input
-                  id="InboundDate"
-                  style={{ width: "160px", fontSize: "12px" }}
-                />
-              }
-              placeholderText="Pilih tanggal"
-            />
-          </div> */}
-        {/* </div> */}
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             className="bg-black-500 text-black hover:bg-gray-200"
             onClick={() => {
-              // eventBus.emit("refreshData");
               router.push("/wms/inbound/data");
             }}
           >
@@ -360,13 +321,10 @@ export default function ManualForm() {
           )}
         </div>
       </div>
-      {/* <hr className="my-4" /> */}
 
       <div className="grid grid-cols-2 gap-4">
-        {/* Column 1 */}
         <div className="bg-white-200 p-0 space-y-1">
           <div className="grid grid-cols-2 gap-6">
-            {/* Column 1 */}
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Label
@@ -387,12 +345,12 @@ export default function ManualForm() {
                       if (date) {
                         setFormData({
                           ...formData,
-                          inbound_date: format(date, "yyyy-MM-dd"), // simpan format ISO
+                          inbound_date: format(date, "yyyy-MM-dd"),
                         });
                       }
                     }}
-                    dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
-                    locale={id} // Bahasa Indonesia
+                    dateFormat="dd/MM/yyyy"
+                    locale={id}
                     customInput={
                       <Input
                         id="InboundDate"
@@ -479,7 +437,6 @@ export default function ManualForm() {
               </div>
             </div>
 
-            {/* Column 2 */}
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Label
@@ -551,9 +508,6 @@ export default function ManualForm() {
                 <div className="flex-1">
                   <Select
                     options={originOptions}
-                    // defaultValue={originOptions.find(
-                    //   (option) => option.value === "INDONESIA"
-                    // )}
                     value={originOptions.find(
                       (option) => option.value === formData.origin
                     )}
@@ -580,20 +534,18 @@ export default function ManualForm() {
                 <div className="flex-1">
                   <DatePicker
                     selected={
-                      formData.po_date
-                        ? parseISO(formData.po_date)
-                        : null
+                      formData.po_date ? parseISO(formData.po_date) : null
                     }
                     onChange={(date: Date | null) => {
                       if (date) {
                         setFormData({
                           ...formData,
-                          po_date: format(date, "yyyy-MM-dd"), // simpan format ISO
+                          po_date: format(date, "yyyy-MM-dd"),
                         });
                       }
                     }}
-                    dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
-                    locale={id} // Bahasa Indonesia
+                    dateFormat="dd/MM/yyyy"
+                    locale={id}
                     customInput={
                       <Input
                         id="PoDate"
@@ -607,7 +559,6 @@ export default function ManualForm() {
             </div>
           </div>
 
-          {/* Remarks - Full Width */}
           <div className="flex items-center gap-2 mt-2">
             <Label
               className="w-24 text-left shrink-0 pt-2"
@@ -630,10 +581,8 @@ export default function ManualForm() {
           </div>
         </div>
 
-        {/* Column 2 */}
         <div className="bg-white-200 p-0 space-y-1">
           <div className="grid grid-cols-2 gap-6">
-            {/* Column 1 */}
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Label
@@ -712,7 +661,10 @@ export default function ManualForm() {
                   type="time"
                   value={formData.start_unloading}
                   onChange={(e) =>
-                    setFormData({ ...formData, start_unloading: e.target.value })
+                    setFormData({
+                      ...formData,
+                      start_unloading: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -737,7 +689,6 @@ export default function ManualForm() {
               </div>
             </div>
 
-            {/* Column 2 */}
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Label
@@ -825,7 +776,7 @@ export default function ManualForm() {
                   min="0"
                   value={formData.koli}
                   onChange={(e) =>
-                    setFormData({ ...formData, koli : parseInt(e.target.value) })
+                    setFormData({ ...formData, koli: parseInt(e.target.value) })
                   }
                 />
               </div>
@@ -834,13 +785,10 @@ export default function ManualForm() {
         </div>
       </div>
 
-      {/* <hr className="my-4" /> */}
-
       <div
         className="flex justify-between items-center mb-4"
         style={{ display: "none" }}
       >
-        {/* <h2 className="text-lg font-semibold">Detail Items</h2> */}
         <div className="space-x-2">
           <Button
             className="item-end"
@@ -892,7 +840,6 @@ export default function ManualForm() {
             key={item.ID}
             className="rounded-2xl shadow-md border border-gray-200 p-6 mb-6 bg-white"
           >
-            {/* <hr className="my-6" /> */}
             <ItemFormTable
               muatan={muatan}
               setMuatan={setMuatan}
@@ -901,7 +848,6 @@ export default function ManualForm() {
               inboundReferences={references[index]}
               setInboundReferences={setReferences[index]}
             />
-            {/* <hr className="my-6 mb-4" /> */}
           </div>
         </>
       ))}

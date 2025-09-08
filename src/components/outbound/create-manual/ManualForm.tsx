@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -17,6 +18,7 @@ import DatePicker from "react-datepicker";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
+import { Transporter } from "@/types/transporter";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -48,26 +50,33 @@ export default function ManualForm() {
     qty_koli_seal: 0,
     truck_size: "",
     truck_no: "",
+    transporter_code: "",
   });
 
   const [muatan, setMuatan] = useState<ItemFormProps[]>([]);
   const [customer, setCustomer] = useState<Customer[]>([]);
+  const [transporter, setTransporter] = useState<Transporter[]>([]);
+  const [transporterOptions, setTransporterOptions] = useState<ItemOptions[]>(
+    []
+  );
   const [customerOptions, setCustomerOptions] = useState<ItemOptions[]>([]);
   const [whsOptions, setWhsOptions] = useState<ItemOptions[]>([]);
   const [ownerOptions, setOwnerOptions] = useState<ItemOptions[]>([]);
 
   const fetchData = async () => {
     try {
-      const [customers, warehouses, owners] = await Promise.all([
+      const [customers, warehouses, owners, transporters] = await Promise.all([
         api.get("/customers"),
         api.get("/warehouses"),
         api.get("/owners"),
+        api.get("/transporters"),
       ]);
 
       if (
         customers.data.success &&
         warehouses.data.success &&
-        owners.data.success
+        owners.data.success &&
+        transporters.data.success
       ) {
         setCustomer(customers.data.data);
         setCustomerOptions(
@@ -86,6 +95,13 @@ export default function ManualForm() {
           owners.data.data.map((item: any) => ({
             value: item.code,
             label: item.name,
+          }))
+        );
+        setTransporter(transporters.data.data);
+        setTransporterOptions(
+          transporters.data.data.map((item: Transporter) => ({
+            value: item.transporter_code,
+            label: item.transporter_name,
           }))
         );
       }
@@ -459,6 +475,31 @@ export default function ManualForm() {
                   }
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Transporter
+                </Label>
+                <span className="shrink-0">:</span>
+                <div className="flex-1">
+                  <Select
+                    value={transporterOptions.find(
+                      (option) => option.value === formData.transporter_code
+                    )}
+                    options={transporterOptions}
+                    onChange={(selectedOption) => {
+                      if (selectedOption) {
+                        setFormData({
+                          ...formData,
+                          transporter_code: selectedOption.value,
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Column 2 */}
@@ -541,7 +582,8 @@ export default function ManualForm() {
                       setFormData({
                         ...formData,
                         plan_pickup_time: e.target.value,
-                    })}
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -564,7 +606,8 @@ export default function ManualForm() {
                       setFormData({
                         ...formData,
                         start_pick_time: e.target.value,
-                    })}
+                      })
+                    }
                   />
                   <Input
                     id="endTime"
@@ -575,7 +618,8 @@ export default function ManualForm() {
                       setFormData({
                         ...formData,
                         end_pick_time: e.target.value,
-                    })}
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -604,11 +648,13 @@ export default function ManualForm() {
                         ...formData,
                         customer_code: selectedOption.value,
                         cust_address: customer.find(
-                          (option) => option.customer_code === selectedOption.value
+                          (option) =>
+                            option.customer_code === selectedOption.value
                         ).cust_addr1,
                         cust_city: customer.find(
-                          (option) => option.customer_code === selectedOption.value
-                        ).cust_city
+                          (option) =>
+                            option.customer_code === selectedOption.value
+                        ).cust_city,
                       });
                     }
                   }}
@@ -686,11 +732,13 @@ export default function ManualForm() {
                         ...formData,
                         deliv_to: selectedOption.value,
                         deliv_address: customer.find(
-                          (option) => option.customer_code === selectedOption.value
+                          (option) =>
+                            option.customer_code === selectedOption.value
                         ).cust_city,
                         deliv_city: customer.find(
-                          (option) => option.customer_code === selectedOption.value
-                        ).cust_city
+                          (option) =>
+                            option.customer_code === selectedOption.value
+                        ).cust_city,
                       });
                     }
                   }}

@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -22,7 +21,6 @@ const ItemSelectionModal = ({
   onClose,
   products = [],
   onApply,
-  api,
   selectedItems = [],
   mode = "create",
 }: ItemSelectionModalProps) => {
@@ -89,12 +87,6 @@ const ItemSelectionModal = ({
     handleItemSelect(itemId, !isCurrentlySelected);
   };
 
-  const handleSelectAll = (isChecked: boolean) => {
-    if (mode === "edit") {
-      return;
-    }
-    setSelectedItemIds(isChecked ? filteredItems.map((item) => item.ID) : []);
-  };
 
   const handleApply = () => {
     const currentSelectedIds = selectedItems.map((item) => item.item_id);
@@ -133,10 +125,6 @@ const ItemSelectionModal = ({
   };
 
   if (!isOpen) return null;
-
-  const allSelected =
-    filteredItems.length > 0 &&
-    filteredItems.every((item) => selectedItemIds.includes(item.ID));
 
   return (
     <div

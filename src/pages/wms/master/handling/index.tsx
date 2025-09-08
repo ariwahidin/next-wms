@@ -6,7 +6,7 @@ import { useState } from "react";
 export default function Handling() {
   const [editData, setEditData] = useState(null);
   return (
-    <Layout title="Master" subTitle="Handling">
+    <Layout title="Master" subTitle="VAS">
       <div className="p-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="col-span-2">
           <HandlingTable setEditData={setEditData} />

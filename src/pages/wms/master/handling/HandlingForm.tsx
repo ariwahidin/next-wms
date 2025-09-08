@@ -175,15 +175,15 @@ export default function HandlingForm({ ...props }: any) {
   return (
     <Tabs defaultValue="single" className="w-full">
       <TabsList>
-        <TabsTrigger value="single">Single</TabsTrigger>
-        <TabsTrigger value="combine">Combine</TabsTrigger>
+        <TabsTrigger value="single">Main Vas</TabsTrigger>
+        <TabsTrigger value="combine">Vas</TabsTrigger>
       </TabsList>
       <TabsContent value="single">
         <Card className="w-[400px] mt-3">
           <CardHeader>
-            <CardTitle>Handling Form</CardTitle>
+            <CardTitle>Vas Form</CardTitle>
             <CardDescription>
-              {props.editData ? "Edit Handling" : "Add Handling"}
+              {props.editData ? "Edit Vas" : "Add Vas"}
             </CardDescription>
             {error && (
               <Alert variant="destructive">

@@ -4,41 +4,15 @@ import { use, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from "react-select";
-import { Trash, Save, Pencil, X } from "lucide-react";
-import * as yup from "yup";
+import { Pencil, Trash, X } from "lucide-react";
 import {
   CombinedOutboundProps,
-  HeaderFormProps,
   ItemFormProps,
-  ItemFormTableProps,
   ItemOptions,
-  PropsHeader,
 } from "@/types/outbound";
 import { Product } from "@/types/item";
 import api from "@/lib/api";
-import { Warehouse } from "@/types/warehouse";
-import { Supplier } from "@/types/supplier";
-import eventBus from "@/utils/eventBus";
-
-// Skema validasi Yup
-const muatanSchema = yup.object().shape({
-  item_code: yup.string().required("Item code wajib diisi"),
-  quantity: yup
-    .number()
-    .typeError("Qty harus berupa angka")
-    .positive("Qty harus lebih dari 0")
-    .required("Qty wajib diisi"),
-  // uom: yup.string().required("UOM wajib diisi"),
-  // received_date: yup
-  //   .string()
-  //   .required("Tanggal penerimaan wajib diisi")
-  //   .test("is-date", "Tanggal tidak valid", (value) => {
-  //     const date = new Date(value);
-  //     return !isNaN(date.getTime());
-  //   }),
-  whs_code: yup.string().required("Gudang wajib diisi"),
-  remarks: yup.string().optional(),
-});
+import ItemSelectionModal from "@/components/outbound/create-manual/ItemSelectionModal";
 
 export default function ItemFormTable({
   muatan,
@@ -46,29 +20,36 @@ export default function ItemFormTable({
   headerForm,
   setHeaderForm,
 }: CombinedOutboundProps) {
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  // const [muatan, setMuatan] = useState<ItemFormProps[]>([]);
-
+  const [vasPages, setVasPages] = useState<any[]>([]);
+  const [vasOptions, setVasOptions] = useState<any[]>([]);
   const [itemCodeOptions, setItemCodeOptions] = useState<ItemOptions[]>([]);
-  const [whsCodeOptions, setWhsCodeOptions] = useState<ItemOptions[]>([]);
-
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [errors, setErrors] = useState<{
     [id: number]: { [key: string]: string };
   }>({});
-
   const [defaultUoms, setDefaultUoms] = useState([]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [editingItem, setEditingItem] = useState<ItemFormProps | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+  const handleSelect = (id: number, checked: boolean) => {
+    setSelectedIds((prev) =>
+      checked ? [...prev, id] : prev.filter((sid) => sid !== id)
+    );
+  };
 
   const fetchData = async () => {
     try {
-      const [products, uoms] = await Promise.all([
+      const [products, uoms, vasPages] = await Promise.all([
         api.get("/products"),
         api.get("/uoms"),
+        api.get("/vas/page"),
       ]);
 
-      if (products.data.success && uoms.data.success) {
+      if (products.data.success && uoms.data.success && vasPages.data.success) {
         setProducts(products.data.data);
         setItemCodeOptions(
           products.data.data.map((item: Product) => ({
@@ -76,12 +57,19 @@ export default function ItemFormTable({
             label: item.item_code,
           }))
         );
-        // Set default UOM options
+
         const defaultUoms = uoms.data.data.map((item: any) => ({
           value: item.code,
           label: item.code,
         }));
         setDefaultUoms(defaultUoms);
+
+        setVasPages(vasPages.data.data);
+        const vasOptions = vasPages.data.data.map((item: any) => ({
+          value: item.ID,
+          label: item.name,
+        }));
+        setVasOptions(vasOptions);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -113,19 +101,17 @@ export default function ItemFormTable({
     setEditingId(newRow.ID);
   };
 
-  // const handleChange = (
-  //   id: number,
-  //   field: keyof ItemFormProps,
-  //   value: string | number
-  // ) => {
-  //   setMuatan((prev) =>
-  //     prev.map((m) =>
-  //       m.ID === id
-  //         ? { ...m, [field]: field === "quantity" ? Number(value) : value }
-  //         : m
-  //     )
-  //   );
-  // };
+  const handleAddItems = () => {
+    setModalMode("create");
+    setEditingItem(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditItem = (item: ItemFormProps) => {
+    setModalMode("edit");
+    setEditingItem(item);
+    setIsModalOpen(true);
+  };
 
   const handleChange = (
     id: number,
@@ -168,75 +154,23 @@ export default function ItemFormTable({
     }
   };
 
-  const handleSaveItem = async () => {
-    const editingItem = muatan.find((m) => m.ID === editingId);
-
-    console.log("Item yang akan diedit:", editingItem);
-
-    if (!editingItem) return;
-
-    console.log("Item yang sedang diedit:", editingItem);
-
-    try {
-      await muatanSchema.validate(editingItem, { abortEarly: false });
-
-      // validasi lolos
-
-      console.log("Data yang dikirim:", editingItem);
-
-      // Simpan ke backend di sini jika mau
-
-      const res = await api.post(
-        `/outbound/item/` + editingItem.ID,
-        editingItem,
-        { withCredentials: true }
-      );
-      if (res.data.success) {
-        console.log("Data yang telah disimpan:", res.data.data);
-
-        eventBus.emit("showAlert", {
-          title: "Success!",
-          description: res.data.message,
-          type: "success",
-        });
-
-        setMuatan((prev) =>
-          prev.map((m) => (m.ID === editingItem.ID ? res.data.data : m))
-        );
-        setErrors((prev) => ({ ...prev, [editingItem.ID]: {} }));
-        setEditingId(null);
-      }
-    } catch (validationError: any) {
-      const fieldErrors: { [key: string]: string } = {};
-      validationError.inner.forEach((err: any) => {
-        if (err.path) {
-          fieldErrors[err.path] = err.message;
-        }
-      });
-
-      setErrors((prev) => ({
-        ...prev,
-        [editingItem.ID]: fieldErrors,
-      }));
-    }
-  };
-
-  const handleEdit = (id: number) => {
-    setEditingId(id);
-  };
-
   const handleCancel = async (item: ItemFormProps) => {
     if (item.mode === "create") {
       setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
+      setSelectedIds((prev) => prev.filter((sid) => sid !== item.ID));
     } else {
       try {
-        const res = await api.get(`/outbound/item/` + item.ID, {
+        const res = await api.delete(`/outbound/item/` + item.ID, {
           withCredentials: true,
         });
+
+        console.log("Response dari server:", res);
+
         if (res.data.success) {
-          setMuatan((prev) =>
-            prev.map((m) => (m.ID === item.ID ? res.data.data : m))
-          );
+          // setMuatan((prev) =>
+          //   prev.map((m) => (m.ID === item.ID ? res.data.data : m))
+          // );
+          setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
           setEditingId(null);
           setErrors({});
         }
@@ -246,77 +180,59 @@ export default function ItemFormTable({
     }
   };
 
-  const handleDelete = async (id: number) => {
-    console.log("Deleting item with ID:", id);
+  // const totalQty = muatan?.reduce((sum, item) => sum + item.quantity, 0);
 
-    try {
-      const res = await api.delete(`/outbound/item/` + id, {
-        withCredentials: true,
-      });
-      if (res.data.success) {
-        setMuatan((prev) => prev.filter((m) => m.ID !== id));
-        setSelectedIds((prev) => prev.filter((sid) => sid !== id));
-        if (editingId === id) setEditingId(null);
-      }
-    } catch (error) {
-      console.error("Error deleting item:", error);
+  // Handle apply dari modal
+  const handleModalApply = (selectedItems: Product[]) => {
+    console.log("Selected Items:", selectedItems);
+    // return;
+
+    if (modalMode === "create") {
+      const newItems = selectedItems.map((product) => ({
+        ID: Date.now() * 1000 + Math.floor(Math.random() * 1000),
+        item_id: product.ID,
+        outbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
+        item_code: product.item_code,
+        quantity: 1,
+        location: "",
+        uom: product.uom,
+        remarks: "",
+        mode: "create",
+        sn: product.has_serial,
+        vas_id: 0,
+      }));
+
+      setMuatan((prev) => [...prev, ...newItems]);
+    } else if (
+      modalMode === "edit" &&
+      editingItem &&
+      selectedItems.length > 0
+    ) {
+      const selectedProduct = selectedItems[0];
+      setMuatan((prev) =>
+        prev.map((m) =>
+          m.ID === editingItem.ID
+            ? {
+                ...m,
+                item_code: selectedProduct.item_code,
+                uom: selectedProduct.uom,
+                is_serial: selectedProduct.has_serial,
+              }
+            : m
+        )
+      );
     }
 
-    // setMuatan((prev) => prev.filter((m) => m.ID !== id));
-    // setSelectedIds((prev) => prev.filter((sid) => sid !== id));
-    // if (editingId === id) setEditingId(null);
+    setIsModalOpen(false);
   };
-
-  const handleSelect = (id: number, checked: boolean) => {
-    setSelectedIds((prev) =>
-      checked ? [...prev, id] : prev.filter((sid) => sid !== id)
-    );
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    setSelectedIds(checked ? muatan.map((m) => m.ID) : []);
-  };
-
-  const handleDeleteSelected = () => {
-    console.log("Deleting selected items with IDs:", selectedIds);
-
-    try {
-      selectedIds.forEach(async (id) => {
-        const res = await api.delete(`/outbound/item/` + id, {
-          withCredentials: true,
-        });
-        if (res.data.success) {
-          setMuatan((prev) => prev.filter((m) => m.ID !== id));
-          setSelectedIds((prev) => prev.filter((sid) => sid !== id));
-          if (editingId === id) setEditingId(null);
-        }
-      });
-    } catch (error) {
-      console.error("Error deleting selected items:", error);
-    }
-
-    // setMuatan((prev) => prev.filter((m) => !selectedIds.includes(m.ID)));
-    // setSelectedIds([]);
-  };
-
-  const totalQty = muatan?.reduce((sum, item) => sum + item.quantity, 0);
-  const allSelected =
-    muatan?.length > 0 && selectedIds.length === muatan.length;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Requested Items</h2>
+        {/* <h2 className="text-lg font-semibold">Requested Items</h2> */}
         {headerForm.status !== "complete" && (
           <div className="space-x-2">
-            {/* <Button
-              variant="destructive"
-              onClick={handleDeleteSelected}
-              disabled={selectedIds.length === 0}
-            >
-              Delete Selected
-            </Button> */}
-            <Button type="button" onClick={handleAdd}>
+            <Button type="button" onClick={handleAddItems}>
               Add Item
             </Button>
           </div>
@@ -326,13 +242,6 @@ export default function ItemFormTable({
       <table className="w-full border font-normal text-xs">
         <thead className="bg-gray-100">
           <tr>
-            {/* <th className="p-2 border text-center w-8">
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={(e) => handleSelectAll(e.target.checked)}
-              />
-            </th> */}
             <th className="p-2 border w-12 text-center">No.</th>
             <th className="p-2 border" style={{ width: "300px" }}>
               Item Code
@@ -349,30 +258,22 @@ export default function ItemFormTable({
             <th className="p-2 border" style={{ width: "55px" }}>
               SN
             </th>
-            <th className="p-2 border" style={{ width: "120px" }}>
+            {/* <th className="p-2 border" style={{ width: "120px" }}>
               UoM
-            </th>
-            <th className="p-2 border">Inv. Location</th>
-            <th className="p-2 border">Remarks</th>
+            </th> */}
+            {/* <th className="p-2 border">Inv. Location</th> */}
+            <th className="p-2 border">VAS</th>
             <th className="p-2 border" style={{ width: "160px" }}>
               Action
             </th>
           </tr>
         </thead>
-
         <tbody>
           {muatan?.map((item, index) => {
             return (
               <tr key={item.ID} className="border-t">
-                {/* <td className="p-2 border text-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(item.ID)}
-                    onChange={(e) => handleSelect(item.ID, e.target.checked)}
-                  />
-                </td> */}
                 <td className="p-2 border text-center">{index + 1}</td>
-                <td className="p-2 border">
+                {/* <td className="p-2 border">
                   <div key={item.ID}>
                     <Select
                       value={itemCodeOptions.find(
@@ -389,13 +290,44 @@ export default function ItemFormTable({
                       {errors[item.ID].item_code}
                     </small>
                   )}
+                </td> */}
+                <td className="p-2 border">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      style={{ fontSize: "12px" }}
+                      type="text"
+                      value={item.item_code}
+                      readOnly
+                      className="flex-1"
+                      placeholder="Click edit to select item..."
+                    />
+                    {item.mode === "create" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditItem(item)}
+                        title="Select item"
+                      >
+                        <Pencil size={12} />
+                      </Button>
+                    )}
+                  </div>
+                  {errors[item.ID]?.item_code && (
+                    <small className="text-red-500">
+                      {errors[item.ID].item_code}
+                    </small>
+                  )}
                 </td>
                 <td className="p-2 border">
                   <Input
                     style={{ fontSize: "12px" }}
                     readOnly
                     type="text"
-                    value={item.item_name}
+                    // value={item.item_name}
+                    value={
+                      products.find((p) => p.item_code === item.item_code)
+                        ?.item_name || ""
+                    }
                   />
                 </td>
                 <td className="p-2 border">
@@ -403,7 +335,11 @@ export default function ItemFormTable({
                     style={{ fontSize: "12px" }}
                     readOnly
                     type="text"
-                    value={item.barcode}
+                    // value={item.barcode}
+                    value={
+                      products.find((p) => p.item_code === item.item_code)
+                        ?.barcode || ""
+                    }
                   />
                 </td>
                 <td className="p-2 border">
@@ -424,9 +360,14 @@ export default function ItemFormTable({
                   )}
                 </td>
                 <td className="p-2 border">
-                  <Input style={{ fontSize : "12px" }} readOnly type="text" value={item.sn} />
+                  <Input
+                    style={{ fontSize: "12px" }}
+                    readOnly
+                    type="text"
+                    value={item.sn}
+                  />
                 </td>
-                <td className="p-2 border">
+                {/* <td className="p-2 border">
                   <Select
                     value={defaultUoms.find(
                       (option) => option.value === item.uom
@@ -436,8 +377,8 @@ export default function ItemFormTable({
                       handleChange(item.ID, "uom", value?.value)
                     }
                   />
-                </td>
-                <td className="p-2 border">
+                </td> */}
+                {/* <td className="p-2 border">
                   <Input
                     type="text"
                     value={item.location}
@@ -445,8 +386,8 @@ export default function ItemFormTable({
                       handleChange(item.ID, "location", e.target.value)
                     }
                   />
-                </td>
-                <td className="p-2 border">
+                </td> */}
+                {/* <td className="p-2 border">
                   <Input
                     type="text"
                     value={item.remarks}
@@ -459,6 +400,31 @@ export default function ItemFormTable({
                       {errors[item.ID].remarks}
                     </small>
                   )}
+                </td> */}
+                <td className="p-2 border">
+                  <Select
+                    className="text-sm w-34"
+                    isSearchable
+                    value={vasOptions.find(
+                      (option) => option.value === item.vas_id
+                    )}
+                    options={vasOptions}
+                    onChange={(value) =>
+                      handleChange(item.ID, "vas_id", value?.value)
+                    }
+                  />
+                  {/* <Input
+                    type="text"
+                    value={item.vas}
+                    onChange={(e) =>
+                      handleChange(item.ID, "vas", e.target.value)
+                    }
+                  /> */}
+                  {/* {errors[item.ID]?.vas && (
+                    <small className="text-red-500">
+                      {errors[item.ID].vas}
+                    </small>
+                  )} */}
                 </td>
                 <td
                   className="p-2 border space-x-2 text-center"
@@ -475,176 +441,17 @@ export default function ItemFormTable({
                       <X size={14} />
                     </Button>
                   ) : (
-                    <></>
-                    // <Button
-                    //   size="sm"
-                    //   variant="destructive"
-                    //   onClick={() => handleDelete(item.ID)}
-                    // >
-                    //   <Trash size={14} />
-                    // </Button>
+                    <>
+                      {/* <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(item.ID)}
+                      >
+                        <Trash size={14} />
+                      </Button> */}
+                    </>
                   )}
                 </td>
-              </tr>
-            );
-          })}
-        </tbody>
-        <tfoot>
-          <tr className="bg-gray-100 font-semibold">
-            <td className="p-2 border" colSpan={5}>
-              Total
-            </td>
-            <td className="p-2 border text-center">{totalQty}</td>
-            <td className="p-2 border" colSpan={2}></td>
-          </tr>
-        </tfoot>
-
-        {/* <tbody>
-          {muatan?.map((item, index) => {
-            return (
-              <tr key={item.ID} className="border-t">
-                <td className="p-2 border text-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(item.ID)}
-                    onChange={(e) => handleSelect(item.ID, e.target.checked)}
-                  />
-                </td>
-                <td className="p-2 border text-center">{index + 1}</td>
-                {headerForm.status == "open" || headerForm.mode == "create" ? (
-                  <>
-                    <td className="p-2 border">
-                      <div key={item.ID}>
-                        <Select
-                          value={itemCodeOptions.find(
-                            (option) => option.value === item.item_code
-                          )}
-                          options={itemCodeOptions}
-                          onChange={(value) =>
-                            handleChange(item.ID, "item_code", value?.value)
-                          }
-                        />
-                      </div>
-                      {errors[item.ID]?.item_code && (
-                        <small className="text-red-500">
-                          {errors[item.ID].item_code}
-                        </small>
-                      )}
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        readOnly
-                        type="text"
-                        value={item.item_name}
-                      />
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        readOnly
-                        type="text"
-                        value={item.barcode}
-                      />
-                    </td>
-                    <td className="p-2 border">
-                      <div>
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleChange(item.ID, "quantity", e.target.value)
-                          }
-                        />
-                      </div>
-                      {errors[item.ID]?.item_code && (
-                        <small className="text-red-500">
-                          {errors[item.ID].item_code}
-                        </small>
-                      )}
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        readOnly
-                        type="text"
-                        value={item.sn}
-                      />
-                    </td>
-                    <td className="p-2 border">
-                      <Select
-                        value={defaultUoms.find(
-                          (option) => option.value === item.uom
-                        )}
-                        options={defaultUoms}
-                        onChange={(value) =>
-                          handleChange(item.ID, "uom", value?.value)
-                        }
-                      />
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        type="text"
-                        value={item.location}
-                        onChange={(e) =>
-                          handleChange(item.ID, "location", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        type="text"
-                        value={item.remarks}
-                        onChange={(e) =>
-                          handleChange(item.ID, "remarks", e.target.value)
-                        }
-                      />
-                      {errors[item.ID]?.remarks && (
-                        <small className="text-red-500">
-                          {errors[item.ID].remarks}
-                        </small>
-                      )}
-                    </td>
-                    <td
-                      className="p-2 border space-x-2 text-center"
-                      style={{ width: "160px" }}
-                    >
-                      {item.mode === "create" ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            handleCancel(item);
-                          }}
-                        >
-                          <X size={14} />
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(item.ID)}
-                        >
-                          <Trash size={14} />
-                        </Button>
-                      )}
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td className="p-2 border">{item.item_code}</td>
-                    <td className="p-2 border text-center">{item.item_name}</td>
-                    <td className="p-2 border text-center">{item.quantity}</td>
-                    <td className="p-2 border text-center">{item.uom}</td>
-                    <td className="p-2 border">{item.remarks}</td>
-                    <td
-                      className="p-2 border space-x-2 text-center"
-                      style={{ width: "160px" }}
-                    >
-                      {headerForm.status !== "complete" && (
-                        <>
-                        </>
-                      )}
-                    </td>
-                  </>
-                )}
               </tr>
             );
           })}
@@ -654,11 +461,19 @@ export default function ItemFormTable({
             <td className="p-2 border" colSpan={4}>
               Total
             </td>
-            <td className="p-2 border text-center">{totalQty}</td>
+            <td className="p-2 border text-center">{muatan.reduce((acc, item) => acc + item.quantity, 0)}</td>
             <td className="p-2 border" colSpan={2}></td>
           </tr>
-        </tfoot> */}
+        </tfoot>
       </table>
+
+      <ItemSelectionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        products={products}
+        onApply={handleModalApply}
+        selectedItems={muatan}
+      />
     </div>
   );
 }

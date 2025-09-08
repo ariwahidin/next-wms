@@ -42,8 +42,7 @@ const HandlingTable = ({ setEditData }) => {
 
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
-    { field: "name", headerName: "Handling Name" },
-    { field: "type", headerName: "Type" },
+    { field: "name", headerName: "Vas" },
     { field: "rate_idr", headerName: "Rate IDR" },
     {
       field: "updated_at",
