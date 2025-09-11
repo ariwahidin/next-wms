@@ -35,11 +35,11 @@ export default function ItemFormTable({
   const [editingItem, setEditingItem] = useState<ItemFormProps | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-  const handleSelect = (id: number, checked: boolean) => {
-    setSelectedIds((prev) =>
-      checked ? [...prev, id] : prev.filter((sid) => sid !== id)
-    );
-  };
+  // const handleSelect = (id: number, checked: boolean) => {
+  //   setSelectedIds((prev) =>
+  //     checked ? [...prev, id] : prev.filter((sid) => sid !== id)
+  //   );
+  // };
 
   const fetchData = async () => {
     try {
@@ -80,26 +80,26 @@ export default function ItemFormTable({
     fetchData();
   }, []);
 
-  const handleAdd = () => {
-    const newRow = {
-      ID: Date.now(), // Gunakan timestamp sebagai ID unik
-      outbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
-      item_code: "",
-      item_name: "",
-      barcode: "",
-      quantity: 0,
-      uom: "",
-      location: "",
-      outbound_date: new Date().toISOString().split("T")[0], // Tanggal hari ini
-      remarks: "",
-      mode: "create",
-    };
+  // const handleAdd = () => {
+  //   const newRow = {
+  //     ID: Date.now(), // Gunakan timestamp sebagai ID unik
+  //     outbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
+  //     item_code: "",
+  //     item_name: "",
+  //     barcode: "",
+  //     quantity: 0,
+  //     uom: "",
+  //     location: "",
+  //     outbound_date: new Date().toISOString().split("T")[0], // Tanggal hari ini
+  //     remarks: "",
+  //     mode: "create",
+  //   };
 
-    console.log("Muatan sebelum penambahan:", muatan);
+  //   console.log("Muatan sebelum penambahan:", muatan);
 
-    setMuatan([...muatan, newRow]);
-    setEditingId(newRow.ID);
-  };
+  //   setMuatan([...muatan, newRow]);
+  //   setEditingId(newRow.ID);
+  // };
 
   const handleAddItems = () => {
     setModalMode("create");
@@ -167,9 +167,6 @@ export default function ItemFormTable({
         console.log("Response dari server:", res);
 
         if (res.data.success) {
-          // setMuatan((prev) =>
-          //   prev.map((m) => (m.ID === item.ID ? res.data.data : m))
-          // );
           setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
           setEditingId(null);
           setErrors({});
@@ -179,8 +176,6 @@ export default function ItemFormTable({
       }
     }
   };
-
-  // const totalQty = muatan?.reduce((sum, item) => sum + item.quantity, 0);
 
   // Handle apply dari modal
   const handleModalApply = (selectedItems: Product[]) => {

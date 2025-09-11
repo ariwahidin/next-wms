@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState } from "react";
@@ -8,28 +9,30 @@ import React from "react";
 
 const PickingSheetPrint = () => {
   const router = useRouter();
-  const { id } = router.query;
-  const [pickingSheet, setPickingSheet] = useState<any[]>([]);
+  const { packing, id } = router.query;
+  const [packingItems, setPackingItems] = useState<any[]>([]);
   const barcodeRef = useRef<HTMLCanvasElement>(null);
   const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
   const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
 
   useEffect(() => {
-    if (id) {
+    if (packing && id) {
+      console.log("packing : ", packing);
+      console.log("id : ", id);
       fetchData(id as string);
     }
-  }, [id]);
+  }, [packing, id]);
 
   const fetchData = async (id: string) => {
-    const res = await api.get(`/outbound/picking/sheet/${id}`, {
+    const res = await api.get(`/outbound/${id}/packing/${packing}`, {
       withCredentials: true,
     });
-    setPickingSheet(res.data.data);
+    setPackingItems(res.data.data);
   };
 
   useEffect(() => {
-    if (pickingSheet.length > 0 && barcodeRef.current) {
-      JsBarcode(barcodeRef.current, pickingSheet[0].outbound_no, {
+    if (packingItems.length > 0 && barcodeRef.current) {
+      JsBarcode(barcodeRef.current, packingItems[0].packing_no, {
         format: "CODE128",
         displayValue: true,
         fontSize: 14,
@@ -37,7 +40,7 @@ const PickingSheetPrint = () => {
         height: 50,
       });
 
-      pickingSheet.forEach((item, index) => {
+      packingItems.forEach((item, index) => {
         const canvasBarcode = barcodeLocationRef.current[index];
         if (canvasBarcode) {
           JsBarcode(canvasBarcode, item.location, {
@@ -65,14 +68,14 @@ const PickingSheetPrint = () => {
         window.print();
       }, 500);
     }
-  }, [pickingSheet]);
+  }, [packingItems]);
 
-  if (pickingSheet.length === 0) return <p>Loading...</p>;
+  if (packingItems.length === 0) return <p>Loading...</p>;
 
-  const data = pickingSheet[0];
+  const data = packingItems[0];
 
   // sebelum return JSX
-  const groupedData = pickingSheet.reduce((acc, item) => {
+  const groupedData = packingItems.reduce((acc, item) => {
     if (!acc[item.item_code]) {
       acc[item.item_code] = [];
     }
@@ -80,13 +83,13 @@ const PickingSheetPrint = () => {
     return acc;
   }, {});
 
-  const grandTotalQty = pickingSheet.reduce(
+  const grandTotalQty = packingItems.reduce(
     (acc, item) => acc + item.quantity,
     0
   );
   //   const grandTotalCbm = pickingSheet.reduce((acc, item) => acc + item.cbm, 0);
 
-  const grandTotalCbm = pickingSheet
+  const grandTotalCbm = packingItems
     .reduce((acc, item) => acc + item.cbm, 0)
     .toFixed(3);
 
@@ -111,10 +114,25 @@ const PickingSheetPrint = () => {
         }}
       />
 
-      <h2 style={{ textAlign: "center", marginBottom: "10px" }}>
-        Picking Sheet
+      <h2
+        style={{
+          textAlign: "center",
+          fontWeight: "bold",
+          marginBottom: "10px",
+        }}
+      >
+        SERIAL NUMBER LIST
       </h2>
-      <table style={{ width: "100%", marginBottom: "10px" }}>
+
+      <hr
+        style={{
+          border: "1px solid black",
+          marginBottom: "10px",
+          marginTop: "10px",
+        }}
+      />
+
+      <table style={{ display: "none", width: "100%", marginBottom: "10px" }}>
         <tr>
           <td style={{ textAlign: "center", width: "33%" }}>
             <canvas
@@ -166,24 +184,21 @@ const PickingSheetPrint = () => {
         >
           <tbody>
             <tr>
-              <td style={headerLabel}>Picking ID</td>
-              <td style={headerValue}>{data.outbound_no}</td>
-              <td style={headerLabel}>Qty Koli</td>
+              <td style={headerLabel}>Packing No</td>
+              <td style={headerValue}>{data.packing_no}</td>
+              {/* <td style={headerLabel}>Qty Koli</td>
               <td style={headerValue}>
                 {data.qty_koli}
-                {/* (Seal: {data.qty_koli_seal}) */}
-              </td>
+              </td> */}
             </tr>
             <tr>
               <td style={headerLabel}>Shipment ID</td>
               <td style={headerValue}>{data.shipment_id}</td>
-              <td style={headerLabel}>Customer Name</td>
-              <td style={headerValue}>{data.customer_name}</td>
             </tr>
             <tr>
-              <td style={headerLabel}>Picking Date</td>
+              <td style={headerLabel}>Packing Date</td>
               <td style={headerValue}>
-                {new Date(data.outbound_date).toLocaleDateString("id-ID", {
+                {new Date(data.packing_date).toLocaleDateString("id-ID", {
                   day: "2-digit",
                   month: "2-digit",
                   year: "numeric",
@@ -191,19 +206,24 @@ const PickingSheetPrint = () => {
                   minute: "2-digit",
                 })}
               </td>
-
+            </tr>
+            <tr>
+              <td style={headerLabel}>Customer Name</td>
+              <td style={headerValue}>{data.customer_name}</td>
+            </tr>
+            <tr>
               <td style={headerLabel}>Customer Address</td>
               <td style={headerValue}>{data.cust_address}</td>
             </tr>
             <tr>
-              <td style={headerLabel}>Picker</td>
-              <td style={headerValue}>{data.picker_name}</td>
+              {/* <td style={headerLabel}>Picker</td>
+              <td style={headerValue}>{data.picker_name}</td> */}
               <td style={headerLabel}>Customer City</td>
               <td style={headerValue}>{data.cust_city}</td>
             </tr>
             <tr></tr>
             <tr>
-              <td style={headerLabel}>Plan Pickup</td>
+              {/* <td style={headerLabel}>Plan Pickup</td>
               <td style={headerValue}>
                 {new Date(
                   `${data.plan_pickup_date}T${data.plan_pickup_time}`
@@ -214,13 +234,13 @@ const PickingSheetPrint = () => {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
-              </td>
+              </td> */}
 
               <td style={headerLabel}>Delivery To</td>
               <td style={headerValue}>{data.deliv_to_name}</td>
             </tr>
             <tr>
-              <td style={headerLabel}>Print Date/Time</td>
+              {/* <td style={headerLabel}>Print Date/Time</td>
               <td style={headerValue}>
                 {new Date().toLocaleString("id-ID", {
                   day: "2-digit",
@@ -229,13 +249,13 @@ const PickingSheetPrint = () => {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
-              </td>
+              </td> */}
               <td style={headerLabel}>Delivery Address</td>
               <td style={headerValue}>{data.deliv_address}</td>
             </tr>
             <tr>
-              <td style={headerLabel}>Remarks</td>
-              <td style={headerValue}>{data.remarks}</td>
+              {/* <td style={headerLabel}>Remarks</td>
+              <td style={headerValue}>{data.remarks}</td> */}
               <td style={headerLabel}>Delivery City</td>
               <td style={headerValue}>{data.deliv_city}</td>
             </tr>
@@ -246,62 +266,6 @@ const PickingSheetPrint = () => {
           </tbody>
         </table>
       </div>
-
-      {/* Items Table */}
-      {/* <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          marginTop: "20px",
-          fontSize: "12px",
-        }}
-      >
-        <thead>
-          <tr>
-            <th style={th}>NO</th>
-            <th style={th}>ITEM</th>
-            <th style={th}>DESCRIPTION</th>
-            <th style={th}>GMC</th>
-            <th style={th}>WH CODE</th>
-
-            <th style={th}>REC DATE</th>
-            <th style={th}>LOCATION</th>
-            <th style={th}>QTY</th>
-            <th style={th}>CBM</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pickingSheet.map((item, i) => (
-            <tr key={i}>
-              <td style={{ ...td, textAlign: "center" }}>{i + 1}</td>
-              <td style={td}>{item.item_code}</td>
-              <td style={td}>{item.item_name}</td>
-              <td style={td}>{item.barcode}</td>
-              <td style={{ ...td, textAlign: "center" }}>{item.whs_code}</td>
-
-              <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
-                {item.rec_date}
-              </td>
-              <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
-                {item.location}
-              </td>
-              <td style={{ ...td, textAlign: "center" }}>{item.quantity}</td>
-              <td style={{ ...td, textAlign: "center" }}>{item.cbm}</td>
-            </tr>
-          ))}
-          <tr>
-            <td colSpan={7} style={{ ...td, textAlign: "center" }}>
-              Total
-            </td>
-            <td style={{ ...td, textAlign: "center" }}>
-              {pickingSheet.reduce((acc, item) => acc + item.quantity, 0)}
-            </td>
-            <td style={{ ...td, textAlign: "center" }}>
-              {pickingSheet.reduce((acc, item) => acc + item.cbm, 0)}
-            </td>
-          </tr>
-        </tbody>
-      </table> */}
 
       <table
         style={{
@@ -317,11 +281,8 @@ const PickingSheetPrint = () => {
             <th style={th}>ITEM</th>
             <th style={th}>DESCRIPTION</th>
             <th style={th}>GMC</th>
-            <th style={th}>WH CODE</th>
-            <th style={th}>REC DATE</th>
-            <th style={th}>LOCATION</th>
+            <th style={th}>SN</th>
             <th style={th}>QTY</th>
-            <th style={th}>CBM</th>
           </tr>
         </thead>
         <tbody>
@@ -415,19 +376,19 @@ const PickingSheetPrint = () => {
                       </td>
 
                       {/* WH CODE */}
-                      <td style={{ textAlign: "center" }}>
+                      {/* <td style={{ textAlign: "center" }}>
                         {j === 0 ? item.whs_code : ""}
-                      </td>
+                      </td> */}
 
                       {/* REC DATE */}
-                      <td
+                      {/* <td
                         style={{
                           textAlign: "center",
                           whiteSpace: "nowrap",
                         }}
                       >
                         {item.rec_date}
-                      </td>
+                      </td> */}
 
                       {/* LOCATION */}
                       <td
@@ -436,24 +397,23 @@ const PickingSheetPrint = () => {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {item.location}
+                        {item.serial_number}
                       </td>
 
                       {/* QTY */}
                       <td style={{ textAlign: "center" }}>{item.quantity}</td>
 
                       {/* CBM */}
-                      <td style={{ textAlign: "center" }}>{item.cbm}</td>
+                      {/* <td style={{ textAlign: "center" }}>{item.cbm}</td> */}
                     </tr>
                   ))}
 
                   <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
                     <td style={{ ...td, textAlign: "center" }}>{itemCode}</td>
-                    <td colSpan={5} style={{ ...td, textAlign: "right" }}>
+                    <td colSpan={3} style={{ ...td, textAlign: "right" }}>
                       TOTAL
                     </td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
-                    <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td>
                   </tr>
                 </React.Fragment>
               );
@@ -462,11 +422,11 @@ const PickingSheetPrint = () => {
 
           {/* grand total */}
           <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
-            <td colSpan={6} style={{ ...td, textAlign: "right" }}>
+            <td colSpan={4} style={{ ...td, textAlign: "right" }}>
               GRAND TOTAL
             </td>
             <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
-            <td style={{ ...td, textAlign: "center" }}>{grandTotalCbm}</td>
+            {/* <td style={{ ...td, textAlign: "center" }}>{grandTotalCbm}</td> */}
           </tr>
         </tbody>
       </table>
@@ -481,7 +441,7 @@ const PickingSheetPrint = () => {
       >
         <div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>
-            System Proccess by <br /> Admin
+             Checker
           </p>
           <div style={signatureLine}></div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
@@ -490,7 +450,7 @@ const PickingSheetPrint = () => {
         </div>
         <div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>
-            Approved by <br /> Supervisor
+            Supervisor
           </p>
           <div style={signatureLine}></div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
@@ -499,7 +459,7 @@ const PickingSheetPrint = () => {
         </div>
         <div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>
-            Picked by <br /> Picking Personnel
+             Driver
           </p>
           <div style={signatureLine}></div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
@@ -508,25 +468,7 @@ const PickingSheetPrint = () => {
         </div>
         <div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>
-            Staging Verify by <br /> Scanner Personnel
-          </p>
-          <div style={signatureLine}></div>
-          <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
-          <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
-          <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
-        </div>
-        <div>
-          <p style={{ textAlign: "center", fontSize: "10px" }}>
-            Checked by <br /> Checker Personnel
-          </p>
-          <div style={signatureLine}></div>
-          <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
-          <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
-          <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
-        </div>
-        <div>
-          <p style={{ textAlign: "center", fontSize: "10px" }}>
-            Loading Checked by <br /> Delivery Driver
+            Receiver
           </p>
           <div style={signatureLine}></div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
@@ -544,7 +486,6 @@ const th = {
   backgroundColor: "#eee",
 };
 
-
 const td = {
   borderBottom: "1px dashed #000",
   padding: "4px",
@@ -554,7 +495,7 @@ const headerLabel = {
   padding: "2px 6px",
   fontWeight: "bold" as const,
   whiteSpace: "nowrap" as const,
-  width: "20%",
+  width: "7%",
 };
 
 const headerValue = {

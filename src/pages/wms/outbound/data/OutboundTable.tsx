@@ -88,7 +88,19 @@ const HandleDelete = (id: number) => {
 
 const HandlePreviewPDF = (id: number) => {
   console.log("Preview PDF ID:", id);
-  window.open(`/wms/outbound/picking-sheet/${id}`, "_blank");
+  // window.open(`/wms/outbound/picking-sheet/${id}`, "_blank");
+
+  const printWindow = window.open(`/wms/outbound/picking-sheet/${id}`, "_blank");
+  if (printWindow) {
+    // printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    // Wait for images to load before printing
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 1000);
+  }
 };
 
 const OutboundTable = () => {
@@ -163,7 +175,6 @@ const OutboundTable = () => {
     );
   };
 
-
   // Handle open untuk single row dari dropdown action
   const handleOpenSingle = (rowData: any) => {
     console.log("handleOpenSingle", rowData);
@@ -190,7 +201,6 @@ const OutboundTable = () => {
     } catch (error) {
       console.error("Error open outbound:", error);
     }
-
   };
 
   // Handle pilihan user untuk item yang sudah di-scan
@@ -233,7 +243,6 @@ const OutboundTable = () => {
   // Handle input change dengan ref untuk menghindari re-render
   const inputRef = useRef<HTMLInputElement>(null);
 
-
   // Submit temp location tanpa dependency tempLocationName
   const handleTempLocationSubmit = useCallback(() => {
     const currentValue = inputRef.current?.value || tempLocationName;
@@ -244,7 +253,6 @@ const OutboundTable = () => {
       return;
     }
     processScannedItems("temp_location", currentValue.trim());
-
   }, [processScannedItems, notify, tempLocationName]);
 
   // Close dialog dan reset state
@@ -259,11 +267,6 @@ const OutboundTable = () => {
   const handleBackToChoice = useCallback(() => {
     setShowTempLocationInput(false);
   }, []);
-
-  // const dialog = document.getElementById("myDialog");
-  // dialog.addEventListener("close", () => {
-
-  // });
 
   useEffect(() => {
     if (!isScannedItemDialog) {
@@ -387,7 +390,7 @@ const OutboundTable = () => {
                       }}
                     >
                       <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Mark as Open
+                      Cancel
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>

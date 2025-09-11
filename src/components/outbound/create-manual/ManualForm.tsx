@@ -177,10 +177,10 @@ export default function ManualForm() {
           });
           if (res.data.success) {
             setFormData(res.data.data);
-            // setMuatan(res.data.data.items);
             setMuatan(
               res.data.data.items.map((item) => ({
                 ...item,
+                item_id : String(item.item_id),
                 item_name: item.product?.item_name || "", // ambil item_name dari products
               }))
             );

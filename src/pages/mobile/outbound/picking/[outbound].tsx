@@ -32,7 +32,7 @@ interface ScanItem {
   scan_type?: string;
   outbound_no: string;
   barcode: string;
-  serial_no: string;
+  serial_no?: string;
   qty?: number;
   seq_box?: number;
   location?: string;
@@ -45,7 +45,9 @@ interface OutboundDetail {
   item_code: string;
   barcode: string;
   quantity: number;
-  scan_qty: number;
+  scan_qty?: number;
+  has_serial?: string;
+  uom?: string;
 }
 
 interface ScannedItem {
@@ -74,18 +76,19 @@ const CheckingPage = () => {
   const [scanLocation, setScanLocation] = useState("");
   const [scanBarcode, setScanBarcode] = useState("");
   const [scanSerial, setScanSerial] = useState("");
-  const [qtyScan, setQtyScan] = useState<number>(1);
-  
-
+  // const [qtyScan, setQtyScan] = useState<number>(1);
 
   const [searchOutboundDetail, setSearchOutboundDetail] = useState("");
-
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showModalDetail, setShowModalDetail] = useState(false);
   const [seqBox, setSeqBox] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSerial, setIsSerial] = useState<boolean>(false);
+  const [showDialog, setShowDialog] = useState<boolean>(false);
+  const [serialInputs, setSerialInputs] = useState([""]);
+  const [scanQty, setScanQty] = useState<string | number>(1);
 
   const [listOutboundDetail, setListOutboundDetail] = useState<
     OutboundDetail[]
@@ -96,38 +99,39 @@ const CheckingPage = () => {
   );
 
   const handleScan = async () => {
-    if (scanType === "BARCODE") {
-      setScanSerial(scanBarcode);
-      if (!scanLocation.trim()) {
-        return eventBus.emit("showAlert", {
-          title: "Error!",
-          description: "Please input location",
-          type: "error",
-        })
-      };
-    }
+    // if (scanType === "BARCODE") {
+    //   setScanSerial(scanBarcode);
+    //   if (!scanLocation.trim()) {
+    //     return eventBus.emit("showAlert", {
+    //       title: "Error!",
+    //       description: "Please input location",
+    //       type: "error",
+    //     });
+    //   }
+    // }
 
-    if (!scanBarcode.trim() || !scanSerial.trim()) return;
+    // if (!scanBarcode.trim() || !scanSerial.trim()) return;
+
+    if (!scanBarcode.trim() || serialInputs.length === 0) return;
+
+    const serialNumber =
+      serialInputs.length > 1
+        ? serialInputs.filter((s) => s.trim() !== "").join("-")
+        : serialInputs[0].trim();
 
     const newItem: ScanItem = {
-      scan_type: scanType,
       outbound_no: Array.isArray(outbound) ? outbound[0] : outbound,
       barcode: scanBarcode,
-      serial_no: scanSerial,
-      qty: qtyScan,
-      seq_box: seqBox,
-      location : scanLocation
+      serial_no: serialNumber,
+      qty: scanQty as number,
     };
 
     setIsLoading(true);
 
     try {
       const response = await api.post(
-        "/mobile/outbound/picking/scan",
-        newItem,
-        {
-          withCredentials: true,
-        }
+        "/mobile/outbound/picking/scan/" + outbound,
+        newItem
       );
       const data = await response.data;
       setIsLoading(false);
@@ -137,10 +141,9 @@ const CheckingPage = () => {
           description: data.message,
           type: "success",
         });
-        // setScanBarcode("");
-        // setScanSerial("");
-        document.getElementById("barcode")?.focus();
+        // document.getElementById("barcode")?.focus();
         fetchOutboundDetail();
+        closeDialog();
       }
     } catch (error) {
       setIsLoading(false);
@@ -158,12 +161,13 @@ const CheckingPage = () => {
     // return data;
     if (data.success) {
       const filtered = data.data.map((item: any) => ({
-        id: item.ID,
-        outbound_detail_id: item.ID,
+        outbound_detail_id: item.outbound_detail_id,
         item_code: item.item_code,
         barcode: item.barcode,
         quantity: item.quantity,
         scan_qty: item.scan_qty,
+        has_serial: item.has_serial,
+        uom : item.uom
       }));
 
       setListOutboundDetail(filtered);
@@ -202,13 +206,6 @@ const CheckingPage = () => {
     index: number,
     outbound_detail_id: number
   ) => {
-    // console.log("ID Outbound Barcode :", index, outbound_detail_id);
-    // console.log("ID Outbound Detail :", outbound_detail_id);
-    // fetchScannedItems(outbound_detail_id);
-    // fetchOutboundDetail();
-
-    // return;
-
     try {
       const response = await api.delete(
         "/mobile/outbound/picking/scan/" + index,
@@ -229,9 +226,15 @@ const CheckingPage = () => {
   const filteredItems =
     listOutboundDetail.filter(
       (item) =>
-        item?.item_code.toLowerCase().includes(searchOutboundDetail.toLowerCase()) ||
-        item?.barcode.toLowerCase().includes(searchOutboundDetail.toLowerCase()) ||
-        item?.quantity.toString().includes(searchOutboundDetail.toLowerCase()) ||
+        item?.item_code
+          .toLowerCase()
+          .includes(searchOutboundDetail.toLowerCase()) ||
+        item?.barcode
+          .toLowerCase()
+          .includes(searchOutboundDetail.toLowerCase()) ||
+        item?.quantity
+          .toString()
+          .includes(searchOutboundDetail.toLowerCase()) ||
         item?.scan_qty.toString().includes(searchOutboundDetail.toLowerCase())
     ) || [];
 
@@ -262,63 +265,115 @@ const CheckingPage = () => {
     if (outbound) fetchOutboundDetail();
   }, [outbound]);
 
-  useEffect(() => {
-    if (scanType === "SERIAL") {
-      setScanSerial("");
-      setScanLocation("");
-      setQtyScan(1);
+  // useEffect(() => {
+  //   if (scanType === "SERIAL") {
+  //     setScanSerial("");
+  //     setScanLocation("");
+  //     setQtyScan(1);
+  //   }
+  // }, [scanType]);
+
+  const handleBarcodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Barcode submitted:");
+
+    if (scanBarcode.trim() === "") {
+      document.getElementById("barcode")?.focus();
+      return;
     }
-  }, [scanType]);
+
+    const newItem: ScanItem = {
+      outbound_no: Array.isArray(outbound) ? outbound[0] : outbound,
+      barcode: scanBarcode,
+      qty: scanQty as number,
+    };
+
+    setIsLoading(true);
+
+    const response = await api.post(
+      "/mobile/outbound/item-check/" + outbound,
+      newItem
+    );
+    const res = await response.data;
+
+    if (res.success) {
+      setIsLoading(false);
+      if (res.is_serial) {
+        console.log("Item requires serial:", res);
+        setIsSerial(res.is_serial);
+        setScanSerial("");
+        setShowDialog(true);
+      } else {
+        console.log("Item requires serial:", res);
+        setIsSerial(res.is_serial);
+        setScanSerial("");
+        setShowDialog(true);
+      }
+    }
+  };
+
+  const closeDialog = () => {
+    setShowDialog(false);
+    const newSerials = serialInputs.map(() => "");
+    setSerialInputs(newSerials);
+    setScanBarcode("");
+    setScanQty(1);
+    document.getElementById("barcode")?.focus();
+  };
+
+  const handleSerialSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // ⬅️ cegah submit default
+    // cari index pertama yang kosong
+    const emptyIndex = serialInputs.findIndex((s) => s.trim() === "");
+
+    if (emptyIndex !== -1) {
+      // fokus ke input yang kosong
+      const target = document.getElementById(`serial-${emptyIndex}`);
+      target?.focus();
+      return; // stop submit
+    }
+
+    // kalau semua sudah terisi
+    console.log("Submit:", serialInputs);
+
+    handleScan();
+  };
+  const handleQuantitySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Quantity submitted:", scanQty);
+    handleScan();
+  };
 
   return (
     <>
-      <PageHeader title={`Picking ${outbound}`} showBackButton />
-      <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24">
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="relative flex gap-2">
+      <PageHeader title={`Scan Pick List ${outbound}`} showBackButton />
+      <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
+        <form onSubmit={handleBarcodeSubmit} className="mb-0">
+          <Card>
+            <CardContent className="p-4 space-y-3">
               <div className="flex items-center space-x-2">
                 <label
-                  htmlFor="serial"
+                  htmlFor="barcode"
                   className="text-sm text-gray-600 whitespace-nowrap"
                 >
-                  Scan Type :
+                  Barcode :
                 </label>
 
-                <Select value={scanType} onValueChange={setScanType}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Scan Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SERIAL">Serial</SelectItem>
-                    <SelectItem value="BARCODE">Barcode</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <label
-                  htmlFor="serial"
-                  className="text-sm text-gray-600 whitespace-nowrap"
-                >
-                  Koli :
-                </label>
-
-                <div className="relative">
+                <div className="relative w-full">
                   <Input
-                    type="number"
-                    id="seq_box"
-                    placeholder="Koli..."
-                    value={seqBox}
-                    onChange={(e) => setSeqBox(Number(e.target.value))}
+                    autoComplete="off"
+                    id="barcode"
+                    placeholder="Scan barcode..."
+                    value={scanBarcode}
+                    onChange={(e) => setScanBarcode(e.target.value)}
                   />
-                  {seqBox && (
+                  {scanBarcode && (
                     <button
                       type="button"
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       onClick={() => {
-                        setSeqBox(0);
-                        document.getElementById("seq_box")?.focus();
+                        setScanBarcode("");
+                        document.getElementById("barcode")?.focus();
                       }}
                     >
                       <XCircle size={18} />
@@ -326,31 +381,70 @@ const CheckingPage = () => {
                   )}
                 </div>
               </div>
-            </div>
+              <Button type="submit" className="w-full">
+                Check
+              </Button>
+            </CardContent>
+          </Card>
+        </form>
 
+        {/* {scanType === "SERIAL" && (
+          <div className="flex items-center space-x-2">
+            <label
+              htmlFor="serial"
+              className="text-sm text-gray-600 whitespace-nowrap"
+            >
+              Serial No :
+            </label>
+            <div className="relative w-full">
+              <Input
+                id="serial"
+                autoComplete="off"
+                placeholder="Serial number..."
+                value={scanSerial}
+                onChange={(e) => setScanSerial(e.target.value)}
+              />
+              {scanSerial && (
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    setScanSerial("");
+                    document.getElementById("serial")?.focus();
+                  }}
+                >
+                  <XCircle size={18} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {scanType === "BARCODE" && (
+          <>
             <div className="flex items-center space-x-2">
               <label
-                htmlFor="serial"
+                htmlFor="location"
                 className="text-sm text-gray-600 whitespace-nowrap"
               >
-                Barcode :
+                Location :
               </label>
 
               <div className="relative w-full">
                 <Input
-                  autoComplete="off"
-                  id="barcode"
-                  placeholder="Scan barcode..."
-                  value={scanBarcode}
-                  onChange={(e) => setScanBarcode(e.target.value)}
+                  type="text"
+                  id="location"
+                  placeholder="Enter location ..."
+                  value={scanLocation}
+                  onChange={(e) => setScanLocation(e.target.value)}
                 />
-                {scanBarcode && (
+                {scanLocation.length > 0 && (
                   <button
                     type="button"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     onClick={() => {
-                      setScanBarcode("");
-                      document.getElementById("barcode")?.focus();
+                      setScanLocation("");
+                      document.getElementById("location")?.focus();
                     }}
                   >
                     <XCircle size={18} />
@@ -358,118 +452,47 @@ const CheckingPage = () => {
                 )}
               </div>
             </div>
+            <div className="flex items-center space-x-2">
+              <label
+                htmlFor="qtyScan"
+                className="text-sm text-gray-600 whitespace-nowrap"
+              >
+                Qty Scan :
+              </label>
 
-            {scanType === "SERIAL" && (
-              <div className="flex items-center space-x-2">
-                <label
-                  htmlFor="serial"
-                  className="text-sm text-gray-600 whitespace-nowrap"
-                >
-                  Serial No :
-                </label>
-                <div className="relative w-full">
-                  <Input
-                    id="serial"
-                    autoComplete="off"
-                    placeholder="Serial number..."
-                    value={scanSerial}
-                    onChange={(e) => setScanSerial(e.target.value)}
-                  />
-                  {scanSerial && (
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      onClick={() => {
-                        setScanSerial("");
-                        document.getElementById("serial")?.focus();
-                      }}
-                    >
-                      <XCircle size={18} />
-                    </button>
-                  )}
-                </div>
+              <div className="relative w-full">
+                <Input
+                  type="number"
+                  id="qtyScan"
+                  placeholder="Quantity to scan..."
+                  value={qtyScan}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "");
+                    // agar 0 diawal tidak ditampilkan
+                    if (value.length > 0 && value[0] === "0") {
+                      e.target.value = value.slice(1);
+                      setQtyScan(Number(value.slice(1)));
+                    } else {
+                      setQtyScan(Number(value));
+                    }
+                  }}
+                />
+                {qtyScan > 0 && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => {
+                      setQtyScan(0);
+                      document.getElementById("qtyScan")?.focus();
+                    }}
+                  >
+                    <XCircle size={18} />
+                  </button>
+                )}
               </div>
-            )}
-
-            {scanType === "BARCODE" && (
-              <>
-                <div className="flex items-center space-x-2">
-                  <label
-                    htmlFor="location"
-                    className="text-sm text-gray-600 whitespace-nowrap"
-                  >
-                    Location :
-                  </label>
-
-                  <div className="relative w-full">
-                    <Input
-                      type="text"
-                      id="location"
-                      placeholder="Enter location ..."
-                      value={scanLocation}
-                      onChange={(e) => setScanLocation(e.target.value)}
-                    />
-                    {scanLocation.length > 0 && (
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        onClick={() => {
-                          setScanLocation("");
-                          document.getElementById("location")?.focus();
-                        }}
-                      >
-                        <XCircle size={18} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <label
-                    htmlFor="qtyScan"
-                    className="text-sm text-gray-600 whitespace-nowrap"
-                  >
-                    Qty Scan :
-                  </label>
-
-                  <div className="relative w-full">
-                    <Input
-                      type="number"
-                      id="qtyScan"
-                      placeholder="Quantity to scan..."
-                      value={qtyScan}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, "");
-                        // agar 0 diawal tidak ditampilkan
-                        if (value.length > 0 && value[0] === "0") {
-                          e.target.value = value.slice(1);
-                          setQtyScan(Number(value.slice(1)));
-                        } else {
-                          setQtyScan(Number(value));
-                        }
-                      }}
-                    />
-                    {qtyScan > 0 && (
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        onClick={() => {
-                          setQtyScan(0);
-                          document.getElementById("qtyScan")?.focus();
-                        }}
-                      >
-                        <XCircle size={18} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-
-            <Button onClick={handleScan} className="w-full">
-              Add
-            </Button>
-          </CardContent>
-        </Card>
+            </div>
+          </>
+        )} */}
 
         {/* loading */}
         {isLoading && (
@@ -513,7 +536,7 @@ const CheckingPage = () => {
                       </div>
                       <div>
                         <strong>Scanned:</strong> {item.scan_qty} /{" "}
-                        {item.quantity}
+                        {item.quantity}{" "}{item.uom}
                       </div>
                     </div>
                   </li>
@@ -527,55 +550,14 @@ const CheckingPage = () => {
           </CardContent>
         </Card>
 
-        {/* <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-          <DialogContent className="bg-white">
-            <DialogHeader>
-              <DialogTitle>Putaway Confirmation</DialogTitle>
-            </DialogHeader>
-            <p>
-              Are you sure you want to confirm the putaway in location{" "}
-              {scanLocation}?
-            </p>
-            <DialogFooter>
-              <Button
-                variant="ghost"
-                onClick={() => setShowConfirmModal(false)}
-              >
-                Batal
-              </Button>
-              <Button
-                onClick={() => {
-                  if (outbound) {
-                    handleConfirmPutaway(
-                      Array.isArray(outbound) ? outbound[0] : outbound
-                    );
-                  }
-                }}
-              >
-                Confirm
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog> */}
-
         <Dialog open={showModalDetail} onOpenChange={setShowModalDetail}>
           <DialogContent className="bg-white">
             <DialogHeader>
-              <DialogTitle>Detail picked items</DialogTitle>
+              <DialogTitle>Scanned Items</DialogTitle>
             </DialogHeader>
 
-            <Input
-              className="w-full"
-              placeholder="Cari barang..."
-              // value={searchTerm}
-              // onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <Input className="w-full" placeholder="Search ..." />
 
-            {/* <div className="text-sm">
-              <span>Total Scanned: {filteredScannedItems.length}</span>
-            </div> */}
-
-            {/* ListView */}
             <div className="max-h-80 overflow-y-auto space-y-2">
               {filteredScannedItems.length > 0 ? (
                 <div className="max-h-80 overflow-y-auto space-y-2">
@@ -587,7 +569,7 @@ const CheckingPage = () => {
                           className="p-2 border rounded-md bg-gray-50"
                         >
                           <div className="font-semibold text-sm mb-2">
-                            Koli: {koli}, Items:{" "}
+                            Items:{" "}
                             {(items as ScannedItem[])?.length}, Qty:{" "}
                             {items?.reduce(
                               (total, item) => total + item.quantity,
@@ -608,8 +590,6 @@ const CheckingPage = () => {
                                   <strong>Barcode:</strong> {item.barcode}
                                   <br />
                                   <strong>Serial:</strong> {item.serial_number}
-                                  <br />
-                                  <strong>Location:</strong> {item.location}
                                   <br />
                                   <strong>Qty:</strong> {item.quantity}
                                 </div>
@@ -647,13 +627,13 @@ const CheckingPage = () => {
                     </div>
                   ) : (
                     <div className="text-gray-500 text-sm">
-                      Tidak ada barang ditemukan.
+                      This item has not been scanned.
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="text-gray-500 text-sm">
-                  Tidak ada barang ditemukan.
+                  This item has not been scanned.
                 </div>
               )}
             </div>
@@ -664,6 +644,184 @@ const CheckingPage = () => {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Modal Dialog */}
+      {showDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex  sm:items-center justify-center z-50 p-4 ">
+          <div className="bg-white rounded-b-lg  rounded-t-lg sm:rounded-lg shadow-xl w-full max-w-md max-h-[80vh] sm:max-h-[80vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-2 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-800 pr-4">
+                {/* {currentItem.name} */}
+              </h2>
+              <button
+                onClick={closeDialog}
+                className="text-gray-400 hover:text-gray-600 text-2xl sm:text-xl p-1 -m-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                // disabled={isLoading}
+                aria-label="Close dialog"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="px-4 sm:px-6 py-4 pb-6">
+              <div className="mb-4 p-3 bg-gray-100 rounded-md">
+                {outbound && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Picking ID : <span className="font-medium">{outbound}</span>
+                  </p>
+                )}
+                <p className="text-sm text-gray-600 break-all">
+                  Barcode : <span className="font-mono">{scanBarcode}</span>
+                </p>
+              </div>
+
+              {isSerial ? (
+                /* Serial Number Input */
+                <form onSubmit={handleSerialSubmit}>
+                  <div className="space-y-1">
+                    <label className="text-sm text-gray-600">
+                      Serial Numbers:
+                    </label>
+
+                    {serialInputs.map((serial, index) => (
+                      <div key={index} className="relative">
+                        <Input
+                          autoComplete="off"
+                          className="w-full pr-20"
+                          id={`serial-${index}`}
+                          value={serial}
+                          onChange={(e) => {
+                            const newSerials = [...serialInputs];
+                            newSerials[index] = e.target.value;
+                            setSerialInputs(newSerials);
+                          }}
+                        />
+                        {serial && (
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            onClick={() => {
+                              const newSerials = [...serialInputs];
+                              newSerials[index] = "";
+                              setSerialInputs(newSerials);
+                              document
+                                .getElementById(`serial-${index}`)
+                                ?.focus();
+                            }}
+                          >
+                            <XCircle size={18} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    <div className="flex justify-between items-center">
+                      <button
+                        type="button"
+                        className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                        onClick={() => setSerialInputs([...serialInputs, ""])}
+                      >
+                        + Add Serial
+                      </button>
+                    </div>
+
+                    {serialInputs.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          className="text-red-600 hover:text-red-800 text-sm font-semibold mt-2"
+                          onClick={() => {
+                            const newSerials = serialInputs.filter(
+                              (_, i) => i !== serialInputs.length - 1
+                            );
+                            setSerialInputs(newSerials);
+                          }}
+                        >
+                          - Remove Last Serial
+                        </button>
+
+                        <div className="text-sm text-gray-500">
+                          Combined:{" "}
+                          {serialInputs
+                            .filter((s) => s.trim() !== "")
+                            .join("-")}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                    <Button type="submit" className="w-full">
+                      Submit
+                    </Button>
+                    <Button
+                      type="button"
+                      className="w-full"
+                      variant="outline"
+                      onClick={closeDialog}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleQuantitySubmit}>
+                  <div className="mb-6">
+                    <div className="relative">
+                      <label htmlFor="qty" className="text-sm text-gray-600">
+                        Qty :{" "}
+                      </label>
+                      <Input
+                        min={1}
+                        type="number"
+                        className="w-full mt-1"
+                        id="qty"
+                        value={scanQty}
+                        autoComplete="off"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "") {
+                            setScanQty("");
+                            return;
+                          }
+                          const num = Number(val);
+                          setScanQty(num < 1 ? 1 : num);
+                        }}
+                      />
+                      {scanQty && (
+                        <button
+                          type="button"
+                          className="absolute right-3 top-11 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          onClick={() => {
+                            setScanQty(1);
+                            document.getElementById("qty")?.focus();
+                          }}
+                        >
+                          <XCircle size={18} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button type="submit" className="w-full">
+                      Submit
+                    </Button>
+                    <Button
+                      type="button"
+                      className="w-full"
+                      variant="outline"
+                      onClick={closeDialog}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

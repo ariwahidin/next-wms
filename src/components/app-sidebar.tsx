@@ -159,10 +159,10 @@ const data = {
           title: "Outbound Activity",
           url: "/wms/outbound/data",
         },
-        {
-          title: "Outbound Handling",
-          url: "/wms/outbound/handling",
-        },
+        // {
+        //   title: "Outbound Handling",
+        //   url: "/wms/outbound/handling",
+        // },
       ],
     },
     {
