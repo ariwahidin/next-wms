@@ -196,12 +196,6 @@ export default function ManualForm() {
   return (
     <div className="p-4" style={{ fontSize: "12px" }}>
       <div className="flex justify-between items-center mb-4">
-        {/* <div className="flex items-center space-x-2">
-          <Label className="text-left shrink-0" style={{ width: "135px" }}>
-            Date
-          </Label>
-          <span className="shrink-0">:</span>
-        </div> */}
 
         <div className="space-x-1">
           <Button
@@ -239,104 +233,6 @@ export default function ManualForm() {
           )}
         </div>
       </div>
-      {/* <hr className="my-4" /> */}
-
-      {/* <div className="grid grid-cols-2 gap-4" style={{ fontSize : "12px" }}>
-        <div className="bg-white-200 p-0 space-y-1">
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">Shipment ID</Label>
-            <span className="shrink-0">:</span>
-            <Input
-              id="ShipmentID"
-              style={{ width: "100%", fontSize: "12px" }}
-              value={formData.shipment_id}
-              onChange={(e) =>
-                setFormData({ ...formData, shipment_id: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">Owner</Label>
-            <span className="shrink-0">:</span>
-            <div className="flex-1">
-              <Select
-                value={ownerOptions.find(
-                  (option) => option.value === formData.owner_code
-                )}
-                options={ownerOptions}
-                onChange={(selectedOption) => {
-                  if (selectedOption) {
-                    setFormData({
-                      ...formData,
-                      owner_code: selectedOption.value,
-                    });
-                  }
-                }}
-              />
-            </div>
-            <Label className="w-32 text-left shrink-0">WhsCode</Label>
-            <span className="shrink-0">:</span>
-            <div className="flex-1">
-              <Select
-                value={whsOptions.find(
-                  (option) => option.value === formData.whs_code
-                )}
-                options={whsOptions}
-                onChange={(selectedOption) => {
-                  if (selectedOption) {
-                    setFormData({
-                      ...formData,
-                      whs_code: selectedOption.value,
-                    });
-                  }
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-left shrink-0">Customer</Label>
-            <span className="shrink-0">:</span>
-            <div className="flex-1">
-              <Select
-                value={customerOptions.find(
-                  (option) => option.value === formData.customer_code
-                )}
-                options={customerOptions}
-                onChange={(selectedOption) => {
-                  if (selectedOption) {
-                    setFormData({
-                      ...formData,
-                      customer_code: selectedOption.value,
-                    });
-                  }
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-start gap-4">
-            <Label
-              className="w-32 text-left shrink-0 pt-2"
-              htmlFor="RemarksHeader"
-            >
-              Remarks
-            </Label>
-            <span className="shrink-0 pt-2">:</span>
-            <textarea
-              style={{ fontSize : "12px" }}
-              id="RemarksHeader"
-              className="flex-1 border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              rows={2}
-              value={formData.remarks}
-              onChange={(e) =>
-                setFormData({ ...formData, remarks: e.target.value })
-              }
-            />
-          </div>
-        </div>
-      </div> */}
 
       <div className="grid grid-cols-2 gap-4">
         {/* Column 1 */}

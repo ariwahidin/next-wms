@@ -80,27 +80,6 @@ export default function ItemFormTable({
     fetchData();
   }, []);
 
-  // const handleAdd = () => {
-  //   const newRow = {
-  //     ID: Date.now(), // Gunakan timestamp sebagai ID unik
-  //     outbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
-  //     item_code: "",
-  //     item_name: "",
-  //     barcode: "",
-  //     quantity: 0,
-  //     uom: "",
-  //     location: "",
-  //     outbound_date: new Date().toISOString().split("T")[0], // Tanggal hari ini
-  //     remarks: "",
-  //     mode: "create",
-  //   };
-
-  //   console.log("Muatan sebelum penambahan:", muatan);
-
-  //   setMuatan([...muatan, newRow]);
-  //   setEditingId(newRow.ID);
-  // };
-
   const handleAddItems = () => {
     setModalMode("create");
     setEditingItem(null);
@@ -227,7 +206,11 @@ export default function ItemFormTable({
         {/* <h2 className="text-lg font-semibold">Requested Items</h2> */}
         {headerForm.status !== "complete" && (
           <div className="space-x-2">
-            <Button type="button" onClick={handleAddItems}>
+            <Button
+              type="button"
+              disabled={headerForm.status === "picking"}
+              onClick={handleAddItems}
+            >
               Add Item
             </Button>
           </div>
@@ -340,6 +323,7 @@ export default function ItemFormTable({
                 <td className="p-2 border">
                   <div>
                     <Input
+                      readOnly={headerForm.status != "open"}
                       style={{ fontSize: "12px", textAlign: "center" }}
                       type="number"
                       value={item.quantity}
@@ -456,7 +440,9 @@ export default function ItemFormTable({
             <td className="p-2 border" colSpan={4}>
               Total
             </td>
-            <td className="p-2 border text-center">{muatan.reduce((acc, item) => acc + item.quantity, 0)}</td>
+            <td className="p-2 border text-center">
+              {muatan.reduce((acc, item) => acc + item.quantity, 0)}
+            </td>
             <td className="p-2 border" colSpan={2}></td>
           </tr>
         </tfoot>
