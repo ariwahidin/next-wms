@@ -99,7 +99,7 @@ const PickingSheetPrint = () => {
         <p
           style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}
         >
-          PT Yusen Logistics Puninar Indonesia
+          PT YUSEN LOGISTICS PUNINAR INDONESIA
         </p>
       </div>
 
@@ -112,7 +112,7 @@ const PickingSheetPrint = () => {
       />
 
       <h2 style={{ textAlign: "center", marginBottom: "10px" }}>
-        Picking Sheet
+        PICKING SHEET
       </h2>
       <table style={{ width: "100%", marginBottom: "10px" }}>
         <tr>
@@ -166,7 +166,7 @@ const PickingSheetPrint = () => {
         >
           <tbody>
             <tr>
-              <td style={headerLabel}>Picking ID</td>
+              <td style={headerLabel}>Picking No</td>
               <td style={headerValue}>{data.outbound_no}</td>
               <td style={headerLabel}>Qty Koli</td>
               <td style={headerValue}>

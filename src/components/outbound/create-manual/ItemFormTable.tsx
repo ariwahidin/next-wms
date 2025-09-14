@@ -323,7 +323,7 @@ export default function ItemFormTable({
                 <td className="p-2 border">
                   <div>
                     <Input
-                      readOnly={headerForm.status != "open"}
+                      // readOnly={headerForm.status != "open"}
                       style={{ fontSize: "12px", textAlign: "center" }}
                       type="number"
                       value={item.quantity}
@@ -346,40 +346,6 @@ export default function ItemFormTable({
                     value={item.sn}
                   />
                 </td>
-                {/* <td className="p-2 border">
-                  <Select
-                    value={defaultUoms.find(
-                      (option) => option.value === item.uom
-                    )}
-                    options={defaultUoms}
-                    onChange={(value) =>
-                      handleChange(item.ID, "uom", value?.value)
-                    }
-                  />
-                </td> */}
-                {/* <td className="p-2 border">
-                  <Input
-                    type="text"
-                    value={item.location}
-                    onChange={(e) =>
-                      handleChange(item.ID, "location", e.target.value)
-                    }
-                  />
-                </td> */}
-                {/* <td className="p-2 border">
-                  <Input
-                    type="text"
-                    value={item.remarks}
-                    onChange={(e) =>
-                      handleChange(item.ID, "remarks", e.target.value)
-                    }
-                  />
-                  {errors[item.ID]?.remarks && (
-                    <small className="text-red-500">
-                      {errors[item.ID].remarks}
-                    </small>
-                  )}
-                </td> */}
                 <td className="p-2 border">
                   <Select
                     className="text-sm w-34"
@@ -392,18 +358,6 @@ export default function ItemFormTable({
                       handleChange(item.ID, "vas_id", value?.value)
                     }
                   />
-                  {/* <Input
-                    type="text"
-                    value={item.vas}
-                    onChange={(e) =>
-                      handleChange(item.ID, "vas", e.target.value)
-                    }
-                  /> */}
-                  {/* {errors[item.ID]?.vas && (
-                    <small className="text-red-500">
-                      {errors[item.ID].vas}
-                    </small>
-                  )} */}
                 </td>
                 <td
                   className="p-2 border space-x-2 text-center"

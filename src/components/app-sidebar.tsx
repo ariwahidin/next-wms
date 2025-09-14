@@ -185,30 +185,30 @@ const data = {
         // },
       ],
     },
-    {
-      title: "Shipping",
-      url: "#",
-      icon: Truck,
-      isActive: true,
-      items: [
-        {
-          title: "Create DN Manual",
-          url: "/shipping/create-dn-manual",
-        },
-        {
-          title: "Combine DN",
-          url: "/shipping/combine-dn",
-        },
-        {
-          title: "Combine Existing Order",
-          url: "/shipping/combine-existing",
-        },
-        {
-          title: "List Order",
-          url: "/shipping/order-list",
-        },
-      ],
-    },
+    // {
+    //   title: "Shipping",
+    //   url: "#",
+    //   icon: Truck,
+    //   isActive: true,
+    //   items: [
+    //     {
+    //       title: "Create DN Manual",
+    //       url: "/shipping/create-dn-manual",
+    //     },
+    //     {
+    //       title: "Combine DN",
+    //       url: "/shipping/combine-dn",
+    //     },
+    //     {
+    //       title: "Combine Existing Order",
+    //       url: "/shipping/combine-existing",
+    //     },
+    //     {
+    //       title: "List Order",
+    //       url: "/shipping/order-list",
+    //     },
+    //   ],
+    // },
     {
       title: "Mobile RF",
       url: "#",

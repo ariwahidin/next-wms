@@ -835,27 +835,6 @@ export default function ManualForm() {
               }
             />
           </div>
-
-          {/* <div className="flex items-start gap-2">
-                <Label
-                  className="w-24 text-left shrink-0 pt-2"
-                  style={{ fontSize: "12px" }}
-                  htmlFor="RemarksHeader"
-                >
-                  Remarks
-                </Label>
-                <span className="shrink-0 pt-2">:</span>
-                <textarea
-                  style={{ fontSize: "12px" }}
-                  id="RemarksHeader"
-                  className="flex-1 border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  rows={2}
-                  value={formData.remarks}
-                  onChange={(e) =>
-                    setFormData({ ...formData, remarks: e.target.value })
-                  }
-                />
-              </div> */}
         </div>
       </div>
 
