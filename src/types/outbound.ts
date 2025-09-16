@@ -44,6 +44,7 @@ export interface ItemFormProps {
   mode?: string;
   handling?: string | string[] | { Handling: string }[];
   vas_id?: number;
+  vas_name?: string;
 }
 
 export interface ItemFormTableProps {

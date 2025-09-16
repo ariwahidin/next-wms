@@ -22,12 +22,12 @@ import { Transporter } from "@/types/transporter";
 
 export default function ManualForm() {
   const router = useRouter();
-  const { no } = router.query;
-  console.log("outbound_no", no);
+  const { outbound_no } = router.query;
+  console.log("outbound_no", outbound_no);
 
   const [formData, setFormData] = useState<HeaderFormProps>({
     ID: 0,
-    outbound_no: no ? no.toString() : "Auto Generate",
+    outbound_no: outbound_no ? outbound_no.toString() : "Auto Generate",
     outbound_date: new Date().toISOString().split("T")[0],
     customer_code: "",
     shipment_id: "",
@@ -53,7 +53,7 @@ export default function ManualForm() {
     transporter_code: "",
   });
 
-  const [muatan, setMuatan] = useState<ItemFormProps[]>([]);
+  const [muatan, setMuatan] = useState<any[]>([]);
   const [customer, setCustomer] = useState<Customer[]>([]);
   const [transporter, setTransporter] = useState<Transporter[]>([]);
   const [transporterOptions, setTransporterOptions] = useState<ItemOptions[]>(
@@ -168,30 +168,26 @@ export default function ManualForm() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (no) {
-      const fetchOutbound = async () => {
-        try {
-          const res = await api.get(`/outbound/${no}`, {
-            withCredentials: true,
-          });
-          if (res.data.success) {
-            setFormData(res.data.data);
-            setMuatan(
-              res.data.data.items.map((item) => ({
-                ...item,
-                item_id: String(item.item_id),
-                item_name: item.product?.item_name || "", // ambil item_name dari products
-              }))
-            );
-          }
-        } catch (error) {
-          console.error("Error fetching outbound:", error);
-        }
-      };
-      fetchOutbound();
-    }
-  }, [no]);
+  // useEffect(() => {
+  //   if (outbound_no) {
+  //     const fetchOutbound = async () => {
+  //       try {
+  //         const res = await api.get(`/outbound/vas/${outbound_no}`, {
+  //           withCredentials: true,
+  //         });
+  //         if (res.data.success) {
+  //           setFormData(res.data.data);
+  //           setMuatan(
+  //             res.data.data
+  //           )
+  //         }
+  //       } catch (error) {
+  //         console.error("Error fetching outbound:", error);
+  //       }
+  //     };
+  //     fetchOutbound();
+  //   }
+  // }, [outbound_no]);
 
   return (
     <div className="p-4" style={{ fontSize: "12px" }}>
@@ -201,40 +197,18 @@ export default function ManualForm() {
             variant="outline"
             className="bg-black-500 text-black hover:bg-gray-200"
             onClick={() => {
-              // eventBus.emit("refreshData");
-              router.push("/wms/outbound/data");
+              router.push("/wms/outbound/data?tab=VAS");
             }}
           >
             <ArrowBigLeftIcon className="mr-0" />
             Back
           </Button>
-          {formData.status !== "complete" && (
-            <>
-              {/* <Button
-                variant="outline"
-                className="bg-green-500 text-white hover:bg-green-600"
-              >
-                <RefreshCcw className="mr-1" />
-                Refresh
-              </Button> */}
-              <Button
-                variant="outline"
-                className="bg-blue-500 text-white hover:bg-blue-600"
-                onClick={handleSave}
-              >
-                <Save className="mr-2" />
-                Save
-              </Button>
-            </>
-          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* Column 1 */}
+      {/* <div className="grid grid-cols-2 gap-4">
         <div className="bg-white-200 p-0 space-y-1">
           <div className="grid grid-cols-2 gap-4">
-            {/* Column 1 */}
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Label
@@ -259,8 +233,8 @@ export default function ManualForm() {
                         });
                       }
                     }}
-                    dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
-                    locale={id} // Bahasa Indonesia
+                    dateFormat="dd/MM/yyyy"
+                    locale={id} 
                     customInput={
                       <Input
                         id="OutboundDate"
@@ -271,7 +245,6 @@ export default function ManualForm() {
                   />
                 </div>
               </div>
-
               <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
@@ -293,7 +266,6 @@ export default function ManualForm() {
                   }
                 />
               </div>
-
               <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
@@ -319,7 +291,6 @@ export default function ManualForm() {
                   />
                 </div>
               </div>
-
               <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
@@ -345,7 +316,6 @@ export default function ManualForm() {
                   />
                 </div>
               </div>
-
               <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
@@ -394,7 +364,6 @@ export default function ManualForm() {
               </div>
             </div>
 
-            {/* Column 2 */}
             <div className="space-y-1 ps-8">
               <div className="flex items-center gap-2">
                 <Label
@@ -419,8 +388,8 @@ export default function ManualForm() {
                         });
                       }
                     }}
-                    dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
-                    locale={id} // Bahasa Indonesia
+                    dateFormat="dd/MM/yyyy"
+                    locale={id}
                     customInput={
                       <Input
                         id="PlanPickupDate"
@@ -451,12 +420,12 @@ export default function ManualForm() {
                       if (date) {
                         setFormData({
                           ...formData,
-                          rcv_do_date: format(date, "yyyy-MM-dd"), // simpan format ISO
+                          rcv_do_date: format(date, "yyyy-MM-dd"),
                         });
                       }
                     }}
-                    dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
-                    locale={id} // Bahasa Indonesia
+                    dateFormat="dd/MM/yyyy"
+                    locale={id}
                     customInput={
                       <Input
                         id="PlanPickupDate"
@@ -685,31 +654,7 @@ export default function ManualForm() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Column 1 */}
             <div className="space-y-1">
-              {/* <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Driver
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <Input
-                    id="Driver"
-                    style={{ fontSize: "12px" }}
-                    className="flex-1"
-                    value={formData.driver}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        driver: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div> */}
 
               <div className="flex items-center gap-2">
                 <Label
@@ -735,79 +680,7 @@ export default function ManualForm() {
                   />
                 </div>
               </div>
-              {/* <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Qty Koli Seal
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    id="KoliSeal"
-                    style={{ fontSize: "12px" }}
-                    className="flex-1"
-                    value={formData.qty_koli_seal}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        qty_koli_seal: parseInt(e.target.value),
-                      })
-                    }
-                  />
-                </div>
-              </div> */}
             </div>
-
-            {/* Column 2 */}
-            {/* <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Truck Size
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <Input
-                    id="TruckSize"
-                    style={{ fontSize: "12px" }}
-                    className="flex-1"
-                    value={formData.truck_size}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        truck_size: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Truck No.
-                </Label>
-                <span className="shrink-0">:</span>
-                <Input
-                  id="TruckNo"
-                  style={{ fontSize: "12px" }}
-                  className="flex-1"
-                  value={formData.truck_no}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      truck_no: e.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div> */}
           </div>
 
           <div className="flex items-start gap-2">
@@ -833,11 +706,10 @@ export default function ManualForm() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
-      <form className="space-y-4">
+      {/* <form className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Outbound ID (hidden) */}
           <div className="hidden">
             <div className="flex items-center gap-4">
               <Label className="w-32 text-left shrink-0">Outbound ID</Label>
@@ -851,8 +723,6 @@ export default function ManualForm() {
               />
             </div>
           </div>
-
-          {/* Mode (hidden) */}
           <div className="hidden">
             <div className="flex items-center gap-4">
               <Label className="w-32 text-left shrink-0">Mode</Label>
@@ -870,9 +740,9 @@ export default function ManualForm() {
             </div>
           </div>
         </div>
-      </form>
+      </form> */}
 
-      <hr className="my-6" />
+      <hr className="my-4" />
       <ItemFormTable
         muatan={muatan}
         setMuatan={setMuatan}

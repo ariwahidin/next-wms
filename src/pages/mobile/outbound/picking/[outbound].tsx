@@ -167,7 +167,7 @@ const CheckingPage = () => {
         quantity: item.quantity,
         scan_qty: item.scan_qty,
         has_serial: item.has_serial,
-        uom : item.uom
+        uom: item.uom,
       }));
 
       setListOutboundDetail(filtered);
@@ -303,6 +303,12 @@ const CheckingPage = () => {
         setIsSerial(res.is_serial);
         setScanSerial("");
         setShowDialog(true);
+        setTimeout(() => {
+          if (serialInputs.length === 1) {
+            console.log("focus serial 0");
+            document.getElementById("serial-0")?.focus();
+          }
+        },100);
       } else {
         console.log("Item requires serial:", res);
         setIsSerial(res.is_serial);
@@ -536,7 +542,7 @@ const CheckingPage = () => {
                       </div>
                       <div>
                         <strong>Scanned:</strong> {item.scan_qty} /{" "}
-                        {item.quantity}{" "}{item.uom}
+                        {item.quantity} {item.uom}
                       </div>
                     </div>
                   </li>
@@ -569,8 +575,7 @@ const CheckingPage = () => {
                           className="p-2 border rounded-md bg-gray-50"
                         >
                           <div className="font-semibold text-sm mb-2">
-                            Items:{" "}
-                            {(items as ScannedItem[])?.length}, Qty:{" "}
+                            Items: {(items as ScannedItem[])?.length}, Qty:{" "}
                             {items?.reduce(
                               (total, item) => total + item.quantity,
                               0
@@ -597,7 +602,7 @@ const CheckingPage = () => {
 
                               <div className="grid grid-cols-3 gap-4 mt-2">
                                 <div className="col-span-2 flex items-center">
-                                  {item.status === "picking" && (
+                                  {item.status === "pending" && (
                                     <Button
                                       variant="destructive"
                                       size="sm"

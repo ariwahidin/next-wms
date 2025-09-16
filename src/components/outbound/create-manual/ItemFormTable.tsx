@@ -173,7 +173,7 @@ export default function ItemFormTable({
         remarks: "",
         mode: "create",
         sn: product.has_serial,
-        vas_id: 0,
+        vas_id: vasOptions.find((item) => item.label === 'NO')?.value,
       }));
 
       setMuatan((prev) => [...prev, ...newItems]);
@@ -348,6 +348,7 @@ export default function ItemFormTable({
                 </td>
                 <td className="p-2 border">
                   <Select
+                    isDisabled = {headerForm.status == "complete"}
                     className="text-sm w-34"
                     isSearchable
                     value={vasOptions.find(
@@ -397,7 +398,7 @@ export default function ItemFormTable({
             <td className="p-2 border text-center">
               {muatan.reduce((acc, item) => acc + item.quantity, 0)}
             </td>
-            <td className="p-2 border" colSpan={2}></td>
+            <td className="p-2 border" colSpan={3}></td>
           </tr>
         </tfoot>
       </table>

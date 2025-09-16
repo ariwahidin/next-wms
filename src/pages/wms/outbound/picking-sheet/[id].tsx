@@ -111,7 +111,7 @@ const PickingSheetPrint = () => {
         }}
       />
 
-      <h2 style={{ textAlign: "center", marginBottom: "10px" }}>
+      <h2 style={{ textAlign: "center", marginBottom: "10px", textDecoration: "underline" }}>
         PICKING SHEET
       </h2>
       <table style={{ width: "100%", marginBottom: "10px" }}>

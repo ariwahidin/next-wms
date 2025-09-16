@@ -8,89 +8,89 @@ import React from "react";
 import { Header } from "next/dist/lib/load-custom-routes";
 import { HeaderSPK, MuatanOrderSPK } from "@/types/order-spk";
 
-type OrderDetailItem = {
-  outbound_id: number;
-  outbound_no: string;
-  deliv_to: string;
-  deliv_to_name: string;
-  deliv_city: string;
-  shipment_id: string;
-  total_koli: number;
-  remarks: string;
-  item_code: string;
-  quantity: number;
-  cbm: number;
-  total_cbm: number;
-};
+// type OrderDetailItem = {
+//   outbound_id: number;
+//   outbound_no: string;
+//   deliv_to: string;
+//   deliv_to_name: string;
+//   deliv_city: string;
+//   shipment_id: string;
+//   total_koli: number;
+//   remarks: string;
+//   item_code: string;
+//   quantity: number;
+//   cbm: number;
+//   total_cbm: number;
+// };
 
-type GroupedData = {
-  [shipmentId: string]: OrderDetailItem[];
-};
+// type GroupedData = {
+//   [shipmentId: string]: OrderDetailItem[];
+// };
 
-const SPKSheetPrint = () => {
+const SerialNumberSheet = () => {
   const router = useRouter();
-  const { order_no } = router.query;
-  const [order, setOrder] = useState<HeaderSPK>();
-  const [orderItems, setOrderItems] = useState<MuatanOrderSPK[]>([]);
-  const [orderDetailItems, setOrderDetailItems] = useState<OrderDetailItem[]>(
-    []
-  );
-  const barcodeRef = useRef<HTMLCanvasElement>(null);
-  const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
-  const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
+  const { outbound_no } = router.query;
+  const [header, setHeader] = useState<any>();
+  const [items, setItems] = useState<any[]>();
+  //   const [orderItems, setOrderItems] = useState<MuatanOrderSPK[]>([]);
+  //   const [orderDetailItems, setOrderDetailItems] = useState<OrderDetailItem[]>(
+  //     []
+  //   );
+  //   const barcodeRef = useRef<HTMLCanvasElement>(null);
+  //   const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
+  //   const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
 
   useEffect(() => {
-    if (order_no) {
-      fetchData(order_no as string);
-      console.log(order_no);
+    if (outbound_no) {
+      fetchData(outbound_no as string);
+      console.log("OUTBOUND ID : ", outbound_no);
     } else {
       return;
     }
-  }, [order_no]);
+  }, [outbound_no]);
 
-  const fetchData = async (order_no: string) => {
-    const res = await api.get(`/order/detail/${order_no}`);
-    setOrder(res.data.data.order);
-    setOrderItems(res.data.data.order.items);
-    setOrderDetailItems(res.data.data.detail_items);
+  const fetchData = async (outbound_no: string) => {
+    const res = await api.get(`/outbound/serial/${outbound_no}`);
+    setHeader(res.data.data?.header);
+    setItems(res.data.data?.items);
+    // setOrderItems(res.data.data.order.items);
+    // setOrderDetailItems(res.data.data.detail_items);
   };
 
-  useEffect(() => {
-    setTimeout(() => {
-      window.print();
-    }, 500);
-  }, []);
+    useEffect(() => {
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    }, []);
 
-  const groupedData = orderDetailItems.reduce((acc, item) => {
-    if (!acc[item.shipment_id]) {
-      acc[item.shipment_id] = [];
-    }
-    acc[item.shipment_id].push(item);
-    return acc;
-  }, {});
+  //   const groupedData = orderDetailItems.reduce((acc, item) => {
+  //     if (!acc[item.shipment_id]) {
+  //       acc[item.shipment_id] = [];
+  //     }
+  //     acc[item.shipment_id].push(item);
+  //     return acc;
+  //   }, {});
 
-  const grandTotalKoli = Object.values(groupedData as GroupedData).reduce(
-    (sum, records) => sum + records[0].total_koli,
-    0
-  );
+  //   const grandTotalKoli = Object.values(groupedData as GroupedData).reduce(
+  //     (sum, records) => sum + records[0].total_koli,
+  //     0
+  //   );
 
-  const grandTotalQty = Object.values(groupedData as GroupedData).reduce(
-    (sum, records) => sum + records.reduce((s, r) => s + r.quantity, 0),
-    0
-  );
+  //   const grandTotalQty = Object.values(groupedData as GroupedData).reduce(
+  //     (sum, records) => sum + records.reduce((s, r) => s + r.quantity, 0),
+  //     0
+  //   );
 
-  const grandTotalCbm = Object.values(groupedData as GroupedData).reduce(
-    (sum, records) => sum + records.reduce((s, r) => s + r.total_cbm, 0),
-    0
-  ).toFixed(4);
+  //   const grandTotalCbm = Object.values(groupedData as GroupedData).reduce(
+  //     (sum, records) => sum + records.reduce((s, r) => s + r.total_cbm, 0),
+  //     0
+  //   );
 
-  useEffect(() => {
-    console.log("groupedData : ", groupedData);
-  }, [groupedData]);
-
+  //   useEffect(() => {
+  //     console.log("groupedData : ", groupedData);
+  //   }, [groupedData]);
 
   return (
-
     <div style={{ padding: "10px", fontFamily: "Arial" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "center" }}>
@@ -117,7 +117,7 @@ const SPKSheetPrint = () => {
           textDecoration: "underline",
         }}
       >
-        SURAT PERINTAH KIRIM
+        SERIAL NUMBER LIST
       </h2>
 
       <div style={{ fontSize: "12px", marginTop: "10px" }}>
@@ -130,46 +130,44 @@ const SPKSheetPrint = () => {
         >
           <tbody>
             <tr>
-              <td style={headerLabel}>No. SPK/Order</td>
-              <td style={headerValue}>: {order?.order_no}</td>
-              <td style={headerLabel}>Transporter</td>
-              <td style={headerValue}>: {order?.transporter_name}</td>
+              <td style={{ ...headerLabel, fontWeight: "bold", width: "8%" }}>
+                Customer
+              </td>
+              <td style={headerValue}>: {header?.customer_name}</td>
+              {/* <td style={headerLabel}></td>
+              <td style={headerValue}></td> */}
             </tr>
             <tr>
-              <td style={headerLabel}>Order Date</td>
-              <td style={headerValue}>: {order?.order_date}</td>
-              <td style={headerLabel}>Driver</td>
-              <td style={headerValue}>: {order?.driver}</td>
+              <td style={{ ...headerLabel, fontWeight: "bold", width: "8%" }}>
+                Customer Address
+              </td>
+              <td style={headerValue}>: {header?.customer_address}</td>
+              {/* <td style={headerLabel}></td>
+              <td style={headerValue}></td> */}
             </tr>
             <tr>
-              <td style={headerLabel}>Truck Type</td>
-              <td style={headerValue}>: {order?.truck_type}</td>
-              <td style={headerLabel}>Truck No</td>
-              <td style={headerValue}>: {order?.truck_no}</td>
+              <td style={{ ...headerLabel, fontWeight: "bold", width: "8%" }}>
+                Delivery To
+              </td>
+              <td style={headerValue}>: {header?.deliv_to_name}</td>
+              {/* <td style={headerLabel}></td>
+              <td style={headerValue}></td> */}
             </tr>
             <tr>
-              <td style={headerLabel}>Load Date</td>
-              <td style={headerValue}>: {order?.load_date}</td>
-              <td style={headerLabel}>Arrival Date</td>
-              <td style={headerValue}>:</td>
+              <td style={{ ...headerLabel, fontWeight: "bold", width: "8%" }}>
+                Delivery Address
+              </td>
+              <td style={headerValue}>: {header?.customer_address}</td>
+              {/* <td style={headerLabel}></td>
+              <td style={headerValue}></td> */}
             </tr>
             <tr>
-              <td style={headerLabel}>Load Start Time</td>
-              <td style={headerValue}>: {order?.load_start_time}</td>
-              <td style={headerLabel}>Arrival Time</td>
-              <td style={headerValue}>:</td>
-            </tr>
-            <tr>
-              <td style={headerLabel}>Load End Time</td>
-              <td style={headerValue}>: {order?.load_end_time}</td>
-              <td style={headerLabel}></td>
-              <td style={headerValue}></td>
-            </tr>
-            <tr>
-              <td style={headerLabel}>Remarks</td>
-              <td style={headerValue}>: {order?.remarks}</td>
-              <td style={headerLabel}></td>
-              <td style={headerValue}></td>
+              <td style={{ ...headerLabel, fontWeight: "bold", width: "8%" }}>
+                Transporter
+              </td>
+              <td style={headerValue}>: {header?.transporter_name}</td>
+              {/* <td style={headerLabel}></td>
+              <td style={headerValue}></td> */}
             </tr>
           </tbody>
         </table>
@@ -185,19 +183,35 @@ const SPKSheetPrint = () => {
       >
         <thead>
           <tr>
-            <th style={th}>Delivery To</th>
-            <th style={th}>Delivery City</th>
-            <th style={th}>DO No</th>
+            <th style={th}>No</th>
+            <th style={th}>Delivery No</th>
+            <th style={th}>Picking No</th>
             <th style={th}>Item Code</th>
-            <th style={th}>QTY</th>
-            <th style={th}>Total CBM</th>
-            <th style={th}>Total Koli</th>
-            <th style={th}>Remarks</th>
+            <th style={th}>Description</th>
+            <th style={th}>SN</th>
           </tr>
         </thead>
         <tbody>
+          {items?.length > 0 ? (
+            items.map((item, i) => (
+              <tr key={i}>
+                <td style={{ ...td, textAlign: "center" }}>{i + 1}</td>
+                <td style={td}>{header.shipment_id}</td>
+                <td style={td}>{header.outbound_no}</td>
+                <td style={td}>{item.item_code}</td>
+                <td style={td}>{item.item_name}</td>
+                <td style={td}>{item.serial_number}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={6} style={td}>
+                No data found
+              </td>
+            </tr>
+          )}
 
-          {Object.entries(groupedData as GroupedData).length > 0 ? (
+          {/* {Object.entries(groupedData as GroupedData).length > 0 ? (
             Object.entries(groupedData as GroupedData).map(
               ([shipmentId, records], i) => {
                 const totalQty = (records as any[]).reduce(
@@ -207,7 +221,7 @@ const SPKSheetPrint = () => {
                 const totalCbm = (records as any[]).reduce(
                   (sum, r) => sum + r.total_cbm,
                   0
-                ).toFixed(4);
+                );
                 const totalKoli = (records as any[]).reduce(
                   (sum, r) => records[0].total_koli,
                   0
@@ -228,9 +242,7 @@ const SPKSheetPrint = () => {
                         </td>
                         <td style={{ textAlign: "left" }}>{item.item_code}</td>
                         <td style={{ textAlign: "center" }}>{item.quantity}</td>
-                        <td style={{ textAlign: "left" }}>
-                          {item.total_cbm}
-                        </td>
+                        <td style={{ textAlign: "left" }}>{item.total_cbm}</td>
                         <td style={{ textAlign: "center" }}>
                           {j === 0 ? item.total_koli : ""}
                         </td>
@@ -258,21 +270,18 @@ const SPKSheetPrint = () => {
                 No data
               </td>
             </tr>
-          )}
+          )} */}
 
           <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
-            <td colSpan={4} style={{ ...td, textAlign: "right" }}>
+            <td colSpan={5} style={{ ...td, textAlign: "right" }}>
               GRAND TOTAL
             </td>
-            <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
-            <td style={{ ...td, textAlign: "left" }}>{grandTotalCbm}</td>
-            <td style={{ ...td, textAlign: "center" }}>{grandTotalKoli}</td>
-            <td style={{ ...td, textAlign: "center" }}>{}</td>
+            <td style={{ ...td, textAlign: "center" }}>{items?.length}</td>
           </tr>
         </tbody>
       </table>
 
-      <div
+      {/* <div
         style={{
           marginTop: "50px",
           display: "flex",
@@ -300,7 +309,7 @@ const SPKSheetPrint = () => {
           <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
           <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
         </div>
-      </div>
+      </div> */}
       <div
         style={{
           marginTop: "50px",
@@ -348,4 +357,4 @@ const signatureLine = {
   marginBottom: "5px",
 };
 
-export default SPKSheetPrint;
+export default SerialNumberSheet;

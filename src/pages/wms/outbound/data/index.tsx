@@ -19,6 +19,7 @@ import OrderTable from "../order-spk/data/OrderTable";
 // import { useSearchParams } from "react-router-dom";
 // import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/router";
+import OutboundVasTable from "../outbound-vas/data/OutboundVasTable";
 
 export default function Page() {
   const router = useRouter();
@@ -64,6 +65,16 @@ export default function Page() {
           >
             Order SPK
           </button>
+          <button
+            onClick={() => setActiveTab("VAS")}
+            className={`px-4 py-2 ${
+              activeTab === "VAS"
+                ? "border-b-2 border-blue-500 font-semibold"
+                : "text-gray-500"
+            }`}
+          >
+            VAS
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -71,6 +82,7 @@ export default function Page() {
           {activeTab === "Picking List" && <OutboundTable />}
           {activeTab === "Packing List" && <PackingTable />}
           {activeTab === "Order SPK" && <OrderTable />}
+          {activeTab === "VAS" && <OutboundVasTable />}
         </div>
       </div>
     </Layout>

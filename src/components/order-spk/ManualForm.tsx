@@ -165,13 +165,13 @@ export default function ManualForm() {
           </Button>
           {formData.status !== "complete" && (
             <>
-              <Button
+              {/* <Button
                 variant="outline"
                 className="bg-green-500 text-white hover:bg-green-600"
               >
                 <RefreshCcw className="mr-1" />
                 Refresh
-              </Button>
+              </Button> */}
               <Button
                 variant="outline"
                 className="bg-blue-500 text-white hover:bg-blue-600"

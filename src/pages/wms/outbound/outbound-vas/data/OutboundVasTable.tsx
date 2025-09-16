@@ -18,7 +18,7 @@ import {
   Package,
   Package2,
   Blocks,
-  X,
+  Eye,
 } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import {
@@ -30,7 +30,7 @@ import {
   use,
   useEffect,
 } from "react";
-import styles from "./OutboundTable.module.css";
+import styles from "./OutbounVasTable.module.css";
 import router, { useRouter } from "next/router";
 import { useAlert } from "@/contexts/AlertContext";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MuatanOrderSPK } from "@/types/order-spk";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -72,64 +73,35 @@ const fetcher = (url: string) =>
 
 const HandleEdit = (item: any) => {
   console.log("Edit ID:", item.outbound_no);
-  router.push(`/wms/outbound/edit/${item.outbound_no}`);
-  // window.location.href = `/wms/outbound/edit/${item.outbound_no}`;
+  router.push(`/wms/outbound/outbound-vas/edit/${item.outbound_no}`);
 };
 
-const HandleDelete = (id: number) => {
-  try {
-    api.delete(`/outbound/${id}`, { withCredentials: true }).then((res) => {
-      if (res.data.success === true) {
-        // mutate("/inbound/detail/draft"); // 🔥 Auto-refresh tabel tanpa reload halaman
-      }
-    });
-  } catch (error) {
-    console.error("Gagal menghapus produk:", error);
-  }
-};
-
-const HandlePreviewPDF = (id: number) => {
-  console.log("Preview PDF ID:", id);
-  // window.open(`/wms/outbound/picking-sheet/${id}`, "_blank");
-
+const HandlePreviewPDF = (item: MuatanOrderSPK) => {
+  console.log("Preview PDF Order No:", item.order_no);
   const printWindow = window.open(
-    `/wms/outbound/picking-sheet/${id}`,
+    `/wms/outbound/order-spk/spk-sheet/${item.order_no}`,
     "_blank"
   );
-  if (printWindow) {
-    // printWindow.document.write(printContent);
-    printWindow.document.close();
 
-    // Wait for images to load before printing
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 1000);
-  }
+
+  // const printWindow = window.open(
+  //   `/wms/outbound/order-spk/spk-sheet/${item.order_no}`,
+  //   "_blank"
+  // );
+  // if (printWindow) {
+  //   // printWindow.document.write(printContent);
+  //   printWindow.document.close();
+
+  //   // Wait for images to load before printing
+  //   setTimeout(() => {
+  //     printWindow.print();
+  //     printWindow.close();
+  //   }, 1000);
+  // }
 };
 
-const HandlePrintSerial = (outbound_no: string) => {
-  console.log("Print Serial ID:", outbound_no);
-  // window.open(`/wms/outbound/sn-sheet/${outbound_no}`, "_blank");
-
-  const printWindow = window.open(
-    `/wms/outbound/sn-sheet/${outbound_no}`,
-    "_blank"
-  );
-  if (printWindow) {
-    // printWindow.document.write(printContent);
-    printWindow.document.close();
-
-    // Wait for images to load before printing
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 1000);
-  }
-};
-
-const OutboundTable = () => {
-  const { data: rowData, error, mutate } = useSWR("/outbound", fetcher);
+const OutboundVasTable = () => {
+  const { data: rowData, error, mutate } = useSWR("/outbound/vas", fetcher);
   const { showAlert, notify } = useAlert();
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
 
@@ -368,7 +340,6 @@ const OutboundTable = () => {
 
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
-    { field: "outbound_no", headerName: "Picking No", maxWidth: 150 },
     {
       headerName: "Actions",
       pinned: "right",
@@ -403,21 +374,26 @@ const OutboundTable = () => {
               >
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    HandleEdit(params.data);
-                  }}
-                >
-                  <Pencil className="mr-2 h-4 w-4" />
-                  View / Edit
-                </DropdownMenuItem>
 
                 {/* Mark as Open - untuk status yang bukan open */}
+                {/* {params.data.status !== "open" && (
+                  <>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenSingle(params.data);
+                      }}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Cancel
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )} */}
 
                 {/* Conditional Actions based on status */}
-                {params.data.status === "open" && (
+                {/* {params.data.status === "open" && (
                   <DropdownMenuItem
                     className="cursor-pointer"
                     onClick={(e) => {
@@ -428,9 +404,9 @@ const OutboundTable = () => {
                     <Blocks className="mr-2 h-4 w-4" />
                     Picking
                   </DropdownMenuItem>
-                )}
+                )} */}
 
-                {params.data.status === "picking" && (
+                {/* {params.data.status === "picking" && (
                   <DropdownMenuItem
                     className="cursor-pointer"
                     onClick={(e) => {
@@ -441,49 +417,43 @@ const OutboundTable = () => {
                     <CheckCheck className="mr-2 h-4 w-4" />
                     Complete Picking
                   </DropdownMenuItem>
-                )}
+                )} */}
 
-                {params.data.status !== "open" && (
-                  <>
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        HandlePreviewPDF(params.data.ID);
-                      }}
-                    >
-                      <Printer className="mr-2 h-4 w-4" />
-                      Print Picking Sheet
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        HandlePrintSerial(params.data.outbound_no);
-                      }}
-                    >
-                      <Printer className="mr-2 h-4 w-4" />
-                      Print Serial Number
-                    </DropdownMenuItem>
-                  </>
-                )}
+                {/* {params.data.status !== "open" && (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      HandlePreviewPDF(params.data.ID);
+                    }}
+                  >
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print Picking Sheet
+                  </DropdownMenuItem>
+                )} */}
 
-                {params.data.status !== "open" && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenSingle(params.data);
-                      }}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Cancel
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
+                {/* <DropdownMenuSeparator /> */}
+
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    HandleEdit(params.data);
+                  }}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View
+                </DropdownMenuItem>
+                {/* <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    HandlePreviewPDF(params.data);
+                  }}
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print SPK
+                </DropdownMenuItem> */}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -504,40 +474,19 @@ const OutboundTable = () => {
         });
       },
     },
-    { field: "shipment_id", headerName: "DO No", width: 170 },
-    { field: "owner_code", headerName: "Owner", width: 100 },
+    { field: "outbound_no", headerName: "Outbound No", maxWidth: 150 },
     {
-      field: "status",
-      headerName: "Status",
-      width: 120,
-      cellRenderer: (params: any) => {
-        if (!params.value) return null;
-
-        let color = "bg-gray-500";
-        switch (params.value.toLowerCase()) {
-          case "open":
-            color = "bg-blue-500 text-white";
-            break;
-          case "picking":
-            color = "bg-yellow-500 text-black";
-            break;
-          case "completed":
-            color = "bg-green-500";
-            break;
-          case "canceled":
-            color = "bg-red-500";
-            break;
-        }
-
-        return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
-      },
+      field: "total_qty",
+      headerName: "Total QTY",
+      maxWidth: 100,
+      cellStyle: { textAlign: "center" },
     },
-    { field: "customer_code", headerName: "Customer Code", width: 140 },
-    { field: "customer_name", headerName: "Customer Name", width: 180 },
-    { field: "total_item", headerName: "Total Item", width: 100 },
-    { field: "qty_req", headerName: "Qty Req", width: 100 },
-    { field: "qty_plan", headerName: "Qty Pick", width: 100 },
-    { field: "qty_pack", headerName: "Qty Scan", width: 100 },
+    {
+      field: "grand_total",
+      headerName: "Grand Total",
+      maxWidth: 120,
+      cellStyle: { textAlign: "center" },
+    },
   ]);
 
   const [quickFilterText, setQuickFilterText] = useState<string>();
@@ -557,22 +506,10 @@ const OutboundTable = () => {
 
   return (
     <>
-      <div style={{ width: "100%", height: "510px" }}>
+      <div style={{ width: "60%", height: "510px" }}>
         <div className="flex items-center justify-between pb-4">
-          <div className="justify-self-start">
-            <div className="flex items-center">
-              <Button
-                onClick={() => {
-                  router.push("/wms/outbound/add");
-                }}
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                Add
-              </Button>
-            </div>
-          </div>
 
-          <div className="justify-self-end">
+          <div className="justify-self-end w-full">
             <div className={styles.inputWrapper}>
               <svg
                 className={styles.searchIcon}
@@ -619,4 +556,4 @@ const OutboundTable = () => {
   );
 };
 
-export default OutboundTable;
+export default OutboundVasTable;

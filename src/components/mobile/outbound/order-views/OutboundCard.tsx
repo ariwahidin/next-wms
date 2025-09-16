@@ -58,7 +58,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
 
         <div className="mt-3 flex gap-2">
           <Button
-            style={{ display: "none" }}
+            style={{ display: "" }}
             // disabled
             className="w-full"
             onClick={() => handlePickingClick(outbound_no)}
@@ -76,7 +76,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
             Override
           </Button>
           <Button
-            style={{ display: "" }}
+            style={{ display: "none" }}
             className="w-full"
             onClick={() => handlePackingClick(outbound_no)}
           >
