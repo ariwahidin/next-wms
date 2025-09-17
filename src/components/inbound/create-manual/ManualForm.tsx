@@ -29,6 +29,7 @@ import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
 import { parse } from "path";
+import { Origin } from "@/types/origin";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -65,6 +66,7 @@ export default function ManualForm() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [supplierOptions, setSupplierOptions] = useState<ItemOptions[]>([]);
   const [transporters, setTransporters] = useState<Transporter[]>([]);
+  const [origins, setOrigins] = useState<Origin[]>([]);
   const [transporterOptions, setTransporterOptions] = useState<ItemOptions[]>(
     []
   );
@@ -119,11 +121,12 @@ export default function ManualForm() {
 
   const fetchData = async () => {
     try {
-      const [suppliers, transporters, warehouses, owners] = await Promise.all([
+      const [suppliers, transporters, warehouses, owners, origins] = await Promise.all([
         api.get("/suppliers"),
         api.get("/transporters"),
         api.get("/warehouses"),
         api.get("/owners"),
+        api.get("/origins"),
       ]);
 
       if (suppliers.data.success) {
@@ -159,6 +162,16 @@ export default function ManualForm() {
             owners.data.data.map((item: any) => ({
               value: item.code,
               label: item.name,
+            }))
+          );
+        }
+
+        if (origins.data.success) {
+          setOrigins(origins.data.data);
+          setOriginOptions(
+            origins.data.data.map((item: any) => ({
+              value: item.country,
+              label: item.country,
             }))
           );
         }

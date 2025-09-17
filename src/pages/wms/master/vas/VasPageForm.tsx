@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Select from "react-select";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
+import eventBus from "@/utils/eventBus";
 
 const schema = yup.object({
   // name: yup.string().required("VAS Page name is required"),
@@ -71,11 +72,7 @@ export default function VasPageForm({
 
   useEffect(() => {
     if (editData) {
-      // setValue("name", editData.name || "");
-      // setValue("description", editData.description || "");
       setValue("isActive", editData.is_active !== false);
-
-      // ambil array MainVasId dari main_vas_details
       const mainVasIds =
         editData.main_vas_details?.map((d: any) => d.MainVasId) || [];
       setValue("mainVasIds", mainVasIds);
@@ -92,18 +89,20 @@ export default function VasPageForm({
       }
 
       if (res.data.success) {
-        alert(
-          res.data.message ||
-            `VAS Page ${editData ? "updated" : "created"} successfully`
-        );
+        eventBus.emit("showAlert", {
+            title: "Success!",
+            description: res.data.message,
+            type: "success",
+          });
         reset();
         if (clearEditData) clearEditData();
-        // window.location.reload()
+        mutate("/vas/page");
       } else {
-        alert(
-          res.data.message ||
-            `Failed to ${editData ? "update" : "create"} VAS Page`
-        );
+        eventBus.emit("showAlert", {
+            title: "Error!",
+            description: res.data.message,
+            type: "error",
+          });
       }
     } catch (err) {
       console.error(err);
@@ -132,32 +131,6 @@ export default function VasPageForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* <div className="space-y-2">
-            <Label htmlFor="name">VAS Page Name</Label>
-            <Input
-              id="name"
-              {...register("name")}
-              placeholder="Enter VAS Page Name"
-            />
-            {errors.name && (
-              <p className="text-sm text-red-500">{errors.name.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              {...register("description")}
-              placeholder="Enter Description (Optional)"
-            />
-            {errors.description && (
-              <p className="text-sm text-red-500">
-                {errors.description.message}
-              </p>
-            )}
-          </div> */}
-
           <div className="space-y-2">
             <Label>Main VAS Selection</Label>
             <Controller

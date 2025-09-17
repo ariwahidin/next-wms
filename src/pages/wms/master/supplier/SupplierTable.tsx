@@ -1,4 +1,3 @@
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
@@ -44,10 +43,18 @@ const SupplierTable = ({ setEditData }) => {
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
     { field: "supplier_code", headerName: "Supplier Code" },
-    { field: "supplier_name", headerName: "Supplier Name" },
+    { field: "supplier_name", headerName: "Name", width: 300 },
+    { field: "supp_addr1", headerName: "Address" },
+    { field: "supp_city", headerName: "City" },
+    { field: "supp_country", headerName: "Country" },
+    { field: "supp_phone", headerName: "Phone" },
+    { field: "supp_email", headerName: "Email" },
     {
       headerName: "Actions",
       field: "ID",
+      pinned: "right",
+      width: 100,
+      cellStyle: { textAlign: "center", maxWidth: 100 },
       cellRenderer: (params) => {
         return (
           <div>
@@ -58,7 +65,7 @@ const SupplierTable = ({ setEditData }) => {
               }}
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8"
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -66,7 +73,7 @@ const SupplierTable = ({ setEditData }) => {
               onClick={() => HandleDelete(params.data.ID)}
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8"
             >
               <Trash2 className="h-4 w-4" />
             </Button>

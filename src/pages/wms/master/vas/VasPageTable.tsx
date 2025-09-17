@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
@@ -76,7 +75,6 @@ const VasPageTable = ({ setEditData }: VasPageTableProps) => {
     ({ target: { value } }: ChangeEvent<HTMLInputElement>) => setQuickFilterText(value),
     [],
   )
-
   return (
     <Card>
       <CardHeader>
@@ -95,7 +93,6 @@ const VasPageTable = ({ setEditData }: VasPageTableProps) => {
             />
           </div>
         </div>
-
         <div className="ag-theme-alpine" style={{ height: "500px", width: "100%" }}>
           <AgGridReact
             rowData={rowData}

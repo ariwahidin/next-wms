@@ -223,7 +223,7 @@ export default function ItemFormTable({
             <th className="p-2 border" style={{ width: "200px" }}>
               Delivery City
             </th>
-            <th className="p-2 border" style={{ width: "65px" }}>
+            <th className="p-2 border" style={{ width: "75px", textAlign: "center" }}>
               Total Koli
             </th>
             <th className="p-2 border" style={{ width: "65px" }}>
@@ -284,10 +284,12 @@ export default function ItemFormTable({
                 </td>
                 <td className="p-2 border">
                   <Input
+                    // className="w-24"
                     style={{ fontSize: "12px", textAlign: "center" }}
-                    readOnly
-                    type="text"
+                    // readOnly
+                    type="number"
                     value={item.qty_koli}
+                    onChange={(e)=> setMuatan((prev) => prev.map((m) => (m.ID === item.ID ? { ...m, qty_koli: Number(e.target.value) } : m)))}
                   />
                 </td>
                 <td className="p-2 border">

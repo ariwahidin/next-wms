@@ -14,35 +14,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
 import { mutate } from "swr";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Truck } from "@/types/truck";
 
 export default function TruckForm({ editData, setEditData }) {
-  const [truckName, setTruckName] = useState("");
-  const [truckDescription, setTruckDescription] = useState("");
+  const [truck, setTruck] = useState<Truck>({
+    ID: 0,
+    name : "",
+    description : "",
+    cbm : 0
+  });
   const [error, setError] = useState<string | null>(null);
-
-  // 🔥 Jika editData berubah, isi form dengan data produk yang dipilih
-  // useEffect(() => {
-  //   if (editData) {
-  //     setSupplierCode(editData.supplier_code);
-  //     setSupplierName(editData.supplier_name);
-  //   }
-  // }, [editData]);
 
   async function handleSubmit(e) {
     e.preventDefault();
 
     // Validasi form
-    if (!truckName || !truckDescription) {
-      setError("Harap isi semua field.");
-      // Fokuskan ke field yang kosong
-      if (!truckName) {
-        document.getElementById("truckName")?.focus();
-      } else if (!truckDescription) {
-        document.getElementById("truckDescription")?.focus();
-      } 
+    if (truck.name.trim() === "" || truck.description.trim() === "") {
       return;
     }
 
@@ -50,33 +40,20 @@ export default function TruckForm({ editData, setEditData }) {
       setError(null); // Reset error message jika form valid
 
       if (editData) {
-        console.log(editData);
-        // 🔥 Update produk jika sedang dalam mode edit
         await api.put(
-          `/trucks/${editData.ID}`, // ID produk dari editData
-          {
-            truck_name : truckName,
-            truck_description : truckDescription
-          },
-          { withCredentials: true }
+          `/trucks/${editData.ID}`,
+          truck
         );
       } else {
         // 🔥 Tambah produk baru jika tidak sedang edit
         await api.post(
           "/trucks",
-          {
-            truck_name : truckName,
-            truck_description : truckDescription
-          },
-          { withCredentials: true }
+          truck
         );
       }
-
-      mutate("/trucks"); // 🔥 Refresh tabel otomatis tanpa reload
-      setEditData(null); // 🔄 Reset editData setelah submit
-      // setTransporterCode("");
-      // setTransporterName("");
-      // setTransporterAddress("");
+      mutate("/trucks");
+      setEditData(null);
+      setTruck({ ID: 0, name : "", description : "", cbm : 0 }); 
       document.getElementById("truckName")?.focus();
     } catch (err: any) {
       // Tangani error dengan cara yang lebih ramah
@@ -104,17 +81,22 @@ export default function TruckForm({ editData, setEditData }) {
   const handleCancel = () => {
     setError(null);
     setEditData(null);
-    setTruckName("");
-    setTruckDescription("");
+    setTruck({ ID: 0, name : "", description : "", cbm : 0 });
   };
+
+  useEffect(() => {
+    if (editData) {
+      setTruck(editData);
+    }
+  }, [editData]);
 
   return (
     <Card className="w-[400px]">
       <CardHeader>
-        <CardTitle>Truck Form</CardTitle>
-        <CardDescription>
+        <CardTitle>{editData ? "Edit Truck" : "Add Truck"}</CardTitle>
+        {/* <CardDescription>
           {editData ? "Edit Truck" : "Add Truck"}
-        </CardDescription>
+        </CardDescription> */}
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -131,9 +113,9 @@ export default function TruckForm({ editData, setEditData }) {
               <Input
                 id="truckName"
                 onChange={(e) =>
-                  setTruckName(e.target.value.toUpperCase())
+                  setTruck({...truck, name : e.target.value.toUpperCase()})
                 }
-                value={truckName}
+                value={truck.name}
                 placeholder=""
               />
             </div>
@@ -142,9 +124,21 @@ export default function TruckForm({ editData, setEditData }) {
               <Input
                 id="truckDescription"
                 onChange={(e) =>
-                  setTruckDescription(e.target.value.toUpperCase())
+                  setTruck({...truck, description : e.target.value.toUpperCase()})
                 }
-                value={truckDescription}
+                value={truck.description}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="">CBM</Label>
+              <Input
+                type="number"
+                id="truckCBM"
+                onChange={(e) =>
+                  setTruck({...truck, cbm : Number(e.target.value)})
+                }
+                value={truck.cbm}
                 placeholder=""
               />
             </div>

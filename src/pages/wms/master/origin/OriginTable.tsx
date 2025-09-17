@@ -46,13 +46,14 @@ const OriginTable = ({ setEditData }) => {
     {
       headerName: "Actions",
       field: "ID",
+      maxWidth: 100,
+      pinned: "right",
       cellRenderer: (params) => {
         return (
           <div>
             <Button
               onClick={() => {
                 setEditData(params.data);
-                console.log(params.data);
               }}
               variant="ghost"
               size="icon"

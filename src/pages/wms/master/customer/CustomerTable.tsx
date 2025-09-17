@@ -44,9 +44,17 @@ const CustomerTable = ({ setEditData }) => {
     { field: "no", headerName: "No. ", maxWidth: 70 },
     { field: "customer_code", headerName: "Customer Code" },
     { field: "customer_name", headerName: "Customer Name" },
+    { field: "cust_addr1", headerName: "Address" },
+    { field: "cust_city", headerName: "City" },
+    { field: "cust_country", headerName: "Country" },
+    { field: "cust_phone", headerName: "Phone" },
+    { field: "cust_email", headerName: "Email" },
     {
       headerName: "Actions",
       field: "ID",
+      // fixed
+      pinned: "right",
+      maxWidth: 100,
       cellRenderer: (params) => {
         return (
           <div>

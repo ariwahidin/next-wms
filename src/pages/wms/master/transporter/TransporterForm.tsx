@@ -1,4 +1,3 @@
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as React from "react";
@@ -19,35 +18,38 @@ import { mutate } from "swr";
 import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Transporter } from "@/types/transporter";
 
 export default function TransporterForm({ editData, setEditData }) {
-  const [transporterCode, setTransporterCode] = useState("");
-  const [transporterName, setTransporterName] = useState("");
-  const [transporterAddress, setTransporterAddress] = useState("");
+  const [transporter, setTransporter] = useState<Transporter>({
+    ID: 0,
+    transporter_code: "",
+    transporter_name: "",
+    transporter_address: "",
+    city: "",
+    phone: "",
+    email: "",
+    pic: "",
+  });
   const [error, setError] = useState<string | null>(null);
 
   // 🔥 Jika editData berubah, isi form dengan data produk yang dipilih
-  // useEffect(() => {
-  //   if (editData) {
-  //     setSupplierCode(editData.supplier_code);
-  //     setSupplierName(editData.supplier_name);
-  //   }
-  // }, [editData]);
+  useEffect(() => {
+    if (editData) {
+      setTransporter(editData);
+    }
+  }, [editData]);
 
   async function handleSubmit(e) {
     e.preventDefault();
 
     // Validasi form
-    if (!transporterCode || !transporterName || !transporterAddress) {
-      setError("Harap isi semua field.");
-      // Fokuskan ke field yang kosong
-      if (!transporterCode) {
-        document.getElementById("transporterCode")?.focus();
-      } else if (!transporterName) {
-        document.getElementById("transporterName")?.focus();
-      } else if (!transporterAddress) {
-        document.getElementById("transporterAddress")?.focus();
-      }
+    if (
+      transporter.transporter_code === "" ||
+      transporter.transporter_name === "" ||
+      transporter.transporter_address === ""
+    ) {
+      setError("Please fill all the fields.");
       return;
     }
 
@@ -57,32 +59,25 @@ export default function TransporterForm({ editData, setEditData }) {
       if (editData) {
         console.log(editData);
         // 🔥 Update produk jika sedang dalam mode edit
-        await api.put(
-          `/transporters/${editData.ID}`, // ID produk dari editData
-          {
-            // supplier_code: supplierCode,
-            // supplier_name: supplierName,
-          },
-          { withCredentials: true }
-        );
+        await api.put(`/transporters/${editData.ID}`, transporter);
       } else {
         // 🔥 Tambah produk baru jika tidak sedang edit
-        await api.post(
-          "/transporters",
-          {
-            transporter_code: transporterCode,
-            transporter_name: transporterName,
-            transporter_address: transporterAddress,
-          },
-          { withCredentials: true }
-        );
+        await api.post("/transporters", transporter);
       }
 
-      mutate("/transporters"); // 🔥 Refresh tabel otomatis tanpa reload
-      setEditData(null); // 🔄 Reset editData setelah submit
-      // setTransporterCode("");
-      // setTransporterName("");
-      // setTransporterAddress("");
+      mutate("/transporters");
+      setEditData(null);
+      setError(null);
+      setTransporter({
+        ID: 0,
+        transporter_code: "",
+        transporter_name: "",
+        transporter_address: "",
+        city: "",
+        phone: "",
+        email: "",
+        pic: "",
+      });
       document.getElementById("supplierCode")?.focus();
     } catch (err: any) {
       // Tangani error dengan cara yang lebih ramah
@@ -110,18 +105,27 @@ export default function TransporterForm({ editData, setEditData }) {
   const handleCancel = () => {
     setError(null);
     setEditData(null);
-    setTransporterCode("");
-    setTransporterName("");
-    setTransporterAddress("");
+    setTransporter({
+      ID: 0,
+      transporter_code: "",
+      transporter_name: "",
+      transporter_address: "",
+      city: "",
+      phone: "",
+      email: "",
+      pic: "",
+    });
   };
 
   return (
     <Card className="w-[400px]">
       <CardHeader>
-        <CardTitle>Transporter Form</CardTitle>
-        <CardDescription>
+        <CardTitle>
           {editData ? "Edit Transporter" : "Add Transporter"}
-        </CardDescription>
+        </CardTitle>
+        {/* <CardDescription>
+          {editData ? "Edit Transporter" : "Add Transporter"}
+        </CardDescription> */}
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -138,29 +142,97 @@ export default function TransporterForm({ editData, setEditData }) {
               <Input
                 id="transporterCode"
                 onChange={(e) =>
-                  setTransporterCode(e.target.value.toUpperCase())
+                  setTransporter({
+                    ...transporter,
+                    transporter_code: e.target.value.toUpperCase(),
+                  })
                 }
-                value={transporterCode}
+                value={transporter.transporter_code}
                 placeholder=""
               />
             </div>
             <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="">Transporter Name</Label>
+              <Label htmlFor="">Name</Label>
               <Input
                 id="transporterName"
                 onChange={(e) =>
-                  setTransporterName(e.target.value.toUpperCase())
+                  setTransporter({
+                    ...transporter,
+                    transporter_name: e.target.value,
+                  })
                 }
-                value={transporterName}
+                value={transporter.transporter_name}
                 placeholder=""
               />
             </div>
             <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="">Transporter Address</Label>
-              <Input
+              <Label htmlFor="">Address</Label>
+              <textarea
+                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 id="transporterAddress"
-                onChange={(e) => setTransporterAddress(e.target.value)}
-                value={transporterAddress}
+                onChange={(e) =>
+                  setTransporter({
+                    ...transporter,
+                    transporter_address: e.target.value,
+                  })
+                }
+                value={transporter.transporter_address}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="">City</Label>
+              <Input
+                id="transporterCity"
+                onChange={(e) =>
+                  setTransporter({
+                    ...transporter,
+                    city: e.target.value,
+                  })
+                }
+                value={transporter.city}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="">Phone</Label>
+              <Input
+                id="transporterCity"
+                onChange={(e) =>
+                  setTransporter({
+                    ...transporter,
+                    phone: e.target.value,
+                  })
+                }
+                value={transporter.phone}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="">Email</Label>
+              <Input
+                id="transporterEmail"
+                onChange={(e) =>
+                  setTransporter({
+                    ...transporter,
+                    email: e.target.value,
+                  })
+                }
+                value={transporter.email}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="">PIC</Label>
+              <Input
+                id="transporterPic"
+                onChange={(e) =>
+                  setTransporter({
+                    ...transporter,
+                    pic: e.target.value,
+                  })
+                }
+                value={transporter.pic}
                 placeholder=""
               />
             </div>

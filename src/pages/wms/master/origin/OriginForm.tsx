@@ -18,29 +18,28 @@ import { mutate } from "swr";
 import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Origin } from "@/types/origin";
 
 export default function OriginForm({ editData, setEditData }) {
-  const [country, setCountry] = useState("");
+  const [origin, setOrigin] = useState<Origin>({
+    ID: 0,
+    country: "",
+  });
   const [error, setError] = useState<string | null>(null);
 
   // 🔥 Jika editData berubah, isi form dengan data produk yang dipilih
-  // useEffect(() => {
-  //   if (editData) {
-  //     setSupplierCode(editData.supplier_code);
-  //     setSupplierName(editData.supplier_name);
-  //   }
-  // }, [editData]);
+  useEffect(() => {
+    if (editData) {
+      setOrigin(editData);
+    }
+  }, [editData]);
 
   async function handleSubmit(e) {
     e.preventDefault();
 
     // Validasi form
-    if (!country) {
-      setError("Harap isi semua field.");
-      // Fokuskan ke field yang kosong
-      if (!country) {
-        document.getElementById("country")?.focus();
-      } 
+    if (origin.country.trim() === "") {
+      setError("Please fill all the fields.");
       return;
     }
 
@@ -51,28 +50,18 @@ export default function OriginForm({ editData, setEditData }) {
         console.log(editData);
         // 🔥 Update produk jika sedang dalam mode edit
         await api.put(
-          `/origins/${editData.ID}`, // ID produk dari editData
-          {
-            country : country
-          },
-          { withCredentials: true }
-        );
+          `/origins/${editData.ID}`,origin);
       } else {
         // 🔥 Tambah produk baru jika tidak sedang edit
         await api.post(
-          "/origins",
-          {
-            country : country
-          },
-          { withCredentials: true }
+          "/origins",origin
         );
       }
 
       mutate("/origins"); // 🔥 Refresh tabel otomatis tanpa reload
-      setEditData(null); // 🔄 Reset editData setelah submit
-      // setTransporterCode("");
-      // setTransporterName("");
-      // setTransporterAddress("");
+      setEditData(null); 
+      setOrigin({ ID: 0, country: "" });
+      setError(null);
       document.getElementById("country")?.focus();
     } catch (err: any) {
       // Tangani error dengan cara yang lebih ramah
@@ -100,16 +89,15 @@ export default function OriginForm({ editData, setEditData }) {
   const handleCancel = () => {
     setError(null);
     setEditData(null);
-    setCountry("");
+    setOrigin({ ID: 0, country: "" });
+    document.getElementById("country")?.focus();
   };
 
   return (
     <Card className="w-[400px]">
       <CardHeader>
-        <CardTitle>Truck Form</CardTitle>
-        <CardDescription>
-          {editData ? "Edit Country" : "Add Country"}
-        </CardDescription>
+        <CardTitle> {editData ? "Edit Country" : "Add Country"}</CardTitle>
+        {/* <CardDescription></CardDescription> */}
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -125,10 +113,8 @@ export default function OriginForm({ editData, setEditData }) {
               <Label htmlFor="">Country</Label>
               <Input
                 id="country"
-                onChange={(e) =>
-                  setCountry(e.target.value.toUpperCase())
-                }
-                value={country}
+                value={origin.country}
+                onChange={(e) => setOrigin({ ...origin, country: e.target.value })}
                 placeholder=""
               />
             </div>

@@ -79,18 +79,10 @@ const data = {
           title: "Items",
           url: "/wms/master/product",
         },
-        {
-          title: "Item & Handling",
-          url: "/wms/master/item-handling",
-        },
-        {
-          title: "Location",
-          url: "/wms/master/location",
-        },
-        {
-          title: "UoM Conversion",
-          url: "/wms/master/uom-conversion",
-        },
+        // {
+        //   title: "Item & Handling",
+        //   url: "/wms/master/item-handling",
+        // },
         {
           title: "Supplier",
           url: "/wms/master/supplier",
@@ -98,14 +90,6 @@ const data = {
         {
           title: "Customer",
           url: "/wms/master/customer",
-        },
-        {
-          title: "Vas Main",
-          url: "/wms/master/main-vas",
-        },
-        {
-          title: "Vas",
-          url: "/wms/master/vas",
         },
         {
           title: "Transporter",
@@ -118,6 +102,22 @@ const data = {
         {
           title: "Origin",
           url: "/wms/master/origin",
+        },
+        {
+          title: "Location",
+          url: "/wms/master/location",
+        },
+        {
+          title: "UoM Conversion",
+          url: "/wms/master/uom-conversion",
+        },
+        {
+          title: "Vas Main",
+          url: "/wms/master/main-vas",
+        },
+        {
+          title: "Vas",
+          url: "/wms/master/vas",
         },
       ],
     },
@@ -341,17 +341,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   useEffect(() => {
     const collapsedPaths = [
-      "/wms/inbound/add", 
-      "/wms/outbound/add", 
-      "/wms/outbound/edit", 
+      "/wms/inbound/add",
+      "/wms/outbound/add",
+      "/wms/outbound/edit",
       "/wms/outbound/handling/edit",
       "/wms/inbound/edit",
     ];
 
-    if (collapsedPaths.some(path => pathname.startsWith(path)) && !hasAutoCollapsed.current) {
+    if (
+      collapsedPaths.some((path) => pathname.startsWith(path)) &&
+      !hasAutoCollapsed.current
+    ) {
       setOpen(false); // Tutup sekali saja
       hasAutoCollapsed.current = true; // Tandai sudah auto collapse
-    } else if (!collapsedPaths.some(path => pathname.startsWith(path))) {
+    } else if (!collapsedPaths.some((path) => pathname.startsWith(path))) {
       hasAutoCollapsed.current = false; // Reset flag kalau keluar dari path itu
     }
   }, [pathname, setOpen]);
@@ -369,7 +372,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   );
 }
-
 
 // export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 //   const menus = useSelector((state: RootState) => state.user.menus);

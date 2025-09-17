@@ -8,6 +8,10 @@ export interface Product {
     height: number;
     uom: string;
     has_serial?: string;
+    has_waranty?: string;
+    has_adaptor?: string;
+    manual_book?: string;
     group?: string;
     category?: string;
+    cbm?: number;
 }

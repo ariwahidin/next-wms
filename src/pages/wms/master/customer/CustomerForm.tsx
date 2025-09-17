@@ -18,34 +18,31 @@ import { mutate } from "swr";
 import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Customer } from "@/types/customer";
 
 export default function CustomerForm({ editData, setEditData }) {
-  const [customerCode, setCustomerCode] = useState("");
-  const [customerName, setCustomerName] = useState("");
+  const [customer, setCustomer] = useState<Customer>({
+    ID: 0,
+    customer_code: "",
+    customer_name: "",
+    cust_addr1: "",
+    cust_addr2: "",
+    cust_city: "",
+    cust_area: "",
+  });
+
   const [error, setError] = useState<string | null>(null);
 
   // 🔥 Jika editData berubah, isi form dengan data produk yang dipilih
   useEffect(() => {
     if (editData) {
-      setCustomerCode(editData.customer_code);
-      setCustomerName(editData.customer_name);
+      setCustomer(editData);
     }
   }, [editData]);
 
   async function handleSubmit(e) {
     e.preventDefault();
-
-    // Validasi form
-    if (!customerCode || !customerName) {
-      setError("Harap isi semua field.");
-      // Fokuskan ke field yang kosong
-      if (!customerCode) {
-        document.getElementById("customerCode")?.focus();
-      } else if (!customerName) {
-        document.getElementById("customerName")?.focus();
-      }
-      return;
-    }
+    
 
     try {
       setError(null); // Reset error message jika form valid
@@ -54,29 +51,21 @@ export default function CustomerForm({ editData, setEditData }) {
         console.log(editData);
         // 🔥 Update produk jika sedang dalam mode edit
         await api.put(
-          `/customers/${editData.ID}`, // ID produk dari editData
-          {
-            customer_code: customerCode,
-            customer_name: customerName,
-          },
+          `/customers/${editData.ID}`,customer,
           { withCredentials: true }
         );
       } else {
         // 🔥 Tambah produk baru jika tidak sedang edit
         await api.post(
-          "/customers",
-          {
-            customer_code: customerCode,
-            customer_name: customerName,
-          },
+          "/customers",customer,
           { withCredentials: true }
         );
       }
 
-      mutate("/customers"); // 🔥 Refresh tabel otomatis tanpa reload
-      setEditData(null); // 🔄 Reset editData setelah submit
-      setCustomerCode("");
-      setCustomerName("");
+      mutate("/customers");
+      setEditData(null); 
+      setCustomer({ ID: 0, customer_code: "", customer_name: "", cust_addr1: "", cust_addr2: "", cust_city: "", cust_area: "", cust_country: "", cust_phone: "", cust_email: "" });
+      
       document.getElementById("customerCode")?.focus();
     } catch (err: any) {
       // Tangani error dengan cara yang lebih ramah
@@ -104,17 +93,16 @@ export default function CustomerForm({ editData, setEditData }) {
   const handleCancel = () => {
     setError(null);
     setEditData(null);
-    setCustomerCode("");
-    setCustomerName("");
+    setCustomer({ ID: 0, customer_code: "", customer_name: "", cust_addr1: "", cust_addr2: "", cust_city: "", cust_area: "" });
   };
 
   return (
     <Card className="w-[400px]">
       <CardHeader>
-        <CardTitle>Customer Form</CardTitle>
-        <CardDescription>
+        <CardTitle>{editData ? "Edit Customer" : "Add Customer"}</CardTitle>
+        {/* <CardDescription>
           {editData ? "Edit Customer" : "Add Customer"}
-        </CardDescription>
+        </CardDescription> */}
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -126,21 +114,68 @@ export default function CustomerForm({ editData, setEditData }) {
       <CardContent>
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
           <div className="grid w-full items-center gap-4">
-            <div className="flex flex-col space-y-1.5">
+            <div className="flex flex-col space-y-1">
               <Label htmlFor="item_code">Customer Code</Label>
               <Input
+                readOnly = {editData ? true : false}
                 id="customerCode"
-                onChange={(e) => setCustomerCode(e.target.value)}
-                value={customerCode}
+                onChange={(e) => setCustomer({ ...customer, customer_code: e.target.value })}
+                value={customer.customer_code}
                 placeholder=""
               />
             </div>
-            <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="item_name">Customer Name</Label>
+            <div className="flex flex-col space-y-1">
+              <Label htmlFor="item_name">Name</Label>
               <Input
                 id="customerName"
-                onChange={(e) => setCustomerName(e.target.value)}
-                value={customerName}
+                onChange={(e) => setCustomer({ ...customer, customer_name: e.target.value })}
+                value={customer.customer_name}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1">
+              <Label htmlFor="item_name">Address</Label>
+              <textarea
+                className="w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                id="customerAddr1"
+                onChange={(e) => setCustomer({ ...customer, cust_addr1: e.target.value })}
+                value={customer.cust_addr1}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1">
+              <Label htmlFor="item_name">City</Label>
+              <Input
+                id="customerCity"
+                onChange={(e) => setCustomer({ ...customer, cust_city: e.target.value })}
+                value={customer.cust_city}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1">
+              <Label htmlFor="item_name">Country</Label>
+              <Input
+                id="customerCountry"
+                onChange={(e) => setCustomer({ ...customer, cust_country: e.target.value })}
+                value={customer.cust_country}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1">
+              <Label htmlFor="item_name">Phone</Label>
+              <Input
+                id="customerPhone"
+                onChange={(e) => setCustomer({ ...customer, cust_phone: e.target.value })}
+                value={customer.cust_phone}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1">
+              <Label htmlFor="item_name">Email</Label>
+              <Input
+                id="customerEmail"
+                onChange={(e) => setCustomer({ ...customer, cust_email: e.target.value })}
+                value={customer.cust_email}
                 placeholder=""
               />
             </div>
@@ -160,3 +195,4 @@ export default function CustomerForm({ editData, setEditData }) {
     </Card>
   );
 }
+

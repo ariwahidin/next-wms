@@ -11,6 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import eventBus from "@/utils/eventBus";
+import { emit } from "process";
+import useSWR, { mutate } from "swr";
 
 const schema = yup.object({
   name: yup.string().required("Name is required"),
@@ -62,18 +65,20 @@ export default function MainVasForm({
       }
 
       if (res.data.success) {
-        alert(
-          res.data.message ||
-            `Main VAS ${editData ? "updated" : "created"} successfully`
-        );
+        eventBus.emit("showAlert", {
+          title: "Success!",
+          description: res.data.message,
+          type: "success",
+        });
         reset();
         if (clearEditData) clearEditData();
-        // window.location.reload();
+        mutate("/vas/main-vas");
       } else {
-        alert(
-          res.data.message ||
-            `Failed to ${editData ? "update" : "create"} Main VAS`
-        );
+        eventBus.emit("showAlert", {
+          title: "Error!",
+          description: res.data.message,
+          type: "error",
+        });
       }
     } catch (err) {
       console.error(err);

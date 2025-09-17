@@ -181,7 +181,10 @@ const ItemSelectionModal = ({
                   <th className="p-2 border">Item Name</th>
                   <th className="p-2 border">Barcode</th>
                   <th className="p-2 border w-20">UoM</th>
-                  <th className="p-2 border w-20">Serial</th>
+                  <th className="p-2 border w-20">SN</th>
+                  <th className="p-2 border w-20">Adaptor</th>
+                  <th className="p-2 border w-20">Waranty</th>
+                  <th className="p-2 border w-20">Manual Book</th>
                   <th className="p-2 border">Group</th>
                   <th className="p-2 border">Category</th>
                 </tr>
@@ -224,6 +227,39 @@ const ItemSelectionModal = ({
                           }`}
                         >
                           {item.has_serial}
+                        </span>
+                      </td>
+                      <td className="p-2 border text-center">
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            item.has_adaptor === "Y"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {item.has_adaptor}
+                        </span>
+                      </td>
+                      <td className="p-2 border text-center">
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            item.has_waranty === "Y"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {item.has_waranty}
+                        </span>
+                      </td>
+                      <td className="p-2 border text-center">
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            item.manual_book === "Y"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {item.manual_book}
                         </span>
                       </td>
                       <td className="p-2 border">{item?.group}</td>

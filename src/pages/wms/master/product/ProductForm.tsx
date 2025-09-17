@@ -36,20 +36,31 @@ export default function ProductForm({ editData, setEditData, onClose }) {
     { value: "Y", label: "YES" },
     { value: "N", label: "NO" },
   ]);
+  const [warantyOptions, setWarantyOptions] = useState([
+    { value: "Y", label: "YES" },
+    { value: "N", label: "NO" },
+  ]);
+  const [adaptorOptions, setAdaptorOptions] = useState([
+    { value: "Y", label: "YES" },
+    { value: "N", label: "NO" },
+  ]);
+  const [manualBookOptions, setManualBookOptions] = useState([
+    { value: "Y", label: "YES" },
+    { value: "N", label: "NO" },
+  ]);
 
   const [selectedSerial, setSelectedSerial] = useState(serialOptions[1]);
+  const [selectedWaranty, setSelectedWaranty] = useState(warantyOptions[1]);
+  const [selectedAdaptor, setSelectedAdaptor] = useState(adaptorOptions[1]);
+  const [selectedManualBook, setSelectedManualBook] = useState(manualBookOptions[1]);
 
   useEffect(() => {
     if (editData) {
-      console.log("Edit Data Di Form : ", editData);
-
-      console.log("uom Options : ", uomOptions);
-
       setItemCode(editData.item_code);
       setItemName(editData.item_name);
       setGmc(editData.barcode);
       setCategory({ value: editData.category, label: editData.category });
-      
+      setCbm(editData.cbm);
       categoryOptions.find((option) => {
         if (option.value === editData.category) {
           setCategory(option);
@@ -58,6 +69,24 @@ export default function ProductForm({ editData, setEditData, onClose }) {
       serialOptions.find((option) => {
         if (option.value === editData.has_serial) {
           setSelectedSerial(option);
+        }
+      });
+
+      warantyOptions.find((option) => {
+        if (option.value === editData.has_waranty) {
+          setSelectedWaranty(option);
+        }
+      });
+
+      adaptorOptions.find((option) => {
+        if (option.value === editData.has_adaptor) {
+          setSelectedAdaptor(option);
+        }
+      });
+
+      manualBookOptions.find((option) => {
+        if (option.value === editData.has_manual_book) {
+          setSelectedManualBook(option);
         }
       });
 
@@ -77,10 +106,10 @@ export default function ProductForm({ editData, setEditData, onClose }) {
       console.log(error);
     }
   };
-
   const [uoms, setUoms] = useState([]);
   const [uomOptions, setUomOptions] = useState([]);
   const [selectedUom, setSelectedUom] = useState(null);
+  const [cbm, setCbm] = useState(0);
   useEffect(() => {
     async function fetchData() {
       const data = await AllUOM();
@@ -159,11 +188,13 @@ export default function ProductForm({ editData, setEditData, onClose }) {
             item_code: itemCode,
             item_name: itemName,
             gmc: gmc,
-            cbm: 1.0,
+            cbm: cbm,
             category: category.value,
-
             group: "Book",
             serial: selectedSerial.value,
+            waranty : selectedWaranty.value,
+            adaptor : selectedAdaptor.value,
+            manual_book : selectedManualBook.value,
             uom: selectedUom.value,
           },
           { withCredentials: true }
@@ -176,10 +207,13 @@ export default function ProductForm({ editData, setEditData, onClose }) {
             item_code: itemCode,
             item_name: itemName,
             gmc: gmc,
-            cbm: 1.0,
+            cbm: cbm,
             category: category.value,
             group: "Book",
             serial: selectedSerial.value,
+            waranty : selectedWaranty.value,
+            adaptor : selectedAdaptor.value,
+            manual_book : selectedManualBook.value,
             uom: selectedUom.value,
           },
           { withCredentials: true }
@@ -273,28 +307,6 @@ export default function ProductForm({ editData, setEditData, onClose }) {
               />
             </div>
             <div className="flex items-center gap-4">
-              <Label className="w-24 text-left shrink-0">Base UOM</Label>
-              <span className="shrink-0">:</span>
-              <Select
-                options={uomOptions}
-                defaultValue={selectedUom}
-                onChange={(selectedOption) => setSelectedUom(selectedOption)}
-                placeholder="Select base UOM"
-                value={selectedUom}
-              />
-            </div>
-            <div className="flex items-center gap-4">
-              <Label className="w-24 text-left shrink-0">Has Serial</Label>
-              <span className="shrink-0">:</span>
-              <Select
-                options={serialOptions}
-                defaultValue={selectedSerial}
-                onChange={(selectedOption) => setSelectedSerial(selectedOption)}
-                value={selectedSerial}
-                placeholder="Select serial"
-              />
-            </div>
-            <div className="flex items-center gap-4">
               <Label className="w-24 text-left shrink-0">Category</Label>
               <span className="shrink-0">:</span>
               <Select
@@ -307,6 +319,73 @@ export default function ProductForm({ editData, setEditData, onClose }) {
                 placeholder="Select category"
               />
             </div>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0">Base UOM</Label>
+              <span className="shrink-0">:</span>
+              <Select
+                options={uomOptions}
+                defaultValue={selectedUom}
+                onChange={(selectedOption) => setSelectedUom(selectedOption)}
+                placeholder="Select base UOM"
+                value={selectedUom}
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0">SN</Label>
+              <span className="shrink-0">:</span>
+              <Select
+                options={serialOptions}
+                defaultValue={selectedSerial}
+                onChange={(selectedOption) => setSelectedSerial(selectedOption)}
+                value={selectedSerial}
+                placeholder="Choose..."
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0">Waranty</Label>
+              <span className="shrink-0">:</span>
+              <Select
+                options={warantyOptions}
+                defaultValue={selectedWaranty}
+                onChange={(selectedOption) => setSelectedWaranty(selectedOption)}
+                value={selectedWaranty}
+                placeholder="Choose..."
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0">Adaptor</Label>
+              <span className="shrink-0">:</span>
+              <Select
+                options={adaptorOptions}
+                defaultValue={selectedAdaptor}
+                onChange={(selectedOption) => setSelectedAdaptor(selectedOption)}
+                value={selectedAdaptor}
+                placeholder="Choose..."
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0">Manual Book</Label>
+              <span className="shrink-0">:</span>
+              <Select
+                options={manualBookOptions}
+                defaultValue={selectedManualBook}
+                onChange={(selectedOption) => setSelectedManualBook(selectedOption)}
+                value={selectedManualBook}
+                placeholder="Choose..."
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <Label className="w-24 text-left shrink-0">CBM</Label>
+              <span className="shrink-0">:</span>
+              <Input
+                id="cbm"
+                onChange={(e) => setCbm(Number(e.target.value))}
+                value={cbm}
+                type="number"
+                placeholder=""
+              />
+            </div>
+            
           </div>
         </form>
       </CardContent>

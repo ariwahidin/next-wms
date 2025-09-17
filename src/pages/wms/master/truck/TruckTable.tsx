@@ -42,8 +42,9 @@ const TruckTable = ({ setEditData }) => {
 
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
-    { field: "truck_name", headerName: "Truck Name", width: 140 },
-    { field: "truck_description", headerName: "Description", width: 230 },
+    { field: "name", headerName: "Name", width: 140 },
+    { field: "description", headerName: "Description", width: 230 },
+    { field: "cbm", headerName: "CBM", width: 230 },
     {
       headerName: "Actions",
       field: "ID",

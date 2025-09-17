@@ -20,6 +20,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { Transporter } from "@/types/transporter";
 import { HeaderSPK, MuatanOrderSPK } from "@/types/order-spk";
 import { Textarea } from "../ui/textarea";
+import { Truck } from "@/types/truck";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function ManualForm() {
 
   const [muatan, setMuatan] = useState<MuatanOrderSPK[]>([]);
   const [transporter, setTransporter] = useState<Transporter[]>([]);
+  const [trucks, setTrucks] = useState<Truck[]>([]);
   const [transporterOptions, setTransporterOptions] = useState<ItemOptions[]>(
     []
   );
@@ -48,14 +50,25 @@ export default function ManualForm() {
 
   const fetchData = async () => {
     try {
-      const [transporters] = await Promise.all([api.get("/transporters")]);
+      const [transporters, trucks] = await Promise.all([
+        api.get("/transporters"),
+        api.get("/trucks"),
+      ]);
 
-      if (transporters.data.success) {
+      if (transporters.data.success && trucks.data.success) {
         setTransporter(transporters.data.data);
         setTransporterOptions(
           transporters.data.data.map((item: Transporter) => ({
             value: item.transporter_code,
             label: item.transporter_name,
+          }))
+        );
+
+        setTrucks(trucks.data.data);
+        setTruckTypeOptions(
+          trucks.data.data.map((item: Truck) => ({
+            value: item.name,
+            label: item.name,
           }))
         );
       }
@@ -256,6 +269,34 @@ export default function ManualForm() {
               className="w-24 text-left shrink-0"
               style={{ fontSize: "12px" }}
             >
+              Truck Size
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <Select
+                className="w-80"
+                value={truckTypeOptions.find(
+                  (option) => option.value === formData.truck_type
+                )}
+                options={truckTypeOptions}
+                onChange={(selectedOption) => {
+                  if (selectedOption) {
+                    setFormData({
+                      ...formData,
+                      truck_type: selectedOption.value,
+                      truck_size: selectedOption.value,
+                    });
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Label
+              className="w-24 text-left shrink-0"
+              style={{ fontSize: "12px" }}
+            >
               Driver
             </Label>
             <span className="shrink-0">:</span>
@@ -269,30 +310,6 @@ export default function ManualForm() {
                   setFormData({
                     ...formData,
                     driver: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Label
-              className="w-24 text-left shrink-0"
-              style={{ fontSize: "12px" }}
-            >
-              Truck Size
-            </Label>
-            <span className="shrink-0">:</span>
-            <div className="flex-1">
-              <Input
-                id="TruckSize"
-                style={{ fontSize: "12px" }}
-                className="flex-1 w-64"
-                value={formData.truck_size}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    truck_size: e.target.value,
                   })
                 }
               />
@@ -324,32 +341,6 @@ export default function ManualForm() {
           </div>
         </div>
         <div className="bg-white-200 p-0 space-y-1">
-          <div className="flex items-center gap-2">
-            <Label
-              className="w-32 text-left shrink-0"
-              style={{ fontSize: "12px" }}
-            >
-              Truck Type
-            </Label>
-            <span className="shrink-0">:</span>
-            <div className="flex-1">
-              <Select
-                className="w-40"
-                value={truckTypeOptions.find(
-                  (option) => option.value === formData.truck_type
-                )}
-                options={truckTypeOptions}
-                onChange={(selectedOption) => {
-                  if (selectedOption) {
-                    setFormData({
-                      ...formData,
-                      truck_type: selectedOption.value,
-                    });
-                  }
-                }}
-              />
-            </div>
-          </div>
           <div className="flex items-center gap-2">
             <Label
               className="w-32 text-left shrink-0"
@@ -465,7 +456,7 @@ export default function ManualForm() {
                     remarks: e.target.value,
                   })
                 }
-              /> 
+              />
               {/* <textarea
                 id="remarks"
                 style={{ width: "160px", fontSize: "12px", height: "40px" }}

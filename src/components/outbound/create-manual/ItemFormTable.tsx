@@ -173,7 +173,7 @@ export default function ItemFormTable({
         remarks: "",
         mode: "create",
         sn: product.has_serial,
-        vas_id: vasOptions.find((item) => item.label === 'NO')?.value,
+        vas_id: vasOptions.find((item) => item.label === "NO")?.value,
       }));
 
       setMuatan((prev) => [...prev, ...newItems]);
@@ -201,57 +201,58 @@ export default function ItemFormTable({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        {/* <h2 className="text-lg font-semibold">Requested Items</h2> */}
-        {headerForm.status !== "complete" && (
-          <div className="space-x-2">
-            <Button
-              type="button"
-              disabled={headerForm.status === "picking"}
-              onClick={handleAddItems}
-            >
-              Add Item
-            </Button>
-          </div>
-        )}
-      </div>
+    <>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          {/* <h2 className="text-lg font-semibold">Requested Items</h2> */}
+          {headerForm.status !== "complete" && (
+            <div className="space-x-2">
+              <Button
+                type="button"
+                disabled={headerForm.status === "picking"}
+                onClick={handleAddItems}
+              >
+                Add Item
+              </Button>
+            </div>
+          )}
+        </div>
 
-      <table className="w-full border font-normal text-xs">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="p-2 border w-12 text-center">No.</th>
-            <th className="p-2 border" style={{ width: "300px" }}>
-              Item Code
-            </th>
-            <th className="p-2 border" style={{ width: "300px" }}>
-              Item Name
-            </th>
-            <th className="p-2 border" style={{ width: "150px" }}>
-              Barcode
-            </th>
-            <th className="p-2 border" style={{ width: "100px" }}>
-              Qty
-            </th>
-            <th className="p-2 border" style={{ width: "55px" }}>
-              SN
-            </th>
-            {/* <th className="p-2 border" style={{ width: "120px" }}>
+        <table className="w-full border font-normal text-xs">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-2 border w-12 text-center">No.</th>
+              <th className="p-2 border" style={{ width: "300px" }}>
+                Item Code
+              </th>
+              <th className="p-2 border" style={{ width: "300px" }}>
+                Item Name
+              </th>
+              <th className="p-2 border" style={{ width: "150px" }}>
+                Barcode
+              </th>
+              <th className="p-2 border" style={{ width: "100px" }}>
+                Qty
+              </th>
+              <th className="p-2 border" style={{ width: "55px" }}>
+                SN
+              </th>
+              {/* <th className="p-2 border" style={{ width: "120px" }}>
               UoM
             </th> */}
-            {/* <th className="p-2 border">Inv. Location</th> */}
-            <th className="p-2 border">VAS</th>
-            <th className="p-2 border" style={{ width: "160px" }}>
-              Action
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {muatan?.map((item, index) => {
-            return (
-              <tr key={item.ID} className="border-t">
-                <td className="p-2 border text-center">{index + 1}</td>
-                {/* <td className="p-2 border">
+              {/* <th className="p-2 border">Inv. Location</th> */}
+              <th className="p-2 border">VAS</th>
+              <th className="p-2 border" style={{ width: "160px" }}>
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {muatan?.map((item, index) => {
+              return (
+                <tr key={item.ID} className="border-t">
+                  <td className="p-2 border text-center">{index + 1}</td>
+                  {/* <td className="p-2 border">
                   <div key={item.ID}>
                     <Select
                       value={itemCodeOptions.find(
@@ -269,140 +270,140 @@ export default function ItemFormTable({
                     </small>
                   )}
                 </td> */}
-                <td className="p-2 border">
-                  <div className="flex items-center gap-2">
+                  <td className="p-2 border">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        style={{ fontSize: "12px" }}
+                        type="text"
+                        value={item.item_code}
+                        readOnly
+                        className="flex-1"
+                        placeholder="Click edit to select item..."
+                      />
+                      {item.mode === "create" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditItem(item)}
+                          title="Select item"
+                        >
+                          <Pencil size={12} />
+                        </Button>
+                      )}
+                    </div>
+                    {errors[item.ID]?.item_code && (
+                      <small className="text-red-500">
+                        {errors[item.ID].item_code}
+                      </small>
+                    )}
+                  </td>
+                  <td className="p-2 border">
                     <Input
                       style={{ fontSize: "12px" }}
-                      type="text"
-                      value={item.item_code}
                       readOnly
-                      className="flex-1"
-                      placeholder="Click edit to select item..."
+                      type="text"
+                      // value={item.item_name}
+                      value={
+                        products.find((p) => p.item_code === item.item_code)
+                          ?.item_name || ""
+                      }
                     />
-                    {item.mode === "create" && (
+                  </td>
+                  <td className="p-2 border">
+                    <Input
+                      style={{ fontSize: "12px" }}
+                      readOnly
+                      type="text"
+                      // value={item.barcode}
+                      value={
+                        products.find((p) => p.item_code === item.item_code)
+                          ?.barcode || ""
+                      }
+                    />
+                  </td>
+                  <td className="p-2 border">
+                    <div>
+                      <Input
+                        // readOnly={headerForm.status != "open"}
+                        style={{ fontSize: "12px", textAlign: "center" }}
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          handleChange(item.ID, "quantity", e.target.value)
+                        }
+                      />
+                    </div>
+                    {errors[item.ID]?.item_code && (
+                      <small className="text-red-500">
+                        {errors[item.ID].item_code}
+                      </small>
+                    )}
+                  </td>
+                  <td className="p-2 border">
+                    <Input
+                      style={{ fontSize: "12px" }}
+                      readOnly
+                      type="text"
+                      value={item.sn}
+                    />
+                  </td>
+                  <td className="p-2 border">
+                    <Select
+                      isDisabled={headerForm.status == "complete"}
+                      className="text-sm w-34"
+                      isSearchable
+                      value={vasOptions.find(
+                        (option) => option.value === item.vas_id
+                      )}
+                      options={vasOptions}
+                      onChange={(value) =>
+                        handleChange(item.ID, "vas_id", value?.value)
+                      }
+                    />
+                  </td>
+                  <td
+                    className="p-2 border space-x-2 text-center"
+                    style={{ width: "160px" }}
+                  >
+                    {headerForm.status == "open" || item.mode == "create" ? (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleEditItem(item)}
-                        title="Select item"
+                        onClick={() => {
+                          handleCancel(item);
+                        }}
                       >
-                        <Pencil size={12} />
+                        <X size={14} />
                       </Button>
-                    )}
-                  </div>
-                  {errors[item.ID]?.item_code && (
-                    <small className="text-red-500">
-                      {errors[item.ID].item_code}
-                    </small>
-                  )}
-                </td>
-                <td className="p-2 border">
-                  <Input
-                    style={{ fontSize: "12px" }}
-                    readOnly
-                    type="text"
-                    // value={item.item_name}
-                    value={
-                      products.find((p) => p.item_code === item.item_code)
-                        ?.item_name || ""
-                    }
-                  />
-                </td>
-                <td className="p-2 border">
-                  <Input
-                    style={{ fontSize: "12px" }}
-                    readOnly
-                    type="text"
-                    // value={item.barcode}
-                    value={
-                      products.find((p) => p.item_code === item.item_code)
-                        ?.barcode || ""
-                    }
-                  />
-                </td>
-                <td className="p-2 border">
-                  <div>
-                    <Input
-                      // readOnly={headerForm.status != "open"}
-                      style={{ fontSize: "12px", textAlign: "center" }}
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        handleChange(item.ID, "quantity", e.target.value)
-                      }
-                    />
-                  </div>
-                  {errors[item.ID]?.item_code && (
-                    <small className="text-red-500">
-                      {errors[item.ID].item_code}
-                    </small>
-                  )}
-                </td>
-                <td className="p-2 border">
-                  <Input
-                    style={{ fontSize: "12px" }}
-                    readOnly
-                    type="text"
-                    value={item.sn}
-                  />
-                </td>
-                <td className="p-2 border">
-                  <Select
-                    isDisabled = {headerForm.status == "complete"}
-                    className="text-sm w-34"
-                    isSearchable
-                    value={vasOptions.find(
-                      (option) => option.value === item.vas_id
-                    )}
-                    options={vasOptions}
-                    onChange={(value) =>
-                      handleChange(item.ID, "vas_id", value?.value)
-                    }
-                  />
-                </td>
-                <td
-                  className="p-2 border space-x-2 text-center"
-                  style={{ width: "160px" }}
-                >
-                  {headerForm.status == "open" || item.mode == "create" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        handleCancel(item);
-                      }}
-                    >
-                      <X size={14} />
-                    </Button>
-                  ) : (
-                    <>
-                      {/* <Button
+                    ) : (
+                      <>
+                        {/* <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => handleDelete(item.ID)}
                       >
                         <Trash size={14} />
                       </Button> */}
-                    </>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-        <tfoot>
-          <tr className="bg-gray-100 font-semibold">
-            <td className="p-2 border" colSpan={4}>
-              Total
-            </td>
-            <td className="p-2 border text-center">
-              {muatan.reduce((acc, item) => acc + item.quantity, 0)}
-            </td>
-            <td className="p-2 border" colSpan={3}></td>
-          </tr>
-        </tfoot>
-      </table>
-
+                      </>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot>
+            <tr className="bg-gray-100 font-semibold">
+              <td className="p-2 border" colSpan={4}>
+                Total
+              </td>
+              <td className="p-2 border text-center">
+                {muatan.reduce((acc, item) => acc + item.quantity, 0)}
+              </td>
+              <td className="p-2 border" colSpan={3}></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
       <ItemSelectionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -410,6 +411,6 @@ export default function ItemFormTable({
         onApply={handleModalApply}
         selectedItems={muatan}
       />
-    </div>
+    </>
   );
 }

@@ -17,32 +17,33 @@ import { mutate } from "swr";
 import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Supplier } from "@/types/supplier";
+import { set } from "date-fns";
 
 export default function SupplierForm({ editData, setEditData }) {
-  const [supplierCode, setSupplierCode] = useState("");
-  const [supplierName, setSupplierName] = useState("");
+  const [supplier, setSupplier] = useState<Supplier>({
+    ID: 0,
+    supplier_code: "",
+    supplier_name: "",
+    supp_addr1: "",
+    supp_city: "",
+    supp_country: "",
+    supp_phone: "",
+    supp_email: "",
+  });
   const [error, setError] = useState<string | null>(null);
 
-  // 🔥 Jika editData berubah, isi form dengan data produk yang dipilih
   useEffect(() => {
     if (editData) {
-      setSupplierCode(editData.supplier_code);
-      setSupplierName(editData.supplier_name);
+      setSupplier(editData);
     }
   }, [editData]);
 
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // Validasi form
-    if (!supplierCode || !supplierName) {
-      setError("Harap isi semua field.");
-      // Fokuskan ke field yang kosong
-      if (!supplierCode) {
-        document.getElementById("supplierCode")?.focus();
-      } else if (!supplierName) {
-        document.getElementById("supplierName")?.focus();
-      }
+    if (supplier.supplier_name === "" || supplier.supplier_code === "") {
+      setError("Please fill all the fields.");
       return;
     }
 
@@ -51,31 +52,24 @@ export default function SupplierForm({ editData, setEditData }) {
 
       if (editData) {
         console.log(editData);
-        // 🔥 Update produk jika sedang dalam mode edit
-        await api.put(
-          `/suppliers/${editData.ID}`, // ID produk dari editData
-          {
-            supplier_code: supplierCode,
-            supplier_name: supplierName,
-          },
-          { withCredentials: true }
-        );
+        await api.put(`/suppliers/${editData.ID}`, supplier);
       } else {
-        // 🔥 Tambah produk baru jika tidak sedang edit
-        await api.post(
-          "/suppliers",
-          {
-            supplier_code: supplierCode,
-            supplier_name: supplierName,
-          },
-          { withCredentials: true }
-        );
+        await api.post("/suppliers", supplier);
       }
 
-      mutate("/suppliers"); // 🔥 Refresh tabel otomatis tanpa reload
-      setEditData(null); // 🔄 Reset editData setelah submit
-      setSupplierCode("");
-      setSupplierName("");
+      mutate("/suppliers");
+      setEditData(null);
+      setError(null);
+      setSupplier({
+        ID: 0,
+        supplier_code: "",
+        supplier_name: "",
+        supp_addr1: "",
+        supp_city: "",
+        supp_country: "",
+        supp_phone: "",
+        supp_email: "",
+      });
       document.getElementById("supplierCode")?.focus();
     } catch (err: any) {
       // Tangani error dengan cara yang lebih ramah
@@ -103,17 +97,25 @@ export default function SupplierForm({ editData, setEditData }) {
   const handleCancel = () => {
     setError(null);
     setEditData(null);
-    setSupplierCode("");
-    setSupplierName("");
+    setSupplier({
+      ID: 0,
+      supplier_code: "",
+      supplier_name: "",
+      supp_addr1: "",
+      supp_city: "",
+      supp_country: "",
+      supp_phone: "",
+      supp_email: "",
+    });
   };
 
   return (
     <Card className="w-[400px]">
       <CardHeader>
-        <CardTitle>Supplier Form</CardTitle>
-        <CardDescription>
+        <CardTitle>{editData ? "Edit Supplier" : "Add Supplier"}</CardTitle>
+        {/* <CardDescription>
           {editData ? "Edit Supplier" : "Add Supplier"}
-        </CardDescription>
+        </CardDescription> */}
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -129,17 +131,78 @@ export default function SupplierForm({ editData, setEditData }) {
               <Label htmlFor="supplier_code">Supplier Code</Label>
               <Input
                 id="supplierCode"
-                onChange={(e) => setSupplierCode(e.target.value)}
-                value={supplierCode}
+                onChange={(e) =>
+                  setSupplier({ ...supplier, supplier_code: e.target.value })
+                }
+                value={supplier.supplier_code}
                 placeholder=""
               />
             </div>
             <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="supplier_name">Supplier Name</Label>
+              <Label htmlFor="supplier_name">Name</Label>
               <Input
                 id="supplierName"
-                onChange={(e) => setSupplierName(e.target.value)}
-                value={supplierName}
+                onChange={(e) =>
+                  setSupplier({ ...supplier, supplier_name: e.target.value })
+                }
+                value={supplier.supplier_name}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="suppAddr1">Address</Label>
+              <textarea
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                id="suppAddr1"
+                onChange={(e) =>
+                  setSupplier({ ...supplier, supp_addr1: e.target.value })
+                }
+                value={supplier.supp_addr1}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="suppCity">City</Label>
+              <Input
+                id="suppCity"
+                onChange={(e) =>
+                  setSupplier({ ...supplier, supp_city: e.target.value })
+                }
+                value={supplier.supp_city}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="suppCountry">Country</Label>
+              <Input
+                id="suppCountry"
+                onChange={(e) =>
+                  setSupplier({ ...supplier, supp_country: e.target.value })
+                }
+                value={supplier.supp_country}
+                placeholder=""
+              />
+            </div>
+
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="suppPhone">Phone</Label>
+              <Input
+                id="suppPhone"
+                onChange={(e) =>
+                  setSupplier({ ...supplier, supp_phone: e.target.value })
+                }
+                value={supplier.supp_phone}
+                placeholder=""
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="suppEmail">Email</Label>
+              <Input
+                id="suppEmail"
+                onChange={(e) =>
+                  setSupplier({ ...supplier, supp_email: e.target.value })
+                }
+                value={supplier.supp_email}
                 placeholder=""
               />
             </div>
@@ -151,8 +214,6 @@ export default function SupplierForm({ editData, setEditData }) {
           Cancel
         </Button>
         <Button onClick={handleSubmit} type="submit">
-          {" "}
-          {/* Tombol submit */}
           {editData ? "Update" : "Add"}
         </Button>
       </CardFooter>

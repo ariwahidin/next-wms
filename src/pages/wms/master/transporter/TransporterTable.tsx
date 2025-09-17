@@ -43,12 +43,14 @@ const TransporterTable = ({ setEditData }) => {
 
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
-    { field: "transporter_code", headerName: "Transporter ID", width: 140 },
-    { field: "transporter_name", headerName: "Transporter Name", width: 230 },
-    { field: "transporter_address", headerName: "Address" },
+    { field: "transporter_code", headerName: "Transporter Code", width: 160 },
+    { field: "transporter_name", headerName: "Name", width: 230 },
+    { field: "transporter_address", headerName: "Address", width: 300 },
     {
       headerName: "Actions",
       field: "ID",
+      pinned: "right",
+      maxWidth: 100,
       cellRenderer: (params) => {
         return (
           <div>
