@@ -368,21 +368,27 @@ const PickingSheetPrint = () => {
                     <tr key={j}>
                       <td style={{ textAlign: "center" }}>
                         {j === 0 ? <span>{item.item_code}</span> : ""}
-                        <br />
-                        <span
-                          style={{
-                            fontSize: "10px",
-                            display: "inline-block",
-                            maxWidth: "140px", // kasih batas
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            verticalAlign: "bottom",
-                          }}
-                          title={item.item_name} // biar pas hover keliatan full
-                        >
-                          {item.item_name}
-                        </span>
+                        {j === 0 ? (
+                          <>
+                            <br />
+                            <span
+                              style={{
+                                fontSize: "10px",
+                                display: "inline-block",
+                                maxWidth: "140px", // kasih batas
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                verticalAlign: "bottom",
+                              }}
+                              title={item.item_name} // biar pas hover keliatan full
+                            >
+                              {item.item_name}
+                            </span>
+                          </>
+                        ) : (
+                          ""
+                        )}
                       </td>
                       <td style={{ textAlign: "center" }}>
                         {j === 0 && (
