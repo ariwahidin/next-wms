@@ -1,39 +1,41 @@
-"use client"
+"use client";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState } from "react"
-import { useSearchParams } from "next/navigation"
-import JsBarcode from "jsbarcode"
-import api from "@/lib/api"
-import React from "react"
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import JsBarcode from "jsbarcode";
+import api from "@/lib/api";
+import React from "react";
 import { useRouter } from "next/router";
 
 const PickingSheetPrint = () => {
-  const searchParams = useSearchParams()
+  const searchParams = useSearchParams();
   // const id = searchParams.get("id") || "1" // Default to '1' for demo purposes
-   const router = useRouter();
-    const { id } = router.query;
-  const [pickingSheet, setPickingSheet] = useState<any[]>([])
-  const barcodeRef = useRef<HTMLCanvasElement>(null)
-  const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([])
-  const barcodeItemRef = useRef<{ [key: string]: HTMLCanvasElement | null }>({})
-  const [groupedData, setGroupedData] = useState<{ [key: string]: any[] }>({})
+  const router = useRouter();
+  const { id } = router.query;
+  const [pickingSheet, setPickingSheet] = useState<any[]>([]);
+  const barcodeRef = useRef<HTMLCanvasElement>(null);
+  const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
+  const barcodeItemRef = useRef<{ [key: string]: HTMLCanvasElement | null }>(
+    {}
+  );
+  const [groupedData, setGroupedData] = useState<{ [key: string]: any[] }>({});
 
   useEffect(() => {
     if (id) {
-      fetchData(id as string)
+      fetchData(id as string);
     }
-  }, [id])
+  }, [id]);
 
   const fetchData = async (id: string) => {
     try {
       const res = await api.get(`/outbound/picking/sheet/${id}`, {
         withCredentials: true,
-      })
-      setPickingSheet(res.data.data)
+      });
+      setPickingSheet(res.data.data);
     } catch (error) {
-      console.log("[v0] API call failed, using mock data for demo")
+      console.log("[v0] API call failed, using mock data for demo");
       const mockData = [
         {
           outbound_no: "OUT-2024-001",
@@ -83,10 +85,10 @@ const PickingSheetPrint = () => {
           deliv_city: "Bandung",
           remarks: "Handle with care",
         },
-      ]
-      setPickingSheet(mockData)
+      ];
+      setPickingSheet(mockData);
     }
-  }
+  };
 
   useEffect(() => {
     if (pickingSheet.length > 0) {
@@ -94,12 +96,12 @@ const PickingSheetPrint = () => {
         .filter((item) => item && item.item_code)
         .reduce((acc, item) => {
           if (!acc[item.item_code]) {
-            acc[item.item_code] = []
+            acc[item.item_code] = [];
           }
-          acc[item.item_code].push(item)
-          return acc
-        }, {})
-      setGroupedData(grouped)
+          acc[item.item_code].push(item);
+          return acc;
+        }, {});
+      setGroupedData(grouped);
 
       if (barcodeRef.current) {
         JsBarcode(barcodeRef.current, pickingSheet[0].outbound_no, {
@@ -108,11 +110,11 @@ const PickingSheetPrint = () => {
           fontSize: 14,
           width: 2,
           height: 50,
-        })
+        });
       }
 
       pickingSheet.forEach((item, index) => {
-        const canvasBarcode = barcodeLocationRef.current[index]
+        const canvasBarcode = barcodeLocationRef.current[index];
         if (canvasBarcode) {
           JsBarcode(canvasBarcode, item.location, {
             format: "CODE128",
@@ -120,48 +122,57 @@ const PickingSheetPrint = () => {
             width: 1.5,
             height: 20,
             margin: 0,
-          })
+          });
         }
-      })
+      });
 
-      setTimeout(() => {
-        window.print()
-      }, 500)
+      // setTimeout(() => {
+      //   window.print();
+      // }, 500);
     }
-  }, [pickingSheet])
+  }, [pickingSheet]);
 
   useEffect(() => {
     if (Object.keys(groupedData).length > 0) {
-      Object.entries(groupedData).forEach(([itemCode, records]: [string, any]) => {
-        if (records && Array.isArray(records) && records.length > 0) {
-          const firstRecord = (records as any[])[0]
-          const canvasBarcodeItem = barcodeItemRef.current[`${itemCode}-0`]
-          if (canvasBarcodeItem && firstRecord && firstRecord.barcode) {
-            JsBarcode(canvasBarcodeItem, firstRecord.barcode, {
-              format: "CODE128",
-              displayValue: false,
-              width: 1,
-              height: 15,
-              margin: 0,
-            })
+      Object.entries(groupedData).forEach(
+        ([itemCode, records]: [string, any]) => {
+          if (records && Array.isArray(records) && records.length > 0) {
+            const firstRecord = (records as any[])[0];
+            const canvasBarcodeItem = barcodeItemRef.current[`${itemCode}-0`];
+            if (canvasBarcodeItem && firstRecord && firstRecord.barcode) {
+              JsBarcode(canvasBarcodeItem, firstRecord.barcode, {
+                format: "CODE128",
+                displayValue: false,
+                width: 1,
+                height: 15,
+                margin: 0,
+              });
+            }
           }
         }
-      })
+      );
     }
-  }, [groupedData])
+  }, [groupedData]);
 
-  if (pickingSheet.length === 0) return <p>Loading...</p>
+  if (pickingSheet.length === 0) return <p>Loading...</p>;
 
-  const data = pickingSheet[0]
+  const data = pickingSheet[0];
 
-  const grandTotalQty = pickingSheet.reduce((acc, item) => acc + item.quantity, 0)
+  const grandTotalQty = pickingSheet.reduce(
+    (acc, item) => acc + item.quantity,
+    0
+  );
 
-  const grandTotalCbm = pickingSheet.reduce((acc, item) => acc + item.cbm, 0).toFixed(3)
+  const grandTotalCbm = pickingSheet
+    .reduce((acc, item) => acc + item.cbm, 0)
+    .toFixed(4);
 
   return (
     <div style={{ padding: "10px", fontFamily: "Arial" }}>
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <p style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}>
+        <p
+          style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}
+        >
           PT YUSEN LOGISTICS PUNINAR INDONESIA
         </p>
       </div>
@@ -187,7 +198,10 @@ const PickingSheetPrint = () => {
         <tbody>
           <tr>
             <td style={{ textAlign: "center", width: "33%" }}>
-              <canvas style={{ width: "200px", height: "50px" }} ref={barcodeRef}></canvas>
+              <canvas
+                style={{ width: "200px", height: "50px" }}
+                ref={barcodeRef}
+              ></canvas>
             </td>
             <td style={{ textAlign: "center" }}>
               <div
@@ -266,7 +280,9 @@ const PickingSheetPrint = () => {
             <tr>
               <td style={headerLabel}>Plan Pickup</td>
               <td style={headerValue}>
-                {new Date(`${data.plan_pickup_date}T${data.plan_pickup_time}`).toLocaleString("id-ID", {
+                {new Date(
+                  `${data.plan_pickup_date}T${data.plan_pickup_time}`
+                ).toLocaleString("id-ID", {
                   day: "2-digit",
                   month: "2-digit",
                   year: "numeric",
@@ -315,7 +331,7 @@ const PickingSheetPrint = () => {
       >
         <thead>
           <tr>
-            <th style={th}>ITEM</th>
+            <th style={{ ...th, width: "25%" }}>ITEM</th>
             <th style={th}>GMC</th>
             <th style={th}>WH CODE</th>
             <th style={th}>REC DATE</th>
@@ -325,61 +341,99 @@ const PickingSheetPrint = () => {
           </tr>
         </thead>
         <tbody>
-          {Object.entries(groupedData).map(([itemCode, records]: [string, any], i) => {
-            if (!records || !Array.isArray(records) || records.length === 0) {
-              return null
-            }
+          {Object.entries(groupedData).map(
+            ([itemCode, records]: [string, any], i) => {
+              if (!records || !Array.isArray(records) || records.length === 0) {
+                return null;
+              }
 
-            const validRecords = records.filter((r) => r && typeof r === "object")
-            if (validRecords.length === 0) {
-              return null
-            }
+              const validRecords = records.filter(
+                (r) => r && typeof r === "object"
+              );
+              if (validRecords.length === 0) {
+                return null;
+              }
 
-            const totalQty = validRecords.reduce((sum, r) => sum + (r.quantity || 0), 0)
-            const totalCbm = validRecords.reduce((sum, r) => sum + (r.cbm || 0), 0)
+              const totalQty = validRecords.reduce(
+                (sum, r) => sum + (r.quantity || 0),
+                0
+              );
+              const totalCbm = validRecords
+                .reduce((sum, r) => sum + (r.cbm || 0), 0)
+                .toFixed(4);
 
-            return (
-              <React.Fragment key={itemCode}>
-                {validRecords.map((item, j) => (
-                  <tr key={j}>
-                    <td style={{ textAlign: "center" }}>
-                      {j === 0 ? item.item_code : ""}
-                      <br />
-                      <span style={{ fontSize: "10px" }}>({j === 0 ? item.item_name : ""})</span>
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      {j === 0 && (
-                        <div>
-                          <div style={{ fontSize: "10px", marginBottom: "2px" }}>{item.barcode}</div>
-                          <canvas
-                            ref={(el: HTMLCanvasElement | null) => {
-                              if (el) {
-                                barcodeItemRef.current[`${itemCode}-0`] = el
-                              }
+              return (
+                <React.Fragment key={itemCode}>
+                  {validRecords.map((item, j) => (
+                    <tr key={j}>
+                      <td style={{ textAlign: "center" }}>
+                        {j === 0 ? <span>{item.item_code}</span> : ""}
+                        <br />
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            display: "inline-block",
+                            maxWidth: "140px", // kasih batas
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            verticalAlign: "bottom",
+                          }}
+                          title={item.item_name} // biar pas hover keliatan full
+                        >
+                          {item.item_name}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        {j === 0 && (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
                             }}
-                            style={{ maxWidth: "100px", height: "20px" }}
-                          />
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ textAlign: "center" }}>{j === 0 ? item.whs_code : ""}</td>
-                    <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>{item.rec_date}</td>
-                    <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>{item.location}</td>
-                    <td style={{ textAlign: "center" }}>{item.quantity}</td>
-                    <td style={{ textAlign: "center" }}>{item.cbm}</td>
-                  </tr>
-                ))}
+                          >
+                            <div
+                              style={{ fontSize: "10px", marginBottom: "0px" }}
+                            >
+                              {item.barcode}
+                            </div>
+                            <canvas
+                              ref={(el: HTMLCanvasElement | null) => {
+                                if (el) {
+                                  barcodeItemRef.current[`${itemCode}-0`] = el;
+                                }
+                              }}
+                              style={{ maxWidth: "100px", height: "20px" }}
+                            />
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        {j === 0 ? item.whs_code : ""}
+                      </td>
+                      <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                        {item.rec_date}
+                      </td>
+                      <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                        {item.location}
+                      </td>
+                      <td style={{ textAlign: "center" }}>{item.quantity}</td>
+                      <td style={{ textAlign: "center" }}>{item.cbm}</td>
+                    </tr>
+                  ))}
 
-                <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
-                  <td colSpan={5} style={{ ...td, textAlign: "right" }}>
-                    TOTAL
-                  </td>
-                  <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
-                  <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td>
-                </tr>
-              </React.Fragment>
-            )
-          })}
+                  <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
+                    <td colSpan={5} style={{ ...td, textAlign: "right" }}>
+                      TOTAL
+                    </td>
+                    <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
+                    <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td>
+                  </tr>
+                </React.Fragment>
+              );
+            }
+          )}
 
           <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
             <td colSpan={5} style={{ ...td, textAlign: "right" }}>
@@ -454,37 +508,37 @@ const PickingSheetPrint = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const th = {
   border: "1px solid #000",
   padding: "4px",
   backgroundColor: "#eee",
-}
+};
 
 const td = {
   borderBottom: "1px dashed #000",
   padding: "4px",
-}
+};
 
 const headerLabel = {
   padding: "2px 6px",
   fontWeight: "bold",
   whiteSpace: "nowrap",
   width: "20%",
-}
+};
 
 const headerValue = {
   padding: "2px 6px",
   width: "30%",
-}
+};
 
 const signatureLine = {
   borderBottom: "1px solid black",
   width: "100px",
   height: "55px",
   marginBottom: "5px",
-}
+};
 
-export default PickingSheetPrint
+export default PickingSheetPrint;

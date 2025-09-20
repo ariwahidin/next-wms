@@ -57,11 +57,11 @@ const SerialNumberSheet = () => {
     // setOrderDetailItems(res.data.data.detail_items);
   };
 
-    useEffect(() => {
-      setTimeout(() => {
-        window.print();
-      }, 500);
-    }, []);
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     window.print();
+  //   }, 500);
+  // }, []);
 
   //   const groupedData = orderDetailItems.reduce((acc, item) => {
   //     if (!acc[item.shipment_id]) {
@@ -130,7 +130,7 @@ const SerialNumberSheet = () => {
         >
           <tbody>
             <tr>
-              <td style={{ ...headerLabel, fontWeight: "bold", width: "8%" }}>
+              <td style={{ ...headerLabel, fontWeight: "bold", width: "6%" }}>
                 Customer
               </td>
               <td style={headerValue}>: {header?.customer_name}</td>
@@ -138,7 +138,7 @@ const SerialNumberSheet = () => {
               <td style={headerValue}></td> */}
             </tr>
             <tr>
-              <td style={{ ...headerLabel, fontWeight: "bold", width: "8%" }}>
+              <td style={{ ...headerLabel, fontWeight: "bold", width: "6%" }}>
                 Customer Address
               </td>
               <td style={headerValue}>: {header?.customer_address}</td>
@@ -146,7 +146,7 @@ const SerialNumberSheet = () => {
               <td style={headerValue}></td> */}
             </tr>
             <tr>
-              <td style={{ ...headerLabel, fontWeight: "bold", width: "8%" }}>
+              <td style={{ ...headerLabel, fontWeight: "bold", width: "6%" }}>
                 Delivery To
               </td>
               <td style={headerValue}>: {header?.deliv_to_name}</td>
@@ -154,7 +154,7 @@ const SerialNumberSheet = () => {
               <td style={headerValue}></td> */}
             </tr>
             <tr>
-              <td style={{ ...headerLabel, fontWeight: "bold", width: "8%" }}>
+              <td style={{ ...headerLabel, fontWeight: "bold", width: "6%" }}>
                 Delivery Address
               </td>
               <td style={headerValue}>: {header?.customer_address}</td>
@@ -162,7 +162,7 @@ const SerialNumberSheet = () => {
               <td style={headerValue}></td> */}
             </tr>
             <tr>
-              <td style={{ ...headerLabel, fontWeight: "bold", width: "8%" }}>
+              <td style={{ ...headerLabel, fontWeight: "bold", width: "6%" }}>
                 Transporter
               </td>
               <td style={headerValue}>: {header?.transporter_name}</td>
