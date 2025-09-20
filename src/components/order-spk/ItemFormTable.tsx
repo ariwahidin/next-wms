@@ -163,6 +163,7 @@ export default function ItemFormTable({
         total_item: p.total_item,
         total_qty: p.total_qty,
         qty_koli: p.qty_koli,
+        vas_koli: 0,
         total_cbm: p.total_cbm,
         mode: "create",
       }));
@@ -220,11 +221,14 @@ export default function ItemFormTable({
             <th className="p-2 border" style={{ width: "200px" }}>
               Delivery To
             </th>
-            <th className="p-2 border" style={{ width: "200px" }}>
+            <th className="p-2 border" style={{ width: "130px" }}>
               Delivery City
             </th>
             <th className="p-2 border" style={{ width: "75px", textAlign: "center" }}>
               Total Koli
+            </th>
+            <th className="p-2 border" style={{ width: "75px", textAlign: "center" }}>
+              VAS Koli
             </th>
             <th className="p-2 border" style={{ width: "65px" }}>
               Total Item
@@ -282,14 +286,20 @@ export default function ItemFormTable({
                     />
                   </div>
                 </td>
-                <td className="p-2 border">
+                <td className="p-2 border" >
                   <Input
-                    // className="w-24"
                     style={{ fontSize: "12px", textAlign: "center" }}
-                    // readOnly
                     type="number"
                     value={item.qty_koli}
                     onChange={(e)=> setMuatan((prev) => prev.map((m) => (m.ID === item.ID ? { ...m, qty_koli: Number(e.target.value) } : m)))}
+                  />
+                </td>
+                <td className="p-2 border">
+                  <Input
+                    style={{ fontSize: "12px", textAlign: "center" }}
+                    type="number"
+                    value={item.vas_koli}
+                    onChange={(e)=> setMuatan((prev) => prev.map((m) => (m.ID === item.ID ? { ...m, vas_koli: Number(e.target.value) } : m)))}
                   />
                 </td>
                 <td className="p-2 border">
@@ -347,17 +357,29 @@ export default function ItemFormTable({
             );
           })}
         </tbody>
-        {/* <tfoot>
+        <tfoot>
           <tr className="bg-gray-100 font-semibold">
-            <td className="p-2 border" colSpan={4}>
+            <td  className="p-2 border" colSpan={5}>
               Total
             </td>
             <td className="p-2 border text-center">
-              {muatan.reduce((acc, item) => acc + item.quantity, 0)}
+              {muatan.reduce((acc, item) => acc + item.qty_koli, 0)}
             </td>
-            <td className="p-2 border" colSpan={2}></td>
+            <td className="p-2 border text-center">
+              {muatan.reduce((acc, item) => acc + item.vas_koli, 0)}
+            </td>
+            <td className="p-2 border text-center">
+              {muatan.reduce((acc, item) => acc + item.total_item, 0)}
+            </td>
+            <td className="p-2 border text-center">
+              {muatan.reduce((acc, item) => acc + item.total_qty, 0)}
+            </td>
+            <td className="p-2 border text-center">
+              {muatan.reduce((acc, item) => acc + item.total_cbm, 0)}
+            </td>
+            <td className="p-2 border"></td>
           </tr>
-        </tfoot> */}
+        </tfoot>
       </table>
 
       <ItemSelectionModal

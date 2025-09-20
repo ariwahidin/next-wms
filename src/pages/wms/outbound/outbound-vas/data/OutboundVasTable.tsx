@@ -476,17 +476,36 @@ const OutboundVasTable = () => {
     },
     { field: "outbound_no", headerName: "Outbound No", maxWidth: 150 },
     {
-      field: "total_qty",
-      headerName: "Total QTY",
+      field: "shipment_id",
+      headerName: "DO No",
+      maxWidth: 120,
+      cellStyle: { textAlign: "left" },
+    },
+    {
+      field: "deliv_to_name",
+      headerName: "Delivery To",
+      maxWidth: 200,
+      cellStyle: { textAlign: "left" },
+    },
+    {
+      field: "deliv_city",
+      headerName: "City",
+      maxWidth: 120,
+      cellStyle: { textAlign: "left" },
+    },
+    {
+      field: "koli_vas",
+      headerName: "VAS Koli",
       maxWidth: 100,
       cellStyle: { textAlign: "center" },
     },
     {
-      field: "grand_total",
-      headerName: "Grand Total",
+      field: "total_price",
+      headerName: "Total Price",
       maxWidth: 120,
-      cellStyle: { textAlign: "center" },
+      cellStyle: { textAlign: "end" },
     },
+    
   ]);
 
   const [quickFilterText, setQuickFilterText] = useState<string>();
@@ -506,7 +525,7 @@ const OutboundVasTable = () => {
 
   return (
     <>
-      <div style={{ width: "60%", height: "510px" }}>
+      <div style={{ width: "100%", height: "510px" }}>
         <div className="flex items-center justify-between pb-4">
 
           <div className="justify-self-end w-full">

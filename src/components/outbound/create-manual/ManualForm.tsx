@@ -711,7 +711,7 @@ export default function ManualForm() {
                 </div>
               </div> */}
 
-              <div className="flex items-center gap-2">
+              {/* <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
@@ -734,7 +734,7 @@ export default function ManualForm() {
                     }
                   />
                 </div>
-              </div>
+              </div> */}
               {/* <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"

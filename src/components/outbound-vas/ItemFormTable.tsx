@@ -85,7 +85,7 @@ export default function ItemFormTable({
               Qty
             </th>
             <th className="p-2 border" style={{ width: "100px" }}>
-              Qty Koli
+              VAS Koli
             </th>
             <th className="p-2 border" style={{ width: "100px" }}>
               Total Price

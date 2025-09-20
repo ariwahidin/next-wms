@@ -254,12 +254,12 @@ const OutboundTable = () => {
             mutate("/outbound");
             closeScannedItemDialog();
           } else {
-            notify("Error", response.data.message, "error");
+            // notify("Error", response.data.message, "error");
           }
         })
         .catch((error) => {
           console.error("Error handling scanned items:", error);
-          notify("Error", "Terjadi kesalahan saat memproses item", "error");
+          // notify("Error", "Terjadi kesalahan saat memproses item", "error");
         });
     },
     [scannedItemData?.outbound_no, notify, mutate]

@@ -1,118 +1,47 @@
-"use client"
-
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState } from "react"
-import { useSearchParams } from "next/navigation"
-import JsBarcode from "jsbarcode"
-import api from "@/lib/api"
-import React from "react"
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
+import JsBarcode from "jsbarcode";
+import api from "@/lib/api";
+import React from "react";
 
 const PickingSheetPrint = () => {
-  const searchParams = useSearchParams()
-  // const id = searchParams.get("id") || "1" // Default to '1' for demo purposes
-   const router = useRouter();
-    const { id } = router.query;
-  const [pickingSheet, setPickingSheet] = useState<any[]>([])
-  const barcodeRef = useRef<HTMLCanvasElement>(null)
-  const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([])
-  const barcodeItemRef = useRef<{ [key: string]: HTMLCanvasElement | null }>({})
-  const [groupedData, setGroupedData] = useState<{ [key: string]: any[] }>({})
+  const router = useRouter();
+  const { id } = router.query;
+  const [pickingSheet, setPickingSheet] = useState<any[]>([]);
+  const barcodeRef = useRef<HTMLCanvasElement>(null);
+  // const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
+  const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
+  const barcodeItemRef = useRef<{ [key: string]: HTMLCanvasElement | null }>(
+    {}
+  );
 
   useEffect(() => {
     if (id) {
-      fetchData(id as string)
+      fetchData(id as string);
     }
-  }, [id])
+  }, [id]);
 
   const fetchData = async (id: string) => {
-    try {
-      const res = await api.get(`/outbound/picking/sheet/${id}`, {
-        withCredentials: true,
-      })
-      setPickingSheet(res.data.data)
-    } catch (error) {
-      console.log("[v0] API call failed, using mock data for demo")
-      const mockData = [
-        {
-          outbound_no: "OUT-2024-001",
-          item_code: "ITM001",
-          item_name: "Sample Item 1",
-          barcode: "1234567890123",
-          whs_code: "WH01",
-          rec_date: "2024-01-15",
-          location: "A1-B2-C3",
-          quantity: 10,
-          cbm: 0.5,
-          transporter_code: "TRP001",
-          cust_city: "Jakarta",
-          shipment_id: "SHP001",
-          customer_name: "PT Sample Customer",
-          cust_address: "Jl. Sample No. 123",
-          outbound_date: "2024-01-15T10:00:00",
-          picker_name: "John Doe",
-          deliv_to_name: "Jane Smith",
-          plan_pickup_date: "2024-01-16",
-          plan_pickup_time: "09:00:00",
-          deliv_address: "Jl. Delivery No. 456",
-          deliv_city: "Bandung",
-          remarks: "Handle with care",
-        },
-        {
-          outbound_no: "OUT-2024-001",
-          item_code: "ITM002",
-          item_name: "Sample Item 2",
-          barcode: "2345678901234",
-          whs_code: "WH01",
-          rec_date: "2024-01-15",
-          location: "A2-B3-C4",
-          quantity: 5,
-          cbm: 0.3,
-          transporter_code: "TRP001",
-          cust_city: "Jakarta",
-          shipment_id: "SHP001",
-          customer_name: "PT Sample Customer",
-          cust_address: "Jl. Sample No. 123",
-          outbound_date: "2024-01-15T10:00:00",
-          picker_name: "John Doe",
-          deliv_to_name: "Jane Smith",
-          plan_pickup_date: "2024-01-16",
-          plan_pickup_time: "09:00:00",
-          deliv_address: "Jl. Delivery No. 456",
-          deliv_city: "Bandung",
-          remarks: "Handle with care",
-        },
-      ]
-      setPickingSheet(mockData)
-    }
-  }
+    const res = await api.get(`/outbound/picking/sheet/${id}`, {
+      withCredentials: true,
+    });
+    setPickingSheet(res.data.data);
+  };
 
   useEffect(() => {
-    if (pickingSheet.length > 0) {
-      const grouped = pickingSheet
-        .filter((item) => item && item.item_code)
-        .reduce((acc, item) => {
-          if (!acc[item.item_code]) {
-            acc[item.item_code] = []
-          }
-          acc[item.item_code].push(item)
-          return acc
-        }, {})
-      setGroupedData(grouped)
-
-      if (barcodeRef.current) {
-        JsBarcode(barcodeRef.current, pickingSheet[0].outbound_no, {
-          format: "CODE128",
-          displayValue: true,
-          fontSize: 14,
-          width: 2,
-          height: 50,
-        })
-      }
+    if (pickingSheet.length > 0 && barcodeRef.current) {
+      JsBarcode(barcodeRef.current, pickingSheet[0].outbound_no, {
+        format: "CODE128",
+        displayValue: true,
+        fontSize: 14,
+        width: 2,
+        height: 50,
+      });
 
       pickingSheet.forEach((item, index) => {
-        const canvasBarcode = barcodeLocationRef.current[index]
+        const canvasBarcode = barcodeLocationRef.current[index];
         if (canvasBarcode) {
           JsBarcode(canvasBarcode, item.location, {
             format: "CODE128",
@@ -120,48 +49,64 @@ const PickingSheetPrint = () => {
             width: 1.5,
             height: 20,
             margin: 0,
-          })
+          });
         }
-      })
+
+        // const canvasBarcodeItem = barcodeItemRef.current[index];
+        // if (canvasBarcodeItem) {
+        //   JsBarcode(canvasBarcodeItem, item.barcode, {
+        //     format: "CODE128",
+        //     displayValue: false,
+        //     width: 1.5,
+        //     height: 20,
+        //     margin: 0,
+        //   });
+        // }
+      });
 
       setTimeout(() => {
-        window.print()
-      }, 500)
+        window.print();
+      }, 500);
     }
-  }, [pickingSheet])
+  }, [pickingSheet]);
 
-  useEffect(() => {
-    if (Object.keys(groupedData).length > 0) {
-      Object.entries(groupedData).forEach(([itemCode, records]: [string, any]) => {
-        if (records && Array.isArray(records) && records.length > 0) {
-          const firstRecord = (records as any[])[0]
-          const canvasBarcodeItem = barcodeItemRef.current[`${itemCode}-0`]
-          if (canvasBarcodeItem && firstRecord && firstRecord.barcode) {
-            JsBarcode(canvasBarcodeItem, firstRecord.barcode, {
-              format: "CODE128",
-              displayValue: false,
-              width: 1,
-              height: 15,
-              margin: 0,
-            })
-          }
-        }
-      })
+  if (pickingSheet.length === 0) return <p>Loading...</p>;
+
+  const data = pickingSheet[0];
+
+  // sebelum return JSX
+  const groupedData = pickingSheet.reduce((acc, item) => {
+    if (!acc[item.item_code]) {
+      acc[item.item_code] = [];
     }
-  }, [groupedData])
+    acc[item.item_code].push(item);
+    return acc;
+  }, {});
 
-  if (pickingSheet.length === 0) return <p>Loading...</p>
+  
 
-  const data = pickingSheet[0]
+  
 
-  const grandTotalQty = pickingSheet.reduce((acc, item) => acc + item.quantity, 0)
 
-  const grandTotalCbm = pickingSheet.reduce((acc, item) => acc + item.cbm, 0).toFixed(3)
+  const grandTotalQty = pickingSheet.reduce(
+    (acc, item) => acc + item.quantity,
+    0
+  );
+  //   const grandTotalCbm = pickingSheet.reduce((acc, item) => acc + item.cbm, 0);
+
+  const grandTotalCbm = pickingSheet
+    .reduce((acc, item) => acc + item.cbm, 0)
+    .toFixed(3);
 
   return (
     <div style={{ padding: "10px", fontFamily: "Arial" }}>
+      {/* Header */}
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <p style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}>
+        {/* <img src="/images/yusen001.jpeg" alt="Logo" width="100" /> */}
+        {/* <canvas ref={barcodeRef}></canvas> */}
+        <p
+          style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}
+        >
           PT YUSEN LOGISTICS PUNINAR INDONESIA
         </p>
       </div>
@@ -184,43 +129,47 @@ const PickingSheetPrint = () => {
         PICKING SHEET
       </h2>
       <table style={{ width: "100%", marginBottom: "10px" }}>
-        <tbody>
-          <tr>
-            <td style={{ textAlign: "center", width: "33%" }}>
-              <canvas style={{ width: "200px", height: "50px" }} ref={barcodeRef}></canvas>
-            </td>
-            <td style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: "12px",
-                  border: "1px solid black",
-                  padding: "5px",
-                  width: "220px",
-                }}
-              >
-                <span style={{ fontWeight: "bold" }}>
-                  {data.transporter_code}
-                  {" to "}
-                  {data.cust_city}
-                </span>
-              </div>
-            </td>
-            <td style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: "12px",
-                  border: "1px solid black",
-                  padding: "5px",
-                  width: "100px",
-                }}
-              >
-                <span style={{ fontWeight: "bold" }}>{data.shipment_id}</span>
-              </div>
-            </td>
-          </tr>
-        </tbody>
+        <tr>
+          <td style={{ textAlign: "center", width: "33%" }}>
+            <canvas
+              style={{ width: "200px", height: "50px" }}
+              ref={barcodeRef}
+            ></canvas>
+          </td>
+          <td style={{ textAlign: "center" }}>
+            <div
+              style={{
+                fontSize: "12px",
+                border: "1px solid black",
+                padding: "5px",
+                width: "220px",
+              }}
+            >
+              <span {...{ style: { fontWeight: "bold" } }}>
+                {data.transporter_code}
+                {" to "}
+                {data.cust_city}
+              </span>
+            </div>
+          </td>
+          <td style={{ textAlign: "center" }}>
+            <div
+              style={{
+                fontSize: "12px",
+                border: "1px solid black",
+                padding: "5px",
+                width: "100px",
+              }}
+            >
+              <span {...{ style: { fontWeight: "bold" } }}>
+                {data.shipment_id}
+              </span>
+            </div>
+          </td>
+        </tr>
       </table>
 
+      {/* Outbound Info */}
       <div style={{ fontSize: "12px", marginTop: "10px" }}>
         <table
           style={{
@@ -253,6 +202,7 @@ const PickingSheetPrint = () => {
                   minute: "2-digit",
                 })}
               </td>
+
               <td style={headerLabel}>Customer City</td>
               <td style={headerValue}>{data.cust_city}</td>
             </tr>
@@ -266,7 +216,9 @@ const PickingSheetPrint = () => {
             <tr>
               <td style={headerLabel}>Plan Pickup</td>
               <td style={headerValue}>
-                {new Date(`${data.plan_pickup_date}T${data.plan_pickup_time}`).toLocaleString("id-ID", {
+                {new Date(
+                  `${data.plan_pickup_date}T${data.plan_pickup_time}`
+                ).toLocaleString("id-ID", {
                   day: "2-digit",
                   month: "2-digit",
                   year: "numeric",
@@ -274,6 +226,7 @@ const PickingSheetPrint = () => {
                   minute: "2-digit",
                 })}
               </td>
+
               <td style={headerLabel}>Delivery Address</td>
               <td style={headerValue}>{data.deliv_address}</td>
             </tr>
@@ -315,7 +268,9 @@ const PickingSheetPrint = () => {
       >
         <thead>
           <tr>
+            {/* <th style={th}>NO</th> */}
             <th style={th}>ITEM</th>
+            {/* <th style={th}>DESCRIPTION</th> */}
             <th style={th}>GMC</th>
             <th style={th}>WH CODE</th>
             <th style={th}>REC DATE</th>
@@ -325,62 +280,91 @@ const PickingSheetPrint = () => {
           </tr>
         </thead>
         <tbody>
-          {Object.entries(groupedData).map(([itemCode, records]: [string, any], i) => {
-            if (!records || !Array.isArray(records) || records.length === 0) {
-              return null
-            }
+          {Object.entries(groupedData).map(
+            ([itemCode, records]: [string, any], i) => {
+              const totalQty = (records as any[]).reduce(
+                (sum, r) => sum + r.quantity,
+                0
+              );
+              const totalCbm = (records as any[]).reduce(
+                (sum, r) => sum + r.cbm,
+                0
+              );
 
-            const validRecords = records.filter((r) => r && typeof r === "object")
-            if (validRecords.length === 0) {
-              return null
-            }
+              return (
+                <React.Fragment key={itemCode}>
+                  {records.map((item, j) => (
+                    <tr key={j}>
+                      {/* ITEM CODE */}
+                      <td style={{ textAlign: "center" }}>
+                        {j === 0 ? item.item_code : ""}
+                        <br />
+                        <span style={{ fontSize: "10px" }}>
+                          ({j === 0 ? item.item_name : ""})
+                        </span>
+                      </td>
 
-            const totalQty = validRecords.reduce((sum, r) => sum + (r.quantity || 0), 0)
-            const totalCbm = validRecords.reduce((sum, r) => sum + (r.cbm || 0), 0)
-
-            return (
-              <React.Fragment key={itemCode}>
-                {validRecords.map((item, j) => (
-                  <tr key={j}>
-                    <td style={{ textAlign: "center" }}>
-                      {j === 0 ? item.item_code : ""}
-                      <br />
-                      <span style={{ fontSize: "10px" }}>({j === 0 ? item.item_name : ""})</span>
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      {j === 0 && (
-                        <div>
-                          <div style={{ fontSize: "10px", marginBottom: "2px" }}>{item.barcode}</div>
+                      {/* BARCODE */}
+                      <td style={{ textAlign: "center" }}>
+                        {j === 0 ? item.barcode : ""}
+                        {j === 0 && (
                           <canvas
                             ref={(el: HTMLCanvasElement | null) => {
                               if (el) {
-                                barcodeItemRef.current[`${itemCode}-0`] = el
+                                barcodeItemRef.current[`${itemCode}-${j}`] = el;
                               }
                             }}
-                            style={{ maxWidth: "100px", height: "20px" }}
                           />
-                        </div>
-                      )}
+                        )}
+                      </td>
+
+                      {/* WH CODE */}
+                      <td style={{ textAlign: "center" }}>
+                        {j === 0 ? item.whs_code : ""}
+                      </td>
+
+                      {/* REC DATE */}
+                      <td
+                        style={{
+                          textAlign: "center",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.rec_date}
+                      </td>
+
+                      {/* LOCATION */}
+                      <td
+                        style={{
+                          textAlign: "center",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.location}
+                      </td>
+
+                      {/* QTY */}
+                      <td style={{ textAlign: "center" }}>{item.quantity}</td>
+
+                      {/* CBM */}
+                      <td style={{ textAlign: "center" }}>{item.cbm}</td>
+                    </tr>
+                  ))}
+
+                  <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
+                    {/* <td style={{ ...td, textAlign: "center" }}>{itemCode}</td> */}
+                    <td colSpan={5} style={{ ...td, textAlign: "right" }}>
+                      TOTAL
                     </td>
-                    <td style={{ textAlign: "center" }}>{j === 0 ? item.whs_code : ""}</td>
-                    <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>{item.rec_date}</td>
-                    <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>{item.location}</td>
-                    <td style={{ textAlign: "center" }}>{item.quantity}</td>
-                    <td style={{ textAlign: "center" }}>{item.cbm}</td>
+                    <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
+                    <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td>
                   </tr>
-                ))}
+                </React.Fragment>
+              );
+            }
+          )}
 
-                <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
-                  <td colSpan={5} style={{ ...td, textAlign: "right" }}>
-                    TOTAL
-                  </td>
-                  <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
-                  <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td>
-                </tr>
-              </React.Fragment>
-            )
-          })}
-
+          {/* grand total */}
           <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
             <td colSpan={5} style={{ ...td, textAlign: "right" }}>
               GRAND TOTAL
@@ -391,6 +375,7 @@ const PickingSheetPrint = () => {
         </tbody>
       </table>
 
+      {/* Signatures */}
       <div
         style={{
           marginTop: "50px",
@@ -454,37 +439,37 @@ const PickingSheetPrint = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const th = {
   border: "1px solid #000",
   padding: "4px",
   backgroundColor: "#eee",
-}
+};
 
 const td = {
   borderBottom: "1px dashed #000",
   padding: "4px",
-}
+};
 
 const headerLabel = {
   padding: "2px 6px",
-  fontWeight: "bold",
-  whiteSpace: "nowrap",
+  fontWeight: "bold" as const,
+  whiteSpace: "nowrap" as const,
   width: "20%",
-}
+};
 
 const headerValue = {
   padding: "2px 6px",
   width: "30%",
-}
+};
 
 const signatureLine = {
   borderBottom: "1px solid black",
   width: "100px",
   height: "55px",
   marginBottom: "5px",
-}
+};
 
-export default PickingSheetPrint
+export default PickingSheetPrint;
