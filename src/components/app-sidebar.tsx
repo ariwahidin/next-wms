@@ -166,6 +166,22 @@ const data = {
       ],
     },
     {
+      title: "Report",
+      url: "#",
+      icon: PieChart,
+      isActive: true,
+      items: [
+        {
+          title: "Activity Report",
+          url: "/wms/report/activity-report",
+        },
+        // {
+        //   title: "Outbound Handling",
+        //   url: "/wms/outbound/handling",
+        // },
+      ],
+    },
+    {
       title: "Stock Take",
       url: "#",
       icon: Frame,
