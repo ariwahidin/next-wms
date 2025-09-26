@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import ExcelJS from "exceljs"
-import { createStyledSheet } from "@/lib/excelHelper"
-import { getInbound, getOutbound } from "@/lib/queries";
+import { createStyledHandlingSheet } from "@/lib/excelHelper"
+import { getHandlingOutboundDetail, getOutboundHandlingSummary } from "@/lib/queries";
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
@@ -13,19 +13,15 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Start date and end date are required" }, { status: 400 })
     }
 
-    const inbound = await getInbound(startDate, endDate);
-    const outbound = await getOutbound(startDate, endDate);
-
-    console.log("Inbound Data:", inbound)
-    console.log("Outbound Data:", outbound)
-
     const workbook = new ExcelJS.Workbook()
-    createStyledSheet(workbook, "Inbound", inbound)
-    createStyledSheet(workbook, "Outbound", outbound)
+    const dataLeft = await getHandlingOutboundDetail(startDate, endDate);
+    const dataRight = await getOutboundHandlingSummary(startDate, endDate);
+
+    createStyledHandlingSheet(workbook, dataLeft, dataRight);
 
     const buffer = await workbook.xlsx.writeBuffer()
 
-    const filename = `Activity_Report_${startDate}_to_${endDate}.xlsx`
+    const filename = `Handling_Report_${startDate}_to_${endDate}.xlsx`
 
     return new NextResponse(buffer, {
         headers: {

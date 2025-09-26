@@ -175,10 +175,10 @@ const data = {
           title: "Activity Report",
           url: "/wms/report/activity-report",
         },
-        // {
-        //   title: "Outbound Handling",
-        //   url: "/wms/outbound/handling",
-        // },
+        {
+          title: "Handling Report",
+          url: "/wms/report/handling-report",
+        },
       ],
     },
     {
