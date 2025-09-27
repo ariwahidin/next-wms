@@ -17,11 +17,11 @@ import {
 } from "lucide-react";
 
 const outboundMenus = [
-  {
-    label: "Create Outbound Order",
-    icon: <Package />,
-    href: "/mobile/outbound/create-order",
-  },
+  // {
+  //   label: "Create Outbound Order",
+  //   icon: <Package />,
+  //   href: "/mobile/outbound/create-order",
+  // },
   {
     label: "Outbound Orders",
     icon: <Truck />,

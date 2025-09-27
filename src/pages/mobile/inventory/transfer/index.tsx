@@ -425,8 +425,7 @@ const TransferPage = () => {
             </DialogHeader>
 
             <p>
-              Item with serial <strong>{itemSelected?.serial_number}</strong>,
-              barcode <strong>{scanBarcode}</strong> in{" "}
+              Item <strong>{scanBarcode}</strong> in{" "}
               <strong>{scanLocation}</strong> will be moved to the destination
               location?
             </p>
@@ -472,7 +471,7 @@ const TransferPage = () => {
                 variant="ghost"
                 onClick={() => setShowConfirmModalMoveTo(false)}
               >
-                Batal
+                Cancel
               </Button>
               <Button onClick={moveItemToLocation}>Confirm</Button>
             </DialogFooter>
@@ -519,7 +518,7 @@ const TransferPage = () => {
                 variant="ghost"
                 onClick={() => setShowConfirmModal(false)}
               >
-                Batal
+                Cancel
               </Button>
               <Button onClick={handleConfirmTransfer}>Confirm</Button>
             </DialogFooter>

@@ -13,14 +13,19 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Start date and end date are required" }, { status: 400 })
     }
 
-    const workbook = new ExcelJS.Workbook()
     const dataLeft = await getHandlingOutboundDetail(startDate, endDate);
     const dataRight = await getOutboundHandlingSummary(startDate, endDate);
 
+    if (dataLeft.length === 0 || dataRight.length === 0) {
+        return NextResponse.json({
+            success: false,
+            message: "Handling outbound detail or outbound handling summary data is empty for this date range.",
+        });
+    }
+
+    const workbook = new ExcelJS.Workbook()
     createStyledHandlingSheet(workbook, dataLeft, dataRight);
-
     const buffer = await workbook.xlsx.writeBuffer()
-
     const filename = `Handling_Report_${startDate}_to_${endDate}.xlsx`
 
     return new NextResponse(buffer, {

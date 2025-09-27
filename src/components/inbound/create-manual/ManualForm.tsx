@@ -190,22 +190,24 @@ export default function ManualForm() {
     console.log("Data yang disimpan:", formData, references, newMuatan);
     // return;
 
-    if (muatan.length === 0) {
-      eventBus.emit("showAlert", {
-        title: "Error!",
-        description: "Please add at least one item",
-        type: "error",
-      });
-      return;
-    }
+    // if (muatan.length === 0) {
+    //   eventBus.emit("showAlert", {
+    //     title: "Error!",
+    //     description: "Please add at least one item",
+    //     type: "error",
+    //   });
+    //   return;
+    // }
 
     if (formData.ID === 0) {
+      eventBus.emit("loading", true);
       try {
         const res = await api.post("/inbound", {
           ...formData,
           references,
           items: newMuatan,
         });
+        eventBus.emit("loading", false);
         if (res.data.success) {
           eventBus.emit("showAlert", {
             title: "Success!",
@@ -215,22 +217,22 @@ export default function ManualForm() {
           router.push("/wms/inbound/data");
         }
       } catch (error) {
+        eventBus.emit("loading", false);
         console.error("Error saving inbound:", error);
         alert("Error saving inbound");
       }
     } else {
       try {
+        eventBus.emit("loading", true);
         const res = await api.put(
           `/inbound/${formData.inbound_no}`,
           {
             ...formData,
             items: muatan,
           },
-          {
-            withCredentials: true,
-          }
         );
         if (res.data.success) {
+          eventBus.emit("loading", false);
           eventBus.emit("showAlert", {
             title: "Success!",
             description: res.data.message,
@@ -239,6 +241,7 @@ export default function ManualForm() {
           router.push("/wms/inbound/data");
         }
       } catch (error) {
+        eventBus.emit("loading", false);
         console.error("Error updating inbound:", error);
         alert("Error updating inbound");
       }

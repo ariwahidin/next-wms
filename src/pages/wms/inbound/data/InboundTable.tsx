@@ -43,6 +43,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { set } from "date-fns";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -276,9 +277,11 @@ const InboundTable = () => {
   >(null);
 
   const handleChecking = (inbound_no: string) => {
+    eventBus.emit("loading", true);
     api
       .post("/inbound/checking", { inbound_no: inbound_no })
       .then((response) => {
+        eventBus.emit("loading", false);
         if (response.data.success) {
           notify("Success", response.data.message, "success");
           mutate("/inbound");
@@ -307,9 +310,11 @@ const InboundTable = () => {
   };
 
   const handlePutaway = (inbound_no: string) => {
+    eventBus.emit("loading", true);
     api
       .post("/inbound/handle-putaway", { inbound_no: inbound_no })
       .then((response) => {
+        eventBus.emit("loading", false);
         if (response.data.success) {
           notify("Success", response.data.message, "success");
           mutate("/inbound");
@@ -318,14 +323,17 @@ const InboundTable = () => {
         }
       })
       .catch((error) => {
+        eventBus.emit("loading", false);
         console.error("Error putaway inbound:", error);
       });
   };
 
   const handleComplete = (inbound_no: string) => {
+    eventBus.emit("loading", true);
     api
       .post("/inbound/complete/" + inbound_no, { inbound_no: inbound_no })
       .then((response) => {
+        eventBus.emit("loading", false);
         if (response.data.success) {
           notify("Success", response.data.message, "success");
           mutate("/inbound");
@@ -334,6 +342,7 @@ const InboundTable = () => {
         }
       })
       .catch((error) => {
+        eventBus.emit("loading", false);
         console.error("Error completing inbound:", error);
       });
 

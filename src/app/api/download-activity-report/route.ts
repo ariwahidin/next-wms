@@ -16,6 +16,13 @@ export async function GET(request: NextRequest) {
     const inbound = await getInbound(startDate, endDate);
     const outbound = await getOutbound(startDate, endDate);
 
+    if (inbound.length === 0 || outbound.length === 0) {
+        return NextResponse.json({
+            success: false,
+            message: "Inbound or outbound data is empty for this date range.",
+        });
+    }
+
     console.log("Inbound Data:", inbound)
     console.log("Outbound Data:", outbound)
 

@@ -145,7 +145,7 @@ const OutboundTable = () => {
       "The picking process is carried out by the system, are you sure to continue?",
       "error",
       () => {
-        console.log(id);
+        eventBus.emit("loading", true);
         api
           .post(
             `/outbound/picking/${id}`,
@@ -153,6 +153,7 @@ const OutboundTable = () => {
             { withCredentials: true }
           )
           .then((res) => {
+            eventBus.emit("loading", false);
             if (res.data.success) {
               eventBus.emit("showAlert", {
                 title: "Success!",
@@ -163,8 +164,9 @@ const OutboundTable = () => {
             }
           })
           .catch((error) => {
+            eventBus.emit("loading", false);
             console.error("Error saving inbound:", error);
-            alert("Gagal menyimpan inbound");
+            // alert("Gagal menyimpan inbound");
           });
       }
     );
@@ -176,6 +178,7 @@ const OutboundTable = () => {
       "Are you sure you want to save this data?",
       "error",
       () => {
+        eventBus.emit("loading", true);
         api
           .post(
             `/outbound/picking/complete/${id}`,
@@ -183,6 +186,7 @@ const OutboundTable = () => {
             { withCredentials: true }
           )
           .then((res) => {
+            eventBus.emit("loading", false);
             if (res.data.success) {
               eventBus.emit("showAlert", {
                 title: "Success!",
@@ -193,8 +197,9 @@ const OutboundTable = () => {
             }
           })
           .catch((error) => {
+            eventBus.emit("loading", false);
             console.error("Error saving inbound:", error);
-            alert("Gagal menyimpan inbound");
+            // alert("Gagal menyimpan inbound");
           });
       }
     );
@@ -205,9 +210,11 @@ const OutboundTable = () => {
     console.log("handleOpenSingle", rowData);
 
     try {
+      eventBus.emit("loading", true);
       api
         .post("/outbound/open", { outbound_no: rowData.outbound_no })
         .then((response) => {
+          eventBus.emit("loading", false);
           if (response.data.success) {
             // notify("Success", response.data.message, "success");
             // mutate("/outbound");
@@ -224,6 +231,7 @@ const OutboundTable = () => {
           console.error("Error open outbound:", error);
         });
     } catch (error) {
+      eventBus.emit("loading", false);
       console.error("Error open outbound:", error);
     }
   };
@@ -246,9 +254,12 @@ const OutboundTable = () => {
         temp_location_name: locationName,
       };
 
+
+      eventBus.emit("loading", true);
       api
         .post("/outbound/open/process", payload, { withCredentials: true })
         .then((response) => {
+          eventBus.emit("loading", false);
           if (response.data.success) {
             notify("Success", response.data.message, "success");
             mutate("/outbound");
@@ -258,6 +269,7 @@ const OutboundTable = () => {
           }
         })
         .catch((error) => {
+          eventBus.emit("loading", false);
           console.error("Error handling scanned items:", error);
           // notify("Error", "Terjadi kesalahan saat memproses item", "error");
         });

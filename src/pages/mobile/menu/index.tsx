@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState } from "react";
@@ -30,21 +31,21 @@ const menus = [
     icon: <Boxes />,
     href: "/mobile/inventory",
   },
-  {
-    label: "Returns",
-    icon: <Undo2 />,
-    href: "/returns",
-  },
-  {
-    label: "Reports",
-    icon: <FileText />,
-    href: "/reports",
-  },
-  {
-    label: "Settings",
-    icon: <Settings />,
-    href: "/settings",
-  },
+  // {
+  //   label: "Returns",
+  //   icon: <Undo2 />,
+  //   href: "/returns",
+  // },
+  // {
+  //   label: "Reports",
+  //   icon: <FileText />,
+  //   href: "/reports",
+  // },
+  // {
+  //   label: "Settings",
+  //   icon: <Settings />,
+  //   href: "/settings",
+  // },
 ];
 
 export default function MenuPage() {

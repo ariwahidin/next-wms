@@ -27,6 +27,14 @@ export async function GET() {
   const inbound = await getInbound(formattedStart, formattedEnd);
   const outbound = await getOutbound(formattedStart, formattedEnd);
 
+  if(inbound.length === 0 || outbound.length === 0) {
+    return NextResponse.json({
+      success: false,
+      message: "Inbound or outbound data is empty for this date range.",
+    });
+  }
+
+
   const workbook = new ExcelJS.Workbook();
   createStyledSheet(workbook, "Inbound", inbound);
   createStyledSheet(workbook, "Outbound", outbound);

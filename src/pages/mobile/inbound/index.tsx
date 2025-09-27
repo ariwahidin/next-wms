@@ -17,11 +17,11 @@ import {
 } from "lucide-react";
 
 const inboundMenus = [
-  {
-    label: "Create Inbound Order",
-    icon: <Package />,
-    href: "/mobile/inbound/create-order",
-  },
+  // {
+  //   label: "Create Inbound Order",
+  //   icon: <Package />,
+  //   href: "/mobile/inbound/create-order",
+  // },
   {
     label: "Inbound Orders",
     icon: <InboxIcon />,

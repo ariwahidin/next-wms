@@ -112,11 +112,11 @@ export default function HomePage() {
               href="/mobile/inventory"
               icon={<PackageCheck />}
             />
-            <QuickAccessButton
+            {/* <QuickAccessButton
               label="Scan"
               href="/mobile/inventory/scan"
               icon={<ScanBarcode />}
-            />
+            /> */}
           </div>
         </div>
 

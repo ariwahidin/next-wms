@@ -53,8 +53,8 @@ const inventoryMenus = [
   //   icon: <FileText />,
   //   href: "/mobile/inventory/report",
   // },
-  { label: "Search Item", icon: <Search />, href: "/mobile/inventory/scan-item" },
-  { label: "Search Location", icon: <LocateFixedIcon />, href: "/mobile/inventory/scan-location" },
+  // { label: "Search Item", icon: <Search />, href: "/mobile/inventory/scan-item" },
+  // { label: "Search Location", icon: <LocateFixedIcon />, href: "/mobile/inventory/scan-location" },
   {
     label: "Stock Take",
     icon: <ClipboardList />,

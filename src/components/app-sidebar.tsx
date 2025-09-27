@@ -226,7 +226,7 @@ const data = {
     //   ],
     // },
     {
-      title: "Mobile RF",
+      title: "Mobile Scanner",
       url: "#",
       icon: Smartphone,
       isActive: true,
@@ -249,86 +249,86 @@ const data = {
         },
       ],
     },
-    {
-      title: "Settings",
-      url: "#",
-      icon: SettingsIcon,
-      isActive: true,
-      items: [
-        {
-          title: "User Manual",
-          url: "/wms/settings/user-manual",
-        },
-        {
-          title: "Users",
-          url: "/master/user",
-        },
-        {
-          title: "Roles",
-          url: "/master/role",
-        },
-        {
-          title: "Permissions",
-          url: "/configuration/permissions",
-        },
-        {
-          title: "Role Permissions",
-          url: "/master/role-permission",
-        },
-        {
-          title: "Menu",
-          url: "/menu",
-        },
-      ],
-    },
-    {
-      title: "Example Pages",
-      url: "#",
-      icon: Settings2,
-      isActive: true,
-      items: [
-        {
-          title: "Tanstack Table",
-          url: "/example/table/tanstack",
-        },
-        {
-          title: "New Inbound",
-          url: "/example/inbound/new",
-        },
-        {
-          title: "List Inbound",
-          url: "/example/inbound/list",
-        },
-        {
-          title: "Putaway",
-          url: "/example/putaway",
-        },
-        {
-          title: "Stock",
-          url: "/example/putaway/stock",
-        },
-        {
-          title: "Outbound",
-          url: "/example/outbound",
-        },
-        {
-          title: "New Outbound",
-          url: "/example/outbound/new",
-        },
-        {
-          title: "Picking",
-          url: "/example/picking",
-        },
-        {
-          title: "New BU",
-          url: "/example/create-bu",
-        },
-        {
-          title: "DB Migrate",
-          url: "/example/db-migrate",
-        },
-      ],
-    },
+    // {
+    //   title: "Settings",
+    //   url: "#",
+    //   icon: SettingsIcon,
+    //   isActive: true,
+    //   items: [
+    //     {
+    //       title: "User Manual",
+    //       url: "/wms/settings/user-manual",
+    //     },
+    //     {
+    //       title: "Users",
+    //       url: "/master/user",
+    //     },
+    //     {
+    //       title: "Roles",
+    //       url: "/master/role",
+    //     },
+    //     {
+    //       title: "Permissions",
+    //       url: "/configuration/permissions",
+    //     },
+    //     {
+    //       title: "Role Permissions",
+    //       url: "/master/role-permission",
+    //     },
+    //     {
+    //       title: "Menu",
+    //       url: "/menu",
+    //     },
+    //   ],
+    // },
+    // {
+    //   title: "Example Pages",
+    //   url: "#",
+    //   icon: Settings2,
+    //   isActive: true,
+    //   items: [
+    //     {
+    //       title: "Tanstack Table",
+    //       url: "/example/table/tanstack",
+    //     },
+    //     {
+    //       title: "New Inbound",
+    //       url: "/example/inbound/new",
+    //     },
+    //     {
+    //       title: "List Inbound",
+    //       url: "/example/inbound/list",
+    //     },
+    //     {
+    //       title: "Putaway",
+    //       url: "/example/putaway",
+    //     },
+    //     {
+    //       title: "Stock",
+    //       url: "/example/putaway/stock",
+    //     },
+    //     {
+    //       title: "Outbound",
+    //       url: "/example/outbound",
+    //     },
+    //     {
+    //       title: "New Outbound",
+    //       url: "/example/outbound/new",
+    //     },
+    //     {
+    //       title: "Picking",
+    //       url: "/example/picking",
+    //     },
+    //     {
+    //       title: "New BU",
+    //       url: "/example/create-bu",
+    //     },
+    //     {
+    //       title: "DB Migrate",
+    //       url: "/example/db-migrate",
+    //     },
+    //   ],
+    // },
   ],
   projects: [
     {

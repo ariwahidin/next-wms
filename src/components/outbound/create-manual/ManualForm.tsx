@@ -114,6 +114,7 @@ export default function ManualForm() {
     console.log("Data outbound yang akan disimpan:", formData, muatan);
     // return;
     if (formData.ID === 0) {
+      eventBus.emit("loading", true);
       try {
         const res = await api.post(
           "/outbound",
@@ -125,6 +126,7 @@ export default function ManualForm() {
             withCredentials: true,
           }
         );
+        eventBus.emit("loading", false);
         if (res.data.success) {
           eventBus.emit("showAlert", {
             title: "Success!",
@@ -134,11 +136,13 @@ export default function ManualForm() {
           router.push("/wms/outbound/data");
         }
       } catch (error) {
+        eventBus.emit("loading", false);
         console.error("Error saving outbound:", error);
-        alert("Error saving outbound");
+        // alert("Error saving outbound");
       }
     } else {
       try {
+        eventBus.emit("loading", true);
         const res = await api.put(
           `/outbound/${formData.outbound_no}`,
           {
@@ -149,6 +153,7 @@ export default function ManualForm() {
             withCredentials: true,
           }
         );
+        eventBus.emit("loading", false);
         if (res.data.success) {
           eventBus.emit("showAlert", {
             title: "Success!",
@@ -158,8 +163,9 @@ export default function ManualForm() {
           router.push("/wms/outbound/data");
         }
       } catch (error) {
+        eventBus.emit("loading", false);
         console.error("Error updating outbound:", error);
-        alert("Error updating outbound");
+        // alert("Error updating outbound");
       }
     }
   };
