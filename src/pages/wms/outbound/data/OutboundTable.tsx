@@ -128,6 +128,25 @@ const HandlePrintSerial = (outbound_no: string) => {
   }
 };
 
+const HandlePrintWaranty = (outbound_no: string) => {
+  window.open(`/wms/outbound/waranty/${outbound_no}`, "_blank");
+
+  // const printWindow = window.open(
+  //   `/wms/outbound/waranty/${outbound_no}`,
+  //   "_blank"
+  // );
+  // if (printWindow) {
+  //   // printWindow.document.write(printContent);
+  //   printWindow.document.close();
+
+  //   // Wait for images to load before printing
+  //   setTimeout(() => {
+  //     printWindow.print();
+  //     printWindow.close();
+  //   }, 1000);
+  // }
+};
+
 const OutboundTable = () => {
   const { data: rowData, error, mutate } = useSWR("/outbound", fetcher);
   const { showAlert, notify } = useAlert();
@@ -253,7 +272,6 @@ const OutboundTable = () => {
         action: action,
         temp_location_name: locationName,
       };
-
 
       eventBus.emit("loading", true);
       api
@@ -476,6 +494,16 @@ const OutboundTable = () => {
                     >
                       <Printer className="mr-2 h-4 w-4" />
                       Print Serial Number
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        HandlePrintWaranty(params.data.outbound_no);
+                      }}
+                    >
+                      <Printer className="mr-2 h-4 w-4" />
+                      Print Label Waranty
                     </DropdownMenuItem>
                   </>
                 )}

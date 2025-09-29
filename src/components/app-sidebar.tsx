@@ -360,6 +360,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       "/wms/inbound/add",
       "/wms/outbound/add",
       "/wms/outbound/edit",
+      "/wms/outbound/waranty",
       "/wms/outbound/handling/edit",
       "/wms/inbound/edit",
     ];
