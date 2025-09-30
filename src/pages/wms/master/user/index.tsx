@@ -7,6 +7,7 @@ import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/layout";
 import api from "@/lib/api";
+import { Button } from "@/components/ui/button";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -28,6 +29,7 @@ export default function UserListPage() {
     { field: "username", headerName: "Username", flex: 1 },
     { field: "name", headerName: "Name", flex: 1 },
     { field: "email", headerName: "Email", flex: 1.5 },
+    { field: "base_route", headerName: "Base Route", flex: 1 },
     {
       headerName: "Action",
       field: "action",
@@ -36,7 +38,7 @@ export default function UserListPage() {
         return (
           <button
             className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-            onClick={() => router.push(`/master/user/edit/${params.data.ID}`)}
+            onClick={() => router.push(`/wms/master/user/edit/${params.data.ID}`)}
           >
             Edit
           </button>
@@ -72,12 +74,11 @@ export default function UserListPage() {
         <div className="p-4 space-y-4">
           {/* Toolbar */}
           <div className="flex justify-between mb-4">
-            <button
-              onClick={() => router.push("/master/user/create")}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm"
+            <Button
+              onClick={() => router.push("/wms/master/user/create")}
             >
               + Add User
-            </button>
+            </Button>
             <input
               type="text"
               value={quickFilterText}

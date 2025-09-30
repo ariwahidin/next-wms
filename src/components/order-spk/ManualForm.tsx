@@ -302,6 +302,7 @@ export default function ManualForm() {
             <span className="shrink-0">:</span>
             <div className="flex-1">
               <Input
+                autoComplete="off"
                 id="Driver"
                 style={{ fontSize: "12px" }}
                 className="flex-1 w-64"
@@ -326,6 +327,7 @@ export default function ManualForm() {
             <span className="shrink-0">:</span>
             <div className="flex-1">
               <Input
+                autoComplete="off"
                 id="TruckNo"
                 style={{ fontSize: "12px" }}
                 className="flex-1 w-64"

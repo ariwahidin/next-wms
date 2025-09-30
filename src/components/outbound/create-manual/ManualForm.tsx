@@ -291,6 +291,7 @@ export default function ManualForm() {
                   style={{ fontSize: "12px" }}
                   className="flex-1"
                   value={formData.shipment_id}
+                  autoComplete="off"
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -365,6 +366,7 @@ export default function ManualForm() {
                   style={{ fontSize: "12px" }}
                   className="flex-1"
                   value={formData.picker_name}
+                  autoComplete="off"
                   onChange={(e) =>
                     setFormData({
                       ...formData,

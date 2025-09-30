@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { AlertCircle, Boxes } from "lucide-react";
+import { AlertCircle, Boxes, Eye, EyeOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from "next/image";
 
@@ -22,6 +22,7 @@ import "swiper/css/navigation";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { setUser } from "@/store/userSlice";
 import { BusinessUnit } from "@/types/bu";
+import eventBus from "@/utils/eventBus";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,6 +42,7 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error] = useState<string | null>(null);
   const [buOptions, setBuOptions] = useState<BusinessUnit[]>([]);
   const [bu, setBu] = useState("");
@@ -49,6 +51,7 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    eventBus.emit("loading", true);
     api
       .post(
         "/auth/login",
@@ -60,6 +63,8 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
         { withCredentials: true }
       )
       .then((res) => {
+        eventBus.emit("loading", false);
+
         if (res.data.success === true) {
           // Simpan user ke Redux
           dispatch(
@@ -73,15 +78,9 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
             })
           );
 
-          console.log("Login successful : ", res.data.x_token);
-
-          // document.cookie = `next-auth-token=${res.data.x_token}; path=/; max-age=${
-          //   60 * 60 * 24
-          // }; secure; samesite=None`;
-
           document.cookie = `next-auth-token=${
             res.data.x_token
-          }; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
+          }; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
           if (res.data.user.base_url === "/dashboard") {
             router.push("/wms/dashboard");
           } else {
@@ -91,19 +90,6 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
       })
       .catch((err) => console.log(err));
   };
-
-  // const fetchData = async () => {
-  //   try {
-  //     const response = await api.get("/configurations/get-all-bu", { withCredentials: true });
-  //     const data = await response.data;
-  //     if (data.success === false) return;
-  //     setBuOptions(data.data);
-  //   } catch (error) {
-  //     console.error("Error fetching menus:", error);
-  //   } finally {
-  //     // setIsLoading(false);
-  //   }
-  // };
 
   useEffect(() => {
     // Hapus semua cookies
@@ -135,11 +121,12 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
                 </Alert>
               )}
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email or Username</Label>
                 <Input
+                  autoComplete="off"
                   id="email"
-                  type="email"
-                  placeholder="m@example.com"
+                  type="text"
+                  // placeholder="m@example.com"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -147,31 +134,39 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    autoComplete="off"
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              {/* <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
                 <Input
+                  autoComplete="off"
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-              </div>
-
-              {/* <div className="grid gap-2">
-                <Label htmlFor="bu">Environment</Label>
-                <select
-                  id="bu"
-                  className="border rounded px-2 py-1"
-                  value={bu}
-                  onChange={(e) => setBu(e.target.value)}
-                  required
-                >
-                  <option value="">-- Select Environment --</option>
-                  {buOptions?.map((bu) => (
-                    <option key={bu.ID} value={bu.db_name}>
-                      {bu.db_name}
-                    </option>
-                  ))}
-                </select>
               </div> */}
 
               <Button type="submit" className="w-full">

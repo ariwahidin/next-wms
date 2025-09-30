@@ -354,7 +354,7 @@ export default function Page() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow group">
+            {/* <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow group">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -376,9 +376,9 @@ export default function Page() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
-            <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow group">
+            {/* <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow group">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -400,7 +400,7 @@ export default function Page() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
 
           {/* Recent Orders */}
@@ -415,14 +415,14 @@ export default function Page() {
                     Latest warehouse operations
                   </p>
                 </div>
-                <Button
+                {/* <Button
                   variant="outline"
                   size="sm"
                   className="text-slate-600 border-slate-200 hover:bg-slate-50"
                 >
                   <Eye className="w-4 h-4 mr-2" />
                   View All
-                </Button>
+                </Button> */}
               </div>
             </CardHeader>
             <CardContent className="p-0">

@@ -48,7 +48,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="Akun Saya" showBackButton={false} />
+      <PageHeader title="My Profile" showBackButton={false} />
       <div className="min-h-screen bg-gray-50 pt-4 pb-20 px-4 max-w-md mx-auto">
         <div className="bg-white rounded-2xl shadow p-4 mb-4">
           <div className="flex items-center space-x-4">
@@ -83,7 +83,7 @@ export default function ProfilePage() {
             className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-xl flex justify-center items-center space-x-2"
           >
             <LogOut className="w-4 h-4" />
-            <span>Keluar</span>
+            <span>Log Out</span>
           </button>
         </div>
       </div>

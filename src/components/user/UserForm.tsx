@@ -8,6 +8,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
+import { Select } from "@radix-ui/react-select";
+import {
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 interface Role {
   ID: number;
@@ -50,29 +57,36 @@ const UserForm: React.FC<UserFormProps> = ({ mode, userData }) => {
       setRoles(rolesRes.data.data);
       setPermissions(permissionsRes.data.data);
 
-      // if (mode === "edit" && userData) {
-      //   setForm({
-      //     ...form,
-      //     ...userData,
-      //     roles: userData.roles.map((r: any) => r.id),
-      //     permissions: userData.permissions.map((p: any) => p.id),
-      //   });
-      // }
+    
 
+      console.log("mode => ", mode);
       if (mode === "edit" && userData) {
         console.log("userData => ", userData);
 
-        setForm({
-          ...form,
-          ...userData,
-          username: userData.data.username,
+        // setForm({
+        //   ...form,
+        //   ...userData,
+        //   username: userData.data.username,
+        //   password: "",
+        //   name: userData.data.name,
+        //   email: userData.data.email,
+        //   base_route: userData.data.base_route,
+        //   roles: userData.data.Roles.map((r: any) => r.ID),
+        //   permissions: userData.data.Permissions.map((p: any) => p.ID),
+        // });
+
+        const d = await userData.data;
+
+        setForm((prev) => ({
+          ...prev,
+          username: d.username,
           password: "",
-          name: userData.data.name,
-          email: userData.data.email,
-          base_route: userData.data.base_route,
-          roles: userData.data.Roles.map((r: any) => r.ID),
-          permissions: userData.data.Permissions.map((p: any) => p.ID),
-        });
+          name: d.name ?? "",
+          email: d.email ?? "",
+          base_route: d.base_route ?? "",
+          roles: d.Roles?.map((r: any) => r.ID) ?? [],
+          permissions: d.Permissions?.map((p: any) => p.ID) ?? [],
+        }));
       }
     } catch (error) {
       console.error(error);
@@ -80,8 +94,13 @@ const UserForm: React.FC<UserFormProps> = ({ mode, userData }) => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+  if (mode === "edit" && !userData) return; // tunggu userData ada
+  fetchData();
+}, [mode, userData]);
+
+  // useEffect(() => {
+  //   fetchData();
+  // }, [mode, userData]);
 
   const handleCheckboxChange = (id: number, type: "roles" | "permissions") => {
     setForm((prev) => {
@@ -131,7 +150,7 @@ const UserForm: React.FC<UserFormProps> = ({ mode, userData }) => {
         description: res.data.message,
         type: "success",
       });
-      router.push("/master/user");
+      router.push("/wms/master/user");
     }
   };
 
@@ -169,10 +188,18 @@ const UserForm: React.FC<UserFormProps> = ({ mode, userData }) => {
       </div>
       <div>
         <Label>Base Route</Label>
-        <Input
+        <Select
           value={form.base_route}
-          onChange={(e) => setForm({ ...form, base_route: e.target.value })}
-        />
+          onValueChange={(e) => setForm({ ...form, base_route: e })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select Base Route" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="/dashboard">Desktop</SelectItem>
+            <SelectItem value="/mobile">Scanner</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div>

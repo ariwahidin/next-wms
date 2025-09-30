@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from "react-select";
-import { Pencil, Trash, X } from "lucide-react";
+import { Eye, Pencil, Trash, X } from "lucide-react";
 import {
   CombinedOutboundProps,
   ItemFormProps,
@@ -19,6 +19,29 @@ import {
   MuatanOrderSPK,
 } from "@/types/order-spk";
 import { Transporter } from "@/types/transporter";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+type OrderDetail = {
+  item_code: string;
+  barcode: string;
+  product: { item_name: string } | null;
+  quantity: number;
+  uom: string;
+};
 
 export default function ItemFormTable({
   muatan,
@@ -47,6 +70,10 @@ export default function ItemFormTable({
   //   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [selectedOutboundNo, setSelectedOutboundNo] = useState<string[]>([]);
 
+  const [open, setOpen] = useState(false);
+  const [viewData, setViewData] = useState<OrderDetail[]>([]);
+  const [loading, setLoading] = useState(false);
+
   const fetchData = async () => {
     try {
       const [pickings] = await Promise.all([api.get("/order/list")]);
@@ -74,47 +101,6 @@ export default function ItemFormTable({
     setEditingItem(item);
     setIsModalOpen(true);
   };
-
-  //   const handleChange = (
-  //     id: number,
-  //     field: keyof ItemFormProps,
-  //     value: string | number
-  //   ) => {
-  //     console.log("ID:", id);
-  //     console.log("Field:", field);
-  //     console.log("Value:", value);
-
-  //     if (field === "item_code") {
-  //       const selectedProduct = products.find(
-  //         (product) => product.item_code === value
-  //       );
-  //       console.log("Produk yang dipilih:", selectedProduct);
-  //       if (selectedProduct) {
-  //         setMuatan((prev) =>
-  //           prev.map((m) =>
-  //             m.ID === id
-  //               ? {
-  //                   ...m,
-  //                   item_code: selectedProduct.item_code,
-  //                   uom: selectedProduct.uom,
-  //                   item_name: selectedProduct.item_name,
-  //                   barcode: selectedProduct.barcode,
-  //                   sn: selectedProduct.has_serial,
-  //                 }
-  //               : m
-  //           )
-  //         );
-  //       }
-  //     } else {
-  //       setMuatan((prev) =>
-  //         prev.map((m) =>
-  //           m.ID === id
-  //             ? { ...m, [field]: field === "quantity" ? Number(value) : value }
-  //             : m
-  //         )
-  //       );
-  //     }
-  //   };
 
   const handleCancel = async (item: MuatanOrderSPK) => {
     console.log("Cancel Item : ", item);
@@ -192,6 +178,23 @@ export default function ItemFormTable({
     setIsModalOpen(false);
   };
 
+  const handleView = (item: MuatanOrderSPK) => {
+    console.log("View Item : ", item);
+    setLoading(true);
+    api
+      .get(`/outbound/` + item.outbound_no, { withCredentials: true })
+      .then((res) => {
+        if (res.data.success) {
+          setViewData(res.data.data.items);
+          setOpen(true);
+          setLoading(false);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -224,10 +227,16 @@ export default function ItemFormTable({
             <th className="p-2 border" style={{ width: "130px" }}>
               Delivery City
             </th>
-            <th className="p-2 border" style={{ width: "75px", textAlign: "center" }}>
+            <th
+              className="p-2 border"
+              style={{ width: "75px", textAlign: "center" }}
+            >
               Total Koli
             </th>
-            <th className="p-2 border" style={{ width: "75px", textAlign: "center" }}>
+            <th
+              className="p-2 border"
+              style={{ width: "75px", textAlign: "center" }}
+            >
               VAS Koli
             </th>
             <th className="p-2 border" style={{ width: "65px" }}>
@@ -286,12 +295,20 @@ export default function ItemFormTable({
                     />
                   </div>
                 </td>
-                <td className="p-2 border" >
+                <td className="p-2 border">
                   <Input
                     style={{ fontSize: "12px", textAlign: "center" }}
                     type="number"
                     value={item.qty_koli}
-                    onChange={(e)=> setMuatan((prev) => prev.map((m) => (m.ID === item.ID ? { ...m, qty_koli: Number(e.target.value) } : m)))}
+                    onChange={(e) =>
+                      setMuatan((prev) =>
+                        prev.map((m) =>
+                          m.ID === item.ID
+                            ? { ...m, qty_koli: Number(e.target.value) }
+                            : m
+                        )
+                      )
+                    }
                   />
                 </td>
                 <td className="p-2 border">
@@ -299,7 +316,15 @@ export default function ItemFormTable({
                     style={{ fontSize: "12px", textAlign: "center" }}
                     type="number"
                     value={item.vas_koli}
-                    onChange={(e)=> setMuatan((prev) => prev.map((m) => (m.ID === item.ID ? { ...m, vas_koli: Number(e.target.value) } : m)))}
+                    onChange={(e) =>
+                      setMuatan((prev) =>
+                        prev.map((m) =>
+                          m.ID === item.ID
+                            ? { ...m, vas_koli: Number(e.target.value) }
+                            : m
+                        )
+                      )
+                    }
                   />
                 </td>
                 <td className="p-2 border">
@@ -328,8 +353,17 @@ export default function ItemFormTable({
                 </td>
                 <td
                   className="p-2 border space-x-2 text-center"
-                  style={{ width: "55px" }}
+                  style={{ width: "100px" }}
                 >
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      handleView(item);
+                    }}
+                  >
+                    <Eye size={14} />
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
@@ -359,7 +393,7 @@ export default function ItemFormTable({
         </tbody>
         <tfoot>
           <tr className="bg-gray-100 font-semibold">
-            <td  className="p-2 border" colSpan={5}>
+            <td className="p-2 border" colSpan={5}>
               Total
             </td>
             <td className="p-2 border text-center">
@@ -389,6 +423,65 @@ export default function ItemFormTable({
         onApply={handleModalApply}
         selectedItems={muatan}
       />
+
+      <OrderDetailModal
+        open={open}
+        onOpenChange={setOpen}
+        data={viewData}
+        loading={loading}
+      />
     </div>
+  );
+}
+
+function OrderDetailModal({
+  open,
+  onOpenChange,
+  data,
+  loading,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  data: OrderDetail[];
+  loading: boolean;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl bg-white">
+        <DialogHeader>
+          <DialogTitle>Detail Order</DialogTitle>
+          <DialogDescription>
+            Detail item in the selected order
+          </DialogDescription>
+        </DialogHeader>
+
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item Code</TableHead>
+                <TableHead>Barcode</TableHead>
+                <TableHead>Item Name</TableHead>
+                <TableHead>Qty</TableHead>
+                <TableHead>UOM</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((item, idx) => (
+                <TableRow key={idx}>
+                  <TableCell>{item.item_code}</TableCell>
+                  <TableCell>{item.barcode}</TableCell>
+                  <TableCell>{item.product.item_name}</TableCell>
+                  <TableCell>{item.quantity}</TableCell>
+                  <TableCell>{item.uom}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

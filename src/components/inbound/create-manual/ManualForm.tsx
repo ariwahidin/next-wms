@@ -188,16 +188,7 @@ export default function ManualForm() {
     }));
 
     console.log("Data yang disimpan:", formData, references, newMuatan);
-    // return;
 
-    // if (muatan.length === 0) {
-    //   eventBus.emit("showAlert", {
-    //     title: "Error!",
-    //     description: "Please add at least one item",
-    //     type: "error",
-    //   });
-    //   return;
-    // }
 
     if (formData.ID === 0) {
       eventBus.emit("loading", true);
@@ -387,6 +378,7 @@ export default function ManualForm() {
                 </Label>
                 <span className="shrink-0">:</span>
                 <Input
+                  autoComplete="off"
                   id="ReceiptID"
                   style={{ fontSize: "12px" }}
                   className="flex-1"

@@ -15,7 +15,7 @@ const navItems = [
     href: "/mobile/menu",
   },
   {
-    label: "Akun",
+    label: "Profile",
     icon: User,
     href: "/mobile/profile",
   },

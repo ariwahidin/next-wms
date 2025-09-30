@@ -210,9 +210,10 @@ const ItemSelectionModal = ({
                           type={mode === "edit" ? "radio" : "checkbox"}
                           name={mode === "edit" ? "selectedItem" : undefined}
                           checked={isSelected}
-                          //   onChange={(e) =>
-                          //     handleItemSelect(item.ID, e.target.checked)
-                          //   }
+                            onChange={(e) =>
+                              handleItemSelect(
+                                item.outbound_no, e.target.checked)
+                            }
                           onClick={(e) => e.stopPropagation()}
                         />
                       </td>

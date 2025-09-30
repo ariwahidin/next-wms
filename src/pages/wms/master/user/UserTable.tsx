@@ -47,6 +47,7 @@ const UserTable = ({ setEditData }) => {
     { field: "username", headerName: "Username" },
     { field: "email", headerName: "Email" },
     { field: "password", headerName: "Password" },
+    { field: "base_route", headerName: "Base Route" },
     {
       headerName: "Actions",
       field: "ID",
@@ -86,7 +87,7 @@ const UserTable = ({ setEditData }) => {
   );
 
   const handleAddUser = () => {
-    router.push("/master/user/create")
+    router.push("/wms/master/user/create")
   };
 
   return (
