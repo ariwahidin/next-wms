@@ -19,12 +19,9 @@ export default function ScanItemPage() {
 
     try {
       setLoading(true);
-      const response = await api.get(
-        "/mobile/inventory/location/" + search,
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await api.get("/mobile/inventory/location/" + search, {
+        withCredentials: true,
+      });
       const data = await response.data;
 
       if (data.success) {
@@ -32,6 +29,8 @@ export default function ScanItemPage() {
           name: item.item_code,
           barcode: item.barcode,
           location: item.location,
+          whs_code: item.whs_code,
+          rec_date: item.rec_date,
           qty: item.qty_available,
         }));
         setResults(filtered);
@@ -75,8 +74,8 @@ export default function ScanItemPage() {
 
   return (
     <>
-      <PageHeader title="Scan Location" showBackButton />
-      <div className="px-4 pt-4 pb-20 min-h-screen bg-gray-50 space-y-4">
+      <PageHeader title="Location Query" showBackButton />
+      <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
         <form onSubmit={handleScan}>
           <Input
             placeholder="Scan or search location"
@@ -84,6 +83,12 @@ export default function ScanItemPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="mb-2"
           />
+          <button
+            type="submit"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded"
+          >
+            Check
+          </button>
         </form>
 
         {loading && (
@@ -95,7 +100,7 @@ export default function ScanItemPage() {
 
         {!loading && results.length > 0 && (
           <>
-            <p className="text-sm text-gray-600 font-medium">
+            <p className="text-sm text-center text-gray-600 font-medium">
               {results.length} {results.length === 1 ? "item" : "items"} found
             </p>
             <div className="space-y-3">
@@ -110,8 +115,11 @@ export default function ScanItemPage() {
                   </p>
                   <p className="text-sm text-gray-600">
                     Location: {item.location}
+                    <span className="text-gray-400 float-right">Rec Date: {item.rec_date}</span>
                   </p>
-                  <p className="text-sm text-gray-600">Quantity: {item.qty}</p>
+                  <p className="text-sm text-gray-600">Quantity: {item.qty}
+                    <span className="text-gray-400 float-right">Whs Code: {item.whs_code}</span>
+                  </p>
                 </div>
               ))}
             </div>

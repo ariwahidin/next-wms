@@ -27,7 +27,7 @@ export async function GET() {
   const inbound = await getInbound(formattedStart, formattedEnd);
   const outbound = await getOutbound(formattedStart, formattedEnd);
 
-  if(inbound.length === 0 || outbound.length === 0) {
+  if (inbound.length === 0 || outbound.length === 0) {
     return NextResponse.json({
       success: false,
       message: "Inbound or outbound data is empty for this date range.",
@@ -39,7 +39,11 @@ export async function GET() {
   createStyledSheet(workbook, "Inbound", inbound);
   createStyledSheet(workbook, "Outbound", outbound);
 
-  const folderPath = path.join(process.cwd(), "exports");
+  // const folderPath = path.join(process.cwd(), "D:/SendEmailYamaha");
+  // if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
+  // const filePath = path.join(folderPath, "Activity_Report.xlsx");
+
+  const folderPath = "D:/SendEmailYamaha";
   if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
   const filePath = path.join(folderPath, "Activity_Report.xlsx");
 

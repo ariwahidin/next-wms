@@ -19,6 +19,13 @@ import {
   SearchXIcon,
   Search,
   LocateFixedIcon,
+  FileQuestion,
+  LocateIcon,
+  MailQuestion,
+  BoxSelect,
+  BadgeXIcon,
+  ScalingIcon,
+  ScanBarcodeIcon,
 } from "lucide-react";
 
 const inventoryMenus = [
@@ -48,11 +55,11 @@ const inventoryMenus = [
   //   icon: <History />,
   //   href: "/mobile/inventory/history",
   // },
-  // {
-  //   label: "Stock Report",
-  //   icon: <FileText />,
-  //   href: "/mobile/inventory/report",
-  // },
+  {
+    label: "Location Query",
+    icon: <ScanBarcodeIcon />,
+    href: "/mobile/inventory/scan-location",
+  },
   // { label: "Search Item", icon: <Search />, href: "/mobile/inventory/scan-item" },
   // { label: "Search Location", icon: <LocateFixedIcon />, href: "/mobile/inventory/scan-location" },
   {
