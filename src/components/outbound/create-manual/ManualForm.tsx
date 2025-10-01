@@ -31,8 +31,8 @@ export default function ManualForm() {
     outbound_date: new Date().toISOString().split("T")[0],
     customer_code: "",
     shipment_id: "",
-    whs_code: "",
-    owner_code: "",
+    whs_code: "CKY",
+    owner_code: "YMID",
     mode: "create",
     picker_name: "",
     cust_address: "",
@@ -633,7 +633,7 @@ export default function ManualForm() {
                         deliv_address: customer.find(
                           (option) =>
                             option.customer_code === selectedOption.value
-                        ).cust_city,
+                        ).cust_addr1,
                         deliv_city: customer.find(
                           (option) =>
                             option.customer_code === selectedOption.value

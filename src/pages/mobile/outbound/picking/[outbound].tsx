@@ -308,7 +308,7 @@ const CheckingPage = () => {
             console.log("focus serial 0");
             document.getElementById("serial-0")?.focus();
           }
-        },100);
+        }, 100);
       } else {
         console.log("Item requires serial:", res);
         setIsSerial(res.is_serial);
@@ -507,6 +507,11 @@ const CheckingPage = () => {
             <span className="ml-2">Loading...</span>
           </div>
         )}
+
+        <div className="flex justify-center">
+          {/* <Loader2 className="animate-spin" /> */}
+          <span className="ml-2">Total Qty : {filteredItems.reduce((total, item) => total + item.quantity, 0)}</span>
+        </div>
 
         <Card>
           <CardContent className="p-4 space-y-4">
