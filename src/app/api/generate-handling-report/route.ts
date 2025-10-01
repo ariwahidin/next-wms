@@ -29,9 +29,11 @@ export async function GET() {
 
   createStyledHandlingSheet(workbook, dataLeft, dataRight);
 
-  const folderPath = path.join(process.cwd(), "exports");
-  if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath);
-  const filePath = path.join(folderPath, "Handling_Report.xlsx");
+  // const folderPath = path.join(process.cwd(), "exports");
+  // if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath);
+  const folderPath = "D:/SendEmailYamaha";
+  if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
+  const filePath = path.join(folderPath, "Rekap_Handling_YMI.xlsx");
   await workbook.xlsx.writeFile(filePath);
 
   return NextResponse.json({ success: true, path: filePath });
