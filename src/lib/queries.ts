@@ -45,7 +45,7 @@ export async function getOutbound(startDate: string, endDate: string) {
       p.cbm * od.quantity AS M3_TOTAL,
       odt.qty_koli AS KOLI,
       tr.transporter_name AS TRUCKER,
-      od.remarks AS REMARK_DETAIL,
+      od.vas_name AS VAS,
       oh.remarks AS REMARK_HEADER,
       odt.order_no AS SPK_NO,
       odt.remarks AS REMARKS_SPK

@@ -19,6 +19,7 @@ import {
   Package2,
   Blocks,
   X,
+  Copy,
 } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import {
@@ -73,6 +74,11 @@ const fetcher = (url: string) =>
 const HandleEdit = (item: any) => {
   console.log("Edit ID:", item.outbound_no);
   router.push(`/wms/outbound/edit/${item.outbound_no}`);
+  // window.location.href = `/wms/outbound/edit/${item.outbound_no}`;
+};
+const HandleCopy = (item: any) => {
+  console.log("Copy ID:", item.outbound_no);
+  router.push(`/wms/outbound/copy/${item.outbound_no}`);
   // window.location.href = `/wms/outbound/edit/${item.outbound_no}`;
 };
 
@@ -442,6 +448,16 @@ const OutboundTable = () => {
                 >
                   <Pencil className="mr-2 h-4 w-4" />
                   View / Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    HandleCopy(params.data);
+                  }}
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy
                 </DropdownMenuItem>
 
                 {/* Mark as Open - untuk status yang bukan open */}

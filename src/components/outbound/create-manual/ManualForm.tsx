@@ -23,6 +23,17 @@ import { Transporter } from "@/types/transporter";
 export default function ManualForm() {
   const router = useRouter();
   const { no } = router.query;
+  const path = router.pathname; // "/wms/outbound/copy/[no]" atau "/wms/outbound/edit/[no]" atau "/wms/outbound/add"
+
+  let mode: "add" | "edit" | "copy" = "add";
+
+  if (path.includes("/copy/")) {
+    mode = "copy";
+  } else if (path.includes("/edit/")) {
+    mode = "edit";
+  } else if (path.includes("/add")) {
+    mode = "add";
+  }
   console.log("outbound_no", no);
 
   const [formData, setFormData] = useState<HeaderFormProps>({
@@ -175,20 +186,52 @@ export default function ManualForm() {
     fetchData();
   }, []);
 
+  // useEffect(() => {
+  //   if (no) {
+  //     const fetchOutbound = async () => {
+  //       try {
+  //         const res = await api.get(`/outbound/${no}`, {
+  //           withCredentials: true,
+  //         });
+  //         if (res.data.success) {
+  //           setFormData(res.data.data);
+  //           setMuatan(
+  //             res.data.data.items.map((item) => ({
+  //               ...item,
+  //               item_id: String(item.item_id),
+  //               item_name: item.product?.item_name || "", // ambil item_name dari products
+  //             }))
+  //           );
+  //         }
+  //       } catch (error) {
+  //         console.error("Error fetching outbound:", error);
+  //       }
+  //     };
+  //     fetchOutbound();
+  //   }
+  // }, [no]);
+
   useEffect(() => {
-    if (no) {
+    if (no && (mode === "edit" || mode === "copy")) {
       const fetchOutbound = async () => {
         try {
           const res = await api.get(`/outbound/${no}`, {
             withCredentials: true,
           });
           if (res.data.success) {
-            setFormData(res.data.data);
+            let data = res.data.data;
+
+            if (mode === "copy") {
+              // reset ID biar dianggap data baru
+              data = { ...data, ID: 0, outbound_no: "", status: "create", shipment_id: "" };
+            }
+
+            setFormData(data);
             setMuatan(
-              res.data.data.items.map((item) => ({
+              data.items.map((item) => ({
                 ...item,
                 item_id: String(item.item_id),
-                item_name: item.product?.item_name || "", // ambil item_name dari products
+                item_name: item.product?.item_name || "",
               }))
             );
           }
@@ -198,7 +241,7 @@ export default function ManualForm() {
       };
       fetchOutbound();
     }
-  }, [no]);
+  }, [no, mode]);
 
   return (
     <div className="p-4" style={{ fontSize: "12px" }}>

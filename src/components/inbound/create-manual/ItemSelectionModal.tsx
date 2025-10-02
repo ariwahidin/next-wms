@@ -108,9 +108,13 @@ const ItemSelectionModal = ({
 
     console.log("New Selected IDs:", newSelectedIds);
 
-    const newSelectedItemsData = items.filter((item) =>
-      newSelectedIds.includes(item.ID)
-    );
+    // const newSelectedItemsData = items.filter((item) =>
+    //   newSelectedIds.includes(item.ID)
+    // );
+
+    const newSelectedItemsData = newSelectedIds
+      .map((id) => items.find((item) => String(item.ID) === String(id)))
+      .filter(Boolean);
 
     console.log("New Selected Items Data:", newSelectedItemsData);
 
@@ -185,9 +189,7 @@ const ItemSelectionModal = ({
             >
               <thead className="bg-gray-100 sticky top-0">
                 <tr>
-                  <th className="p-2 border w-12">
-                    #
-                  </th>
+                  <th className="p-2 border w-12">#</th>
                   <th className="p-2 border w-12">No.</th>
                   <th className="p-2 border">Item Code</th>
                   <th className="p-2 border">Item Name</th>

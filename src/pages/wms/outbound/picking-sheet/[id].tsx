@@ -366,17 +366,18 @@ const PickingSheetPrint = () => {
                 <React.Fragment key={itemCode}>
                   {validRecords.map((item, j) => (
                     <tr key={j}>
-                      <td style={{ textAlign: "center" }}>
+                      <td style={{ textAlign: "center", fontWeight: "bold", fontSize: "12px", }}>
                         {j === 0 ? <span>{item.item_code}</span> : ""}
                         {j === 0 ? (
                           <>
                             <br />
                             <span
                               style={{
-                                fontSize: "10px",
+                                fontWeight: "normal",
+                                fontSize: "12px",
                                 display: "inline-block",
-                                maxWidth: "140px", // kasih batas
-                                overflow: "hidden",
+                                // maxWidth: "140px", // kasih batas
+                                // overflow: "hidden",
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
                                 verticalAlign: "bottom",
@@ -421,7 +422,7 @@ const PickingSheetPrint = () => {
                       <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
                         {item.rec_date}
                       </td>
-                      <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                      <td style={{ textAlign: "center", whiteSpace: "nowrap", fontWeight: "bold", fontSize: "12px" }}>
                         {item.location}
                       </td>
                       <td style={{ textAlign: "center" }}>{item.quantity}</td>
