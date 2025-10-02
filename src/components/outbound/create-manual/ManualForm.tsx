@@ -38,6 +38,7 @@ export default function ManualForm() {
     cust_address: "",
     cust_city: "",
     plan_pickup_date: "",
+    plan_pickup_time: "",
     rcv_do_date: "",
     rcv_do_time: "",
     start_pick_time: "",
@@ -409,7 +410,7 @@ export default function ManualForm() {
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
                 >
-                  Plan Pickup Date
+                  Plan Pickup Date / Time
                 </Label>
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
@@ -436,6 +437,18 @@ export default function ManualForm() {
                       />
                     }
                     placeholderText="Choose date"
+                  />
+                  <Input
+                    id="PlanPickupTime"
+                    type="time"
+                    style={{ width: "160px", fontSize: "12px" }}
+                    value={formData.plan_pickup_time}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        plan_pickup_time: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -467,21 +480,21 @@ export default function ManualForm() {
                     locale={id} // Bahasa Indonesia
                     customInput={
                       <Input
-                        id="PlanPickupDate"
+                        id="RcvDODate"
                         style={{ width: "160px", fontSize: "12px" }}
                       />
                     }
                     placeholderText="Choose date"
                   />
                   <Input
-                    id="PlanPickupTime"
+                    id="RcvDOTime"
                     type="time"
                     style={{ width: "160px", fontSize: "12px" }}
-                    value={formData.plan_pickup_time}
+                    value={formData.rcv_do_time}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        plan_pickup_time: e.target.value,
+                        rcv_do_time: e.target.value,
                       })
                     }
                   />

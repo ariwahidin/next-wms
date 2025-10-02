@@ -329,7 +329,6 @@ const CheckingPage = () => {
         setShowDialog(true);
       }
     }
-
   };
 
   const handleSerialSubmit = async (e: React.FormEvent) => {
@@ -364,7 +363,6 @@ const CheckingPage = () => {
     setScanQty(1);
     document.getElementById("barcode")?.focus();
   };
-
 
   const [initialFocusDone, setInitialFocusDone] = useState(false);
   useEffect(() => {
@@ -472,6 +470,13 @@ const CheckingPage = () => {
             </form>
           </CardContent>
         </Card>
+
+        <div className="flex justify-center">
+          <span className="ml-2">
+            Total Qty :{" "}
+            {filteredItems.reduce((total, item) => total + item.quantity, 0)}
+          </span>
+        </div>
 
         <Card>
           <CardContent className="p-4 space-y-4">
