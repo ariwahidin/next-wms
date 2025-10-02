@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Table,
@@ -37,6 +36,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
   const [selectAll, setSelectAll] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [clicked, setClicked] = useState(false);
 
   const toggleSelectAll = () => {
     const newSelectAll = !selectAll;
@@ -62,6 +62,8 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
 
   const handleConfirm = async () => {
     console.log("Confirming putaway for items:", selectedItems);
+    if (clicked) return; // blokir klik kedua
+    setClicked(true);
     setIsLoading(true);
     try {
       const res = await api.post(
@@ -89,6 +91,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
       setIsLoading(false);
     } finally {
       setIsLoading(false);
+      setClicked(false); // kalau mau bisa klik lagi nanti
     }
   };
 
@@ -180,7 +183,9 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
             <Button variant="secondary" onClick={() => setShowModal(false)}>
               Cancel
             </Button>
-            <Button onClick={handleConfirm}>Confirm</Button>
+            <Button onClick={handleConfirm} disabled={isLoading}>
+              {isLoading ? "Processing..." : "Confirm"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
