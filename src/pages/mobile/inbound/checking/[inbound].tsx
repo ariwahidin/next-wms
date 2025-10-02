@@ -151,7 +151,18 @@ const CheckingPage = () => {
         type: "success",
       });
       fetchInboundDetail();
-      closeDialog();
+      if (isSerial) {
+        const newSerials = serialInputs.map(() => "");
+        setSerialInputs(newSerials);
+        const emptyIndex = serialInputs.findIndex((s) => s.trim() === "");
+        if (emptyIndex !== -1) {
+          // fokus ke input yang kosong
+          const target = document.getElementById(`serial-${emptyIndex}`);
+          target?.focus();
+          return; // stop submit
+        }
+      }
+      // closeDialog();
     }
   };
 
@@ -358,10 +369,10 @@ const CheckingPage = () => {
     setShowDialog(false);
     const newSerials = serialInputs.map(() => "");
     setSerialInputs(newSerials);
-    setScanBarcode("");
-    setScanBarcode("");
+    // setScanBarcode("");
+    // setScanBarcode("");
     setScanQty(1);
-    document.getElementById("barcode")?.focus();
+    // document.getElementById("barcode")?.focus();
   };
 
   const [initialFocusDone, setInitialFocusDone] = useState(false);
@@ -474,6 +485,7 @@ const CheckingPage = () => {
         <div className="flex justify-center">
           <span className="ml-2">
             Total Qty :{" "}
+            {filteredItems.reduce((total, item) => total + item.scan_qty, 0)}/
             {filteredItems.reduce((total, item) => total + item.quantity, 0)}
           </span>
         </div>
