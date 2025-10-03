@@ -62,7 +62,7 @@ export default function ManualForm() {
     qty_koli_seal: 0,
     truck_size: "",
     truck_no: "",
-    transporter_code: "",
+    transporter_code: "L5W",
   });
 
   const [muatan, setMuatan] = useState<ItemFormProps[]>([]);
@@ -223,7 +223,13 @@ export default function ManualForm() {
 
             if (mode === "copy") {
               // reset ID biar dianggap data baru
-              data = { ...data, ID: 0, outbound_no: "", status: "create", shipment_id: "" };
+              data = {
+                ...data,
+                ID: 0,
+                outbound_no: "",
+                status: "create",
+                shipment_id: "",
+              };
             }
 
             setFormData(data);
@@ -614,6 +620,26 @@ export default function ManualForm() {
                       });
                     }
                   }}
+                  formatOptionLabel={(option, { context }) => {
+                    const cust = customer.find(
+                      (c) => c.customer_code === option.value
+                    );
+
+                    if (context === "menu") {
+                      // tampil di dropdown
+                      return (
+                        <div>
+                          <div>{option.label}</div>
+                          <div className="text-xs text-gray-500">
+                            {cust?.cust_addr1}, {cust?.cust_city}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // tampil setelah kepilih (hanya label utama)
+                    return <div>{option.label}</div>;
+                  }}
                 />
               </div>
             </div>
@@ -696,6 +722,26 @@ export default function ManualForm() {
                         ).cust_city,
                       });
                     }
+                  }}
+                  formatOptionLabel={(option, { context }) => {
+                    const cust = customer.find(
+                      (c) => c.customer_code === option.value
+                    );
+
+                    if (context === "menu") {
+                      // tampil di dropdown
+                      return (
+                        <div>
+                          <div>{option.label}</div>
+                          <div className="text-xs text-gray-500">
+                            {cust?.cust_addr1}, {cust?.cust_city}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // tampil setelah kepilih (hanya label utama)
+                    return <div>{option.label}</div>;
                   }}
                 />
               </div>

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 interface ItemData {
   id: number;
+  category: string;
   item_name: string;
   item_code: string;
   serial_number: string;
@@ -78,7 +79,7 @@ export default function PrintPage() {
         items.map((item, idx) =>
           Array.from({ length: 2 }).map((_, i) => (
             <div className="label" key={`${idx}-${i}`}>
-              <p style={{ whiteSpace: "nowrap" }}>{item.item_name}</p>
+              <p style={{ whiteSpace: "nowrap" }}>{item.category}</p>
               <p style={{ whiteSpace: "nowrap" }}>{item.item_code}</p>
               <p style={{ whiteSpace: "nowrap" }}>{item.serial_number}</p>
             </div>

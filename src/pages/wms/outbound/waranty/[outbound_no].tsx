@@ -8,6 +8,7 @@ interface ItemData {
   id: number;
   item_name: string;
   item_code: string;
+  category: string;
   serial_number: string;
 }
 
@@ -71,6 +72,7 @@ export default function OutboundPage() {
                   onChange={toggleSelectAll}
                 />
               </th>
+              <th className="border px-2 py-1">Category</th>
               <th className="border px-2 py-1">Item Code</th>
               <th className="border px-2 py-1">Item Name</th>
               <th className="border px-2 py-1">Serial Number</th>
@@ -86,6 +88,7 @@ export default function OutboundPage() {
                     onChange={() => toggleSelect(item.id)}
                   />
                 </td>
+                <td className="border px-2 py-1">{item.category}</td>
                 <td className="border px-2 py-1">{item.item_code}</td>
                 <td className="border px-2 py-1">{item.item_name}</td>
                 <td className="border px-2 py-1">{item.serial_number}</td>

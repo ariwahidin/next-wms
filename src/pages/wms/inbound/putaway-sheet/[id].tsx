@@ -70,21 +70,6 @@ const PutawaySheetPrint = () => {
         Receiving Tally Sheet
       </h2>
 
-      {/* <div style={{ fontSize: "12px" }}>
-        <p>
-          <strong>Inbound ID:</strong> {data.inbound_no}
-        </p>
-        <p>
-          <strong>Receipt ID:</strong> {data.receipt_id}
-        </p>
-        <p>
-          <strong>Supplier:</strong> {data.supplier_name}
-        </p>
-        <p>
-          <strong>Date:</strong> {data.inbound_date}
-        </p>
-      </div> */}
-
       <div style={{ fontSize: "12px", marginTop: "10px" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
@@ -179,7 +164,7 @@ const PutawaySheetPrint = () => {
               </td>
               <td style={{ ...td, textAlign: "center" }}>{item.whs_code}</td>
               <td style={{ ...td, textAlign: "center" }}>{item.quantity}</td>
-              <td style={{ ...td, textAlign: "center" }}>{item.cbm}</td>
+              <td style={{ ...td, textAlign: "center" }}>{(item.cbm * item.quantity).toFixed(4)}</td>
             </tr>
           ))}
           <tr>
@@ -190,7 +175,8 @@ const PutawaySheetPrint = () => {
               {sheet.reduce((acc, item) => acc + item.quantity, 0)}
             </td>
             <td style={{ ...td, textAlign: "center" }}>
-              {sheet.reduce((acc, item) => acc + item.cbm, 0).toFixed(4)}
+              {/* {sheet.reduce((acc, item) => acc + item.cbm, 0).toFixed(4)} */}
+              {sheet.reduce((acc, item) => acc + (item.cbm * item.quantity), 0).toFixed(4)}
             </td>
           </tr>
         </tbody>

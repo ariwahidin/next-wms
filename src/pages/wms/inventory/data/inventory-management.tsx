@@ -39,6 +39,8 @@ type InventoryItem = {
   qty_onhand?: number;
   qty_available?: number;
   qty_allocated?: number;
+  cbm_pcs?: number;
+  cbm_total?: number;
 };
 
 const InventoryPage = () => {
@@ -103,69 +105,71 @@ const InventoryPage = () => {
       // suppressMenu: true,
     },
     {
-      headerName: "Barcode",
+      headerName: "GMC CODE",
       field: "barcode",
       width: 140,
       pinned: "left",
       cellClass: "font-medium text-slate-900",
     },
     {
-      headerName: "Item Code",
+      headerName: "ITEM CODE",
       field: "item_code",
       width: 130,
       cellClass: "font-mono text-slate-700 bg-slate-50",
     },
     {
-      headerName: "Item Name",
+      headerName: "ITEM NAME",
       field: "item_name",
       width: 200,
       tooltipField: "item_name",
     },
     {
-      headerName: "WH Code",
+      headerName: "WH CODE",
       field: "whs_code",
-      width: 100,
+      width: 130,
     },
     {
-      headerName: "Location",
+      headerName: "LOCATION",
       field: "location",
-      width: 100,
+      width: 130,
     },
     {
-      headerName: "Category",
-      field: "category",
-      width: 120,
-      cellRenderer: CategoryBadge,
-    },
-    {
-      headerName: "Status",
-      field: "qa_status",
-      width: 100,
-      cellRenderer: StatusBadge,
-    },
-    {
-      headerName: "Date",
+      headerName: "REC DATE",
       field: "rec_date",
       width: 120,
     },
     {
-      headerName: "On Hand",
+      headerName: "ON HAND",
       field: "qty_onhand",
-      width: 90,
+      width: 130,
       type: "numericColumn",
       cellClass: "text-right font-medium",
     },
     {
-      headerName: "Available",
+      headerName: "AVAILABLE",
       field: "qty_available",
-      width: 90,
+      width: 130,
       type: "numericColumn",
       cellClass: "text-right font-medium text-green-600",
     },
     {
-      headerName: "Allocated",
+      headerName: "ALLOCATED",
       field: "qty_allocated",
-      width: 90,
+      width: 130,
+      type: "numericColumn",
+      cellClass: "text-right font-medium text-red-600",
+    },
+    {
+      headerName: "CBM/PCS",
+      field: "cbm_pcs",
+      width: 130,
+      type: "numericColumn",
+      cellClass: "text-right font-medium text-red-600",
+    },
+    {
+      headerName: "CBM TOTAL",
+      field: "cbm_total",
+      width: 130,
       type: "numericColumn",
       cellClass: "text-right font-medium text-red-600",
     },
@@ -252,17 +256,17 @@ const InventoryPage = () => {
     }
 
     const headers = [
-      "Barcode",
-      "Item Code",
+      "GMC CODE",
+      "ITEM CODE",
       // "Item Name",
-      "WH Code",
-      "Location",
-      "Category",
-      "Status",
-      "Date",
-      "On Hand",
-      "Available",
-      "Allocated",
+      "WH CODE",
+      "LOCATION",
+      "REC DATE",
+      "ON HAND",
+      "AVAILABLE",
+      "ALLOCATED",
+      "CBM/PCS",
+      "CBM TOTAL",
     ];
     const csvContent = [
       headers.join(","),
@@ -270,15 +274,14 @@ const InventoryPage = () => {
         [
           item.barcode,
           item.item_code,
-          // item.item_name,
           item.whs_code,
           item.location,
-          item.category,
-          item.qa_status,
           item.rec_date,
           item.qty_onhand || 0,
           item.qty_available || 0,
           item.qty_allocated || 0,
+          item.cbm_pcs || 0,
+          item.cbm_total || 0,
         ].join(",")
       ),
     ].join("\n");
@@ -379,14 +382,14 @@ const InventoryPage = () => {
                   />
                 </div>
 
-                <select
+                {/* <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 >
                   <option value="all">All Status</option>
                   <option value="A">A</option>
-                </select>
+                </select> */}
 
                 <select
                   value={whsCodeFilter}
@@ -401,7 +404,7 @@ const InventoryPage = () => {
                   ))}
                 </select>
 
-                <select
+                {/* <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
@@ -412,11 +415,12 @@ const InventoryPage = () => {
                       {category}
                     </option>
                   ))}
-                </select>
+                </select> */}
 
                 <button
                   onClick={() => {
                     setSearch("");
+                    setWhsCodeFilter("all");
                     setStatusFilter("all");
                     setCategoryFilter("all");
                   }}
