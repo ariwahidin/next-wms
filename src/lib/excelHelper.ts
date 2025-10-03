@@ -126,3 +126,105 @@ export const createStyledHandlingSheet = (workbook: ExcelJS.Workbook, dataLeft: 
   return ws;
 };
 
+
+export const stockSheet = (
+  workbook: ExcelJS.Workbook,
+  sheetName: string,
+  data: any[]
+) => {
+  const sheet = workbook.addWorksheet(sheetName);
+  const headers = Object.keys(data[0]);
+  sheet.addRow(headers);
+
+  // Style header
+  const headerRow = sheet.getRow(1);
+  headerRow.height = 25;
+  headerRow.eachCell((cell) => {
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "4472C4" }, // biru
+    };
+    cell.font = { bold: true, color: { argb: "FFFFFF" } };
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    };
+  });
+
+  // Isi data dengan deteksi number
+  data.forEach((obj) => {
+    const rowValues = headers.map((h) => {
+      const val = obj[h];
+      // kalau number asli, atau string bisa dikonversi ke number → simpan number
+      if (typeof val === "number") return val;
+      if (!isNaN(Number(val)) && val !== null && val !== "") return Number(val);
+      return val; // biarkan string kalau bukan angka
+    });
+
+    const row = sheet.addRow(rowValues);
+    row.height = 20;
+    row.eachCell((cell) => {
+      cell.alignment = { vertical: "middle", horizontal: "left" };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+  });
+
+  // Hitung total untuk kolom numeric
+  const totals: (number | string)[] = [];
+  headers.forEach((h, idx) => {
+    const colValues = data.map((row) => row[h]);
+    const numericVals = colValues
+      .map((v) => (typeof v === "number" ? v : parseFloat(v)))
+      .filter((v) => !isNaN(v));
+
+    if (numericVals.length === colValues.length && numericVals.length > 0) {
+      const sum = numericVals.reduce((a, b) => a + b, 0);
+      totals[idx] = sum;
+    } else {
+      totals[idx] = idx === 0 ? "TOTAL" : "";
+    }
+  });
+
+  // Tambah row total
+  const totalRow = sheet.addRow(totals);
+  totalRow.height = 22;
+  totalRow.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "D9E1F2" }, // abu-abu muda
+    };
+  });
+
+  // Auto width
+  sheet.columns.forEach((col) => {
+    let maxLength = 0;
+    col.eachCell({ includeEmpty: true }, (cell) => {
+      const val = cell.value ? cell.value.toString() : "";
+      maxLength = Math.max(maxLength, val.length);
+    });
+    col.width = maxLength < 15 ? 15 : maxLength + 2;
+  });
+
+  return sheet;
+};
+
+
+

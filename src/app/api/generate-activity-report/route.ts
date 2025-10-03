@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import fs from "fs";
 import path from "path";
-import { createStyledSheet } from "@/lib/excelHelper";
-import { getInbound, getOutbound } from "@/lib/queries";
+import { createStyledSheet, stockSheet } from "@/lib/excelHelper";
+import { getInbound, getOutbound, getStockSummary } from "@/lib/queries";
 
 // Ambil tanggal otomatis
 const today = new Date();
@@ -26,6 +26,7 @@ export async function GET() {
   // Ambil data
   const inbound = await getInbound(formattedStart, formattedEnd);
   const outbound = await getOutbound(formattedStart, formattedEnd);
+  const stockSummary = await getStockSummary();
 
   if (inbound.length === 0 || outbound.length === 0) {
     return NextResponse.json({
@@ -38,6 +39,8 @@ export async function GET() {
   const workbook = new ExcelJS.Workbook();
   createStyledSheet(workbook, "Inbound", inbound);
   createStyledSheet(workbook, "Outbound", outbound);
+  stockSheet(workbook, "Stock", stockSummary);
+
 
   // const folderPath = path.join(process.cwd(), "D:/SendEmailYamaha");
   // if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
