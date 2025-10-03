@@ -510,7 +510,11 @@ const CheckingPage = () => {
 
         <div className="flex justify-center">
           {/* <Loader2 className="animate-spin" /> */}
-          <span className="ml-2">Total Qty : {filteredItems.reduce((total, item) => total + item.quantity, 0)}</span>
+          <span className="ml-2">
+            Total Qty :
+            {filteredItems.reduce((total, item) => total + item.scan_qty, 0)}/
+            {filteredItems.reduce((total, item) => total + item.quantity, 0)}
+          </span>
         </div>
 
         <Card>

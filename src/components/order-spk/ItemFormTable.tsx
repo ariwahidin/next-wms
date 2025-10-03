@@ -196,184 +196,185 @@ export default function ItemFormTable({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        {headerForm.status !== "complete" && (
-          <div className="space-x-2">
-            <Button
-              type="button"
-              disabled={headerForm.status === "picking"}
-              onClick={handleAddItems}
-            >
-              Add DO
-            </Button>
-          </div>
-        )}
-      </div>
+    <>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          {headerForm.status !== "complete" && (
+            <div className="space-x-2">
+              <Button
+                type="button"
+                disabled={headerForm.status === "picking"}
+                onClick={handleAddItems}
+              >
+                Add DO
+              </Button>
+            </div>
+          )}
+        </div>
 
-      <table className="w-full border font-normal text-xs">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="p-2 border w-12 text-center">No.</th>
-            <th className="p-2 border" style={{ width: "120px" }}>
-              Picking No
-            </th>
-            <th className="p-2 border" style={{ width: "120px" }}>
-              DO No
-            </th>
-            <th className="p-2 border" style={{ width: "200px" }}>
-              Delivery To
-            </th>
-            <th className="p-2 border" style={{ width: "130px" }}>
-              Delivery City
-            </th>
-            <th
-              className="p-2 border"
-              style={{ width: "75px", textAlign: "center" }}
-            >
-              Total Koli
-            </th>
-            <th
-              className="p-2 border"
-              style={{ width: "75px", textAlign: "center" }}
-            >
-              VAS Koli
-            </th>
-            <th className="p-2 border" style={{ width: "65px" }}>
-              Total Item
-            </th>
-            <th className="p-2 border" style={{ width: "65px" }}>
-              Total Qty
-            </th>
-            <th className="p-2 border" style={{ width: "65px" }}>
-              Total CBM
-            </th>
-            <th className="p-2 border" style={{ width: "50px" }}>
-              Action
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {muatan?.map((item, index) => {
-            return (
-              <tr key={item.outbound_no} className="border-t">
-                <td className="p-2 border text-center">{index + 1}</td>
-                <td className="p-2 border">
-                  <div className="flex items-center gap-2">
+        <table className="w-full border font-normal text-xs">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-2 border w-12 text-center">No.</th>
+              <th className="p-2 border" style={{ width: "120px" }}>
+                Picking No
+              </th>
+              <th className="p-2 border" style={{ width: "120px" }}>
+                DO No
+              </th>
+              <th className="p-2 border" style={{ width: "200px" }}>
+                Delivery To
+              </th>
+              <th className="p-2 border" style={{ width: "130px" }}>
+                Delivery City
+              </th>
+              <th
+                className="p-2 border"
+                style={{ width: "75px", textAlign: "center" }}
+              >
+                Total Koli
+              </th>
+              <th
+                className="p-2 border"
+                style={{ width: "75px", textAlign: "center" }}
+              >
+                VAS Koli
+              </th>
+              <th className="p-2 border" style={{ width: "65px" }}>
+                Total Item
+              </th>
+              <th className="p-2 border" style={{ width: "65px" }}>
+                Total Qty
+              </th>
+              <th className="p-2 border" style={{ width: "65px" }}>
+                Total CBM
+              </th>
+              <th className="p-2 border" style={{ width: "50px" }}>
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {muatan?.map((item, index) => {
+              return (
+                <tr key={item.outbound_no} className="border-t">
+                  <td className="p-2 border text-center">{index + 1}</td>
+                  <td className="p-2 border">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        style={{ fontSize: "12px" }}
+                        type="text"
+                        value={item.outbound_no}
+                        readOnly
+                        className="flex-1"
+                        placeholder="Click edit to select item..."
+                      />
+                    </div>
+                  </td>
+                  <td className="p-2 border">
                     <Input
                       style={{ fontSize: "12px" }}
+                      readOnly
                       type="text"
-                      value={item.outbound_no}
-                      readOnly
-                      className="flex-1"
-                      placeholder="Click edit to select item..."
+                      value={item.shipment_id}
                     />
-                  </div>
-                </td>
-                <td className="p-2 border">
-                  <Input
-                    style={{ fontSize: "12px" }}
-                    readOnly
-                    type="text"
-                    value={item.shipment_id}
-                  />
-                </td>
-                <td className="p-2 border">
-                  <Input
-                    style={{ fontSize: "12px" }}
-                    readOnly
-                    type="text"
-                    value={item.deliv_to_name}
-                  />
-                </td>
-                <td className="p-2 border">
-                  <div>
+                  </td>
+                  <td className="p-2 border">
                     <Input
+                      style={{ fontSize: "12px" }}
                       readOnly
-                      style={{ fontSize: "12px", textAlign: "center" }}
-                      value={item.deliv_city}
+                      type="text"
+                      value={item.deliv_to_name}
                     />
-                  </div>
-                </td>
-                <td className="p-2 border">
-                  <Input
-                    style={{ fontSize: "12px", textAlign: "center" }}
-                    type="number"
-                    value={item.qty_koli}
-                    onChange={(e) =>
-                      setMuatan((prev) =>
-                        prev.map((m) =>
-                          m.ID === item.ID
-                            ? { ...m, qty_koli: Number(e.target.value) }
-                            : m
+                  </td>
+                  <td className="p-2 border">
+                    <div>
+                      <Input
+                        readOnly
+                        style={{ fontSize: "12px", textAlign: "center" }}
+                        value={item.deliv_city}
+                      />
+                    </div>
+                  </td>
+                  <td className="p-2 border">
+                    <Input
+                      style={{ fontSize: "12px", textAlign: "center" }}
+                      type="number"
+                      value={item.qty_koli}
+                      onChange={(e) =>
+                        setMuatan((prev) =>
+                          prev.map((m) =>
+                            m.ID === item.ID
+                              ? { ...m, qty_koli: Number(e.target.value) }
+                              : m
+                          )
                         )
-                      )
-                    }
-                  />
-                </td>
-                <td className="p-2 border">
-                  <Input
-                    style={{ fontSize: "12px", textAlign: "center" }}
-                    type="number"
-                    value={item.vas_koli}
-                    onChange={(e) =>
-                      setMuatan((prev) =>
-                        prev.map((m) =>
-                          m.ID === item.ID
-                            ? { ...m, vas_koli: Number(e.target.value) }
-                            : m
+                      }
+                    />
+                  </td>
+                  <td className="p-2 border">
+                    <Input
+                      style={{ fontSize: "12px", textAlign: "center" }}
+                      type="number"
+                      value={item.vas_koli}
+                      onChange={(e) =>
+                        setMuatan((prev) =>
+                          prev.map((m) =>
+                            m.ID === item.ID
+                              ? { ...m, vas_koli: Number(e.target.value) }
+                              : m
+                          )
                         )
-                      )
-                    }
-                  />
-                </td>
-                <td className="p-2 border">
-                  <Input
-                    style={{ fontSize: "12px", textAlign: "center" }}
-                    readOnly
-                    type="text"
-                    value={item.total_item}
-                  />
-                </td>
-                <td className="p-2 border">
-                  <Input
-                    style={{ fontSize: "12px", textAlign: "center" }}
-                    readOnly
-                    type="text"
-                    value={item.total_qty}
-                  />
-                </td>
-                <td className="p-2 border">
-                  <Input
-                    style={{ fontSize: "12px", textAlign: "center" }}
-                    readOnly
-                    type="text"
-                    value={item.total_cbm}
-                  />
-                </td>
-                <td
-                  className="p-2 border space-x-2 text-center"
-                  style={{ width: "100px" }}
-                >
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      handleView(item);
-                    }}
+                      }
+                    />
+                  </td>
+                  <td className="p-2 border">
+                    <Input
+                      style={{ fontSize: "12px", textAlign: "center" }}
+                      readOnly
+                      type="text"
+                      value={item.total_item}
+                    />
+                  </td>
+                  <td className="p-2 border">
+                    <Input
+                      style={{ fontSize: "12px", textAlign: "center" }}
+                      readOnly
+                      type="text"
+                      value={item.total_qty}
+                    />
+                  </td>
+                  <td className="p-2 border">
+                    <Input
+                      style={{ fontSize: "12px", textAlign: "center" }}
+                      readOnly
+                      type="text"
+                      value={item.total_cbm}
+                    />
+                  </td>
+                  <td
+                    className="p-2 border space-x-2 text-center"
+                    style={{ width: "100px" }}
                   >
-                    <Eye size={14} />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      handleCancel(item);
-                    }}
-                  >
-                    <X size={14} />
-                  </Button>
-                  {/* {headerForm.status == "open" || item.mode === "create" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        handleView(item);
+                      }}
+                    >
+                      <Eye size={14} />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        handleCancel(item);
+                      }}
+                    >
+                      <X size={14} />
+                    </Button>
+                    {/* {headerForm.status == "open" || item.mode === "create" ? (
                     <Button
                       size="sm"
                       variant="outline"
@@ -386,36 +387,42 @@ export default function ItemFormTable({
                   ) : (
                     <></>
                   )} */}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-        <tfoot>
-          <tr className="bg-gray-100 font-semibold">
-            <td className="p-2 border" colSpan={5}>
-              Total
-            </td>
-            <td className="p-2 border text-center">
-              {muatan.reduce((acc, item) => acc + item.qty_koli, 0)}
-            </td>
-            <td className="p-2 border text-center">
-              {muatan.reduce((acc, item) => acc + item.vas_koli, 0)}
-            </td>
-            <td className="p-2 border text-center">
-              {muatan.reduce((acc, item) => acc + item.total_item, 0)}
-            </td>
-            <td className="p-2 border text-center">
-              {muatan.reduce((acc, item) => acc + item.total_qty, 0)}
-            </td>
-            <td className="p-2 border text-center">
-              {muatan.reduce((acc, item) => acc + item.total_cbm, 0)}
-            </td>
-            <td className="p-2 border"></td>
-          </tr>
-        </tfoot>
-      </table>
-
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot>
+            <tr className="bg-gray-100 font-semibold">
+              <td className="p-2 border" colSpan={5}>
+                Total
+              </td>
+              <td className="p-2 border text-center">
+                {muatan.reduce((acc, item) => acc + item.qty_koli, 0)}
+              </td>
+              <td className="p-2 border text-center">
+                {muatan.reduce((acc, item) => acc + item.vas_koli, 0)}
+              </td>
+              <td className="p-2 border text-center">
+                {muatan.reduce((acc, item) => acc + item.total_item, 0)}
+              </td>
+              <td className="p-2 border text-center">
+                {muatan.reduce((acc, item) => acc + item.total_qty, 0)}
+              </td>
+              <td className="p-2 border text-center">
+                {muatan.reduce((acc, item) => acc + item.total_cbm, 0)}
+              </td>
+              <td className="p-2 border"></td>
+            </tr>
+          </tfoot>
+        </table>
+        <OrderDetailModal
+          open={open}
+          onOpenChange={setOpen}
+          data={viewData}
+          loading={loading}
+        />
+      </div>
       <ItemSelectionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -423,14 +430,7 @@ export default function ItemFormTable({
         onApply={handleModalApply}
         selectedItems={muatan}
       />
-
-      <OrderDetailModal
-        open={open}
-        onOpenChange={setOpen}
-        data={viewData}
-        loading={loading}
-      />
-    </div>
+    </>
   );
 }
 

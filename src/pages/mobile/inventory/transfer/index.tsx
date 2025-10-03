@@ -7,12 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import PageHeader from "@/components/mobile/PageHeader";
 
-import {
-  Check,
-  CheckCheck,
-  Loader2,
-  Search,
-} from "lucide-react";
+import { Check, CheckCheck, Loader2, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +18,7 @@ import {
 import { XCircle } from "lucide-react"; // untuk icon clear
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
+import { Label } from "@radix-ui/react-dropdown-menu";
 
 interface ScannedItem {
   id?: number;
@@ -240,48 +236,58 @@ const TransferPage = () => {
       <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
         <Card>
           <CardContent className="p-4 space-y-3">
-            <div className="relative">
-              <Input
-                id="location"
-                placeholder="From Location..."
-                value={scanLocation}
-                onChange={(e) => setScanLocation(e.target.value)}
-              />
-              {scanLocation && (
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => {
-                    setScanLocation("");
-                    setListInboundScanned([]);
-                    document.getElementById("location")?.focus();
-                  }}
-                >
-                  <XCircle size={18} />
-                </button>
-              )}
+            <div>
+              <Label className="mb-1 font-semibold text-gray-700 text-sm">
+                Origin Location :
+              </Label>
+              <div className="relative">
+                <Input
+                  id="location"
+                  placeholder="Entry origin location..."
+                  value={scanLocation}
+                  onChange={(e) => setScanLocation(e.target.value)}
+                />
+                {scanLocation && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => {
+                      setScanLocation("");
+                      setListInboundScanned([]);
+                      document.getElementById("location")?.focus();
+                    }}
+                  >
+                    <XCircle size={18} />
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="relative">
-              <Input
-                id="barcode"
-                placeholder="Barcode..."
-                value={scanBarcode}
-                onChange={(e) => setScanBarcode(e.target.value)}
-              />
-              {scanBarcode && (
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => {
-                    setScanBarcode("");
-                    setListInboundScanned([]); // Clear the scanned items
-                    document.getElementById("barcode")?.focus();
-                  }}
-                >
-                  <XCircle size={18} />
-                </button>
-              )}
+            <div>
+              <Label className="mb-1 font-semibold text-gray-700 text-sm">
+                Item Barcode :
+              </Label>
+              <div className="relative">
+                <Input
+                  id="barcode"
+                  placeholder="Entry item barcode..."
+                  value={scanBarcode}
+                  onChange={(e) => setScanBarcode(e.target.value)}
+                />
+                {scanBarcode && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => {
+                      setScanBarcode("");
+                      setListInboundScanned([]); // Clear the scanned items
+                      document.getElementById("barcode")?.focus();
+                    }}
+                  >
+                    <XCircle size={18} />
+                  </button>
+                )}
+              </div>
             </div>
 
             <Button onClick={handleSearch} className="w-full">
@@ -342,9 +348,7 @@ const TransferPage = () => {
                     <div
                       key={index}
                       className={`p-2 border rounded-md cursor-pointer ${
-                        item.qa_status === "A"
-                          ? "bg-green-100"
-                          : "bg-blue-100"
+                        item.qa_status === "A" ? "bg-green-100" : "bg-blue-100"
                       }`}
                     >
                       <div className="flex justify-between items-start text-sm">
@@ -359,9 +363,7 @@ const TransferPage = () => {
                             {/* <span className="text-gray-600">Serial:</span>{" "}
                             {item.serial_number}
                             <br /> */}
-                            <span className="text-gray-600">
-                              Rcv Date:
-                            </span>{" "}
+                            <span className="text-gray-600">Rcv Date:</span>{" "}
                             {item.rec_date}
                             <br />
                           </div>
@@ -392,9 +394,7 @@ const TransferPage = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="text-gray-500 text-sm">
-                    No items found.
-                  </div>
+                  <div className="text-gray-500 text-sm">No items found.</div>
                 )}
               </div>
             </CardContent>
@@ -430,40 +430,49 @@ const TransferPage = () => {
               location?
             </p>
 
-            <div className="relative">
-              <Input
-                // readOnly
-                className="mb-2"
-                id="qtyTransfer"
-                autoComplete="off"
-                placeholder="Qty..."
-                type="number"
-                value={qtyTransfer}
-                onChange={(e) => setQtyTransfer(Number(e.target.value))}
-              />
+            <div>
+              <Label className="mb-1 font-semibold text-gray-700 text-sm">
+                Qty Transfer :
+              </Label>
+              <div className="relative">
+                <Input
+                  className="mb-2"
+                  id="qtyTransfer"
+                  autoComplete="off"
+                  placeholder="Qty..."
+                  type="number"
+                  value={qtyTransfer}
+                  onChange={(e) => setQtyTransfer(Number(e.target.value))}
+                />
+              </div>
             </div>
 
-            <div className="relative">
-              <Input
-                id="locationTransfer"
-                autoComplete="off"
-                placeholder="Destination Location..."
-                value={scanLocation2}
-                onChange={(e) => setScanLocation2(e.target.value)}
-              />
+            <div>
+              <Label className="mb-1 font-semibold text-gray-700 text-sm">
+                Destination Location :
+              </Label>
+              <div className="relative">
+                <Input
+                  id="locationTransfer"
+                  autoComplete="off"
+                  placeholder="Entry destination location..."
+                  value={scanLocation2}
+                  onChange={(e) => setScanLocation2(e.target.value)}
+                />
 
-              {scanLocation2 && (
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => {
-                    setScanLocation2("");
-                    document.getElementById("locationTransfer")?.focus();
-                  }}
-                >
-                  <XCircle size={18} />
-                </button>
-              )}
+                {scanLocation2 && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => {
+                      setScanLocation2("");
+                      document.getElementById("locationTransfer")?.focus();
+                    }}
+                  >
+                    <XCircle size={18} />
+                  </button>
+                )}
+              </div>
             </div>
 
             <DialogFooter>
@@ -490,27 +499,32 @@ const TransferPage = () => {
               location?
             </p>
 
-            <div className="relative">
-              <Input
-                id="location2"
-                autoComplete="off"
-                placeholder="Destination Location..."
-                value={scanLocation2}
-                onChange={(e) => setScanLocation2(e.target.value)}
-              />
+            <div>
+              <Label className="mb-1 font-semibold text-gray-700 text-sm">
+                Destination Location :
+              </Label>
+              <div className="relative">
+                <Input
+                  id="location2"
+                  autoComplete="off"
+                  placeholder="Entry destination location..."
+                  value={scanLocation2}
+                  onChange={(e) => setScanLocation2(e.target.value)}
+                />
 
-              {scanLocation2 && (
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => {
-                    setScanLocation2("");
-                    document.getElementById("location2")?.focus();
-                  }}
-                >
-                  <XCircle size={18} />
-                </button>
-              )}
+                {scanLocation2 && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => {
+                      setScanLocation2("");
+                      document.getElementById("location2")?.focus();
+                    }}
+                  >
+                    <XCircle size={18} />
+                  </button>
+                )}
+              </div>
             </div>
 
             <DialogFooter>

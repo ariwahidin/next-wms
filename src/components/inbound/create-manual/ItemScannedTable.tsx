@@ -22,6 +22,7 @@ import dayjs from "dayjs";
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
 import { Loader2 } from "lucide-react";
+import InventoryModal from "./inventoryModal";
 
 interface ItemScannedTableProps {
   itemsReceived: ItemReceived[];
@@ -37,6 +38,11 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [showInventory, setShowInventory] = useState(false);
+
+  const handleViewInventory = () => {
+    setShowInventory(true);
+  };
 
   const toggleSelectAll = () => {
     const newSelectAll = !selectAll;
@@ -91,7 +97,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
       setIsLoading(false);
     } finally {
       setIsLoading(false);
-      setClicked(false); 
+      setClicked(false);
     }
   };
 
@@ -101,96 +107,110 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
   );
 
   return (
-    <div className="space-y-4 mt-4 mb-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Received Items</h2>
-        {selectedItems.length > 0 && (
-          <div>
-            <Button
-              onClick={confirmPutaway}
-              disabled={isLoading || selectedItems.length === 0}
-            >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? "Processing..." : "Putaway Confirm"}
-            </Button>
+    <>
+      <div className="space-y-4 mt-4 mb-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold">Received Items</h2>
+          <div className="flex gap-2">
+            {selectedItems.length > 0 && (
+              <Button
+                onClick={confirmPutaway}
+                disabled={isLoading || selectedItems.length === 0}
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? "Processing..." : "Putaway Confirm"}
+              </Button>
+            )}
+            {itemsReceived.length > 0 && (
+              <div>
+                <Button onClick={handleViewInventory}>View Inventory</Button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
 
-      <Table className="border rounded-md">
-        <TableHeader>
-          <TableRow>
-            <TableHead>
-              <Checkbox checked={selectAll} onCheckedChange={toggleSelectAll} />
-            </TableHead>
-            <TableHead>No</TableHead>
-            <TableHead>Item Code</TableHead>
-            <TableHead>Barcode</TableHead>
-            <TableHead>Serial Number</TableHead>
-            <TableHead>Received Location</TableHead>
-            <TableHead>Whs Code</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Qty</TableHead>
-            <TableHead>Created At</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {itemsReceived.map((item, index) => (
-            <TableRow key={item.ID}>
-              <TableCell>
-                {item.status == "pending" && (
-                  <Checkbox
-                    checked={selectedItems.includes(item.ID)}
-                    onCheckedChange={() => toggleSelectItem(item.ID)}
-                  />
-                )}
-              </TableCell>
-              <TableCell className="text-sm">{index + 1}</TableCell>
-              <TableCell className="text-sm">{item.item_code}</TableCell>
-              <TableCell className="text-sm">{item.barcode}</TableCell>
-              <TableCell className="text-sm">{item.serial_number}</TableCell>
-              <TableCell className="text-sm">{item.location}</TableCell>
-              <TableCell className="text-sm">{item.whs_code}</TableCell>
-              <TableCell className="text-sm">{item.status}</TableCell>
-              <TableCell className="text-sm">{item.quantity}</TableCell>
-              <TableCell className="text-sm">
-                {dayjs(item.created_at).format("D MMMM YYYY, HH:mm")}
-              </TableCell>
+        <Table className="border rounded-md">
+          <TableHeader>
+            <TableRow>
+              <TableHead>
+                <Checkbox
+                  checked={selectAll}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
+              <TableHead>No</TableHead>
+              <TableHead>Item Code</TableHead>
+              <TableHead>Barcode</TableHead>
+              <TableHead>Serial Number</TableHead>
+              <TableHead>Received Location</TableHead>
+              <TableHead>Whs Code</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Qty</TableHead>
+              <TableHead>Created At</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TableCell colSpan={8} className="text-left font-semibold">
-              Total
-            </TableCell>
-            <TableCell className="font-bold">{totalQty}</TableCell>
-            <TableCell />
-          </TableRow>
-        </TableFooter>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {itemsReceived.map((item, index) => (
+              <TableRow key={item.ID}>
+                <TableCell>
+                  {item.status == "pending" && (
+                    <Checkbox
+                      checked={selectedItems.includes(item.ID)}
+                      onCheckedChange={() => toggleSelectItem(item.ID)}
+                    />
+                  )}
+                </TableCell>
+                <TableCell className="text-sm">{index + 1}</TableCell>
+                <TableCell className="text-sm">{item.item_code}</TableCell>
+                <TableCell className="text-sm">{item.barcode}</TableCell>
+                <TableCell className="text-sm">{item.serial_number}</TableCell>
+                <TableCell className="text-sm">{item.location}</TableCell>
+                <TableCell className="text-sm">{item.whs_code}</TableCell>
+                <TableCell className="text-sm">{item.status}</TableCell>
+                <TableCell className="text-sm">{item.quantity}</TableCell>
+                <TableCell className="text-sm">
+                  {dayjs(item.created_at).format("D MMMM YYYY, HH:mm")}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell colSpan={8} className="text-left font-semibold">
+                Total
+              </TableCell>
+              <TableCell className="font-bold">{totalQty}</TableCell>
+              <TableCell />
+            </TableRow>
+          </TableFooter>
+        </Table>
 
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-md bg-white">
-          <DialogHeader>
-            <DialogTitle>Putaway Confirmation</DialogTitle>
-          </DialogHeader>
-          <div className="text-sm text-muted-foreground">
-            Are you sure you want to putaway {selectedItems.length} item
-            {selectedItems.length === 1 ? "" : "s"}?
-          </div>
-          <DialogFooter className="mt-4">
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirm} disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? "Processing..." : "Confirm"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        <Dialog open={showModal} onOpenChange={setShowModal}>
+          <DialogContent className="sm:max-w-md bg-white">
+            <DialogHeader>
+              <DialogTitle>Putaway Confirmation</DialogTitle>
+            </DialogHeader>
+            <div className="text-sm text-muted-foreground">
+              Are you sure you want to putaway {selectedItems.length} item
+              {selectedItems.length === 1 ? "" : "s"}?
+            </div>
+            <DialogFooter className="mt-4">
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirm} disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? "Processing..." : "Confirm"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <InventoryModal
+        onClose={() => setShowInventory(false)}
+        isOpen={showInventory}
+      />
+    </>
   );
 };
 
