@@ -91,7 +91,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
       setIsLoading(false);
     } finally {
       setIsLoading(false);
-      setClicked(false); // kalau mau bisa klik lagi nanti
+      setClicked(false); 
     }
   };
 
@@ -184,6 +184,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
               Cancel
             </Button>
             <Button onClick={handleConfirm} disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLoading ? "Processing..." : "Confirm"}
             </Button>
           </DialogFooter>
