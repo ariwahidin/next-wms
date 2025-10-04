@@ -404,7 +404,7 @@ const OutboundTable = () => {
 
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
-    { field: "outbound_no", headerName: "Picking No", maxWidth: 150 },
+    { field: "outbound_no", headerName: "Picking No", maxWidth: 140 },
     {
       headerName: "Actions",
       pinned: "right",
@@ -560,8 +560,9 @@ const OutboundTable = () => {
         });
       },
     },
-    { field: "shipment_id", headerName: "DO No", width: 170 },
-    { field: "owner_code", headerName: "Owner", width: 100 },
+    { field: "shipment_id", headerName: "DO No", width: 120 },
+    // { field: "owner_code", headerName: "Owner", width: 100 },
+    { field: "order_no", headerName: "SPK No.", width: 150 },
     {
       field: "status",
       headerName: "Status",
@@ -589,7 +590,7 @@ const OutboundTable = () => {
       },
     },
     { field: "customer_code", headerName: "Customer Code", width: 140 },
-    { field: "customer_name", headerName: "Customer Name", width: 180 },
+    { field: "customer_name", headerName: "Customer Name", width: 320 },
     { field: "total_item", headerName: "Total Item", width: 100 },
     { field: "qty_req", headerName: "Qty Req", width: 100 },
     { field: "qty_plan", headerName: "Qty Pick", width: 100 },
