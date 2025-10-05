@@ -142,3 +142,38 @@ ORDER BY GMC DESC;
   `;
   return queryDB(sql);
 }
+
+export async function getCycleCountOutbound(startDate: string, endDate: string) {
+  const sql = `With ob AS
+  (SELECT 
+  opi.inventory_id, opi.outbound_id, oh.outbound_no, oh.outbound_date,
+  opi.location, opi.item_code, opi.barcode,
+  p.item_name, opi.whs_code, 
+  SUM(opi.quantity) as qty_out
+  FROM 
+  outbound_pickings opi
+  inner join outbound_headers oh on oh.id = opi.outbound_id
+  inner join products p on opi.item_id = p.id
+  where oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
+  group by 
+  opi.inventory_id, opi.outbound_id, oh.outbound_no, oh.outbound_date,
+  opi.location, opi.item_code, opi.barcode,
+  p.item_name, opi.whs_code)
+  select 
+  ob.outbound_no,
+  ob.outbound_date,
+  ob.location, 
+  ob.item_code, 
+  ob.barcode, 
+  ob.item_name,
+  ob.whs_code,
+  inv.qty_onhand, 
+  inv.qty_allocated, 
+  qty_available,
+  '' AS qty_actual,
+  ob.qty_out
+  from ob
+  left join inventories inv on ob.inventory_id = inv.id
+  order by ob.outbound_no desc`;
+  return queryDB(sql);
+}

@@ -179,6 +179,10 @@ const data = {
           title: "Handling Report",
           url: "/wms/report/handling-report",
         },
+        {
+          title: "Cycle Count By Outbound",
+          url: "/wms/report/cyclecount-outbound",
+        },
       ],
     },
     {
