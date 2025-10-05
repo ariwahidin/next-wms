@@ -50,7 +50,7 @@ export async function getOutbound(startDate: string, endDate: string) {
       od.vas_name AS [REMARK DETAIL],
       oh.remarks AS [REMARK HEADER],
       odt.order_no AS [SPK NO],
-      odt.remarks AS [REMARK SPK]
+      oht.remarks AS [REMARK SPK]
     FROM outbound_details od
     INNER JOIN outbound_headers oh ON od.outbound_no = oh.outbound_no
     INNER JOIN customers cd ON oh.deliv_to = cd.customer_code
@@ -101,26 +101,24 @@ export async function getStockSummary() {
     [ITEM CODE],
     [ITEM NAME],
     ISNULL([CKY], 0)   AS [CKY],
-    ISNULL([CDY], 0)   AS [CDY],
     ISNULL([NGY], 0)   AS [NGY],
-    ISNULL([PROMO], 0)   AS [PROMO],
-    ISNULL([CKN], 0)   AS [CKN],
-    ISNULL([KYC], 0)   AS [KYC],
-    ISNULL([EX_ASURANSI], 0)   AS [EX_ASURANSI],
+    ISNULL([CDY], 0)   AS [CDY],
     ISNULL([HADIAH], 0) AS [HADIAH],
-    ISNULL([EX_BRAGA], 0)   AS [EX_BRAGA],
-    ISNULL([FREE_STRING], 0)   AS [FREE_STRING],
-    ISNULL([FREE_COVER], 0)   AS [FREE_COVER],
     ISNULL([PROPERTY_GATSU], 0)   AS [PROPERTY_GATSU],
-    ISNULL([SAMPLE], 0)   AS [SAMPLE],
-    ISNULL([CKB], 0)   AS [CKB],
-    ISNULL([NGB], 0)   AS [NGB],
+    ISNULL([PROMO], 0)   AS [PROMO],
+    ISNULL([EX_ASURANSI], 0)   AS [EX_ASURANSI],
+    ISNULL([FREE_COVER], 0)   AS [FREE_COVER],
+    ISNULL([TGY], 0)   AS [TGY],
     -- TOTAL STOCK = semua gudang dijumlahkan
-    ISNULL([CKY], 0) + ISNULL([CDY], 0) + ISNULL([NGY], 0) + ISNULL([PROMO], 0)
-    + ISNULL([CKN], 0) + ISNULL([KYC], 0) + ISNULL([EX_ASURANSI], 0)
-    + ISNULL([HADIAH], 0) + ISNULL([EX_BRAGA], 0) + ISNULL([FREE_STRING], 0)
-    + ISNULL([FREE_COVER], 0) + ISNULL([PROPERTY_GATSU], 0)
-    + ISNULL([SAMPLE], 0) + ISNULL([CKB], 0) + ISNULL([NGB], 0)
+    ISNULL([CKY], 0) 
+    + ISNULL([NGY], 0) 
+    + ISNULL([CDY], 0) 
+    + ISNULL([HADIAH], 0)
+    + ISNULL([PROPERTY_GATSU], 0)
+    + ISNULL([PROMO], 0)
+  	+ ISNULL([EX_ASURANSI], 0)
+    + ISNULL([FREE_COVER], 0) 
+	  + ISNULL([TGY], 0)
     AS [TOTAL STOCK]
 FROM (
     SELECT 
@@ -135,9 +133,9 @@ FROM (
 PIVOT (
     SUM(qty_onhand) 
     FOR whs_code IN (
-        [CKY], [CDY], [NGY], [PROMO], [CKN], [KYC],
-        [EX_ASURANSI], [HADIAH], [EX_BRAGA], [FREE_STRING],
-        [FREE_COVER], [PROPERTY_GATSU], [SAMPLE], [CKB], [NGB]
+        [CKY], [CDY], [NGY], [PROMO],
+        [EX_ASURANSI], [HADIAH],
+        [FREE_COVER], [PROPERTY_GATSU], [TGY]
     )
 ) AS pvt
 ORDER BY GMC DESC;

@@ -8,6 +8,9 @@ import {
   Filter,
   Download,
   Loader2,
+  ArrowDown01,
+  ArrowDown,
+  Truck,
 } from "lucide-react";
 import { AgGridReact } from "ag-grid-react";
 import {
@@ -22,7 +25,7 @@ import StockCardPage from "./StockCardPage";
 import ReactDOM from "react-dom/client";
 import Layout from "@/components/layout";
 // All Community Features
-import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 type InventoryItem = {
@@ -36,9 +39,11 @@ type InventoryItem = {
   owner_code: string;
   whs_code: string;
   qa_status: string;
+  qty_in?: number;
   qty_onhand?: number;
   qty_available?: number;
   qty_allocated?: number;
+  qty_out?: number;
   cbm_pcs?: number;
   cbm_total?: number;
 };
@@ -214,10 +219,23 @@ const InventoryPage = () => {
       const matchesWhsCode =
         whsCodeFilter === "all" || item.whs_code === whsCodeFilter;
 
-      return matchesSearch && matchesStatus && matchesCategory && matchesWhsCode;
+      return (
+        matchesSearch && matchesStatus && matchesCategory && matchesWhsCode
+      );
     });
 
     // Calculate totals
+
+    const totalQtyIn = filtered?.reduce(
+      (sum, item) => sum + (item.qty_in || 0),
+      0
+    );
+
+    const totalQtyOut = filtered?.reduce(
+      (sum, item) => sum + (item.qty_out || 0),
+      0
+    );
+
     const totalQtyOnHand = filtered?.reduce(
       (sum, item) => sum + (item.qty_onhand || 0),
       0
@@ -233,6 +251,8 @@ const InventoryPage = () => {
 
     return {
       data: filtered || [],
+      totalQtyIn,
+      totalQtyOut,
       totalQtyOnHand,
       totalQtyAvailable,
       totalQtyAllocated,
@@ -397,7 +417,9 @@ const InventoryPage = () => {
                   className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 >
                   <option value="all">All WHS Codes</option>
-                  {Array.from(new Set(stocks?.map((item) => item.whs_code))).map((whsCode) => (
+                  {Array.from(
+                    new Set(stocks?.map((item) => item.whs_code))
+                  ).map((whsCode) => (
                     <option key={whsCode} value={whsCode}>
                       {whsCode}
                     </option>
@@ -432,8 +454,9 @@ const InventoryPage = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+
+              {/* <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-slate-600 text-sm font-medium">
@@ -447,6 +470,20 @@ const InventoryPage = () => {
                     <Filter className="text-blue-600" size={24} />
                   </div>
                 </div>
+              </div> */}
+
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-600 text-sm font-medium">In</p>
+                    <p className="text-2xl font-bold text-slate-800 mt-2">
+                      {filteredStock.totalQtyIn.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-100 rounded-lg">
+                    <ArrowDown className="text-slate-600" size={24} />
+                  </div>
+                </div>
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -455,7 +492,7 @@ const InventoryPage = () => {
                     <p className="text-slate-600 text-sm font-medium">
                       On Hand
                     </p>
-                    <p className="text-3xl font-bold text-slate-800 mt-2">
+                    <p className="text-2xl font-bold text-slate-800 mt-2">
                       {filteredStock.totalQtyOnHand.toLocaleString()}
                     </p>
                   </div>
@@ -471,7 +508,7 @@ const InventoryPage = () => {
                     <p className="text-slate-600 text-sm font-medium">
                       Available
                     </p>
-                    <p className="text-3xl font-bold text-green-600 mt-2">
+                    <p className="text-2xl font-bold text-green-600 mt-2">
                       {filteredStock.totalQtyAvailable.toLocaleString()}
                     </p>
                   </div>
@@ -487,7 +524,7 @@ const InventoryPage = () => {
                     <p className="text-slate-600 text-sm font-medium">
                       Allocated
                     </p>
-                    <p className="text-3xl font-bold text-red-600 mt-2">
+                    <p className="text-2xl font-bold text-red-600 mt-2">
                       {filteredStock.totalQtyAllocated.toLocaleString()}
                     </p>
                   </div>
@@ -496,6 +533,21 @@ const InventoryPage = () => {
                   </div>
                 </div>
               </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-600 text-sm font-medium">Out</p>
+                    <p className="text-2xl font-bold text-slate-800 mt-2">
+                      {filteredStock.totalQtyOut.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-100 rounded-lg">
+                    <Truck className="text-slate-600" size={24} />
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             {/* Actions Bar */}
