@@ -349,7 +349,7 @@ export default function ItemFormTable({
                   </td>
                   <td className="p-2 border">
                     <Select
-                      isDisabled={headerForm.status == "complete"}
+                      // isDisabled={headerForm.status == "complete"}
                       className="text-sm w-34"
                       isSearchable
                       value={vasOptions.find(

@@ -186,31 +186,6 @@ export default function ManualForm() {
     fetchData();
   }, []);
 
-  // useEffect(() => {
-  //   if (no) {
-  //     const fetchOutbound = async () => {
-  //       try {
-  //         const res = await api.get(`/outbound/${no}`, {
-  //           withCredentials: true,
-  //         });
-  //         if (res.data.success) {
-  //           setFormData(res.data.data);
-  //           setMuatan(
-  //             res.data.data.items.map((item) => ({
-  //               ...item,
-  //               item_id: String(item.item_id),
-  //               item_name: item.product?.item_name || "", // ambil item_name dari products
-  //             }))
-  //           );
-  //         }
-  //       } catch (error) {
-  //         console.error("Error fetching outbound:", error);
-  //       }
-  //     };
-  //     fetchOutbound();
-  //   }
-  // }, [no]);
-
   useEffect(() => {
     if (no && (mode === "edit" || mode === "copy")) {
       const fetchOutbound = async () => {
@@ -257,32 +232,20 @@ export default function ManualForm() {
             variant="outline"
             className="bg-black-500 text-black hover:bg-gray-200"
             onClick={() => {
-              // eventBus.emit("refreshData");
               router.push("/wms/outbound/data");
             }}
           >
             <ArrowBigLeftIcon className="mr-0" />
             Back
           </Button>
-          {formData.status !== "complete" && (
-            <>
-              {/* <Button
-                variant="outline"
-                className="bg-green-500 text-white hover:bg-green-600"
-              >
-                <RefreshCcw className="mr-1" />
-                Refresh
-              </Button> */}
-              <Button
-                variant="outline"
-                className="bg-blue-500 text-white hover:bg-blue-600"
-                onClick={handleSave}
-              >
-                <Save className="mr-2" />
-                Save
-              </Button>
-            </>
-          )}
+          <Button
+            variant="outline"
+            className="bg-blue-500 text-white hover:bg-blue-600"
+            onClick={handleSave}
+          >
+            <Save className="mr-2" />
+            Save
+          </Button>
         </div>
       </div>
 
@@ -302,6 +265,7 @@ export default function ManualForm() {
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
                   <DatePicker
+                    disabled = {formData.status === "complete" ? true : false}
                     selected={
                       formData.outbound_date
                         ? parseISO(formData.outbound_date)
@@ -337,6 +301,7 @@ export default function ManualForm() {
                 </Label>
                 <span className="shrink-0">:</span>
                 <Input
+                  disabled= {formData.status === "complete" ? true : false}
                   id="ShipmentID"
                   style={{ fontSize: "12px" }}
                   className="flex-1"
@@ -361,6 +326,7 @@ export default function ManualForm() {
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
                   <Select
+                    isDisabled = {formData.status != "open" ? true : false}
                     value={ownerOptions.find(
                       (option) => option.value === formData.owner_code
                     )}
@@ -387,6 +353,7 @@ export default function ManualForm() {
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
                   <Select
+                    isDisabled = {formData.status != "open" ? true : false}
                     value={whsOptions.find(
                       (option) => option.value === formData.whs_code
                     )}
