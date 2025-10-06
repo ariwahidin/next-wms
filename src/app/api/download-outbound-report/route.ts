@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import ExcelJS from "exceljs"
-import { createStyledSheet, stockSheet } from "@/lib/excelHelper"
-import { getInbound, getOutbound, getStockSummary } from "@/lib/queries";
+import { createStyledSheet } from "@/lib/excelHelper"
+import { getOutboundReport } from "@/lib/queries";
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
@@ -13,24 +13,20 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Start date and end date are required" }, { status: 400 })
     }
 
-    const inbound = await getInbound(startDate, endDate);
-    const outbound = await getOutbound(startDate, endDate);
-    const stockSummary = await getStockSummary();
+    const outbound = await getOutboundReport(startDate, endDate);
 
-    if (inbound.length === 0 || outbound.length === 0) {
+    if (outbound.length === 0) {
         return NextResponse.json({
             success: false,
-            message: "Inbound or outbound data is empty for this date range.",
+            message: "Outbound data is empty for this date range.",
         });
     }
 
     const workbook = new ExcelJS.Workbook()
-    createStyledSheet(workbook, "Inbound", inbound)
     createStyledSheet(workbook, "Outbound", outbound)
-    stockSheet(workbook, "Stock", stockSummary)
 
     const buffer = await workbook.xlsx.writeBuffer()
-    const filename = `Activity_Report_${startDate}_to_${endDate}.xlsx`
+    const filename = `Outbound_Report_${startDate}_to_${endDate}.xlsx`
 
     return new NextResponse(buffer, {
         headers: {

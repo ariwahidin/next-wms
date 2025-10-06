@@ -11,6 +11,9 @@ import {
   ArrowDown01,
   ArrowDown,
   Truck,
+  RefreshCcw,
+  SquareActivity,
+  ArrowLeftRight,
 } from "lucide-react";
 import { AgGridReact } from "ag-grid-react";
 import {
@@ -26,6 +29,7 @@ import ReactDOM from "react-dom/client";
 import Layout from "@/components/layout";
 // All Community Features
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
+import ChangeStatusModal from "./ChangeStatusModal";
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 type InventoryItem = {
@@ -60,6 +64,9 @@ const InventoryPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [whsCodeFilter, setWhsCodeFilter] = useState("all");
+
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [selectedItems, setSelectedItems] = React.useState<InventoryItem[]>([]);
 
   // Status Badge Component
   const StatusBadge = ({ value }: { value: string }) => {
@@ -278,7 +285,6 @@ const InventoryPage = () => {
     const headers = [
       "GMC CODE",
       "ITEM CODE",
-      // "Item Name",
       "WH CODE",
       "LOCATION",
       "REC DATE",
@@ -360,6 +366,27 @@ const InventoryPage = () => {
     }, 100);
   };
 
+  const handleChangeStatus = () => {
+    const selectedItems = stocks.filter((item) =>
+      selectedIds.includes(item.id)
+    );
+    if (selectedItems.length === 0) {
+      alert("Please select at least one item to export");
+      return;
+    }
+
+    setSelectedItems(selectedItems);
+
+    console.log("Selected Items:", selectedItems);
+
+    setModalOpen(true);
+  };
+
+  const handleSuccess = async () => {
+    fetchStockData();
+    setSelectedIds([]);
+  };
+
   const categories = Array.from(new Set(stocks?.map((item) => item.category)));
 
   if (loading) {
@@ -402,15 +429,6 @@ const InventoryPage = () => {
                   />
                 </div>
 
-                {/* <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                >
-                  <option value="all">All Status</option>
-                  <option value="A">A</option>
-                </select> */}
-
                 <select
                   value={whsCodeFilter}
                   onChange={(e) => setWhsCodeFilter(e.target.value)}
@@ -425,19 +443,6 @@ const InventoryPage = () => {
                     </option>
                   ))}
                 </select>
-
-                {/* <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                >
-                  <option value="all">All Categories</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select> */}
 
                 <button
                   onClick={() => {
@@ -455,23 +460,6 @@ const InventoryPage = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-
-              {/* <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-600 text-sm font-medium">
-                      Total Items
-                    </p>
-                    <p className="text-3xl font-bold text-slate-800 mt-2">
-                      {filteredStock.data.length.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Filter className="text-blue-600" size={24} />
-                  </div>
-                </div>
-              </div> */}
-
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -547,51 +535,26 @@ const InventoryPage = () => {
                   </div>
                 </div>
               </div>
-
             </div>
 
             {/* Actions Bar */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
               <div className="flex flex-wrap gap-4 items-center justify-between">
                 <div className="flex items-center gap-4">
-                  {/* <button
-                    onClick={() => {
-                      if (selectedIds.length === filteredStock.data.length) {
-                        setSelectedIds([]);
-                      } else {
-                        setSelectedIds(
-                          filteredStock.data.map((item) => item.id)
-                        );
-                      }
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
-                  >
-                    {selectedIds.length === filteredStock.data.length &&
-                    selectedIds.length > 0 ? (
-                      <CheckSquare size={18} />
-                    ) : (
-                      <Square size={18} />
-                    )}
-                    {selectedIds.length === filteredStock.data.length &&
-                    selectedIds.length > 0
-                      ? "Deselect All"
-                      : "Select All"}
-                  </button> */}
-
                   <span className="text-slate-600 font-medium">
                     {selectedIds.length} of {filteredStock.data.length} selected
                   </span>
                 </div>
 
                 <div className="flex gap-3">
-                  {/* <button
-                    onClick={handlePrint}
+                  <button
+                    onClick={handleChangeStatus}
                     disabled={selectedIds.length === 0}
                     className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
                   >
-                    <Printer size={18} />
-                    Print Cards
-                  </button> */}
+                    <ArrowLeftRight size={18} />
+                    Change Status
+                  </button>
                   <button
                     onClick={exportCSV}
                     disabled={selectedIds.length === 0}
@@ -658,6 +621,13 @@ const InventoryPage = () => {
           </div>
         </div>
       </div>
+
+      <ChangeStatusModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        selectedItems={selectedItems}
+        onSuccess={handleSuccess}
+      />
     </Layout>
   );
 };

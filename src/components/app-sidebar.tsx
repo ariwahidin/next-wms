@@ -180,8 +180,16 @@ const data = {
           url: "/wms/report/handling-report",
         },
         {
-          title: "Cycle Count By Outbound",
+          title: "Cycle Count Outbound",
           url: "/wms/report/cyclecount-outbound",
+        },
+        {
+          title: "Inbound",
+          url: "/wms/report/inbound",
+        },
+        {
+          title: "Outbound",
+          url: "/wms/report/outbound",
         },
       ],
     },

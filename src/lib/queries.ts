@@ -177,3 +177,69 @@ export async function getCycleCountOutbound(startDate: string, endDate: string) 
   order by ob.outbound_no desc`;
   return queryDB(sql);
 }
+
+export async function getInboundReport(startDate: string, endDate: string) {
+  const sql = `
+    SELECT 
+      ROW_NUMBER() OVER (ORDER BY ih.inbound_date DESC) AS [NO],
+      ih.inbound_no AS [RECEIVED ID],
+      ih.inbound_date AS [REC DATE],
+      ib.whs_code AS [WH CODE],
+      ih.bl_no AS [BL NO],
+      ih.no_truck AS [TRUCK NO],
+      ih.container AS [CONTAINER NO],
+      ih.receipt_id AS [INVOICE NO],
+      s.supplier_name AS SUPPLIER,
+      ib.item_code AS [ITEM CODE],
+	  ib.barcode AS [GMC CODE],
+	  p.item_name AS [ITEM NAME],
+      ib.quantity AS [QTY],
+	  CASE WHEN p.has_serial = 'Y' then ib.serial_number else ib.barcode end AS [SERIAL NUMBER]
+    FROM inbound_barcodes ib
+    INNER JOIN inbound_headers ih ON ib.inbound_id = ih.id
+    LEFT JOIN products p ON p.item_code = ib.item_code
+    LEFT JOIN suppliers s ON s.supplier_code = ih.supplier
+    WHERE ih.inbound_date >= '${startDate}' AND ih.inbound_date <= '${endDate}'
+    ORDER BY ih.inbound_date DESC
+  `;
+  return queryDB(sql);
+}
+
+
+export async function getOutboundReport(startDate: string, endDate: string) {
+  const sql = `
+    SELECT 
+      ROW_NUMBER() OVER (ORDER BY oh.outbound_date DESC) AS [NO],
+      oh.whs_code AS [WH CODE],
+      oht.truck_no AS [TRUCK NO],
+      oh.rcv_do_date AS [PRINT DO DATE],
+	    oh.rcv_do_time AS [PRINT DO TIME],
+      oh.outbound_date AS [OUT DATE],
+      oh.shipment_id AS [DO NO],
+      cd.customer_name AS [DELIVERY NAME],
+      cd.cust_city AS CITY,
+      cd.cust_addr1 AS [DELIVERY ADD],
+      od.item_code AS [ITEM CODE],
+	  od.barcode AS [GMC CODE],
+      od.quantity AS QTY,
+	  od.serial_number AS [SERIAL NUMBER],
+      p.cbm AS [M3 PCS],
+      p.cbm * od.quantity AS [M3 TOTAL]
+      --odt.qty_koli AS KOLI,
+      --tr.transporter_name AS TRUCKER,
+      --od.vas_name AS [REMARK DETAIL],
+      --oh.remarks AS [REMARK HEADER],
+      --odt.order_no AS [SPK NO],
+      --oht.remarks AS [REMARK SPK]
+    FROM outbound_barcodes od
+    INNER JOIN outbound_headers oh ON od.outbound_no = oh.outbound_no
+    INNER JOIN customers cd ON oh.deliv_to = cd.customer_code
+    INNER JOIN products p ON od.item_id = p.id
+    LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
+    LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
+    LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
+    WHERE oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
+    ORDER BY oh.outbound_date DESC
+  `;
+  return queryDB(sql);
+}

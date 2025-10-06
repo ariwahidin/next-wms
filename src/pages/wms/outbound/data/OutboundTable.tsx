@@ -561,7 +561,6 @@ const OutboundTable = () => {
       },
     },
     { field: "shipment_id", headerName: "DO No", width: 120 },
-    // { field: "owner_code", headerName: "Owner", width: 100 },
     { field: "order_no", headerName: "SPK No.", width: 150 },
     {
       field: "status",
