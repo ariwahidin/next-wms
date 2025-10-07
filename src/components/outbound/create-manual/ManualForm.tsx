@@ -124,6 +124,23 @@ export default function ManualForm() {
 
   const handleSave = async () => {
     console.log("Data outbound yang akan disimpan:", formData, muatan);
+
+    if (
+      formData.plan_pickup_date == "" ||
+      formData.plan_pickup_time == "" ||
+      formData.rcv_do_date == "" ||
+      formData.rcv_do_time == "" ||
+      formData.start_pick_time == "" ||
+      formData.end_pick_time == ""
+    ) {
+      eventBus.emit("showAlert", {
+        title: "Error!",
+        description: "Please fill all required fields",
+        type: "error",
+      });
+      return;
+    }
+
     // return;
     if (formData.ID === 0) {
       eventBus.emit("loading", true);
@@ -265,7 +282,7 @@ export default function ManualForm() {
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
                   <DatePicker
-                    disabled = {formData.status === "complete" ? true : false}
+                    disabled={formData.status === "complete" ? true : false}
                     selected={
                       formData.outbound_date
                         ? parseISO(formData.outbound_date)
@@ -297,11 +314,11 @@ export default function ManualForm() {
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
                 >
-                  DO No
+                  DO No <span className="text-red-500">*</span>
                 </Label>
                 <span className="shrink-0">:</span>
                 <Input
-                  disabled= {formData.status === "complete" ? true : false}
+                  disabled={formData.status === "complete" ? true : false}
                   id="ShipmentID"
                   style={{ fontSize: "12px" }}
                   className="flex-1"
@@ -326,7 +343,12 @@ export default function ManualForm() {
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
                   <Select
-                    isDisabled = {formData.status != "open" ? true : false}
+                    isDisabled={
+                      formData.status == "picking" ||
+                      formData.status == "complete"
+                        ? true
+                        : false
+                    }
                     value={ownerOptions.find(
                       (option) => option.value === formData.owner_code
                     )}
@@ -353,7 +375,12 @@ export default function ManualForm() {
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
                   <Select
-                    isDisabled = {formData.status != "open" ? true : false}
+                    isDisabled={
+                      formData.status == "picking" ||
+                      formData.status == "complete"
+                        ? true
+                        : false
+                    }
                     value={whsOptions.find(
                       (option) => option.value === formData.whs_code
                     )}
@@ -426,7 +453,7 @@ export default function ManualForm() {
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
                 >
-                  Plan Pickup Date / Time
+                  Plan Pickup Date / Time<span className="text-red-500">*</span>
                 </Label>
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
@@ -474,7 +501,7 @@ export default function ManualForm() {
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
                 >
-                  Receiving DO Date / Time
+                  Receiving DO Date / Time<span className="text-red-500">*</span>
                 </Label>
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
@@ -522,7 +549,7 @@ export default function ManualForm() {
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
                 >
-                  Start/Finish Picking Time
+                  Start/Finish Picking Time<span className="text-red-500">*</span>
                 </Label>
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
