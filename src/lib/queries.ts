@@ -58,7 +58,9 @@ export async function getOutbound(startDate: string, endDate: string) {
     LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
     LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
     LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
-    WHERE oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
+    WHERE
+    oht.order_no IS NOT NULL AND 
+    oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
     ORDER BY oh.outbound_date DESC
   `;
   return queryDB(sql);
