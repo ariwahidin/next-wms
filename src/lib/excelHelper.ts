@@ -288,7 +288,7 @@ export const createCyleCountSheet = (
   const ws = workbook.addWorksheet("Cycle Count Outbound");
 
   // ===== JUDUL UTAMA =====
-  ws.mergeCells("A1:M1");
+  ws.mergeCells("A1:K1");
   const titleCell = ws.getCell("A1");
   titleCell.value = "CYCLE COUNT BY OUTBOUND";
   titleCell.font = { bold: true, size: 18, color: { argb: "FFFFFF" } };
@@ -301,7 +301,7 @@ export const createCyleCountSheet = (
   ws.getRow(1).height = 35;
 
   // ===== PERIODE =====
-  ws.mergeCells("A2:M2");
+  ws.mergeCells("A2:K2");
   const dateCell = ws.getCell("A2");
   dateCell.value = `Periode: ${startDate} - ${endDate}`;
   dateCell.font = { bold: true, size: 12, color: { argb: "FFFFFF" } };
@@ -314,7 +314,7 @@ export const createCyleCountSheet = (
   ws.getRow(2).height = 25;
 
   // ===== TIMESTAMP =====
-  ws.mergeCells("A3:M3");
+  ws.mergeCells("A3:K3");
   const timeCell = ws.getCell("A3");
   timeCell.value = `Generated at ${new Date().toLocaleString("id-ID", {
     dateStyle: "medium",
@@ -335,8 +335,6 @@ export const createCyleCountSheet = (
   // ===== HEADER TABEL =====
   const headersLeft = [
     "NO",
-    "OUTBOUND NO",
-    "OUTBOUND DATE",
     "LOCATION",
     "ITEM CODE",
     "BARCODE/GMC",
@@ -377,8 +375,6 @@ export const createCyleCountSheet = (
   dataLeft.forEach((item, index) => {
     const row = ws.addRow([
       index + 1,
-      item.outbound_no,
-      item.outbound_date,
       item.location,
       item.item_code,
       item.barcode,
@@ -430,8 +426,8 @@ export const createCyleCountSheet = (
   // ===== SET COLUMN WIDTHS =====
   const columnWidths = [
     5, // NO
-    15, // OUTBOUND NO
-    18, // OUTBOUND DATE
+    // 15, // OUTBOUND NO
+    // 18, // OUTBOUND DATE
     12, // LOCATION
     12, // ITEM CODE
     15, // BARCODE/GMC

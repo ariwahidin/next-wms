@@ -59,16 +59,16 @@ const fetcher = (url: string) =>
     return [];
   });
 
-const HandleDelete = (id: number) => {
-  try {
-    api.delete(`/inbound/${id}`, { withCredentials: true }).then((res) => {
-      if (res.data.success === true) {
-      }
-    });
-  } catch (error) {
-    console.error("Gagal menghapus produk:", error);
-  }
-};
+// const HandleDelete = (id: number) => {
+//   try {
+//     api.delete(`/inbound/${id}`, { withCredentials: true }).then((res) => {
+//       if (res.data.success === true) {
+//       }
+//     });
+//   } catch (error) {
+//     console.error("Gagal menghapus produk:", error);
+//   }
+// };
 
 const InboundTable = () => {
   const { data: rowData, error, mutate } = useSWR("/inbound", fetcher);

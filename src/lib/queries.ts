@@ -148,7 +148,9 @@ ORDER BY GMC DESC;
 export async function getCycleCountOutbound(startDate: string, endDate: string) {
   const sql = `With ob AS
   (SELECT 
-  opi.inventory_id, opi.outbound_id, oh.outbound_no, oh.outbound_date,
+  opi.inventory_id, 
+  -- opi.outbound_id, oh.outbound_no, 
+  -- oh.outbound_date,
   opi.location, opi.item_code, opi.barcode,
   p.item_name, opi.whs_code, 
   SUM(opi.quantity) as qty_out
@@ -158,12 +160,13 @@ export async function getCycleCountOutbound(startDate: string, endDate: string) 
   inner join products p on opi.item_id = p.id
   where oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
   group by 
-  opi.inventory_id, opi.outbound_id, oh.outbound_no, oh.outbound_date,
+  opi.inventory_id, -- opi.outbound_id, oh.outbound_no, 
+  oh.outbound_date,
   opi.location, opi.item_code, opi.barcode,
   p.item_name, opi.whs_code)
   select 
-  ob.outbound_no,
-  ob.outbound_date,
+  --ob.outbound_no,
+  -- ob.outbound_date,
   ob.location, 
   ob.item_code, 
   ob.barcode, 
@@ -173,10 +176,20 @@ export async function getCycleCountOutbound(startDate: string, endDate: string) 
   inv.qty_allocated, 
   qty_available,
   '' AS qty_actual,
-  ob.qty_out
+  sum(ob.qty_out) as qty_out
   from ob
   left join inventories inv on ob.inventory_id = inv.id
-  order by ob.outbound_no desc`;
+  group by
+  -- ob.outbound_date,
+  ob.location, 
+  ob.item_code, 
+  ob.barcode, 
+  ob.item_name,
+  ob.whs_code,
+  inv.qty_onhand, 
+  inv.qty_allocated, 
+  qty_available
+  order by ob.location asc, ob.item_code asc`;
   return queryDB(sql);
 }
 
