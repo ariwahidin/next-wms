@@ -85,7 +85,7 @@ export default function ScanItemPage() {
           />
           <button
             type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-1 rounded"
           >
             Check
           </button>

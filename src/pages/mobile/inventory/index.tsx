@@ -40,7 +40,7 @@ const inventoryMenus = [
   //   icon: <Barcode />,
   //   href: "/mobile/inventory/transfer-serial",
   // },
-  
+
   // {
   //   label: "Stock Adjustment",
   //   icon: <SlidersHorizontal />,
@@ -62,11 +62,16 @@ const inventoryMenus = [
     href: "/mobile/inventory/scan-location",
   },
   {
+    label: "Item Query",
+    icon: <ScanBarcode />,
+    href: "/mobile/inventory/scan-item"
+  },
+  {
     label: "Add Location",
     icon: <PlusIcon />,
     href: "/mobile/inventory/add-location",
   },
-  // { label: "Search Item", icon: <Search />, href: "/mobile/inventory/scan-item" },
+
   // { label: "Search Location", icon: <LocateFixedIcon />, href: "/mobile/inventory/scan-location" },
   {
     label: "Stock Take",
