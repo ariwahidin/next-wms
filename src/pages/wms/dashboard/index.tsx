@@ -443,6 +443,9 @@ export default function Page() {
                         Order ID
                       </TableHead>
                       <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3">
+                        Reference No
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3">
                         Status
                       </TableHead>
                       <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3">
@@ -506,6 +509,11 @@ export default function Page() {
                           <TableCell className="py-3">
                             <span className="text-sm font-semibold text-slate-900 font-mono">
                               {order.no_ref}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <span className="text-sm font-semibold text-slate-900 font-mono">
+                              {order.reference_no}
                             </span>
                           </TableCell>
                           <TableCell className="py-3">

@@ -12,9 +12,10 @@ import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Search } from "lucide-react";
-import useSWR from "swr";
+import { Pencil, Search, Trash2 } from "lucide-react";
+import useSWR, { mutate } from "swr";
 import { type ChangeEvent, useCallback, useState } from "react";
+import eventBus from "@/utils/eventBus";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -29,6 +30,23 @@ const fetcher = (url: string) =>
     }
     return [];
   });
+
+const handleDelete = async (data: any) => {
+
+  confirm("Are you sure you want to delete this item?");
+  if (!confirm) {
+    return;
+  }
+  const res = await api.delete(`/vas/main-vas/${data.ID}`)
+  if (res.data.success) {
+    eventBus.emit("showAlert", {
+      title: "Success!",
+      description: res.data.message,
+      type: "success",
+    })
+    mutate("/vas/main-vas")
+  }
+}
 
 interface MainVasTableProps {
   setEditData: (data: any) => void;
@@ -67,11 +85,10 @@ const MainVasTable = ({ setEditData }: MainVasTableProps) => {
       width: 100,
       cellRenderer: (params: any) => (
         <span
-          className={`px-2 py-1 rounded-full text-xs ${
-            params.value
-              ? "bg-blue-100 text-blue-800"
-              : "bg-gray-100 text-gray-800"
-          }`}
+          className={`px-2 py-1 rounded-full text-xs ${params.value
+            ? "bg-blue-100 text-blue-800"
+            : "bg-gray-100 text-gray-800"
+            }`}
         >
           {params.value ? "Yes" : "No"}
         </span>
@@ -83,11 +100,10 @@ const MainVasTable = ({ setEditData }: MainVasTableProps) => {
       width: 100,
       cellRenderer: (params: any) => (
         <span
-          className={`px-2 py-1 rounded-full text-xs ${
-            params.value
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
+          className={`px-2 py-1 rounded-full text-xs ${params.value
+            ? "bg-green-100 text-green-800"
+            : "bg-red-100 text-red-800"
+            }`}
         >
           {params.value ? "Active" : "Inactive"}
         </span>
@@ -112,15 +128,18 @@ const MainVasTable = ({ setEditData }: MainVasTableProps) => {
             >
               <Pencil className="h-4 w-4" />
             </Button>
-            {/* <Button
-              onClick={() => HandleDelete(params.data.ID)}
+            <Button
+              onClick={() => {
+                handleDelete(params.data)
+                console.log("deleting:", params.data)
+              }}
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-red-600 hover:text-red-700"
+              className="h-8 w-8"
               title="Delete"
             >
               <Trash2 className="h-4 w-4" />
-            </Button> */}
+            </Button>
           </div>
         );
       },

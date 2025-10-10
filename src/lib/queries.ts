@@ -231,6 +231,7 @@ export async function getOutboundReport(startDate: string, endDate: string) {
 	    oh.rcv_do_time AS [PRINT DO TIME],
       oh.outbound_date AS [OUT DATE],
       oh.shipment_id AS [DO NO],
+      tr.transporter_name AS [TRUCKER],
       cd.customer_name AS [DELIVERY NAME],
       cd.cust_city AS CITY,
       cd.cust_addr1 AS [DELIVERY ADD],
