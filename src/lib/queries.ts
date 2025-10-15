@@ -228,6 +228,8 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
                   oh.[status] AS [STATUS],
                     oh.whs_code AS [WH CODE],
                     oht.truck_no AS [TRUCK NO],
+                    oht.driver AS [DRIVER],
+                    oht.order_no AS [SPK NO],
                     oh.rcv_do_date AS [PRINT DO DATE],
                   oh.rcv_do_time AS [PRINT DO TIME],
                     oh.outbound_date AS [OUT DATE],
@@ -239,6 +241,8 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
                     od.item_code AS [ITEM CODE],
                   od.barcode AS [GMC CODE],
                     CASE WHEN oh.[status] = 'open' OR oh.[status] = 'picking' THEN od.quantity ELSE ob.quantity END AS QTY,
+                  oh.picker_name AS [PICKER],
+	                us.name AS [SCAN BY],
                   ob.serial_number AS [SERIAL NUMBER],
                     p.cbm AS [M3 PCS],
                     p.cbm * (CASE WHEN oh.[status] = 'open' OR oh.[status] = 'picking' THEN od.quantity ELSE ob.quantity END) AS [M3 TOTAL]
@@ -250,6 +254,7 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
                 LEFT JOIN outbound_barcodes ob ON ob.outbound_detail_id = od.id
                 LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
                 LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
+                LEFT JOIN users us ON us.id = ob.created_by
                   WHERE 
                 oh.outbound_date >= '${startDate}' 
                 AND oh.outbound_date <= '${endDate}'
@@ -261,6 +266,8 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
 
   if (status === "open") sql += ` AND [STATUS] = 'open'`;
   if (status === "picking") sql += ` AND [STATUS] = 'picking'`;
+  if (status === "complete") sql += ` AND [STATUS] = 'complete'`;
+  if (status === "cancel") sql += ` AND [STATUS] = 'cancel'`;
   sql += ` ORDER BY [OUT DATE] DESC`;
 
   if (viewBy === "item") {
@@ -269,6 +276,7 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
                 oh.[status] AS [STATUS],
                   oh.whs_code AS [WH CODE],
                   oht.truck_no AS [TRUCK NO],
+                  oht.order_no AS [SPK NO],
                   oh.rcv_do_date AS [PRINT DO DATE],
                 oh.rcv_do_time AS [PRINT DO TIME],
                   oh.outbound_date AS [OUT DATE],
@@ -300,6 +308,8 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
 
     if (status === "open") sql += ` AND [STATUS] = 'open'`;
     if (status === "picking") sql += ` AND [STATUS] = 'picking'`;
+    if (status === "complete") sql += ` AND [STATUS] = 'complete'`;
+    if (status === "cancel") sql += ` AND [STATUS] = 'cancel'`;
     sql += ` ORDER BY [OUT DATE] DESC`;
   }
 
