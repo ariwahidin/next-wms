@@ -494,7 +494,7 @@ const OutboundTable = () => {
                   </DropdownMenuItem>
                 )}
 
-                {params.data.status !== "open" || params.data.status !== "cancel" && (
+                {params.data.status !== "open" && params.data.status !== "cancel" && (
                   <>
                     <DropdownMenuItem
                       className="cursor-pointer"
@@ -529,7 +529,7 @@ const OutboundTable = () => {
                   </>
                 )}
 
-                {params.data.status !== "open" || params.data.status !== "cancel" && (
+                {params.data.status !== "open" && params.data.status !== "cancel" && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
