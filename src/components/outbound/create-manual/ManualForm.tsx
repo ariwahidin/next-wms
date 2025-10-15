@@ -194,7 +194,6 @@ export default function ManualForm() {
       } catch (error) {
         eventBus.emit("loading", false);
         console.error("Error updating outbound:", error);
-        // alert("Error updating outbound");
       }
     }
   };
@@ -256,6 +255,7 @@ export default function ManualForm() {
             Back
           </Button>
           <Button
+            disabled = {formData.status === "cancel" ? true : false}
             variant="outline"
             className="bg-blue-500 text-white hover:bg-blue-600"
             onClick={handleSave}

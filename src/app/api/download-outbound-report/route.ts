@@ -7,13 +7,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get("startDate")
     const endDate = searchParams.get("endDate")
+    const status = searchParams.get("status")
+    const viewBy = searchParams.get("viewBy")
 
     // Validate date parameters
     if (!startDate || !endDate) {
         return NextResponse.json({ error: "Start date and end date are required" }, { status: 400 })
     }
 
-    const outbound = await getOutboundReport(startDate, endDate);
+    const outbound = await getOutboundReport(startDate, endDate, status, viewBy);
 
     if (outbound.length === 0) {
         return NextResponse.json({

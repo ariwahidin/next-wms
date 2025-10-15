@@ -12,30 +12,27 @@ import { AlertCircle, Download } from "lucide-react"
 export default function DownloadActivityReport() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [error, setError] = useState<string>("")
+  const [status, setStatus] = useState<string>("all")
+  const [viewBy, setViewBy] = useState<string>("item")
 
   const handleDownload = () => {
-    // Reset error
     setError("")
 
-    // Validate date range
     if (!dateRange?.from || !dateRange?.to) {
       setError("Please select both start and end dates")
       return
     }
 
-    // Check if range is more than 3 months
     const monthsDiff = differenceInMonths(dateRange.to, dateRange.from)
     if (monthsDiff > 3) {
       setError("Date range cannot exceed 3 months")
       return
     }
 
-    // Format dates for API
     const startDate = format(dateRange.from, "yyyy-MM-dd")
     const endDate = format(dateRange.to, "yyyy-MM-dd")
 
-    // Open download with date parameters
-    const url = `/api/download-outbound-report?startDate=${startDate}&endDate=${endDate}`
+    const url = `/api/download-outbound-report?startDate=${startDate}&endDate=${endDate}&status=${status}&viewBy=${viewBy}`
     window.open(url, "_blank")
   }
 
@@ -45,14 +42,50 @@ export default function DownloadActivityReport() {
     <Layout title="Report" titleLink="/wms/report/outbound" subTitle="Outbound Report">
       <div className="p-6 space-y-6">
         <div className="space-y-4">
+
+          {/* Filter Date Range */}
           <div>
             <h3 className="text-lg font-medium mb-2">Select Date Range</h3>
             <p className="text-sm text-muted-foreground mb-4">
               Choose a date range for the outbound report. Maximum range is 3 months.
             </p>
-            <DateRangePicker value={dateRange} onChange={setDateRange} placeholder="Select date range (max 3 months)" />
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              placeholder="Select date range (max 3 months)"
+            />
           </div>
 
+          {/* Filter Status */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Status</label>
+            <select
+              className="w-full sm:w-60 border border-input rounded-md p-2 text-sm bg-background"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option value="all">All</option>
+              <option value="open">Open</option>
+              <option value="picking">Picking</option>
+              <option value="complete">Complete</option>
+              <option value="cancel">Cancel</option>
+            </select>
+          </div>
+
+          {/* Filter View By */}
+          <div>
+            <label className="block text-sm font-medium mb-2">View By</label>
+            <select
+              className="w-full sm:w-60 border border-input rounded-md p-2 text-sm bg-background"
+              value={viewBy}
+              onChange={(e) => setViewBy(e.target.value)}
+            >
+              <option value="item">By Item</option>
+              <option value="barcode">By Barcode</option>
+            </select>
+          </div>
+
+          {/* Error Message */}
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -60,6 +93,7 @@ export default function DownloadActivityReport() {
             </Alert>
           )}
 
+          {/* Selected Range Summary */}
           {dateRange?.from && dateRange?.to && (
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm">
@@ -73,7 +107,11 @@ export default function DownloadActivityReport() {
           )}
         </div>
 
-        <Button onClick={handleDownload} disabled={!isValidRange} className="w-full sm:w-auto">
+        <Button
+          onClick={handleDownload}
+          disabled={!isValidRange}
+          className="w-full sm:w-auto"
+        >
           <Download className="mr-2 h-4 w-4" />
           Download Outbound Report
         </Button>

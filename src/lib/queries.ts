@@ -221,41 +221,122 @@ export async function getInboundReport(startDate: string, endDate: string) {
 }
 
 
-export async function getOutboundReport(startDate: string, endDate: string) {
-  const sql = `
-    SELECT 
-      ROW_NUMBER() OVER (ORDER BY oh.outbound_date DESC) AS [NO],
-      oh.whs_code AS [WH CODE],
-      oht.truck_no AS [TRUCK NO],
-      oh.rcv_do_date AS [PRINT DO DATE],
-	    oh.rcv_do_time AS [PRINT DO TIME],
-      oh.outbound_date AS [OUT DATE],
-      oh.shipment_id AS [DO NO],
-      tr.transporter_name AS [TRUCKER],
-      cd.customer_name AS [DELIVERY NAME],
-      cd.cust_city AS CITY,
-      cd.cust_addr1 AS [DELIVERY ADD],
-      od.item_code AS [ITEM CODE],
-	  od.barcode AS [GMC CODE],
-      od.quantity AS QTY,
-	  od.serial_number AS [SERIAL NUMBER],
-      p.cbm AS [M3 PCS],
-      p.cbm * od.quantity AS [M3 TOTAL]
-      --odt.qty_koli AS KOLI,
-      --tr.transporter_name AS TRUCKER,
-      --od.vas_name AS [REMARK DETAIL],
-      --oh.remarks AS [REMARK HEADER],
-      --odt.order_no AS [SPK NO],
-      --oht.remarks AS [REMARK SPK]
-    FROM outbound_barcodes od
-    INNER JOIN outbound_headers oh ON od.outbound_no = oh.outbound_no
-    INNER JOIN customers cd ON oh.deliv_to = cd.customer_code
-    INNER JOIN products p ON od.item_id = p.id
-    LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
-    LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
-    LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
-    WHERE oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
-    ORDER BY oh.outbound_date DESC
-  `;
+export async function getOutboundReport(startDate: string, endDate: string, status: string, viewBy: string) {
+
+  let sql = ` WITH v AS
+              (SELECT
+                  oh.[status] AS [STATUS],
+                    oh.whs_code AS [WH CODE],
+                    oht.truck_no AS [TRUCK NO],
+                    oh.rcv_do_date AS [PRINT DO DATE],
+                  oh.rcv_do_time AS [PRINT DO TIME],
+                    oh.outbound_date AS [OUT DATE],
+                    oh.shipment_id AS [DO NO],
+                    tr.transporter_name AS [TRUCKER],
+                    c.customer_name AS [CUSTOMER],
+                    c.cust_addr1 AS [ADDRESS],
+                    c.cust_city AS CITY,
+                    od.item_code AS [ITEM CODE],
+                  od.barcode AS [GMC CODE],
+                    CASE WHEN oh.[status] = 'open' OR oh.[status] = 'picking' THEN od.quantity ELSE ob.quantity END AS QTY,
+                  ob.serial_number AS [SERIAL NUMBER],
+                    p.cbm AS [M3 PCS],
+                    p.cbm * (CASE WHEN oh.[status] = 'open' OR oh.[status] = 'picking' THEN od.quantity ELSE ob.quantity END) AS [M3 TOTAL]
+                  FROM outbound_headers oh
+                  LEFT JOIN outbound_details od ON od.outbound_no = oh.outbound_no
+                LEFT JOIN products p ON od.item_id = p.id
+                LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
+                LEFT JOIN customers c ON oh.customer_code = c.customer_code
+                LEFT JOIN outbound_barcodes ob ON ob.outbound_detail_id = od.id
+                LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
+                LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
+                  WHERE 
+                oh.outbound_date >= '${startDate}' 
+                AND oh.outbound_date <= '${endDate}'
+              )
+              SELECT
+              ROW_NUMBER() OVER (ORDER BY [OUT DATE] DESC) AS [NO],
+              * 
+              FROM v WHERE 1 = 1`;
+
+  if (status === "open") sql += ` AND [STATUS] = 'open'`;
+  if (status === "picking") sql += ` AND [STATUS] = 'picking'`;
+  sql += ` ORDER BY [OUT DATE] DESC`;
+
+  if (viewBy === "item") {
+    sql = ` WITH v AS
+            (SELECT
+                oh.[status] AS [STATUS],
+                  oh.whs_code AS [WH CODE],
+                  oht.truck_no AS [TRUCK NO],
+                  oh.rcv_do_date AS [PRINT DO DATE],
+                oh.rcv_do_time AS [PRINT DO TIME],
+                  oh.outbound_date AS [OUT DATE],
+                  oh.shipment_id AS [DO NO],
+                  tr.transporter_name AS [TRUCKER],
+                  c.customer_name AS [CUSTOMER],
+                  c.cust_addr1 AS [ADDRESS],
+                  c.cust_city AS CITY,
+                  od.item_code AS [ITEM CODE],
+                od.barcode AS [GMC CODE],
+                od.quantity AS [QTY],
+                  p.cbm AS [M3 PCS],
+                  p.cbm * od.quantity AS [M3 TOTAL]
+                FROM outbound_headers oh
+                LEFT JOIN outbound_details od ON od.outbound_no = oh.outbound_no
+              LEFT JOIN products p ON od.item_id = p.id
+              LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
+              LEFT JOIN customers c ON oh.customer_code = c.customer_code
+              LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
+              LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
+                WHERE 
+              oh.outbound_date >= '${startDate}' 
+              AND oh.outbound_date <= '${endDate}'
+            )
+            SELECT
+            ROW_NUMBER() OVER (ORDER BY [OUT DATE] DESC) AS [NO],
+            * 
+            FROM v WHERE 1 = 1`;
+
+    if (status === "open") sql += ` AND [STATUS] = 'open'`;
+    if (status === "picking") sql += ` AND [STATUS] = 'picking'`;
+    sql += ` ORDER BY [OUT DATE] DESC`;
+  }
+
+  // const sql = `
+  //   SELECT 
+  //     ROW_NUMBER() OVER (ORDER BY oh.outbound_date DESC) AS [NO],
+  //     oh.whs_code AS [WH CODE],
+  //     oht.truck_no AS [TRUCK NO],
+  //     oh.rcv_do_date AS [PRINT DO DATE],
+  //     oh.rcv_do_time AS [PRINT DO TIME],
+  //     oh.outbound_date AS [OUT DATE],
+  //     oh.shipment_id AS [DO NO],
+  //     tr.transporter_name AS [TRUCKER],
+  //     cd.customer_name AS [DELIVERY NAME],
+  //     cd.cust_city AS CITY,
+  //     cd.cust_addr1 AS [DELIVERY ADD],
+  //     od.item_code AS [ITEM CODE],
+  //   od.barcode AS [GMC CODE],
+  //     od.quantity AS QTY,
+  //   od.serial_number AS [SERIAL NUMBER],
+  //     p.cbm AS [M3 PCS],
+  //     p.cbm * od.quantity AS [M3 TOTAL]
+  //     --odt.qty_koli AS KOLI,
+  //     --tr.transporter_name AS TRUCKER,
+  //     --od.vas_name AS [REMARK DETAIL],
+  //     --oh.remarks AS [REMARK HEADER],
+  //     --odt.order_no AS [SPK NO],
+  //     --oht.remarks AS [REMARK SPK]
+  //   FROM outbound_barcodes od
+  //   INNER JOIN outbound_headers oh ON od.outbound_no = oh.outbound_no
+  //   INNER JOIN customers cd ON oh.deliv_to = cd.customer_code
+  //   INNER JOIN products p ON od.item_id = p.id
+  //   LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
+  //   LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
+  //   LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
+  //   WHERE oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
+  //   ORDER BY oh.outbound_date DESC
+  // `;
   return queryDB(sql);
 }

@@ -13,6 +13,7 @@ import {
 import { Product } from "@/types/item";
 import api from "@/lib/api";
 import ItemSelectionModal from "@/components/outbound/create-manual/ItemSelectionModal";
+import { useRouter } from "next/router";
 
 export default function ItemFormTable({
   muatan,
@@ -34,6 +35,16 @@ export default function ItemFormTable({
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [editingItem, setEditingItem] = useState<ItemFormProps | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const router = useRouter();
+  const path = router.pathname;
+  let modeForm: "add" | "edit" | "copy" = "add";
+  if (path.includes("/copy/")) {
+    modeForm = "copy";
+  } else if (path.includes("/edit/")) {
+    modeForm = "edit";
+  } else if (path.includes("/add")) {
+    modeForm = "add";
+  }
 
   // const handleSelect = (id: number, checked: boolean) => {
   //   setSelectedIds((prev) =>
@@ -111,13 +122,13 @@ export default function ItemFormTable({
           prev.map((m) =>
             m.ID === id
               ? {
-                  ...m,
-                  item_code: selectedProduct.item_code,
-                  uom: selectedProduct.uom,
-                  item_name: selectedProduct.item_name,
-                  barcode: selectedProduct.barcode,
-                  sn: selectedProduct.has_serial,
-                }
+                ...m,
+                item_code: selectedProduct.item_code,
+                uom: selectedProduct.uom,
+                item_name: selectedProduct.item_name,
+                barcode: selectedProduct.barcode,
+                sn: selectedProduct.has_serial,
+              }
               : m
           )
         );
@@ -134,7 +145,7 @@ export default function ItemFormTable({
   };
 
   const handleCancel = async (item: ItemFormProps) => {
-    if (item.mode === "create") {
+    if (item.mode === "create" || modeForm === "copy") {
       setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
       setSelectedIds((prev) => prev.filter((sid) => sid !== item.ID));
     } else {
@@ -187,11 +198,11 @@ export default function ItemFormTable({
         prev.map((m) =>
           m.ID === editingItem.ID
             ? {
-                ...m,
-                item_code: selectedProduct.item_code,
-                uom: selectedProduct.uom,
-                is_serial: selectedProduct.has_serial,
-              }
+              ...m,
+              item_code: selectedProduct.item_code,
+              uom: selectedProduct.uom,
+              is_serial: selectedProduct.has_serial,
+            }
             : m
         )
       );
@@ -209,7 +220,7 @@ export default function ItemFormTable({
             <div className="space-x-2">
               <Button
                 type="button"
-                disabled={headerForm.status === "picking"}
+                disabled={headerForm.status === "picking" || headerForm.status === "cancel"}
                 onClick={handleAddItems}
               >
                 Add Item
@@ -365,7 +376,7 @@ export default function ItemFormTable({
                     className="p-2 border space-x-2 text-center"
                     style={{ width: "160px" }}
                   >
-                    {headerForm.status == "open" || item.mode == "create" ? (
+                    {headerForm.status == "open" || item.mode == "create" || modeForm == "copy" ? (
                       <Button
                         size="sm"
                         variant="outline"

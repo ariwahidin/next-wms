@@ -20,6 +20,7 @@ import {
   Blocks,
   X,
   Copy,
+  RefreshCcw,
 } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import {
@@ -56,6 +57,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { stat } from "fs";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -163,6 +165,7 @@ const OutboundTable = () => {
   const [scannedItemData, setScannedItemData] = useState<any>(null);
   const [tempLocationName, setTempLocationName] = useState("");
   const [showTempLocationInput, setShowTempLocationInput] = useState(false);
+  const [changeStatus, setChangeStatus] = useState("open");
 
   const HandlePicking = (id: number) => {
     showAlert(
@@ -231,13 +234,14 @@ const OutboundTable = () => {
   };
 
   // Handle open untuk single row dari dropdown action
-  const handleOpenSingle = (rowData: any) => {
+  const handleOpenSingle = (rowData: any, status: string) => {
     console.log("handleOpenSingle", rowData);
+    setChangeStatus(status);
 
     try {
       eventBus.emit("loading", true);
       api
-        .post("/outbound/open", { outbound_no: rowData.outbound_no })
+        .post("/outbound/open", { outbound_no: rowData.outbound_no, status : status })
         .then((response) => {
           eventBus.emit("loading", false);
           if (response.data.success) {
@@ -277,6 +281,7 @@ const OutboundTable = () => {
         outbound_no: scannedItemData?.outbound_no,
         action: action,
         temp_location_name: locationName,
+        status : changeStatus
       };
 
       eventBus.emit("loading", true);
@@ -340,7 +345,7 @@ const OutboundTable = () => {
     <Dialog open={isScannedItemDialog} onOpenChange={closeScannedItemDialog}>
       <DialogContent className="sm:max-w-md bg-white">
         <DialogHeader>
-          <DialogTitle>This outbound has been picked</DialogTitle>
+          <DialogTitle>Confirm to {changeStatus} this transaction</DialogTitle>
           <DialogDescription>
             Stock inventory has been picked for outbound number{" "}
             {scannedItemData?.outbound_no}. Select the action to perform:
@@ -489,7 +494,7 @@ const OutboundTable = () => {
                   </DropdownMenuItem>
                 )}
 
-                {params.data.status !== "open" && (
+                {params.data.status !== "open" || params.data.status !== "cancel" && (
                   <>
                     <DropdownMenuItem
                       className="cursor-pointer"
@@ -524,14 +529,24 @@ const OutboundTable = () => {
                   </>
                 )}
 
-                {params.data.status !== "open" && (
+                {params.data.status !== "open" || params.data.status !== "cancel" && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleOpenSingle(params.data);
+                        handleOpenSingle(params.data, 'open');
+                      }}
+                    >
+                      <RefreshCcw className="mr-2 h-4 w-4" />
+                      Change to Open
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenSingle(params.data, 'cancel');
                       }}
                     >
                       <X className="mr-2 h-4 w-4" />
@@ -580,7 +595,7 @@ const OutboundTable = () => {
           case "completed":
             color = "bg-green-500";
             break;
-          case "canceled":
+          case "cancel":
             color = "bg-red-500";
             break;
         }
