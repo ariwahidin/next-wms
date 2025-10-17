@@ -5,10 +5,7 @@ import path from "path";
 import { createStyledHandlingSheet } from "@/lib/excelHelper";
 import { getHandlingOutboundDetail, getOutboundHandlingSummary } from "@/lib/queries";
 
-// Ambil tanggal otomatis
-const today = new Date();
-const startDate = new Date(today.getFullYear(), today.getMonth(), 1); // tanggal 1 bulan ini
-const endDate = today;
+
 
 // Format ke YYYY-MM-DD supaya SQL friendly
 function formatDate(date: Date) {
@@ -19,6 +16,11 @@ function formatDate(date: Date) {
 }
 
 export async function GET() {
+
+  // Ambil tanggal otomatis
+  const today = new Date();
+  const startDate = new Date(today.getFullYear(), today.getMonth(), 1); // tanggal 1 bulan ini
+  const endDate = today;
 
   const formattedStart = formatDate(startDate);
   const formattedEnd = formatDate(endDate);

@@ -41,6 +41,7 @@ type OrderDetail = {
   product: { item_name: string } | null;
   quantity: number;
   uom: string;
+  vas_name: string;
 };
 
 export default function ItemFormTable({
@@ -466,6 +467,7 @@ function OrderDetailModal({
                 <TableHead>Item Name</TableHead>
                 <TableHead>Qty</TableHead>
                 <TableHead>UOM</TableHead>
+                <TableHead>VAS</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -476,6 +478,7 @@ function OrderDetailModal({
                   <TableCell>{item.product.item_name}</TableCell>
                   <TableCell>{item.quantity}</TableCell>
                   <TableCell>{item.uom}</TableCell>
+                  <TableCell>{item.vas_name}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

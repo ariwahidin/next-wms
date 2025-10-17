@@ -70,9 +70,40 @@ export const createStyledHandlingSheet = (workbook: ExcelJS.Workbook, dataLeft: 
   ws.getCell("A1").font = { bold: true, size: 14 };
   ws.getCell("A1").alignment = { horizontal: "center" };
 
-  // Header kiri
-  const headersLeft = ["No", "TGL KELUAR", "NO DO", "DEALER", "ITEM CODE", "QTY", "JENIS PEKERJAAN", "KOLI"];
+  // // Header kiri
+  // const headersLeft = ["No", "TGL KELUAR", "SPK NO", "NO DO", "DEALER", "ITEM CODE", "QTY", "JENIS PEKERJAAN", "VAS KOLI"];
+  // ws.addRow(headersLeft);
+  // ws.getRow(2).eachCell((cell) => {
+  //   cell.font = { bold: true, color: { argb: "FFFFFF" } };
+  //   cell.alignment = { horizontal: "center" };
+  //   cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "4472C4" } };
+  //   cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+  // });
+
+  // // Data kiri
+  // dataLeft.forEach((item) => {
+  //   const row = ws.addRow([
+  //     item.no,
+  //     item.tgl_keluar,
+  //     item.spk_no,
+  //     item.no_do,
+  //     item.dealer,
+  //     item.item_code,
+  //     item.qty,
+  //     item.jenis_pekerjaan,
+  //     item.vas_koli,
+  //   ]);
+  //   row.eachCell((cell) => {
+  //     cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+  //   });
+  // });
+
+
+  // Tambahkan header
+  const headersLeft = ["No", "TGL KELUAR", "SPK NO", "NO DO", "DEALER", "ITEM CODE", "QTY", "JENIS PEKERJAAN", "VAS KOLI"];
   ws.addRow(headersLeft);
+
+  // Style header
   ws.getRow(2).eachCell((cell) => {
     cell.font = { bold: true, color: { argb: "FFFFFF" } };
     cell.alignment = { horizontal: "center" };
@@ -80,25 +111,64 @@ export const createStyledHandlingSheet = (workbook: ExcelJS.Workbook, dataLeft: 
     cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
   });
 
-  // Data kiri
+  // Tambahkan data
+  const startRow = 3; // data mulai dari baris ke-3
   dataLeft.forEach((item) => {
     const row = ws.addRow([
       item.no,
       item.tgl_keluar,
+      item.spk_no,
       item.no_do,
       item.dealer,
       item.item_code,
       item.qty,
       item.jenis_pekerjaan,
-      item.koli,
+      item.vas_koli,
     ]);
-    row.eachCell((cell) => {
-      cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+    row.eachCell((cell, colNumber) => {
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+
+      // Rata tengah hanya kolom ke-9 (VAS KOLI)
+      if (colNumber === 9) {
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      }
+
+      // Optional: ubah text jadi number kalau kolom numerik (biar gak mencong)
+      if ([1, 7, 9].includes(colNumber)) {
+        const value = Number(cell.value);
+        if (!isNaN(value)) cell.value = value;
+      }
     });
+
   });
 
+  // Setelah semua data ditulis, baru lakukan merge berdasarkan NO DO
+  let rowStart = startRow;
+  for (let i = startRow; i < ws.lastRow.number; i++) {
+    const currentNoDo = ws.getRow(i).getCell(4).value; // kolom NO DO
+    const nextNoDo = ws.getRow(i + 1)?.getCell(4)?.value;
+
+    if (currentNoDo !== nextNoDo) {
+      const rowEnd = i;
+      if (rowEnd > rowStart) {
+        // Kolom ke-9 = VAS KOLI
+        ws.mergeCells(rowStart, 9, rowEnd, 9);
+        // Atur alignment tengah untuk hasil merge
+        const mergedCell = ws.getCell(rowStart, 9);
+        mergedCell.alignment = { vertical: "middle", horizontal: "center" };
+      }
+      rowStart = i + 1;
+    }
+  }
+
+
   // Header kanan
-  const colStart = 10;
+  const colStart = 11;
   const headersRight = ["JENIS PEKERJAAN", "QTY (UNIT)/KOLI", "IDR", "TOTAL IDR"];
   headersRight.forEach((val, i) => {
     const cell = ws.getCell(2, colStart + i);
@@ -120,8 +190,51 @@ export const createStyledHandlingSheet = (workbook: ExcelJS.Workbook, dataLeft: 
     for (let i = 0; i < 4; i++) {
       const cell = ws.getCell(rowNum, colStart + i);
       cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+      // Optional: ubah text jadi number kalau kolom numerik (biar gak mencong)
+      if ([12, 13, 14].includes(colStart + i)) {
+        const value = Number(cell.value);
+        if (!isNaN(value)) cell.value = value;
+      }
+
+      if ([colStart + 2, colStart + 3].includes(colStart + i)) {
+        cell.numFmt = '#,##0'; // Format ribuan tanpa desimal
+      }
     }
   });
+
+  // Tambah total di bawah data kanan
+  const totalRowNum = 3 + dataRight.length;
+  const totalQty = dataRight.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+  // const totalIdr = dataRight.reduce((sum, item) => sum + (Number(item.idr) || 0), 0);
+  const totalIdr = '';
+  const totalTotalIdr = dataRight.reduce((sum, item) => sum + (Number(item.total_idr) || 0), 0);
+
+  // Label "TOTAL"
+  const totalLabelCell = ws.getCell(totalRowNum, colStart);
+  totalLabelCell.value = "TOTAL";
+  totalLabelCell.font = { bold: true };
+  totalLabelCell.alignment = { horizontal: "center" };
+  totalLabelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9E1F2" } };
+
+  // Nilai total di kolom 12–14
+  ws.getCell(totalRowNum, colStart + 1).value = totalQty;
+  ws.getCell(totalRowNum, colStart + 2).value = totalIdr;
+  ws.getCell(totalRowNum, colStart + 3).value = totalTotalIdr;
+
+  // Styling semua cell baris total
+  for (let i = 0; i < 4; i++) {
+    const cell = ws.getCell(totalRowNum, colStart + i);
+    cell.font = { bold: true };
+    cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+    cell.alignment = { horizontal: "center" };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9E1F2" } };
+
+    // Format ribuan untuk kolom IDR & TOTAL IDR
+    if ([colStart + 2, colStart + 3].includes(colStart + i)) {
+      cell.numFmt = '#,##0';
+    }
+  }
+
 
   return ws;
 };
