@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -21,8 +21,9 @@ import { ItemReceived } from "@/types/inbound";
 import dayjs from "dayjs";
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import InventoryModal from "./inventoryModal";
+import { Input } from "@/components/ui/input";
 
 interface ItemScannedTableProps {
   itemsReceived: ItemReceived[];
@@ -39,22 +40,54 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [clicked, setClicked] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredItems, setFilteredItems] = useState(itemsReceived);
+
+  useEffect(() => {
+    const filtered = itemsReceived.filter((item) =>
+      item.item_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.serial_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.location.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredItems(filtered);
+  }, [searchTerm, itemsReceived]);
+
+  useEffect(() => {
+    // Reset selectAll jika hasil filter berubah
+    setSelectAll(false);
+    setSelectedItems([]);
+  }, [searchTerm]);
+
 
   const handleViewInventory = () => {
     setShowInventory(true);
   };
+
+  // const toggleSelectAll = () => {
+  //   const newSelectAll = !selectAll;
+  //   setSelectAll(newSelectAll);
+  //   setSelectedItems(
+  //     newSelectAll
+  //       ? itemsReceived
+  //         .filter((item) => item.status === "pending")
+  //         .map((item) => item.ID)
+  //       : []
+  //   );
+  // };
 
   const toggleSelectAll = () => {
     const newSelectAll = !selectAll;
     setSelectAll(newSelectAll);
     setSelectedItems(
       newSelectAll
-        ? itemsReceived
-            .filter((item) => item.status === "pending")
-            .map((item) => item.ID)
+        ? filteredItems
+          .filter((item) => item.status === "pending")
+          .map((item) => item.ID)
         : []
     );
   };
+
 
   const toggleSelectItem = (id: number) => {
     setSelectedItems((prev) =>
@@ -101,7 +134,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
     }
   };
 
-  const totalQty = itemsReceived.reduce(
+  const totalQty = filteredItems.reduce(
     (acc, item) => acc + Number(item.quantity),
     0
   );
@@ -129,6 +162,18 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
           </div>
         </div>
 
+
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+            autoFocus
+          />
+        </div>
+
         <Table className="border rounded-md">
           <TableHeader>
             <TableRow>
@@ -150,7 +195,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {itemsReceived.map((item, index) => (
+            {filteredItems.map((item, index) => (
               <TableRow key={item.ID}>
                 <TableCell>
                   {item.status == "pending" && (

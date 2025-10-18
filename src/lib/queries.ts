@@ -371,3 +371,65 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
   // `;
   return queryDB(sql);
 }
+export async function getStockReport(viewBy: string) {
+
+  let sql = `SELECT 
+  iv.item_code AS [ITEM CODE],
+  iv.barcode AS [GMC CODE],
+  p.item_name AS [ITEM NAME],
+  iv.rec_date AS [RCV DATE],
+  iv.[location] AS [LOCATION],
+  iv.whs_code AS [WH CODE],
+  iv.qa_status AS [QA],
+  SUM(iv.qty_onhand) AS [ON HAND],
+  SUM(iv.qty_allocated) AS [ALLOCATED],
+  SUM(iv.qty_available) AS [AVAILABLE],
+  p.cbm [CBM],
+  (SUM(iv.qty_available)) * p.cbm AS [TOTAL CBM]
+  FROM inventories iv
+  left join products p ON iv.item_code = p.item_code
+  where iv.qty_onhand <> 0
+  group by
+  iv.item_code,
+  iv.barcode,
+  p.item_name,
+  iv.rec_date,
+  iv.[location],
+  iv.whs_code,
+  iv.qa_status,
+  p.cbm
+  ORDER BY iv.item_code ASC`;
+
+  if (viewBy === "item") {
+    sql = `SELECT 
+    iv.item_code AS [ITEM CODE],
+    iv.barcode AS [GMC CODE],
+    p.item_name AS [ITEM NAME],
+    -- iv.rec_date AS [RCV DATE],
+    -- iv.[location] AS [LOCATION],
+    iv.whs_code AS [WH CODE],
+    iv.qa_status AS [QA],
+    SUM(iv.qty_onhand) AS [ON HAND],
+    SUM(iv.qty_allocated) AS [ALLOCATED],
+    SUM(iv.qty_available) AS [AVAILABLE]
+    -- p.cbm [CBM],
+    -- (SUM(iv.qty_available)) * p.cbm AS [TOTAL CBM]
+    FROM inventories iv
+    left join products p ON iv.item_code = p.item_code
+    where iv.qty_onhand <> 0
+    group by
+    iv.item_code,
+    iv.barcode,
+    p.item_name,
+    -- iv.rec_date,
+    -- iv.[location],
+    iv.whs_code,
+    iv.qa_status
+    -- p.cbm
+    ORDER BY iv.item_code ASC`;
+  }
+
+  return queryDB(sql);
+}
+
+

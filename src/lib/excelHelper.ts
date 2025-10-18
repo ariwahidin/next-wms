@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/excelHelper.ts
 import ExcelJS from "exceljs";
@@ -69,34 +70,6 @@ export const createStyledHandlingSheet = (workbook: ExcelJS.Workbook, dataLeft: 
   ws.getCell("A1").value = `REKAP DATA TAGIHAN, ${bulan} ${tahun}`;
   ws.getCell("A1").font = { bold: true, size: 14 };
   ws.getCell("A1").alignment = { horizontal: "center" };
-
-  // // Header kiri
-  // const headersLeft = ["No", "TGL KELUAR", "SPK NO", "NO DO", "DEALER", "ITEM CODE", "QTY", "JENIS PEKERJAAN", "VAS KOLI"];
-  // ws.addRow(headersLeft);
-  // ws.getRow(2).eachCell((cell) => {
-  //   cell.font = { bold: true, color: { argb: "FFFFFF" } };
-  //   cell.alignment = { horizontal: "center" };
-  //   cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "4472C4" } };
-  //   cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
-  // });
-
-  // // Data kiri
-  // dataLeft.forEach((item) => {
-  //   const row = ws.addRow([
-  //     item.no,
-  //     item.tgl_keluar,
-  //     item.spk_no,
-  //     item.no_do,
-  //     item.dealer,
-  //     item.item_code,
-  //     item.qty,
-  //     item.jenis_pekerjaan,
-  //     item.vas_koli,
-  //   ]);
-  //   row.eachCell((cell) => {
-  //     cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
-  //   });
-  // });
 
 
   // Tambahkan header
@@ -338,59 +311,6 @@ export const stockSheet = (
   return sheet;
 };
 
-// export const createCyleCountSheet = (workbook: ExcelJS.Workbook, dataLeft: any[], startDate: string, endDate: string) => {
-//   const ws = workbook.addWorksheet("Cycle Count Outbound");
-
-//   // Judul
-//   ws.mergeCells("A1:L1");
-//   ws.getCell("A1").value = `Cycle Count by Outbound`;
-//   ws.getCell("A1").font = { bold: true, size: 14 };
-//   ws.getCell("A1").alignment = { horizontal: "center" };
-
-//   ws.mergeCells("A2:L2");
-//   ws.getCell("A2").value = `${startDate} to ${endDate}`;
-//   ws.getCell("A2").font = { bold: true, size: 12 };
-//   ws.getCell("A2").alignment = { horizontal: "center" };
-
-//   ws.mergeCells("A3:L3");
-//   ws.getCell("A3").value = `Generated at ${new Date().toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}`;
-//   ws.getCell("A3").font = { bold: true, size: 10 };
-//   ws.getCell("A3").alignment = { horizontal: "center" };
-
-//   // Header kiri
-//   const headersLeft = ["OUTBOUND NO", "OUTBOUND DATE", "LOCATION", "ITEM CODE", "BARCODE/GMC", "ITEM NAME", "WHS CODE", "ON HAND", "AVAILABLE", "ALLOCATED", "ACTUAL", "OUT"];
-//   ws.addRow(headersLeft);
-//   ws.getRow(5).eachCell((cell) => {
-//     cell.font = { bold: true, color: { argb: "FFFFFF" } };
-//     cell.alignment = { horizontal: "center" };
-//     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "4472C4" } };
-//     cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
-//   });
-
-//   // Data kiri
-//   dataLeft.forEach((item) => {
-//     const row = ws.addRow([
-//       item.outbound_no,
-//       item.outbound_date,
-//       item.location,
-//       item.item_code,
-//       item.barcode,
-//       item.item_name,
-//       item.whs_code,
-//       item.qty_onhand,
-//       item.qty_allocated,
-//       item.qty_available,
-//       item.qty_actual,
-//       item.qty_out
-//     ]);
-//     row.eachCell((cell) => {
-//       cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
-//     });
-//   });
-
-//   return ws;
-// };
-
 
 export const createCyleCountSheet = (
   workbook: ExcelJS.Workbook,
@@ -559,3 +479,169 @@ export const createCyleCountSheet = (
 
   return ws;
 };
+
+
+
+export const createStockSheet = (
+  workbook: ExcelJS.Workbook,
+  sheetName: string,
+  data: any[],
+  options?: {
+    title?: string;
+    subtitle?: string;
+    companyName?: string;
+    generatedBy?: string;
+  }
+) => {
+  const sheet = workbook.addWorksheet(sheetName);
+
+  let currentRow = 1;
+
+  // ==================== JUDUL LAPORAN ====================
+  if (options?.title || options?.companyName) {
+    // Baris 1: Nama Perusahaan
+    if (options.companyName) {
+      sheet.mergeCells(`A${currentRow}:${String.fromCharCode(64 + Object.keys(data[0]).length)}${currentRow}`);
+      const companyCell = sheet.getCell(`A${currentRow}`);
+      companyCell.value = options.companyName;
+      companyCell.font = { bold: true, size: 14, color: { argb: "2C3E50" } };
+      companyCell.alignment = { vertical: "middle", horizontal: "center" };
+      currentRow++;
+    }
+
+    // Baris 2: Judul Utama
+    if (options.title) {
+      sheet.mergeCells(`A${currentRow}:${String.fromCharCode(64 + Object.keys(data[0]).length)}${currentRow}`);
+      const titleCell = sheet.getCell(`A${currentRow}`);
+      titleCell.value = options.title;
+      titleCell.font = { bold: true, size: 16, color: { argb: "1F4788" } };
+      titleCell.alignment = { vertical: "middle", horizontal: "center" };
+      sheet.getRow(currentRow).height = 30;
+      currentRow++;
+    }
+
+    // Baris 3: Subtitle
+    if (options.subtitle) {
+      sheet.mergeCells(`A${currentRow}:${String.fromCharCode(64 + Object.keys(data[0]).length)}${currentRow}`);
+      const subtitleCell = sheet.getCell(`A${currentRow}`);
+      subtitleCell.value = options.subtitle;
+      subtitleCell.font = { italic: true, size: 11, color: { argb: "7F8C8D" } };
+      subtitleCell.alignment = { vertical: "middle", horizontal: "center" };
+      currentRow++;
+    }
+
+    // Baris kosong pemisah
+    currentRow++;
+  }
+
+  // ==================== HEADER TABEL ====================
+  const headers = Object.keys(data[0]);
+  const headerRow = sheet.getRow(currentRow);
+  headerRow.values = headers;
+  headerRow.height = 25;
+
+  headerRow.eachCell((cell) => {
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "4472C4" }, // biru
+    };
+    cell.font = { bold: true, color: { argb: "FFFFFF" }, size: 11 };
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    };
+  });
+
+  currentRow++;
+
+
+  // ==================== ISI DATA ====================
+  data.forEach((obj, index) => {
+    const row = sheet.getRow(currentRow);
+    row.values = Object.values(obj);
+    row.height = 20;
+
+    row.eachCell((cell, colNumber) => {
+      // Cek apakah nilai adalah number
+      const isNumber = typeof cell.value === "number";
+
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: isNumber ? "right" : "left"
+      };
+
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+
+      // Format number dengan thousand separator
+      if (colNumber >= 5 && colNumber <= 10) {
+
+        const value = Number(cell.value);
+        if (!isNaN(value)) cell.value = value;
+
+        cell.numFmt = "#,##0";
+        // Untuk decimal gunakan: "#,##0.00"
+        // Untuk currency gunakan: "Rp #,##0"
+      }
+
+      // Alternate row color untuk kemudahan membaca
+      if (index % 2 === 1) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "F2F2F2" },
+        };
+      }
+    });
+
+    currentRow++;
+  });
+
+  // ==================== FOOTER INFO ====================
+  currentRow++; // Baris kosong
+
+  // Info Generated
+  const footerText = `Generated by: ${options?.generatedBy || "System"} | Date: ${new Date().toLocaleString("id-ID")}`;
+  sheet.mergeCells(`A${currentRow}:${String.fromCharCode(64 + headers.length)}${currentRow}`);
+  const footerCell = sheet.getCell(`A${currentRow}`);
+  footerCell.value = footerText;
+  footerCell.font = { italic: true, size: 9, color: { argb: "95A5A6" } };
+  footerCell.alignment = { vertical: "middle", horizontal: "right" };
+
+  // ==================== AUTO WIDTH ====================
+  sheet.columns.forEach((col, index) => {
+    let maxLength = 0;
+    col.eachCell({ includeEmpty: true }, (cell) => {
+      const val = cell.value ? cell.value.toString() : "";
+      maxLength = Math.max(maxLength, val.length);
+    });
+    // col.width = maxLength < 15 ? 15 : maxLength + 2;
+    col.width = 15;
+  });
+
+  return sheet;
+};
+
+// ==================== CONTOH PENGGUNAAN ====================
+/*
+const stockData = [
+  { "Kode Barang": "BRG001", "Nama Barang": "Laptop Dell", "Qty": 10, "Harga": 15000000 },
+  { "Kode Barang": "BRG002", "Nama Barang": "Mouse Logitech", "Qty": 50, "Harga": 250000 },
+  { "Kode Barang": "BRG003", "Nama Barang": "Keyboard Mechanical", "Qty": 25, "Harga": 850000 },
+];
+
+createStockSheet(workbook, "Data Stok", stockData, {
+  companyName: "PT MAJU JAYA ELEKTRONIK",
+  title: "LAPORAN STOK BARANG",
+  subtitle: "Periode Oktober 2025",
+  generatedBy: "Admin Warehouse"
+});
+*/

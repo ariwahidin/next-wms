@@ -191,6 +191,10 @@ const data = {
           title: "Outbound",
           url: "/wms/report/outbound",
         },
+        {
+          title: "Stock",
+          url: "/wms/report/stock",
+        },
       ],
     },
     {
