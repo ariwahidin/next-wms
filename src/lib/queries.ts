@@ -29,14 +29,48 @@ export async function getInbound(startDate: string, endDate: string) {
 }
 
 export async function getOutbound(startDate: string, endDate: string) {
-  const sql = `
-    SELECT 
+  // const sql = `
+  //   SELECT 
+  //     ROW_NUMBER() OVER (ORDER BY oh.outbound_date DESC) AS [NO],
+  //     od.whs_code AS [WH CODE],
+  //     oht.truck_no AS [TRUCK NO],
+  //     oh.rcv_do_date AS [PRINT DO DATE],
+	//     oh.rcv_do_time AS [PRINT DO TIME],
+  //     oh.outbound_date AS [OUT DATE],
+  //     oh.shipment_id AS [DO NO],
+  //     cd.customer_name AS [DELIVERY NAME],
+  //     cd.cust_city AS CITY,
+  //     cd.cust_addr1 AS [DELIVERY ADD],
+  //     od.item_code AS [ITEM CODE],
+  //     od.quantity AS QTY,
+  //     p.cbm AS [M3 PCS],
+  //     p.cbm * od.quantity AS [M3 TOTAL],
+  //     odt.qty_koli AS KOLI,
+  //     tr.transporter_name AS TRUCKER,
+  //     od.vas_name AS [REMARK DETAIL],
+  //     oh.remarks AS [REMARK HEADER],
+  //     odt.order_no AS [SPK NO],
+  //     oht.remarks AS [REMARK SPK]
+  //   FROM outbound_details od
+  //   INNER JOIN outbound_headers oh ON od.outbound_no = oh.outbound_no
+  //   INNER JOIN customers cd ON oh.deliv_to = cd.customer_code
+  //   INNER JOIN products p ON od.item_id = p.id
+  //   LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
+  //   LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
+  //   LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
+  //   WHERE
+  //   oht.order_no IS NOT NULL AND 
+  //   oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
+  //   ORDER BY oh.outbound_date DESC
+  // `;
+
+  const sql = `SELECT 
       ROW_NUMBER() OVER (ORDER BY oh.outbound_date DESC) AS [NO],
       od.whs_code AS [WH CODE],
       oht.truck_no AS [TRUCK NO],
       oh.rcv_do_date AS [PRINT DO DATE],
 	    oh.rcv_do_time AS [PRINT DO TIME],
-      oh.outbound_date AS [OUT DATE],
+	    ohd.load_date AS [OUT DATE],
       oh.shipment_id AS [DO NO],
       cd.customer_name AS [DELIVERY NAME],
       cd.cust_city AS CITY,
@@ -57,12 +91,12 @@ export async function getOutbound(startDate: string, endDate: string) {
     INNER JOIN products p ON od.item_id = p.id
     LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
     LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
+	  LEFT JOIN order_headers ohd ON ohd.order_no = oht.order_no
     LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
     WHERE
     oht.order_no IS NOT NULL AND 
     oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
-    ORDER BY oh.outbound_date DESC
-  `;
+    ORDER BY oh.outbound_date DESC`;
   return queryDB(sql);
 }
 
@@ -389,7 +423,7 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
                   oht.truck_no AS [TRUCK NO],
                   oht.order_no AS [SPK NO],
                   oh.rcv_do_date AS [PRINT DO DATE],
-                oh.rcv_do_time AS [PRINT DO TIME],
+                  oh.rcv_do_time AS [PRINT DO TIME],
                   oh.outbound_date AS [OUT DATE],
                   oh.shipment_id AS [DO NO],
                   tr.transporter_name AS [TRUCKER],
