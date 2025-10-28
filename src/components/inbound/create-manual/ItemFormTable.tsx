@@ -541,6 +541,7 @@ export default function ItemFormTable({
                                   e.target.value
                                 )
                               }
+                              onWheel={(e) => (e.target as HTMLInputElement).blur()}
                             />
                           </div>
                           {errors[item.ID]?.quantity && (
