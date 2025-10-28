@@ -29,14 +29,48 @@ export async function getInbound(startDate: string, endDate: string) {
 }
 
 export async function getOutbound(startDate: string, endDate: string) {
-  const sql = `
-    SELECT 
+  // const sql = `
+  //   SELECT 
+  //     ROW_NUMBER() OVER (ORDER BY oh.outbound_date DESC) AS [NO],
+  //     od.whs_code AS [WH CODE],
+  //     oht.truck_no AS [TRUCK NO],
+  //     oh.rcv_do_date AS [PRINT DO DATE],
+	//     oh.rcv_do_time AS [PRINT DO TIME],
+  //     oh.outbound_date AS [OUT DATE],
+  //     oh.shipment_id AS [DO NO],
+  //     cd.customer_name AS [DELIVERY NAME],
+  //     cd.cust_city AS CITY,
+  //     cd.cust_addr1 AS [DELIVERY ADD],
+  //     od.item_code AS [ITEM CODE],
+  //     od.quantity AS QTY,
+  //     p.cbm AS [M3 PCS],
+  //     p.cbm * od.quantity AS [M3 TOTAL],
+  //     odt.qty_koli AS KOLI,
+  //     tr.transporter_name AS TRUCKER,
+  //     od.vas_name AS [REMARK DETAIL],
+  //     oh.remarks AS [REMARK HEADER],
+  //     odt.order_no AS [SPK NO],
+  //     oht.remarks AS [REMARK SPK]
+  //   FROM outbound_details od
+  //   INNER JOIN outbound_headers oh ON od.outbound_no = oh.outbound_no
+  //   INNER JOIN customers cd ON oh.deliv_to = cd.customer_code
+  //   INNER JOIN products p ON od.item_id = p.id
+  //   LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
+  //   LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
+  //   LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
+  //   WHERE
+  //   oht.order_no IS NOT NULL AND 
+  //   oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
+  //   ORDER BY oh.outbound_date DESC
+  // `;
+
+  const sql = `SELECT 
       ROW_NUMBER() OVER (ORDER BY oh.outbound_date DESC) AS [NO],
       od.whs_code AS [WH CODE],
       oht.truck_no AS [TRUCK NO],
       oh.rcv_do_date AS [PRINT DO DATE],
 	    oh.rcv_do_time AS [PRINT DO TIME],
-      oh.outbound_date AS [OUT DATE],
+	    ohd.load_date AS [OUT DATE],
       oh.shipment_id AS [DO NO],
       cd.customer_name AS [DELIVERY NAME],
       cd.cust_city AS CITY,
@@ -57,12 +91,12 @@ export async function getOutbound(startDate: string, endDate: string) {
     INNER JOIN products p ON od.item_id = p.id
     LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
     LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
+	  LEFT JOIN order_headers ohd ON ohd.order_no = oht.order_no
     LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
     WHERE
     oht.order_no IS NOT NULL AND 
     oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
-    ORDER BY oh.outbound_date DESC
-  `;
+    ORDER BY oh.outbound_date DESC`;
   return queryDB(sql);
 }
 
@@ -90,31 +124,121 @@ export async function getHandlingOutboundDetail(startDate: string, endDate: stri
 }
 
 export async function getOutboundHandlingSummary(startDate: string, endDate: string) {
-  const sql = `WITH summary AS
-  (
-  SELECT 
-    ov.outbound_no,
-    oh.shipment_id,
-    odt.order_no,
-      main_vas_name AS jenis_pekerjaan,
-      case when is_koli = 0 then ov.qty_item else ov.qty_koli end AS qty,
-      default_price as idr,
-      total_price as total_idr
-      FROM outbound_vas ov
-    INNER JOIN outbound_headers oh ON ov.outbound_id = oh.id
-    LEFT JOIN order_details odt ON ov.outbound_id = odt.outbound_id
-      WHERE 
-    oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
-    AND ov.main_vas_name <> 'NO'
-  )
-  SELECT 
-  jenis_pekerjaan, 
-  SUM(qty) as qty, 
-  idr, 
-  SUM(qty) * idr as total_idr 
-  FROM summary
-  group by jenis_pekerjaan, idr
-  order by jenis_pekerjaan ASC`;
+  // const sql = `WITH summary AS
+  // (
+  // SELECT 
+  //   ov.outbound_no,
+  //   oh.shipment_id,
+  //   odt.order_no,
+  //     main_vas_name AS jenis_pekerjaan,
+  //     case when is_koli = 0 then ov.qty_item else ov.qty_koli end AS qty,
+  //     default_price as idr,
+  //     total_price as total_idr
+  //     FROM outbound_vas ov
+  //   INNER JOIN outbound_headers oh ON ov.outbound_id = oh.id
+  //   LEFT JOIN order_details odt ON ov.outbound_id = odt.outbound_id
+  //     WHERE 
+  //   oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
+  //   AND ov.main_vas_name <> 'NO'
+  // )
+  // SELECT 
+  // jenis_pekerjaan, 
+  // SUM(qty) as qty, 
+  // idr, 
+  // SUM(qty) * idr as total_idr 
+  // FROM summary
+  // group by jenis_pekerjaan, idr
+  // order by jenis_pekerjaan ASC`;
+
+  const sql = `
+    WITH rd AS (
+    SELECT
+      ROW_NUMBER() OVER (ORDER BY oh.outbound_date DESC) AS [no],
+      oh.outbound_date AS tgl_keluar,
+      odt.order_no AS spk_no,
+      oh.shipment_id AS no_do,
+      cd.customer_name AS dealer,
+      od.item_code,
+      od.quantity as qty,
+      od.vas_name as jenis_pekerjaan,
+      odt.vas_koli
+      FROM
+      outbound_details od
+      inner join outbound_headers oh ON od.outbound_no = oh.outbound_no
+      left join order_details odt ON oh.shipment_id = odt.shipment_id
+      left join customers cd ON oh.deliv_to = cd.customer_code
+      WHERE
+      odt.order_no IS NOT NULL
+      AND od.vas_name <> 'NO'
+      AND oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
+      ),
+    sum1 AS (
+      select
+      rd.no_do,
+      sum(rd.qty) as total_qty,
+      v.id as vas_id, 
+      v.[name] as vas_name
+      from rd 
+      left join vas v ON rd.jenis_pekerjaan = v.name
+      group by rd.no_do, v.id, v.[name]
+    ),
+    sum2 AS (
+      select 
+      sum1.no_do,
+      sum1.total_qty,
+      odt.vas_koli,
+      sum1.vas_id,
+      sum1.vas_name
+      from sum1
+      inner join order_details odt on sum1.no_do = odt.shipment_id
+    ),
+    sum3 AS (
+      select 
+      SUM(sum2.total_qty) as tot_qty,
+      SUM(sum2.vas_koli) as tot_koli,
+      sum2.vas_id,
+      vas_name,
+      vd.main_vas_id,
+      m.[name] as main_vas_name,
+      m.is_koli,
+      m.default_price
+      from sum2
+      inner join vas_detail vd on sum2.vas_id = vd.vas_id 
+      inner join main_vas m on m.id = vd.main_vas_id
+      group by 
+      sum2.vas_id,
+      vas_name,
+      vd.main_vas_id,
+      m.[name],
+      m.is_koli,
+      m.default_price),
+    sum4 AS (
+      select 
+      SUM(tot_qty) as tot_qty,
+      SUM(tot_koli) as tot_koli,
+      main_vas_name,
+      is_koli,
+      default_price
+      from sum3
+      group by 
+      main_vas_name,
+      is_koli,
+      default_price
+      ),
+    sum5 AS (
+      select
+      main_vas_name as jenis_pekerjaan,
+      case when is_koli = 1 then tot_koli else tot_qty end as qty,
+      default_price as idr
+      from sum4
+      )
+    select 
+    jenis_pekerjaan,
+    qty,
+    idr,
+    qty * idr as total_idr
+    from sum5
+  `;
   return queryDB(sql);
 }
 
@@ -299,7 +423,7 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
                   oht.truck_no AS [TRUCK NO],
                   oht.order_no AS [SPK NO],
                   oh.rcv_do_date AS [PRINT DO DATE],
-                oh.rcv_do_time AS [PRINT DO TIME],
+                  oh.rcv_do_time AS [PRINT DO TIME],
                   oh.outbound_date AS [OUT DATE],
                   oh.shipment_id AS [DO NO],
                   tr.transporter_name AS [TRUCKER],
