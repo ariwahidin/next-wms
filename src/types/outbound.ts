@@ -45,6 +45,8 @@ export interface ItemFormProps {
   handling?: string | string[] | { Handling: string }[];
   vas_id?: number;
   vas_name?: string;
+  exp_date?: string;
+  lot_number?: string;
 }
 
 export interface ItemFormTableProps {

@@ -22,6 +22,7 @@ export interface HeaderFormProps {
   end_unloading?: string;
   truck_size?: string;
   bl_no?: string;
+  intergration?: boolean;
   koli?: number;
   mode?: "create" | "edit";
 }
@@ -32,11 +33,13 @@ export interface ItemFormProps {
   inbound_id: number;
   item_code: string;
   quantity: number;
-  rcv_location? :string;
+  rcv_location?: string;
   division?: string;
   uom: string;
   is_serial?: string;
   rec_date?: string;
+  exp_date?: string;
+  lot_number?: string;
   remarks?: string;
   mode?: string;
   index?: number;

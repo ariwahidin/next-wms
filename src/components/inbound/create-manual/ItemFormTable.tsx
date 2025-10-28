@@ -1,10 +1,11 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { use, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from "react-select";
-import { Trash, Save, Pencil, X, Plus } from "lucide-react";
+import { Trash, Save, Pencil, X, Plus, Copy } from "lucide-react";
 import * as yup from "yup";
 import {
   CombinedInboundProps,
@@ -75,7 +76,7 @@ export default function ItemFormTable({
   const fetchData = async () => {
     try {
       const [products, warehouses, uoms] = await Promise.all([
-        api.get("/products"),
+        api.get("/products?owner=" + headerForm.owner_code),
         api.get("/warehouses"),
         api.get("/uoms"),
       ]);
@@ -114,7 +115,7 @@ export default function ItemFormTable({
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [headerForm]);
 
   // Handle modal untuk add items
   const handleAddItems = () => {
@@ -151,6 +152,8 @@ export default function ItemFormTable({
         uom: product.uom,
         division: "REGULAR",
         rec_date: new Date().toISOString().split("T")[0],
+        exp_date: "",
+        lot_number: "",
         remarks: "",
         mode: "create",
         is_serial: product.has_serial,
@@ -168,11 +171,11 @@ export default function ItemFormTable({
         prev.map((m) =>
           m.ID === editingItem.ID
             ? {
-                ...m,
-                item_code: selectedProduct.item_code,
-                uom: selectedProduct.uom,
-                is_serial: selectedProduct.has_serial,
-              }
+              ...m,
+              item_code: selectedProduct.item_code,
+              uom: selectedProduct.uom,
+              is_serial: selectedProduct.has_serial,
+            }
             : m
         )
       );
@@ -259,6 +262,36 @@ export default function ItemFormTable({
       setEditingId(null);
     }
   };
+
+  const handleCopy = (id: number) => {
+    setMuatan((prevItems) => {
+      const index = prevItems.findIndex((item) => item.ID === id);
+      if (index === -1) return prevItems; // item tidak ditemukan
+
+      const itemToCopy = prevItems[index];
+
+      // Buat ID baru unik (bisa pakai UUID juga kalau mau)
+      const newID = Math.max(...prevItems.map((i) => i.ID), 0) + 1;
+
+      const duplicatedItem = {
+        ...itemToCopy,
+        ID: newID,
+        mode: "create",
+        exp_date: "",
+        lot_number: "",
+      };
+
+      // Sisipkan hasil copy di posisi setelah item yang dicopy
+      const newItems = [
+        ...prevItems.slice(0, index + 1),
+        duplicatedItem,
+        ...prevItems.slice(index + 1),
+      ];
+
+      return newItems;
+    });
+  };
+
 
   const handleDelete = async (id: number) => {
     console.log("Deleting item with ID:", id);
@@ -405,9 +438,6 @@ export default function ItemFormTable({
               <th className="p-2 border" style={{ width: "300px" }}>
                 Description
               </th>
-              <th className="p-2 border" style={{ width: "30px" }}>
-                SN
-              </th>
               <th className="p-2 border" style={{ width: "50px" }}>
                 UoM
               </th>
@@ -415,15 +445,18 @@ export default function ItemFormTable({
                 Qty
               </th>
               <th className="p-2 border" style={{ width: "130px" }}>
-                Rcv Location
+                Rec Location
               </th>
               <th className="p-2 border" style={{ width: "140px" }}>
-                Rcv Date
+                Rec Date
               </th>
               <th className="p-2 border" style={{ width: "140px" }}>
-                Remarks
+                Exp Date
               </th>
-              <th className="p-2 border" style={{ width: "100px" }}>
+              <th className="p-2 border" style={{ width: "140px" }}>
+                Lot No.
+              </th>
+              <th className="p-2 border" style={{ width: "220px" }}>
                 Action
               </th>
             </tr>
@@ -448,7 +481,7 @@ export default function ItemFormTable({
                     <td className="p-2 border text-center">{index + 1}</td>
 
                     {headerForm.status == "open" ||
-                    headerForm.mode == "create" ? (
+                      headerForm.mode == "create" ? (
                       <>
                         <td className="p-2 border">
                           <div className="flex items-center gap-2">
@@ -502,15 +535,6 @@ export default function ItemFormTable({
                           />
                         </td>
                         <td className="p-2 border">
-                          <Input
-                            style={{ fontSize: "12px" }}
-                            readOnly
-                            type="text"
-                            className="w-14"
-                            value={item.is_serial || ""}
-                          />
-                        </td>
-                        <td className="p-2 border">
                           <Select
                             key={item.ID}
                             className="w-40"
@@ -552,7 +576,7 @@ export default function ItemFormTable({
                         <td className="p-2 border">
                           <div>
                             <Input
-                              style={{ fontSize: "12px" }}
+                              style={{ fontSize: "12px", width: "120px" }}
                               type="text"
                               value={item.rcv_location || "STAGING"}
                               onChange={(e) =>
@@ -583,7 +607,7 @@ export default function ItemFormTable({
                             locale={id}
                             customInput={
                               <Input
-                                className="w-[120px] cursor-pointer"
+                                className="w-[100px] cursor-pointer"
                                 style={{ fontSize: "12px" }}
                               />
                             }
@@ -596,19 +620,51 @@ export default function ItemFormTable({
                             </small>
                           )}
                         </td>
+
+                        <td className="p-2 border">
+                          <DatePicker
+                            selected={
+                              item.exp_date ? parseISO(item.exp_date) : null
+                            }
+                            onChange={(date: Date | null) => {
+                              if (date) {
+                                handleChange(
+                                  item.ID,
+                                  "exp_date",
+                                  format(date, "yyyy-MM-dd")
+                                );
+                              }
+                            }}
+                            dateFormat="dd/MM/yyyy"
+                            locale={id}
+                            customInput={
+                              <Input
+                                className="w-[100px] cursor-pointer"
+                                style={{ fontSize: "12px" }}
+                              />
+                            }
+                            placeholderText="Choose date"
+                            popperPlacement="bottom-start"
+                          />
+                          {errors[item.ID]?.rec_date && (
+                            <small className="text-red-500">
+                              {errors[item.ID].exp_date}
+                            </small>
+                          )}
+                        </td>
+
                         <td className="p-2 border">
                           <Input
-                            style={{ fontSize: "12px" }}
-                            className="w-full"
+                            style={{ fontSize: "12px", width: "100px" }}
                             type="text"
-                            value={item.remarks}
+                            value={item.lot_number}
                             onChange={(e) =>
-                              handleChange(item.ID, "remarks", e.target.value)
+                              handleChange(item.ID, "lot_number", e.target.value)
                             }
                           />
                           {errors[item.ID]?.remarks && (
                             <small className="text-red-500">
-                              {errors[item.ID].remarks}
+                              {errors[item.ID].lot_number}
                             </small>
                           )}
                         </td>
@@ -617,23 +673,41 @@ export default function ItemFormTable({
                           style={{ width: "100px" }}
                         >
                           {item.mode == "create" ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                handleCancel(item);
-                              }}
-                            >
-                              <X size={14} />
-                            </Button>
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  handleCancel(item);
+                                }}
+                              >
+                                <X size={14} />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleCopy(item.ID)}
+                              >
+                                <Copy size={14} />
+                              </Button>
+                            </>
                           ) : (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(item.ID)}
-                            >
-                              <Trash size={14} />
-                            </Button>
+                            <>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDelete(item.ID)}
+                              >
+                                <Trash size={14} />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleCopy(item.ID)}
+                              >
+                                <Copy size={14} />
+                              </Button>
+                            </>
                           )}
                         </td>
                       </>
@@ -654,9 +728,9 @@ export default function ItemFormTable({
                               ?.item_name
                           }
                         </td>
-                        <td className="p-2 border text-center">
+                        {/* <td className="p-2 border text-center">
                           {item.is_serial}
-                        </td>
+                        </td> */}
                         <td className="p-2 border text-center">{item.uom}</td>
                         <td className="p-2 border text-center">
                           {item.quantity}
@@ -665,9 +739,15 @@ export default function ItemFormTable({
                           {item.rcv_location}
                         </td>
                         <td className="p-2 border text-center">
-                          {dayjs(item.rec_date).format("D MMMM YYYY")}
+                          {dayjs(item.rec_date).format("D MMM YYYY")}
                         </td>
-                        <td className="p-2 border">{item.remarks}</td>
+                        <td className="p-2 border text-center">
+                          {dayjs(item.exp_date).format("D MMM YYYY")}
+                        </td>
+                        <td className="p-2 border text-center">
+                          {item.lot_number}
+                        </td>
+                        {/* <td className="p-2 border">{item.remarks}</td> */}
                         <td
                           className="p-2 border space-x-2 text-center"
                           style={{ width: "160px" }}
@@ -682,7 +762,7 @@ export default function ItemFormTable({
           </tbody>
           <tfoot>
             <tr className="bg-gray-100 font-semibold">
-              <td className="p-2 border" colSpan={7}>
+              <td className="p-2 border" colSpan={6}>
                 Total
               </td>
               <td className="p-2 border text-center">
@@ -691,7 +771,7 @@ export default function ItemFormTable({
             </tr>
           </tfoot>
         </table>
-      </div>
+      </div >
       <ItemSelectionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

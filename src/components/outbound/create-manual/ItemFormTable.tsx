@@ -1,10 +1,11 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { use, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from "react-select";
-import { Pencil, Trash, X } from "lucide-react";
+import { Copy, Pencil, Trash, X } from "lucide-react";
 import {
   CombinedOutboundProps,
   ItemFormProps,
@@ -30,6 +31,8 @@ export default function ItemFormTable({
     [id: number]: { [key: string]: string };
   }>({});
   const [defaultUoms, setDefaultUoms] = useState([]);
+  const [defaultOptions, setDefaultOptions] = useState([]);
+  const [selectStates, setSelectStates] = useState({});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
@@ -46,6 +49,49 @@ export default function ItemFormTable({
     modeForm = "add";
   }
 
+  const handleFocus = async (itemCode: string, itemId: string | number) => {
+    if (!itemCode || itemCode.trim() === "") return;
+
+    // Set loading true untuk item tertentu
+    setSelectStates((prev) => ({
+      ...prev,
+      [itemId]: {
+        ...(prev[itemId] || {}),
+        loading: true,
+      },
+    }));
+
+    try {
+      const response = await api.post("/uoms/item", { item_code: itemCode });
+      const uoms = response?.data?.data || [];
+
+      const mappedOptions = uoms.map((item) => ({
+        value: item.from_uom,
+        label: item.from_uom,
+      }));
+
+      // Update options hanya untuk item tersebut
+      setSelectStates((prev) => ({
+        ...prev,
+        [itemId]: {
+          loading: false,
+          options: mappedOptions,
+        },
+      }));
+    } catch (error) {
+      console.error("Failed to fetch UOMs:", error);
+      // Tetap kosongkan jika gagal
+      setSelectStates((prev) => ({
+        ...prev,
+        [itemId]: {
+          loading: false,
+          options: [],
+        },
+      }));
+    }
+  };
+
+
   // const handleSelect = (id: number, checked: boolean) => {
   //   setSelectedIds((prev) =>
   //     checked ? [...prev, id] : prev.filter((sid) => sid !== id)
@@ -55,7 +101,7 @@ export default function ItemFormTable({
   const fetchData = async () => {
     try {
       const [products, uoms, vasPages] = await Promise.all([
-        api.get("/products"),
+        api.get("/products?owner=" + headerForm.owner_code),
         api.get("/uoms"),
         api.get("/vas/page"),
       ]);
@@ -89,7 +135,7 @@ export default function ItemFormTable({
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [headerForm.owner_code]);
 
   const handleAddItems = () => {
     setModalMode("create");
@@ -167,6 +213,35 @@ export default function ItemFormTable({
     }
   };
 
+  const handleCopy = (id: number) => {
+    setMuatan((prevItems) => {
+      const index = prevItems.findIndex((item) => item.ID === id);
+      if (index === -1) return prevItems; // item tidak ditemukan
+
+      const itemToCopy = prevItems[index];
+
+      // Buat ID baru unik (bisa pakai UUID juga kalau mau)
+      const newID = Math.max(...prevItems.map((i) => i.ID), 0) + 1;
+
+      const duplicatedItem = {
+        ...itemToCopy,
+        ID: newID,
+        mode: "create",
+        exp_date: "",
+        lot_number: "",
+      };
+
+      // Sisipkan hasil copy di posisi setelah item yang dicopy
+      const newItems = [
+        ...prevItems.slice(0, index + 1),
+        duplicatedItem,
+        ...prevItems.slice(index + 1),
+      ];
+
+      return newItems;
+    });
+  };
+
   // Handle apply dari modal
   const handleModalApply = (selectedItems: Product[]) => {
     console.log("Selected Items:", selectedItems);
@@ -185,6 +260,8 @@ export default function ItemFormTable({
         mode: "create",
         sn: product.has_serial,
         vas_id: vasOptions.find((item) => item.label === "NO")?.value,
+        exp_date: "",
+        lot_number: "",
       }));
 
       setMuatan((prev) => [...prev, ...newItems]);
@@ -245,15 +322,21 @@ export default function ItemFormTable({
               <th className="p-2 border" style={{ width: "100px" }}>
                 Qty
               </th>
-              <th className="p-2 border" style={{ width: "55px" }}>
+              {/* <th className="p-2 border" style={{ width: "55px" }}>
                 SN
-              </th>
+              </th> */}
               {/* <th className="p-2 border" style={{ width: "120px" }}>
               UoM
             </th> */}
               {/* <th className="p-2 border">Inv. Location</th> */}
-              <th className="p-2 border">VAS</th>
-              <th className="p-2 border" style={{ width: "160px" }}>
+              {/* <th className="p-2 border">VAS</th> */}
+              <th className="p-2 border" style={{ width: "50px" }}>
+                UoM
+              </th>
+              <th className="p-2 border" style={{ width: "140px" }}>
+                Lot No.
+              </th>
+              <th className="p-2 border" style={{ width: "130px" }}>
                 Action
               </th>
             </tr>
@@ -351,14 +434,46 @@ export default function ItemFormTable({
                     )}
                   </td>
                   <td className="p-2 border">
+                    <Select
+                      key={item.ID}
+                      className="w-40"
+                      options={
+                        selectStates[item.ID]?.options ?? defaultOptions
+                      }
+                      onFocus={() => handleFocus(item.item_code, item.ID)}
+                      isLoading={selectStates[item.ID]?.loading ?? false}
+                      value={(
+                        selectStates[item.ID]?.options ?? defaultOptions
+                      ).find((option) => option.value === item.uom)}
+                      onChange={(value) =>
+                        handleChange(item.ID, "uom", value?.value)
+                      }
+                    />
+                  </td>
+                  <td className="p-2 border">
+                    <Input
+                      style={{ fontSize: "12px" }}
+                      type="text"
+                      value={item.lot_number}
+                      onChange={(e) =>
+                        handleChange(item.ID, "lot_number", e.target.value)
+                      }
+                    />
+                    {errors[item.ID]?.remarks && (
+                      <small className="text-red-500">
+                        {errors[item.ID].lot_number}
+                      </small>
+                    )}
+                  </td>
+                  {/* <td className="p-2 border">
                     <Input
                       style={{ fontSize: "12px" }}
                       readOnly
                       type="text"
                       value={item.sn}
                     />
-                  </td>
-                  <td className="p-2 border">
+                  </td> */}
+                  {/* <td className="p-2 border">
                     <Select
                       // isDisabled={headerForm.status == "complete"}
                       className="text-sm w-34"
@@ -371,21 +486,30 @@ export default function ItemFormTable({
                         handleChange(item.ID, "vas_id", value?.value)
                       }
                     />
-                  </td>
+                  </td> */}
                   <td
                     className="p-2 border space-x-2 text-center"
-                    style={{ width: "160px" }}
+                    style={{ width: "130px" }}
                   >
                     {headerForm.status == "open" || item.mode == "create" || modeForm == "copy" ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          handleCancel(item);
-                        }}
-                      >
-                        <X size={14} />
-                      </Button>
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            handleCancel(item);
+                          }}
+                        >
+                          <X size={14} />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCopy(item.ID)}
+                        >
+                          <Copy size={14} />
+                        </Button>
+                      </>
                     ) : (
                       <>
                         {/* <Button

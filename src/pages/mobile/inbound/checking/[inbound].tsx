@@ -39,6 +39,8 @@ interface ScanItem {
   qaStatus: string;
   scanType: string;
   qtyScan: number;
+  expDate?: string;
+  lotNo?: string;
   uploaded: boolean;
 }
 
@@ -79,12 +81,23 @@ const CheckingPage = () => {
   const [scanLocation, setScanLocation] = useState("");
   const [scanBarcode, setScanBarcode] = useState("");
   const [scanSerial, setScanSerial] = useState("");
+
   const [serialInputs, setSerialInputs] = useState([""]);
   const [searchInboundDetail, setSearchInboundDetail] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showModalDetail, setShowModalDetail] = useState(false);
+
+
+
+  const [expDate, setExpDate] = useState("");
+  const [lotNo, setLotNo] = useState("");
   const [scanQty, setScanQty] = useState<string | number>(1);
+
+  const [uniqueExpDates, setUniqueExpDates] = useState([]);
+  const [uniqueLotNos, setUniqueLotNos] = useState([]);
+  const [uniqueQtys, setUniqueQtys] = useState([]);
+
 
   const [editInboundBarcode, setEditInboundBarcode] = useState(false);
   const [itemEditBarcode, setItemEditBarcode] = useState<ScannedItem>(null);
@@ -139,6 +152,8 @@ const CheckingPage = () => {
       qaStatus: scanQa,
       serial: serialNumber,
       qtyScan: scanQty as number,
+      expDate: expDate,
+      lotNo: lotNo,
       uploaded: false,
     };
 
@@ -329,6 +344,27 @@ const CheckingPage = () => {
     const res = await response.data;
 
     if (res.success) {
+
+      const data = (res.data ?? []) as Array<{
+        exp_date: string;
+        lot_number: string;
+        quantity: number;
+      }>;
+
+      // ambil nilai unik
+      const expDates = [...new Set(data.map(d => d.exp_date))];
+      const lotNos = [...new Set(data.map(d => d.lot_number))];
+      const qtys = [...new Set(data.map(d => d.quantity))];
+
+      setUniqueExpDates(expDates);
+      setUniqueLotNos(lotNos);
+      setUniqueQtys(qtys);
+
+      // kalau cuma satu data unik, langsung auto-fill
+      if (expDates.length === 1) setExpDate(expDates[0]);
+      if (lotNos.length === 1) setLotNo(lotNos[0]);
+      if (qtys.length === 1) setScanQty(qtys[0]);
+
       if (res.is_serial) {
         console.log("Item requires serial:", res);
         setIsSerial(res.is_serial);
@@ -600,9 +636,8 @@ const CheckingPage = () => {
                 filteredScannedItems.map((item, index) => (
                   <div
                     key={index}
-                    className={`p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${
-                      item.status === "in stock" ? "bg-green-50" : "bg-blue-50"
-                    }`}
+                    className={`p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${item.status === "in stock" ? "bg-green-50" : "bg-blue-50"
+                      }`}
                   >
                     <div className="text-xs space-y-1">
                       <div className="flex justify-between">
@@ -788,7 +823,7 @@ const CheckingPage = () => {
                 </form>
               ) : (
                 <form onSubmit={handleQuantitySubmit}>
-                  <div className="mb-6">
+                  {/* <div className="mb-6">
                     <div className="relative">
                       <label htmlFor="qty" className="text-sm text-gray-600">
                         Qty :{" "}
@@ -803,13 +838,11 @@ const CheckingPage = () => {
                         onChange={(e) => {
                           const val = e.target.value;
 
-                          // kalau kosong biarkan kosong
                           if (val === "") {
                             setScanQty("");
                             return;
                           }
 
-                          // kalau angka, paksa minimal 1
                           const num = Number(val);
                           setScanQty(num < 1 ? 1 : num);
                         }}
@@ -827,7 +860,159 @@ const CheckingPage = () => {
                         </button>
                       )}
                     </div>
+                  </div> */}
+
+
+                  <div className="space-y-3 mb-6">
+
+
+                    {/* Exp Date */}
+                    <div className="flex items-center gap-3">
+                      <label htmlFor="exp_date" className="text-sm text-gray-600 w-24 text-right">
+                        Exp Date :
+                      </label>
+                      <div className="relative flex-1">
+                        {/* <Input
+                          type="date"
+                          className="w-full"
+                          list="expDateOptions"
+                          id="exp_date"
+                          value={expDate}
+                          onChange={(e) => setExpDate(e.target.value)}
+                        />
+                        <datalist id="expDateOptions">
+                          {uniqueExpDates.map((d, i) => (
+                            <option key={i} value={d} />
+                          ))}
+                        </datalist> */}
+
+                        {uniqueExpDates.length > 1 ? (
+                          // Kalau banyak, pakai <select> saja
+                          <select
+                            id="exp_date"
+                            className="w-full border rounded p-2"
+                            value={expDate}
+                            onChange={(e) => setExpDate(e.target.value)}
+                          >
+                            <option value="">Pilih Exp Date...</option>
+                            {uniqueExpDates.map((d, i) => (
+                              <option key={i} value={d}>
+                                {d}
+                              </option>
+                            ))}
+                            <option value="other">Other (manual)</option>
+                          </select>
+                        ) : (
+                          // Kalau cuma satu, tetap pakai input date
+                          <Input
+                            type="date"
+                            id="exp_date"
+                            className="w-full"
+                            value={expDate}
+                            onChange={(e) => setExpDate(e.target.value)}
+                          />
+                        )}
+
+                        {expDate && (
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            onClick={() => {
+                              setExpDate("");
+                              document.getElementById("exp_date")?.focus();
+                            }}
+                          >
+                            <XCircle size={18} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Lot No */}
+                    <div className="flex items-center gap-3">
+                      <label htmlFor="lot_no" className="text-sm text-gray-600 w-24 text-right">
+                        Lot No :
+                      </label>
+                      <div className="relative flex-1">
+                        <Input
+                          type="text"
+                          className="w-full"
+                          id="lot_no"
+                          list="lotNoOptions"
+                          value={lotNo}
+                          onChange={(e) => setLotNo(e.target.value)}
+                          placeholder="Enter lot number..."
+                          autoComplete="off"
+                        />
+                        <datalist id="lotNoOptions">
+                          {uniqueLotNos.map((d, i) => (
+                            <option key={i} value={d} />
+                          ))}
+                        </datalist>
+                        {lotNo && (
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            onClick={() => {
+                              setLotNo("");
+                              document.getElementById("lot_no")?.focus();
+                            }}
+                          >
+                            <XCircle size={18} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+
+                    {/* Qty */}
+                    <div className="flex items-center gap-3">
+                      <label htmlFor="qty" className="text-sm text-gray-600 w-24 text-right">
+                        Qty :
+                      </label>
+                      <div className="relative flex-1">
+                        <Input
+                          min={1}
+                          type="number"
+                          className="w-full"
+                          id="qty"
+                          list="qtyOptions"
+                          value={scanQty}
+                          autoComplete="off"
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "") {
+                              setScanQty("");
+                              return;
+                            }
+                            const num = Number(val);
+                            setScanQty(num < 1 ? 1 : num);
+                          }}
+                        />
+                        <datalist id="qtyOptions">
+                          {uniqueQtys.map((d, i) => (
+                            <option key={i} value={d} />
+                          ))}
+                        </datalist>
+                        {scanQty && (
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            onClick={() => {
+                              setScanQty(1);
+                              document.getElementById("qty")?.focus();
+                            }}
+                          >
+                            <XCircle size={18} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
                   </div>
+
+
+
 
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button type="submit" className="w-full">

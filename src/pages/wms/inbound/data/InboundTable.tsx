@@ -15,6 +15,7 @@ import {
   Plus,
   Printer,
   PrinterIcon,
+  RefreshCcw,
   Trash2,
   Upload,
   X,
@@ -137,17 +138,17 @@ const InboundTable = () => {
 
                 {(params.data.status === "checking" ||
                   params.data.status === "partially received") && (
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePutaway(params.data.inbound_no);
-                    }}
-                  >
-                    <Blocks className="mr-2 h-4 w-4" />
-                    Confirm Putaway
-                  </DropdownMenuItem>
-                )}
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePutaway(params.data.inbound_no);
+                      }}
+                    >
+                      <Blocks className="mr-2 h-4 w-4" />
+                      Confirm Putaway
+                    </DropdownMenuItem>
+                  )}
 
                 {params.data.status === "fully received" && (
                   <DropdownMenuItem
@@ -213,7 +214,7 @@ const InboundTable = () => {
       headerName: "Date",
       width: 120,
       cellRenderer: (params) => {
-        return <div>{dayjs(params.value).format("D MMMM YYYY")}</div>;
+        return <div>{dayjs(params.value).format("DD MMM YYYY")}</div>;
       },
     },
     { field: "receipt_id", headerName: "Receipt ID", width: 130 },
@@ -309,6 +310,28 @@ const InboundTable = () => {
       });
   };
 
+  const handleWaveInbound = () => {
+    eventBus.emit("loading", true);
+    api
+      .post("/integration/inbound/create-inbound")
+      .then((response) => {
+        eventBus.emit("loading", false);
+        if (response.data.success) {
+          eventBus.emit("showAlert", {
+            title: "Success!",
+            description: response.data.message,
+            type: "success",
+          });
+          mutate("/inbound");
+        }
+
+      })
+      .catch((error) => {
+        eventBus.emit("loading", false);
+        console.error("Error wave inbound:", error);
+      });
+  };
+
   const handlePutaway = (inbound_no: string) => {
     eventBus.emit("loading", true);
     api
@@ -387,6 +410,16 @@ const InboundTable = () => {
             >
               <Plus className="mr-1 h-4 w-4" />
               Add
+            </Button>
+            <Button
+              className="ml-2"
+              variant="secondary"
+              onClick={() => {
+                handleWaveInbound();
+              }}
+            >
+              <RefreshCcw className="mr-1 h-4 w-4" />
+              Wave Inbound
             </Button>
           </div>
         </div>

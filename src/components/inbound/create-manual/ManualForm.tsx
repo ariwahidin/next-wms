@@ -79,7 +79,7 @@ export default function ManualForm() {
     { value: "INDONESIA", label: "INDONESIA" },
     { value: "JAPAN", label: "JAPAN" },
   ]);
-  
+
   const [ownerOptions, setOwnerOptions] = useState<ItemOptions[]>([]);
   const [whsCodeOptions, setWhsCodeOptions] = useState<ItemOptions[]>([]);
 
@@ -188,6 +188,7 @@ export default function ManualForm() {
     }));
 
     console.log("Data yang disimpan:", formData, references, newMuatan);
+    // return;
 
 
     if (formData.ID === 0) {
@@ -230,6 +231,8 @@ export default function ManualForm() {
             type: "success",
           });
           router.push("/wms/inbound/data");
+        } else {
+          eventBus.emit("loading", false);
         }
       } catch (error) {
         eventBus.emit("loading", false);
@@ -860,7 +863,10 @@ export default function ManualForm() {
         </>
       ))}
       {itemsReceived?.length > 0 && (
-        <ItemScannedTable itemsReceived={itemsReceived} />
+        <ItemScannedTable
+          headerForm={formData}
+          itemsReceived={itemsReceived}
+        />
       )}
     </div>
   );

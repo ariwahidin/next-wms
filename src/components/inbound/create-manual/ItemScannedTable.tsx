@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ItemReceived } from "@/types/inbound";
+import { HeaderFormProps, ItemReceived } from "@/types/inbound";
 import dayjs from "dayjs";
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
@@ -26,10 +26,12 @@ import InventoryModal from "./inventoryModal";
 import { Input } from "@/components/ui/input";
 
 interface ItemScannedTableProps {
+  headerForm: HeaderFormProps;
   itemsReceived: ItemReceived[];
 }
 
 const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
+  headerForm,
   itemsReceived,
 }) => {
   console.log("Items Received:", itemsReceived);
@@ -63,18 +65,6 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
   const handleViewInventory = () => {
     setShowInventory(true);
   };
-
-  // const toggleSelectAll = () => {
-  //   const newSelectAll = !selectAll;
-  //   setSelectAll(newSelectAll);
-  //   setSelectedItems(
-  //     newSelectAll
-  //       ? itemsReceived
-  //         .filter((item) => item.status === "pending")
-  //         .map((item) => item.ID)
-  //       : []
-  //   );
-  // };
 
   const toggleSelectAll = () => {
     const newSelectAll = !selectAll;
@@ -145,7 +135,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Received Items</h2>
           <div className="flex gap-2">
-            {selectedItems.length > 0 && (
+            {selectedItems.length > 0 && headerForm.intergration == false && (
               <Button
                 onClick={confirmPutaway}
                 disabled={isLoading || selectedItems.length === 0}
@@ -178,10 +168,18 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead>
-                <Checkbox
+
+                {selectedItems.length > 0 && headerForm.intergration == false && (
+                  <Checkbox
+                    checked={selectAll}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                )}
+
+                {/* <Checkbox
                   checked={selectAll}
                   onCheckedChange={toggleSelectAll}
-                />
+                /> */}
               </TableHead>
               <TableHead>No</TableHead>
               <TableHead>Item Code</TableHead>
@@ -198,7 +196,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
             {filteredItems.map((item, index) => (
               <TableRow key={item.ID}>
                 <TableCell>
-                  {item.status == "pending" && (
+                  {item.status == "pending" && headerForm.intergration == false && (
                     <Checkbox
                       checked={selectedItems.includes(item.ID)}
                       onCheckedChange={() => toggleSelectItem(item.ID)}
