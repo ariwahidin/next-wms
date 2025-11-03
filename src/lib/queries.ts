@@ -347,6 +347,10 @@ export async function getInboundReport(startDate: string, endDate: string) {
       ib.whs_code AS [WH CODE],
       ih.bl_no AS [BL NO],
       ih.no_truck AS [TRUCK NO],
+      ih.arrival_time AS [ARRIVAL TIME],
+	    ih.start_unloading AS [START UNLOADING],
+	    ih.end_unloading AS [FINSIH UNLOADING],
+	    ih.truck_size AS [TRUCK SIZE],
       ih.container AS [CONTAINER NO],
       ih.receipt_id AS [INVOICE NO],
       s.supplier_name AS SUPPLIER,
@@ -552,6 +556,29 @@ export async function getStockReport(viewBy: string) {
     -- p.cbm
     ORDER BY iv.item_code ASC`;
   }
+
+  return queryDB(sql);
+}
+
+export async function getMasterItem() {
+
+  const sql = `SELECT 
+  ROW_NUMBER() OVER (ORDER BY id ASC) AS [No],
+  item_code AS [Item Code],
+  barcode AS [GMC Code],
+  item_name AS [Item Name],
+  width AS Width,
+  [length] AS [Length],
+  height AS Height,
+  uom AS UOM,
+  cbm AS [CBM (M3)],
+  net_weight AS [Net Weight],
+  [group] AS [Group],
+  category AS [Category]
+  FROM products
+  WHERE deleted_at is null
+  AND owner_code = 'YMID'
+  ORDER BY item_code ASC`;
 
   return queryDB(sql);
 }

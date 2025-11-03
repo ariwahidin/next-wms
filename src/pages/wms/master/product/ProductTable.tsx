@@ -5,7 +5,7 @@
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import api from "@/lib/api";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./ProductTable.module.css";
@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import ProductForm from "./ProductForm";
 
 
-  
+
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -127,10 +127,15 @@ const ProductTable = () => {
     []
   );
 
-   const  handleClose = () => {
-      setIsOpen(false);
-      setEditData(null);
-    };
+  const handleClose = () => {
+    setIsOpen(false);
+    setEditData(null);
+  };
+
+  const downloadExcel = () => {
+    const url = `/api/download-master-item`
+    window.open(url, "_blank")
+  }
 
   return (
     <>
@@ -141,6 +146,10 @@ const ProductTable = () => {
               <Button className="absolute left-6 top-18" onClick={handleAdd}>
                 <Plus className="mr-2 w-4" />
                 Add Item
+              </Button>
+              <Button className="absolute ml-2 left-36 top-18" onClick={downloadExcel}>
+                <Download className="mr-2 w-4" />
+                Download Excel
               </Button>
             </div>
           </div>

@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
     const inbound = await getInboundReport(startDate, endDate);
 
     // console.log("Inbound data:", inbound);
-
     // return;
 
     if (inbound.length === 0) {
