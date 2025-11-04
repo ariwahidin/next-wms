@@ -8,6 +8,11 @@ export const createStyledSheet = (
   sheetName: string,
   data: any[]
 ) => {
+
+  if (data.length === 0) {
+    return;
+  }
+
   const sheet = workbook.addWorksheet(sheetName);
   const headers = Object.keys(data[0]);
   sheet.addRow(headers);

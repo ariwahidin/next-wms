@@ -9,7 +9,6 @@ import { createStyledSheet, stockSheet } from "@/lib/excelHelper";
 import { getInbound, getOutbound, getStockSummary } from "@/lib/queries";
 
 
-
 // Format ke YYYY-MM-DD supaya SQL friendly
 function formatDate(date: Date) {
   const yyyy = date.getFullYear();
@@ -51,17 +50,17 @@ export async function GET() {
     const outbound = await getOutbound(formattedStart, formattedEnd);
     const stockSummary = await getStockSummary();
 
-    if (inbound.length === 0 || outbound.length === 0) {
-      const result = {
-        success: false,
-        message: "Inbound or outbound data is empty for this date range.",
-        startDate: formattedStart,
-        endDate: formattedEnd,
-        generateAt,
-      };
-      writeLog(result);
-      return NextResponse.json(result);
-    }
+    // if (inbound.length === 0 || outbound.length === 0) {
+    //   const result = {
+    //     success: false,
+    //     message: "Inbound or outbound data is empty for this date range.",
+    //     startDate: formattedStart,
+    //     endDate: formattedEnd,
+    //     generateAt,
+    //   };
+    //   writeLog(result);
+    //   return NextResponse.json(result);
+    // }
 
     const workbook = new ExcelJS.Workbook();
     createStyledSheet(workbook, "Inbound", inbound);
