@@ -5,8 +5,8 @@ import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import fs from "fs";
 import path from "path";
-import { createStyledSheet, stockSheet } from "@/lib/excelHelper";
-import { getInbound, getOutbound, getStockSummary } from "@/lib/queries";
+import { createInboundSheet, createOutboundSheet, stockSheet } from "@/lib/excelHelper";
+import { getInboundDev, getOutboundDev, getStockSummary } from "@/lib/queries";
 
 
 // Format ke YYYY-MM-DD supaya SQL friendly
@@ -46,8 +46,8 @@ export async function GET() {
   const filePath = path.join(folderPath, "Activity_Report.xlsx");
 
   try {
-    const inbound = await getInbound(formattedStart, formattedEnd);
-    const outbound = await getOutbound(formattedStart, formattedEnd);
+    const inbound = await getInboundDev(formattedStart, formattedEnd);
+    const outbound = await getOutboundDev(formattedStart, formattedEnd);
     const stockSummary = await getStockSummary();
 
     // if (inbound.length === 0 || outbound.length === 0) {
@@ -63,8 +63,8 @@ export async function GET() {
     // }
 
     const workbook = new ExcelJS.Workbook();
-    createStyledSheet(workbook, "Inbound", inbound);
-    createStyledSheet(workbook, "Outbound", outbound);
+    createInboundSheet(workbook, "Inbound", inbound);
+    createOutboundSheet(workbook, "Outbound", outbound);
     stockSheet(workbook, "Stock", stockSummary);
 
     if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });

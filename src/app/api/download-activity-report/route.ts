@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import ExcelJS from "exceljs"
-import { createStyledSheet, stockSheet } from "@/lib/excelHelper"
-import { getInbound, getOutbound, getStockSummary } from "@/lib/queries";
+import { createInboundSheet, createOutboundSheet, stockSheet } from "@/lib/excelHelper"
+import { getInboundDev, getOutboundDev, getStockSummary } from "@/lib/queries";
+
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
@@ -13,8 +14,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Start date and end date are required" }, { status: 400 })
     }
 
-    const inbound = await getInbound(startDate, endDate);
-    const outbound = await getOutbound(startDate, endDate);
+    const inbound = await getInboundDev(startDate, endDate);
+    const outbound = await getOutboundDev(startDate, endDate);
     const stockSummary = await getStockSummary();
 
     // if (inbound.length === 0 || outbound.length === 0) {
@@ -25,8 +26,8 @@ export async function GET(request: NextRequest) {
     // }
 
     const workbook = new ExcelJS.Workbook()
-    createStyledSheet(workbook, "Inbound", inbound)
-    createStyledSheet(workbook, "Outbound", outbound)
+    createInboundSheet(workbook, "Inbound", inbound)
+    createOutboundSheet(workbook, "Outbound", outbound)
     stockSheet(workbook, "Stock", stockSummary)
 
     const buffer = await workbook.xlsx.writeBuffer()

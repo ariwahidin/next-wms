@@ -65,86 +65,6 @@ export const createStyledSheet = (
 };
 
 
-// export const createInboundSheet = (
-//   workbook: ExcelJS.Workbook,
-//   sheetName: string,
-//   data: any[]
-// ) => {
-
-//   if (data.length === 0) {
-//     return;
-//   }
-
-//   const sheet = workbook.addWorksheet(sheetName);
-//   const headers = Object.keys(data[0]);
-//   sheet.addRow(headers);
-
-//   // Style header
-//   const headerRow = sheet.getRow(1);
-//   headerRow.height = 25;
-//   headerRow.eachCell((cell) => {
-//     cell.fill = {
-//       type: "pattern",
-//       pattern: "solid",
-//       fgColor: { argb: "4472C4" }, // biru
-//     };
-//     cell.font = { bold: true, color: { argb: "FFFFFF" } };
-//     cell.alignment = { vertical: "middle", horizontal: "center" };
-//     cell.border = {
-//       top: { style: "thin" },
-//       left: { style: "thin" },
-//       bottom: { style: "thin" },
-//       right: { style: "thin" },
-//     };
-//   });
-
-//   // Isi data
-//   data.forEach((obj) => {
-//     const row = sheet.addRow(Object.values(obj));
-//     row.height = 20;
-//     row.eachCell((cell) => {
-//       cell.alignment = { vertical: "middle", horizontal: "left" };
-//       cell.border = {
-//         top: { style: "thin" },
-//         left: { style: "thin" },
-//         bottom: { style: "thin" },
-//         right: { style: "thin" },
-//       };
-//     });
-//   });
-
-//   const startRow = 2;
-//   let rowStart = startRow;
-//   for (let i = startRow; i < sheet.lastRow.number; i++) {
-//     const currentInboundNo = sheet.getRow(i).getCell(2).value;
-//     const nextInboundNo = sheet.getRow(i + 1)?.getCell(2)?.value;
-
-//     if (currentInboundNo !== nextInboundNo) {
-//       const rowEnd = i;
-//       if (rowEnd > rowStart) {
-//         sheet.mergeCells(rowStart, 14, rowEnd, 14);
-//         const mergedCell = sheet.getCell(rowStart, 14);
-//         mergedCell.alignment = { vertical: "middle", horizontal: "center" };
-//       }
-//       rowStart = i + 1;
-//     }
-//   }
-
-
-//   // Auto width
-//   sheet.columns.forEach((col) => {
-//     let maxLength = 0;
-//     col.eachCell({ includeEmpty: true }, (cell) => {
-//       const val = cell.value ? cell.value.toString() : "";
-//       maxLength = Math.max(maxLength, val.length);
-//     });
-//     col.width = maxLength < 15 ? 15 : maxLength + 2;
-//   });
-
-//   return sheet;
-// };
-
-
 export const createInboundSheet = (
   workbook: ExcelJS.Workbook,
   sheetName: string,
@@ -153,7 +73,24 @@ export const createInboundSheet = (
   if (data.length === 0) return;
 
   const sheet = workbook.addWorksheet(sheetName);
-  const headers = Object.keys(data[0]);
+  // const headers = Object.keys(data[0]);
+  const headers = [
+    "NO",
+    "RECEIVED ID",
+    "REC DATE",
+    "WH CODE",
+    "BL NO",
+    "TRUCK NO",
+    "CONTAINER NO",
+    "INVOICE NO",
+    "SUPPLIER",
+    "ITEM CODE",
+    "QUANTITY",
+    "M3 PCS",
+    "TOTAL M3",
+    "KOLI",
+    "REMARK"
+  ];
   sheet.addRow(headers);
 
   // Style header
@@ -177,9 +114,27 @@ export const createInboundSheet = (
 
   // Tambahkan data
   data.forEach((obj) => {
-    const row = sheet.addRow(Object.values(obj));
+    // const row = sheet.addRow(Object.values(obj));
+    const row = sheet.addRow([
+      obj.NO,
+      obj.RECEIVED_ID,
+      obj.REC_DATE,
+      obj.WH_CODE,
+      obj.BL_NO,
+      obj.TRUCK_NO,
+      obj.CONTAINER_NO,
+      obj.INVOICE_NO,
+      obj.SUPPLIER,
+      obj.ITEM_CODE,
+      obj.QUANTITY,
+      obj.M3_PCS,
+      obj.TOTAL_M3,
+      obj.KOLI,
+      obj.REMARK
+    ]);
+
     row.height = 20;
-    row.eachCell((cell) => {
+    row.eachCell((cell, colNumber) => {
       cell.alignment = { vertical: "middle", horizontal: "left" };
       cell.border = {
         top: { style: "thin" },
@@ -187,30 +142,67 @@ export const createInboundSheet = (
         bottom: { style: "thin" },
         right: { style: "thin" },
       };
+
+      if (colNumber === 11) {
+        const value = Number(cell.value);
+        if (!isNaN(value)) cell.value = value;
+      }
+
+      if (colNumber === 14) {
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        const value = Number(cell.value);
+        if (!isNaN(value)) cell.value = value;
+      }
     });
   });
 
   // Mulai dari row ke-2 karena row 1 adalah header
-  // const startRow = 2;
-  // let rowStart = startRow;
+  const startRow = 2;
+  let rowStart = startRow;
 
-  // Ambil index kolom "KOLI" biar nggak hardcode
-  // const koliColIndex = headers.indexOf("KOLI") + 1;
-  // const inboundColIndex = headers.indexOf("RECEIVED ID") + 1;
+  for (let i = startRow; i < sheet.lastRow.number; i++) {
+    const currentInbound = sheet.getRow(i).getCell(2).value;
+    const nextInbound = sheet.getRow(i + 1)?.getCell(2)?.value;
+
+    if (currentInbound !== nextInbound) {
+      const rowEnd = i;
+
+      if (rowEnd >= rowStart) {
+        sheet.mergeCells(rowStart, 14, rowEnd, 14);
+        const mergedCell = sheet.getCell(rowStart, 14);
+        mergedCell.alignment = { vertical: "middle", horizontal: "center" };
+      }
+
+      rowStart = i + 1;
+    }
+  }
+
+  // Tambahan: pastikan grup terakhir ikut di-merge
+  if (rowStart <= sheet.lastRow.number) {
+    const rowEnd = sheet.lastRow.number;
+    sheet.mergeCells(rowStart, 14, rowEnd, 14);
+    const mergedCell = sheet.getCell(rowStart, 14);
+    mergedCell.alignment = { vertical: "middle", horizontal: "center" };
+  }
+
 
   // for (let i = startRow; i <= sheet.lastRow.number; i++) {
-  //   const currentInbound = sheet.getRow(i).getCell(inboundColIndex).value;
-  //   const nextInbound = sheet.getRow(i + 1)?.getCell(inboundColIndex)?.value;
+  //   const currentInbound = sheet.getRow(i).getCell(2).value;
+  //   const nextInbound = sheet.getRow(i + 1)?.getCell(2)?.value;
 
   //   if (currentInbound !== nextInbound) {
   //     const rowEnd = i;
-  //     sheet.mergeCells(rowStart, koliColIndex, rowEnd, koliColIndex);
-  //     const mergedCell = sheet.getCell(rowStart, koliColIndex);
-  //     mergedCell.alignment = { vertical: "middle", horizontal: "center" };
+
+  //     if (rowEnd > rowStart) {
+  //       sheet.mergeCells(rowStart, 14, rowEnd, 14);
+  //       const mergedCell = sheet.getCell(rowStart, 14);
+  //       mergedCell.alignment = { vertical: "middle", horizontal: "center" };
+  //     }
 
   //     rowStart = i + 1;
   //   }
   // }
+
 
   // Auto width
   sheet.columns.forEach((col) => {
@@ -220,11 +212,174 @@ export const createInboundSheet = (
       maxLength = Math.max(maxLength, val.length);
     });
     col.width = maxLength < 15 ? 15 : maxLength + 2;
+
   });
 
   return sheet;
 };
 
+export const createOutboundSheet = (
+  workbook: ExcelJS.Workbook,
+  sheetName: string,
+  data: any[]
+) => {
+  if (data.length === 0) return;
+
+  const sheet = workbook.addWorksheet(sheetName);
+  // const headers = Object.keys(data[0]);
+  const headers = [
+    "NO",
+    "WH CODE",
+    "TRUCK NO",
+    "PRINT DO DATE",
+    "PRINT DO TIME",
+    "OUT DATE",
+    "DO NO",
+    "DELIVERY NAME",
+    "CITY",
+    "DELIVERY ADD",
+    "ITEM CODE",
+    "QTY",
+    "M3 PCS",
+    "M3 TOTAL",
+    "KOLI",
+    "TRUCKER",
+    "REMARK DETAIL",
+    "REMARK HEADER",
+    "SPK NO",
+    "REMARK SPK"
+  ];
+  sheet.addRow(headers);
+
+  // Style header
+  const headerRow = sheet.getRow(1);
+  headerRow.height = 25;
+  headerRow.eachCell((cell) => {
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "4472C4" },
+    };
+    cell.font = { bold: true, color: { argb: "FFFFFF" } };
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    };
+  });
+
+  // Tambahkan data
+  data.forEach((obj) => {
+    // const row = sheet.addRow(Object.values(obj));
+    const row = sheet.addRow([
+      obj.NO,
+      obj.WH_CODE,
+      obj.TRUCK_NO,
+      obj.PRINT_DO_DATE,
+      obj.PRINT_DO_TIME,
+      obj.OUT_DATE,
+      obj.DO_NO,
+      obj.DELIVERY_NAME,
+      obj.CITY,
+      obj.DELIVERY_ADD,
+      obj.ITEM_CODE,
+      obj.QTY,
+      obj.M3_PCS,
+      obj.M3_TOTAL,
+      obj.KOLI,
+      obj.TRUCKER,
+      obj.REMARK_DETAIL,
+      obj.REMARK_HEADER,
+      obj.SPK_NO,
+      obj.REMARK_SPK
+    ]);
+
+    row.height = 20;
+    row.eachCell((cell, colNumber) => {
+      cell.alignment = { vertical: "middle", horizontal: "left" };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+
+      if (colNumber === 12) {
+        const value = Number(cell.value);
+        if (!isNaN(value)) cell.value = value;
+      }
+
+      if (colNumber === 15) {
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        const value = Number(cell.value);
+        if (!isNaN(value)) cell.value = value;
+      }
+    });
+  });
+
+  // Mulai dari row ke-2 karena row 1 adalah header
+  const startRow = 2;
+  let rowStart = startRow;
+
+  for (let i = startRow; i < sheet.lastRow.number; i++) {
+    const currentDoNo = sheet.getRow(i).getCell(7).value;
+    const nextDoNo = sheet.getRow(i + 1)?.getCell(7)?.value;
+
+    if (currentDoNo !== nextDoNo) {
+      const rowEnd = i;
+
+      if (rowEnd > rowStart) {
+        sheet.mergeCells(rowStart, 15, rowEnd, 15);
+        const mergedCell = sheet.getCell(rowStart, 15);
+        mergedCell.alignment = { vertical: "middle", horizontal: "center" };
+      }
+
+      rowStart = i + 1;
+    }
+  }
+
+  // Tambahkan merge terakhir (biar 1 grup pun tetap ke-merge)
+  if (rowStart <= sheet.lastRow.number) {
+    const rowEnd = sheet.lastRow.number;
+    sheet.mergeCells(rowStart, 15, rowEnd, 15);
+    const mergedCell = sheet.getCell(rowStart, 15);
+    mergedCell.alignment = { vertical: "middle", horizontal: "center" };
+  }
+
+
+  // for (let i = startRow; i < sheet.lastRow.number; i++) {
+  //   const currentDoNo = sheet.getRow(i).getCell(6).value;
+  //   const nextDoNo = sheet.getRow(i + 1)?.getCell(6)?.value;
+
+  //   if (currentDoNo !== nextDoNo) {
+  //     const rowEnd = i;
+
+  //     if (rowEnd > rowStart) {
+  //       sheet.mergeCells(rowStart, 14, rowEnd, 14);
+  //       const mergedCell = sheet.getCell(rowStart, 14);
+  //       mergedCell.alignment = { vertical: "middle", horizontal: "center" };
+  //     }
+
+  //     rowStart = i + 1;
+  //   }
+  // }
+
+
+  // Auto width
+  sheet.columns.forEach((col) => {
+    let maxLength = 0;
+    col.eachCell({ includeEmpty: true }, (cell) => {
+      const val = cell.value ? String(cell.value) : "";
+      maxLength = Math.max(maxLength, val.length);
+    });
+    col.width = maxLength < 15 ? 15 : maxLength + 2;
+
+  });
+
+  return sheet;
+};
 
 export const createStyledHandlingSheet = (workbook: ExcelJS.Workbook, dataLeft: any[], dataRight: any[]) => {
   const ws = workbook.addWorksheet("report-handling");
@@ -478,7 +633,6 @@ export const stockSheet = (
   return sheet;
 };
 
-
 export const createCyleCountSheet = (
   workbook: ExcelJS.Workbook,
   dataLeft: any[],
@@ -646,8 +800,6 @@ export const createCyleCountSheet = (
 
   return ws;
 };
-
-
 
 export const createStockSheet = (
   workbook: ExcelJS.Workbook,

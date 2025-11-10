@@ -27,6 +27,33 @@ export async function getInbound(startDate: string, endDate: string) {
   `;
   return queryDB(sql);
 }
+export async function getInboundDev(startDate: string, endDate: string) {
+  const sql = `
+    SELECT 
+      ROW_NUMBER() OVER (ORDER BY ih.inbound_no DESC) AS [NO],
+      ih.inbound_no AS [RECEIVED_ID],
+      ih.inbound_date AS [REC_DATE],
+      id.whs_code AS [WH_CODE],
+      ih.bl_no AS [BL_NO],
+      ih.no_truck AS [TRUCK_NO],
+      ih.container AS [CONTAINER_NO],
+      ih.receipt_id AS [INVOICE_NO],
+      s.supplier_name AS SUPPLIER,
+      id.item_code AS [ITEM_CODE],
+      id.quantity AS QUANTITY,
+      p.cbm AS [M3_PCS],
+      p.cbm * id.quantity AS [TOTAL_M3],
+      ih.koli AS KOLI,
+      id.remarks AS REMARK
+    FROM inbound_details id
+    INNER JOIN inbound_headers ih ON id.inbound_no = ih.inbound_no
+    LEFT JOIN products p ON p.item_code = id.item_code
+    LEFT JOIN suppliers s ON s.supplier_code = ih.supplier
+    WHERE ih.inbound_date >= '${startDate}' AND ih.inbound_date <= '${endDate}'
+    ORDER BY ih.inbound_no DESC
+  `;
+  return queryDB(sql);
+}
 
 export async function getOutbound(startDate: string, endDate: string) {
   // const sql = `
@@ -97,6 +124,44 @@ export async function getOutbound(startDate: string, endDate: string) {
     oht.order_no IS NOT NULL AND 
     oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
     ORDER BY oh.outbound_date DESC`;
+  return queryDB(sql);
+}
+
+export async function getOutboundDev(startDate: string, endDate: string) {
+
+  const sql = `SELECT 
+      ROW_NUMBER() OVER (ORDER BY oh.outbound_no DESC) AS [NO],
+      od.whs_code AS [WH_CODE],
+      oht.truck_no AS [TRUCK_NO],
+      oh.rcv_do_date AS [PRINT_DO_DATE],
+	    oh.rcv_do_time AS [PRINT_DO_TIME],
+	    ohd.load_date AS [OUT_DATE],
+      oh.shipment_id AS [DO_NO],
+      cd.customer_name AS [DELIVERY_NAME],
+      cd.cust_city AS CITY,
+      cd.cust_addr1 AS [DELIVERY_ADD],
+      od.item_code AS [ITEM_CODE],
+      od.quantity AS QTY,
+      p.cbm AS [M3_PCS],
+      p.cbm * od.quantity AS [M3_TOTAL],
+      odt.qty_koli AS KOLI,
+      tr.transporter_name AS TRUCKER,
+      od.vas_name AS [REMARK_DETAIL],
+      oh.remarks AS [REMARK_HEADER],
+      odt.order_no AS [SPK_NO],
+      oht.remarks AS [REMARK_SPK]
+    FROM outbound_details od
+    INNER JOIN outbound_headers oh ON od.outbound_no = oh.outbound_no
+    INNER JOIN customers cd ON oh.deliv_to = cd.customer_code
+    INNER JOIN products p ON od.item_id = p.id
+    LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
+    LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
+	  LEFT JOIN order_headers ohd ON ohd.order_no = oht.order_no
+    LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
+    WHERE
+    oht.order_no IS NOT NULL AND 
+    oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
+    ORDER BY oh.outbound_no DESC`;
   return queryDB(sql);
 }
 
