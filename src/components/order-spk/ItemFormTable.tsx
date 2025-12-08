@@ -68,7 +68,6 @@ export default function ItemFormTable({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [editingItem, setEditingItem] = useState<ItemFormProps | null>(null);
-  //   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [selectedOutboundNo, setSelectedOutboundNo] = useState<string[]>([]);
 
   const [open, setOpen] = useState(false);
@@ -105,7 +104,6 @@ export default function ItemFormTable({
 
   const handleCancel = async (item: MuatanOrderSPK) => {
     console.log("Cancel Item : ", item);
-    // return;
 
     if (item.mode === "create") {
       setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
@@ -162,18 +160,6 @@ export default function ItemFormTable({
       selectedItems.length > 0
     ) {
       const selectedProduct = selectedItems[0];
-      //   setMuatan((prev) =>
-      //     prev.map((m) =>
-      //       m.ID === editingItem.ID
-      //         ? {
-      //             ...m,
-      //             item_code: selectedProduct.item_code,
-      //             uom: selectedProduct.uom,
-      //             is_serial: selectedProduct.has_serial,
-      //           }
-      //         : m
-      //     )
-      //   );
     }
 
     setIsModalOpen(false);
@@ -213,210 +199,224 @@ export default function ItemFormTable({
           )}
         </div>
 
-        <table className="w-full border font-normal text-xs">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 border w-12 text-center">No.</th>
-              <th className="p-2 border" style={{ width: "120px" }}>
-                Picking No
-              </th>
-              <th className="p-2 border" style={{ width: "120px" }}>
-                DO No
-              </th>
-              <th className="p-2 border" style={{ width: "200px" }}>
-                Delivery To
-              </th>
-              <th className="p-2 border" style={{ width: "130px" }}>
-                Delivery City
-              </th>
-              <th
-                className="p-2 border"
-                style={{ width: "75px", textAlign: "center" }}
-              >
-                Total Koli
-              </th>
-              <th
-                className="p-2 border"
-                style={{ width: "75px", textAlign: "center" }}
-              >
-                VAS Koli
-              </th>
-              <th className="p-2 border" style={{ width: "65px" }}>
-                Total Item
-              </th>
-              <th className="p-2 border" style={{ width: "65px" }}>
-                Total Qty
-              </th>
-              <th className="p-2 border" style={{ width: "65px" }}>
-                Total CBM
-              </th>
-              <th className="p-2 border" style={{ width: "50px" }}>
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {muatan?.map((item, index) => {
-              return (
-                <tr key={item.outbound_no} className="border-t">
-                  <td className="p-2 border text-center">{index + 1}</td>
-                  <td className="p-2 border">
-                    <div className="flex items-center gap-2">
+        <div className="w-full overflow-x-auto relative">
+          <table className="w-full border font-normal text-xs whitespace-nowrap">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2 border w-12 text-center sticky left-0 bg-gray-100 z-20">
+                  No.
+                </th>
+
+                <th className="p-2 border sticky left-[48px] bg-gray-100 z-20" style={{ width: "120px" }}>
+                  Picking No
+                </th>
+
+                <th className="p-2 border" style={{ width: "120px" }}>
+                  DO No
+                </th>
+                <th className="p-2 border" style={{ width: "200px" }}>
+                  Delivery To
+                </th>
+                <th className="p-2 border" style={{ width: "130px" }}>
+                  Delivery City
+                </th>
+                <th
+                  className="p-2 border"
+                  style={{ width: "75px", textAlign: "center" }}
+                >
+                  Total Koli
+                </th>
+                <th
+                  className="p-2 border"
+                  style={{ width: "75px", textAlign: "center" }}
+                >
+                  VAS Koli
+                </th>
+                <th className="p-2 border" style={{ width: "65px" }}>
+                  Total Item
+                </th>
+                <th className="p-2 border" style={{ width: "65px" }}>
+                  Total Qty
+                </th>
+                <th className="p-2 border" style={{ width: "85px" }}>
+                  Total CBM
+                </th>
+                <th className="p-2 border" style={{ width: "100px" }}>
+                  Remarks
+                </th>
+                <th className="p-2 border" style={{ width: "50px" }}>
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {muatan?.map((item, index) => {
+                return (
+                  <tr key={item.outbound_no} className="border-t">
+                    <td className="p-2 border text-center sticky left-0 bg-white z-10">
+                      {index + 1}
+                    </td>
+
+                    <td className="p-2 border sticky left-[48px] bg-white z-10">
                       <Input
                         style={{ fontSize: "12px" }}
                         type="text"
                         value={item.outbound_no}
                         readOnly
                         className="flex-1"
-                        placeholder="Click edit to select item..."
                       />
-                    </div>
-                  </td>
-                  <td className="p-2 border">
-                    <Input
-                      style={{ fontSize: "12px" }}
-                      readOnly
-                      type="text"
-                      value={item.shipment_id}
-                    />
-                  </td>
-                  <td className="p-2 border">
-                    <Input
-                      style={{ fontSize: "12px" }}
-                      readOnly
-                      type="text"
-                      value={item.deliv_to_name}
-                    />
-                  </td>
-                  <td className="p-2 border">
-                    <div>
+                    </td>
+
+                    <td className="p-2 border">
                       <Input
+                        style={{ fontSize: "12px" }}
                         readOnly
-                        style={{ fontSize: "12px", textAlign: "center" }}
-                        value={item.deliv_city}
+                        type="text"
+                        value={item.shipment_id}
                       />
-                    </div>
-                  </td>
-                  <td className="p-2 border">
-                    <Input
-                      style={{ fontSize: "12px", textAlign: "center" }}
-                      type="number"
-                      value={item.qty_koli}
-                      onChange={(e) =>
-                        setMuatan((prev) =>
-                          prev.map((m) =>
-                            m.ID === item.ID
-                              ? { ...m, qty_koli: Number(e.target.value) }
-                              : m
+                    </td>
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px" }}
+                        readOnly
+                        type="text"
+                        value={item.deliv_to_name}
+                      />
+                    </td>
+                    <td className="p-2 border">
+                      <div>
+                        <Input
+                          readOnly
+                          style={{ fontSize: "12px", textAlign: "center" }}
+                          value={item.deliv_city}
+                        />
+                      </div>
+                    </td>
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px", textAlign: "center" }}
+                        type="number"
+                        value={item.qty_koli}
+                        onChange={(e) =>
+                          setMuatan((prev) =>
+                            prev.map((m) =>
+                              m.ID === item.ID
+                                ? { ...m, qty_koli: Number(e.target.value) }
+                                : m
+                            )
                           )
-                        )
-                      }
-                    />
-                  </td>
-                  <td className="p-2 border">
-                    <Input
-                      style={{ fontSize: "12px", textAlign: "center" }}
-                      type="number"
-                      value={item.vas_koli}
-                      onChange={(e) =>
-                        setMuatan((prev) =>
-                          prev.map((m) =>
-                            m.ID === item.ID
-                              ? { ...m, vas_koli: Number(e.target.value) }
-                              : m
+                        }
+                      />
+                    </td>
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px", textAlign: "center" }}
+                        type="number"
+                        value={item.vas_koli}
+                        onChange={(e) =>
+                          setMuatan((prev) =>
+                            prev.map((m) =>
+                              m.ID === item.ID
+                                ? { ...m, vas_koli: Number(e.target.value) }
+                                : m
+                            )
                           )
-                        )
-                      }
-                    />
-                  </td>
-                  <td className="p-2 border">
-                    <Input
-                      style={{ fontSize: "12px", textAlign: "center" }}
-                      readOnly
-                      type="text"
-                      value={item.total_item}
-                    />
-                  </td>
-                  <td className="p-2 border">
-                    <Input
-                      style={{ fontSize: "12px", textAlign: "center" }}
-                      readOnly
-                      type="text"
-                      value={item.total_qty}
-                    />
-                  </td>
-                  <td className="p-2 border">
-                    <Input
-                      style={{ fontSize: "12px", textAlign: "center" }}
-                      readOnly
-                      type="text"
-                      value={item.total_cbm}
-                    />
-                  </td>
-                  <td
-                    className="p-2 border space-x-2 text-center"
-                    style={{ width: "100px" }}
-                  >
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        handleView(item);
-                      }}
+                        }
+                      />
+                    </td>
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px", textAlign: "center" }}
+                        readOnly
+                        type="text"
+                        value={item.total_item}
+                      />
+                    </td>
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px", textAlign: "center" }}
+                        readOnly
+                        type="text"
+                        value={item.total_qty}
+                      />
+                    </td>
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px", textAlign: "center" }}
+                        readOnly
+                        type="text"
+                        value={item.total_cbm}
+                      />
+                    </td>
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px", textAlign: "center" }}
+                        type="text"
+                        value={item.remarks || ""}
+                        onChange={(e) =>
+                          setMuatan((prev) =>
+                            prev.map((m) =>
+                              m.ID === item.ID
+                                ? { ...m, remarks: e.target.value }
+                                : m
+                            )
+                          )
+                        }
+                      />
+                    </td>
+                    <td
+                      className="p-2 border space-x-2 text-center"
+                      style={{ width: "100px" }}
                     >
-                      <Eye size={14} />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        handleCancel(item);
-                      }}
-                    >
-                      <X size={14} />
-                    </Button>
-                    {/* {headerForm.status == "open" || item.mode === "create" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        // handleCancel(item);
-                      }}
-                    >
-                      <X size={14} />
-                    </Button>
-                  ) : (
-                    <></>
-                  )} */}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="bg-gray-100 font-semibold">
-              <td className="p-2 border" colSpan={5}>
-                Total
-              </td>
-              <td className="p-2 border text-center">
-                {muatan.reduce((acc, item) => acc + item.qty_koli, 0)}
-              </td>
-              <td className="p-2 border text-center">
-                {muatan.reduce((acc, item) => acc + item.vas_koli, 0)}
-              </td>
-              <td className="p-2 border text-center">
-                {muatan.reduce((acc, item) => acc + item.total_item, 0)}
-              </td>
-              <td className="p-2 border text-center">
-                {muatan.reduce((acc, item) => acc + item.total_qty, 0)}
-              </td>
-              <td className="p-2 border text-center">
-                {muatan.reduce((acc, item) => acc + item.total_cbm, 0)}
-              </td>
-              <td className="p-2 border"></td>
-            </tr>
-          </tfoot>
-        </table>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          handleView(item);
+                        }}
+                      >
+                        <Eye size={14} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          handleCancel(item);
+                        }}
+                      >
+                        <X size={14} />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="bg-gray-100 font-semibold">
+                <td className="p-2 border sticky left-0 bg-gray-100 z-20" colSpan={5}>
+                  Total
+                </td>
+                <td className="p-2 border text-center">
+                  {muatan.reduce((acc, item) => acc + item.qty_koli, 0)}
+                </td>
+                <td className="p-2 border text-center">
+                  {muatan.reduce((acc, item) => acc + item.vas_koli, 0)}
+                </td>
+                <td className="p-2 border text-center">
+                  {muatan.reduce((acc, item) => acc + item.total_item, 0)}
+                </td>
+                <td className="p-2 border text-center">
+                  {muatan.reduce((acc, item) => acc + item.total_qty, 0)}
+                </td>
+                <td className="p-2 border text-center">
+                  {muatan.reduce((acc, item) => acc + item.total_cbm, 0)}
+                </td>
+                <td className="p-2 border"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
         <OrderDetailModal
           open={open}
           onOpenChange={setOpen}

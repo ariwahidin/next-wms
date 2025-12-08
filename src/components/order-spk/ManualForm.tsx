@@ -98,7 +98,6 @@ export default function ManualForm() {
             description: res.data.message,
             type: "success",
           });
-          // router.push("/wms/outbound/order-spk/data");
           router.push("/wms/outbound/data?tab=Order SPK");
         }
       } catch (error) {
@@ -123,7 +122,6 @@ export default function ManualForm() {
             description: res.data.message,
             type: "success",
           });
-          // router.push("/wms/outbound/data");
           router.push("/wms/outbound/data?tab=Order SPK");
         }
       } catch (error) {
@@ -168,9 +166,7 @@ export default function ManualForm() {
             variant="outline"
             className="bg-black-500 text-black hover:bg-gray-200"
             onClick={() => {
-              // eventBus.emit("refreshData");
               router.push("/wms/outbound/data?tab=Order SPK");
-              // router.back();
             }}
           >
             <ArrowBigLeftIcon className="mr-0" />
@@ -178,13 +174,6 @@ export default function ManualForm() {
           </Button>
           {formData.status !== "complete" && (
             <>
-              {/* <Button
-                variant="outline"
-                className="bg-green-500 text-white hover:bg-green-600"
-              >
-                <RefreshCcw className="mr-1" />
-                Refresh
-              </Button> */}
               <Button
                 variant="outline"
                 className="bg-blue-500 text-white hover:bg-blue-600"
@@ -459,88 +448,8 @@ export default function ManualForm() {
                   })
                 }
               />
-              {/* <textarea
-                id="remarks"
-                style={{ width: "160px", fontSize: "12px", height: "40px" }}
-                value={formData.remarks}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    remarks: e.target.value,
-                  })
-                }
-              /> */}
             </div>
           </div>
-          {/* <div className="flex items-center gap-2">
-            <Label
-              className="w-32 text-left shrink-0"
-              style={{ fontSize: "12px" }}
-            >
-              Arrival Date
-            </Label>
-            <span className="shrink-0">:</span>
-            <div className="flex">
-              <DatePicker
-                selected={
-                  formData.load_date ? parseISO(formData.load_date) : null
-                }
-                onChange={(date: Date | null) => {
-                  if (date) {
-                    setFormData({
-                      ...formData,
-                      load_date: format(date, "yyyy-MM-dd"), // simpan format ISO
-                    });
-                  }
-                }}
-                dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
-                locale={id} // Bahasa Indonesia
-                customInput={
-                  <Input
-                    id="PlanPickupDate"
-                    style={{ width: "160px", fontSize: "12px" }}
-                  />
-                }
-                placeholderText="Choose date"
-              />
-            </div>
-          </div> */}
-
-          {/* <div className="flex items-center gap-2">
-            <Label
-              className="w-32 text-left shrink-0"
-              style={{ fontSize: "12px" }}
-            >
-              In/Out From Customer
-            </Label>
-            <span className="shrink-0">:</span>
-            <div className="flex gap-2">
-              <Input
-                id="startTime"
-                type="time"
-                style={{ width: "160px", fontSize: "12px" }}
-                // value={formData.start_pick_time}
-                // onChange={(e) =>
-                //   setFormData({
-                //     ...formData,
-                //     start_pick_time: e.target.value,
-                //   })
-                // }
-              />
-              <Input
-                id="endTime"
-                type="time"
-                style={{ width: "160px", fontSize: "12px" }}
-                // value={formData.end_pick_time}
-                // onChange={(e) =>
-                //   setFormData({
-                //     ...formData,
-                //     end_pick_time: e.target.value,
-                //   })
-                // }
-              />
-            </div>
-          </div> */}
         </div>
       </div>
 

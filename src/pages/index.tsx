@@ -155,7 +155,7 @@ export default function Home() {
         {/* Footer */}
         <footer className="bg-gray-800 text-white py-6 text-center mt-0">
           <p>
-            &copy; {new Date().getFullYear()} PT Yusen Logistics Puninar Indonesia. All rights
+            &copy; {new Date().getFullYear()} PT Yusen Logistics Interlink Indonesia. All rights
             reserved.
           </p>
         </footer>

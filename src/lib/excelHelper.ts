@@ -247,7 +247,8 @@ export const createOutboundSheet = (
     "REMARK DETAIL",
     "REMARK HEADER",
     "SPK NO",
-    "REMARK SPK"
+    "REMARK SPK",
+    "REMARK DETAIL SPK"
   ];
   sheet.addRow(headers);
 
@@ -293,7 +294,8 @@ export const createOutboundSheet = (
       obj.REMARK_DETAIL,
       obj.REMARK_HEADER,
       obj.SPK_NO,
-      obj.REMARK_SPK
+      obj.REMARK_SPK,
+      obj.REMARK_DETAIL_SPK
     ]);
 
     row.height = 20;

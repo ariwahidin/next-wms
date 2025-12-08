@@ -61,7 +61,7 @@ const PrintableSheet = ({ header, items }: any) => (
     {/* Header */}
     <div style={{ display: "flex", justifyContent: "center" }}>
       <p style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}>
-        PT YUSEN LOGISTICS PUNINAR INDONESIA
+        PT YUSEN LOGISTICS INTERLINK INDONESIA
       </p>
     </div>
     <hr

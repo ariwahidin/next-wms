@@ -36,6 +36,7 @@ export interface MuatanOrderSPK {
   qty_koli?: number;
   vas_koli?: number;
   total_cbm?: number;
+  remarks?: string;
   mode?: "create" | "edit";
 }
 

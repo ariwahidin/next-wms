@@ -149,7 +149,8 @@ export async function getOutboundDev(startDate: string, endDate: string) {
       od.vas_name AS [REMARK_DETAIL],
       oh.remarks AS [REMARK_HEADER],
       odt.order_no AS [SPK_NO],
-      oht.remarks AS [REMARK_SPK]
+      oht.remarks AS [REMARK_SPK],
+      odt.remarks AS [REMARK_DETAIL_SPK]
     FROM outbound_details od
     INNER JOIN outbound_headers oh ON od.outbound_no = oh.outbound_no
     INNER JOIN customers cd ON oh.deliv_to = cd.customer_code

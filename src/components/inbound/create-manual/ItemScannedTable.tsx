@@ -110,16 +110,20 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
         { item_ids: selectedItems },
         { withCredentials: true }
       );
-      console.log("Success:", res.data);
-      eventBus.emit("showAlert", {
-        title: "Success!",
-        description: res.data.message,
-        type: "success",
-      });
-      eventBus.emit("refreshData");
-      setShowModal(false);
-      setSelectedItems([]);
-      setIsLoading(false);
+
+      if (res.data.success === true) {
+        eventBus.emit("showAlert", {
+          title: "Success!",
+          description: res.data.message,
+          type: "success",
+        });
+        eventBus.emit("refreshData");
+        setShowModal(false);
+        setSelectedItems([]);
+        setIsLoading(false);
+      }
+
+
     } catch (err) {
       console.error("Error:", err.response?.data || err.message);
       eventBus.emit("showAlert", {

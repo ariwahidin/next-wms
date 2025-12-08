@@ -222,7 +222,7 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
       </Card>
 
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
-        PT Yusen Logistics Puninar Indonesia &copy; {new Date().getFullYear()}
+        PT Yusen Logistics Interlink Indonesia &copy; {new Date().getFullYear()}
       </div>
     </div>
   );

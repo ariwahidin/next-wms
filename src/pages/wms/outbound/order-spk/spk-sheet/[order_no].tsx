@@ -99,7 +99,7 @@ const SPKSheetPrint = () => {
         <p
           style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}
         >
-          PT YUSEN LOGISTICS PUNINAR INDONESIA
+          PT YUSEN LOGISTICS INTERLINK INDONESIA
         </p>
       </div>
       <hr
