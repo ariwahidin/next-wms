@@ -25,12 +25,12 @@ const CreatePermissionPage = () => {
         description: res.data.message,
         type: "success",
       });
-      router.push("/configuration/permissions");
+      router.push("/wms/settings/permissions");
     }
   };
 
   return (
-    <Layout title="Configuration" subTitle="Permissions">
+    <Layout title="Settings" subTitle="Permissions">
       <div className="container mx-auto p-4">
         <Title>Create Permission</Title>
         <PermissionForm mode="create" onSubmit={handleSubmit} />

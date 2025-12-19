@@ -27,6 +27,7 @@ import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import ItemSelectionModal from "./ItemSelectionModal"; // Import modal yang baru dibuat
 import { Item } from "@radix-ui/react-dropdown-menu";
+import { InventoryPolicy } from "@/types/inventory";
 
 // Skema validasi Yup
 const muatanSchema = yup.object().shape({
@@ -58,6 +59,7 @@ export default function ItemFormTable({
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
 
+  const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
   const [itemCodeOptions, setItemCodeOptions] = useState<ItemOptions[]>([]);
   const [whsCodeOptions, setWhsCodeOptions] = useState<ItemOptions[]>([]);
 
@@ -75,16 +77,18 @@ export default function ItemFormTable({
 
   const fetchData = async () => {
     try {
-      const [products, warehouses, uoms] = await Promise.all([
+      const [products, warehouses, uoms, policies] = await Promise.all([
         api.get("/products?owner=" + headerForm.owner_code),
         api.get("/warehouses"),
         api.get("/uoms"),
+        api.get("/inventory/policy?owner=" + headerForm.owner_code),
       ]);
 
       if (
         products.data.success &&
         warehouses.data.success &&
-        uoms.data.success
+        uoms.data.success &&
+        policies.data.success
       ) {
         setProducts(products.data.data);
         setItemCodeOptions(
@@ -107,6 +111,7 @@ export default function ItemFormTable({
         }));
 
         setDefaultOptions(defaultUoms);
+        setInvPolicy(policies.data.data.inventory_policy);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -145,13 +150,14 @@ export default function ItemFormTable({
         item_id: product.ID,
         inbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
         item_code: product.item_code,
-        quantity: 1, // Default quantity
-        rcv_location: "",
+        quantity: 1,
+        location: "",
         ref_id: inboundReferences.ID,
         ref_no: inboundReferences.ref_no,
         uom: product.uom,
         division: "REGULAR",
         rec_date: new Date().toISOString().split("T")[0],
+        prod_date: "",
         exp_date: "",
         lot_number: "",
         remarks: "",
@@ -292,7 +298,6 @@ export default function ItemFormTable({
     });
   };
 
-
   const handleDelete = async (id: number) => {
     console.log("Deleting item with ID:", id);
 
@@ -432,9 +437,9 @@ export default function ItemFormTable({
               <th className="p-2 border" style={{ width: "300px" }}>
                 Item Code
               </th>
-              <th className="p-2 border" style={{ width: "300px" }}>
-                Barcode
-              </th>
+              {/* <th className="p-2 border" style={{ width: "300px" }}>
+                Base EAN
+              </th> */}
               <th className="p-2 border" style={{ width: "300px" }}>
                 Description
               </th>
@@ -444,18 +449,36 @@ export default function ItemFormTable({
               <th className="p-2 border" style={{ width: "100px" }}>
                 Qty
               </th>
-              <th className="p-2 border" style={{ width: "130px" }}>
-                Rec Location
-              </th>
-              <th className="p-2 border" style={{ width: "140px" }}>
-                Rec Date
-              </th>
-              <th className="p-2 border" style={{ width: "140px" }}>
-                Exp Date
-              </th>
-              <th className="p-2 border" style={{ width: "140px" }}>
-                Lot No.
-              </th>
+
+              {invPolicy?.use_receive_location && (
+                <th className="p-2 border" style={{ width: "130px" }}>
+                  Rec Location
+                </th>
+              )}
+
+
+              {invPolicy?.show_rec_date && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Rec Date
+                </th>
+              )}
+
+
+
+              {invPolicy?.use_production_date && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Prod Date
+                </th>
+              )}
+
+              {invPolicy?.use_fefo && invPolicy?.require_expiry_date && (
+                <> <th className="p-2 border" style={{ width: "140px" }}>
+                  Exp Date
+                </th>
+                  <th className="p-2 border" style={{ width: "140px" }}>
+                    Lot No.
+                  </th> </>
+              )}
               <th className="p-2 border" style={{ width: "220px" }}>
                 Action
               </th>
@@ -510,7 +533,7 @@ export default function ItemFormTable({
                             </small>
                           )}
                         </td>
-                        <td className="p-2 border">
+                        {/* <td className="p-2 border">
                           <Input
                             style={{ fontSize: "12px" }}
                             readOnly
@@ -521,7 +544,7 @@ export default function ItemFormTable({
                               )?.barcode || ""
                             }
                           />
-                        </td>
+                        </td> */}
                         <td className="p-2 border">
                           <Input
                             style={{ fontSize: "12px" }}
@@ -574,101 +597,154 @@ export default function ItemFormTable({
                             </small>
                           )}
                         </td>
-                        <td className="p-2 border">
-                          <div>
-                            <Input
-                              style={{ fontSize: "12px", width: "120px" }}
-                              type="text"
-                              value={item.rcv_location || "STAGING"}
-                              onChange={(e) =>
-                                handleChange(
-                                  item.ID,
-                                  "rcv_location",
-                                  e.target.value
-                                )
+
+                        {invPolicy?.use_receive_location && (
+                          <td className="p-2 border">
+                            <div>
+                              <Input
+                                style={{ fontSize: "12px", width: "120px" }}
+                                type="text"
+                                value={item.location}
+                                onChange={(e) =>
+                                  handleChange(
+                                    item.ID,
+                                    "location",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </div>
+                          </td>
+                        )}
+
+
+
+                        {invPolicy?.show_rec_date && (
+                          <td className="p-2 border">
+                            <DatePicker
+                              selected={
+                                item.rec_date ? parseISO(item.rec_date) : null
                               }
+                              onChange={(date: Date | null) => {
+                                if (date) {
+                                  handleChange(
+                                    item.ID,
+                                    "rec_date",
+                                    format(date, "yyyy-MM-dd")
+                                  );
+                                }
+                              }}
+                              dateFormat="dd/MM/yyyy"
+                              locale={id}
+                              customInput={
+                                <Input
+                                  className="w-[100px] cursor-pointer"
+                                  style={{ fontSize: "12px" }}
+                                />
+                              }
+                              placeholderText="Choose date"
+                              popperPlacement="bottom-start"
                             />
-                          </div>
-                        </td>
-                        <td className="p-2 border">
-                          <DatePicker
-                            selected={
-                              item.rec_date ? parseISO(item.rec_date) : null
-                            }
-                            onChange={(date: Date | null) => {
-                              if (date) {
-                                handleChange(
-                                  item.ID,
-                                  "rec_date",
-                                  format(date, "yyyy-MM-dd")
-                                );
-                              }
-                            }}
-                            dateFormat="dd/MM/yyyy"
-                            locale={id}
-                            customInput={
-                              <Input
-                                className="w-[100px] cursor-pointer"
-                                style={{ fontSize: "12px" }}
-                              />
-                            }
-                            placeholderText="Pilih tanggal"
-                            popperPlacement="bottom-start"
-                          />
-                          {errors[item.ID]?.rec_date && (
-                            <small className="text-red-500">
-                              {errors[item.ID].rec_date}
-                            </small>
-                          )}
-                        </td>
+                            {errors[item.ID]?.rec_date && (
+                              <small className="text-red-500">
+                                {errors[item.ID].rec_date}
+                              </small>
+                            )}
+                          </td>
+                        )}
 
-                        <td className="p-2 border">
-                          <DatePicker
-                            selected={
-                              item.exp_date ? parseISO(item.exp_date) : null
-                            }
-                            onChange={(date: Date | null) => {
-                              if (date) {
-                                handleChange(
-                                  item.ID,
-                                  "exp_date",
-                                  format(date, "yyyy-MM-dd")
-                                );
-                              }
-                            }}
-                            dateFormat="dd/MM/yyyy"
-                            locale={id}
-                            customInput={
-                              <Input
-                                className="w-[100px] cursor-pointer"
-                                style={{ fontSize: "12px" }}
-                              />
-                            }
-                            placeholderText="Choose date"
-                            popperPlacement="bottom-start"
-                          />
-                          {errors[item.ID]?.rec_date && (
-                            <small className="text-red-500">
-                              {errors[item.ID].exp_date}
-                            </small>
-                          )}
-                        </td>
 
-                        <td className="p-2 border">
-                          <Input
-                            style={{ fontSize: "12px", width: "100px" }}
-                            type="text"
-                            value={item.lot_number}
-                            onChange={(e) =>
-                              handleChange(item.ID, "lot_number", e.target.value)
-                            }
-                          />
-                          {errors[item.ID]?.remarks && (
-                            <small className="text-red-500">
-                              {errors[item.ID].lot_number}
-                            </small>
-                          )}
-                        </td>
+
+                        {invPolicy?.use_production_date && (
+                          <td className="p-2 border">
+                            <DatePicker
+                              selected={
+                                item.prod_date ? parseISO(item.prod_date) : null
+                              }
+                              onChange={(date: Date | null) => {
+                                if (date) {
+                                  handleChange(
+                                    item.ID,
+                                    "prod_date",
+                                    format(date, "yyyy-MM-dd")
+                                  );
+                                }
+                              }}
+                              dateFormat="dd/MM/yyyy"
+                              locale={id}
+                              customInput={
+                                <Input
+                                  className="w-[100px] cursor-pointer"
+                                  style={{ fontSize: "12px" }}
+                                />
+                              }
+                              placeholderText="Choose date"
+                              popperPlacement="bottom-start"
+                            />
+                            {errors[item.ID]?.prod_date && (
+                              <small className="text-red-500">
+                                {errors[item.ID].prod_date}
+                              </small>
+                            )}
+                          </td>
+                        )}
+
+                        {invPolicy?.use_fefo && invPolicy?.require_expiry_date && (
+                          <>
+                            <td className="p-2 border">
+                              <DatePicker
+                                selected={
+                                  item.exp_date ? parseISO(item.exp_date) : null
+                                }
+                                onChange={(date: Date | null) => {
+                                  if (date) {
+                                    handleChange(
+                                      item.ID,
+                                      "exp_date",
+                                      format(date, "yyyy-MM-dd")
+                                    );
+                                  }
+                                }}
+                                dateFormat="dd/MM/yyyy"
+                                locale={id}
+                                customInput={
+                                  <Input
+                                    className="w-[100px] cursor-pointer"
+                                    style={{ fontSize: "12px" }}
+                                  />
+                                }
+                                placeholderText="Choose date"
+                                popperPlacement="bottom-start"
+                              />
+                              {errors[item.ID]?.rec_date && (
+                                <small className="text-red-500">
+                                  {errors[item.ID].exp_date}
+                                </small>
+                              )}
+                            </td>
+
+                            <td className="p-2 border">
+                              <Input
+                                style={{ fontSize: "12px", width: "100px" }}
+                                type="text"
+                                value={item.lot_number}
+                                onChange={(e) =>
+                                  handleChange(item.ID, "lot_number", e.target.value)
+                                }
+                              />
+                              {errors[item.ID]?.remarks && (
+                                <small className="text-red-500">
+                                  {errors[item.ID].lot_number}
+                                </small>
+                              )}
+                            </td>
+                          </>
+                        )}
+
+
+
+
+
                         <td
                           className="p-2 border space-x-2 text-center"
                           style={{ width: "100px" }}
@@ -716,12 +792,12 @@ export default function ItemFormTable({
                       <>
                         <td className="p-2 border">{item.item_code}</td>
 
-                        <td className="p-2 border text-center">
+                        {/* <td className="p-2 border text-center">
                           {
                             products.find((p) => p.item_code === item.item_code)
                               ?.barcode
                           }
-                        </td>
+                        </td> */}
 
                         <td className="p-2 border text-center">
                           {
@@ -736,18 +812,38 @@ export default function ItemFormTable({
                         <td className="p-2 border text-center">
                           {item.quantity}
                         </td>
-                        <td className="p-2 border text-center">
-                          {item.rcv_location}
-                        </td>
-                        <td className="p-2 border text-center">
-                          {dayjs(item.rec_date).format("D MMM YYYY")}
-                        </td>
-                        <td className="p-2 border text-center">
-                          {dayjs(item.exp_date).format("D MMM YYYY")}
-                        </td>
-                        <td className="p-2 border text-center">
-                          {item.lot_number}
-                        </td>
+
+                        {invPolicy?.use_receive_location && (
+                          <td className="p-2 border text-center">
+                            {item.location}
+                          </td>
+                        )}
+
+                        {invPolicy?.show_rec_date && (
+                          <td className="p-2 border text-center">
+                            {dayjs(item.rec_date).format("D MMM YYYY")}
+                          </td>
+                        )}
+                        {invPolicy?.use_production_date && (
+                          <td className="p-2 border text-center">
+                            {dayjs(item.prod_date).format("D MMM YYYY")}
+                          </td>
+                        )}
+
+                        {invPolicy?.use_fefo && invPolicy?.require_expiry_date && (
+                          <td className="p-2 border text-center">
+                            {dayjs(item.exp_date).format("D MMM YYYY")}
+                          </td>
+                        )}
+
+
+                        {invPolicy?.use_lot_no && (
+                          <td className="p-2 border text-center">
+                            {item.lot_number}
+                          </td>
+                        )}
+
+
                         {/* <td className="p-2 border">{item.remarks}</td> */}
                         <td
                           className="p-2 border space-x-2 text-center"
@@ -763,7 +859,7 @@ export default function ItemFormTable({
           </tbody>
           <tfoot>
             <tr className="bg-gray-100 font-semibold">
-              <td className="p-2 border" colSpan={6}>
+              <td className="p-2 border" colSpan={5}>
                 Total
               </td>
               <td className="p-2 border text-center">

@@ -28,12 +28,13 @@ const ItemSelectionModal = ({
   const [filteredItems, setFilteredItems] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
 
   useEffect(() => {
+    console.log("muatan:", selectedItems);
     if (isOpen) {
       console.log(
-        "setSelectedItemIds:",
+        "SelectedItemIds:",
         selectedItems.map((item) => item.item_id)
       );
       setSelectedItemIds(selectedItems.map((item) => item.item_id));
@@ -72,7 +73,7 @@ const ItemSelectionModal = ({
     }
   }, [searchTerm, items]);
 
-  const handleItemSelect = (itemId: string, isChecked: boolean) => {
+  const handleItemSelect = (itemId: number, isChecked: boolean) => {
     if (mode === "edit") {
       setSelectedItemIds(isChecked ? [itemId] : []);
     } else {
@@ -82,19 +83,28 @@ const ItemSelectionModal = ({
     }
   };
 
-  const handleRowClick = (itemId: string) => {
+  const handleRowClick = (itemId: number) => {
     const isCurrentlySelected = selectedItemIds.includes(itemId);
     handleItemSelect(itemId, !isCurrentlySelected);
   };
 
   const handleApply = () => {
-    const currentSelectedIds = selectedItems.map((item) => item.item_id);
+    // const currentSelectedIds = selectedItems.map((item) => item.item_id);
+    const currentSelectedIds = selectedItems.map((item) => Number(item.item_id));
 
     console.log("Current Selected IDs:", currentSelectedIds);
     console.log("Applying selected items:", selectedItemIds);
 
+    console.log("currentSelectedIds (typeof):", currentSelectedIds.map(i => typeof i));
+    console.log("selectedItemIds (typeof):", selectedItemIds.map(i => typeof i));
+
+
+    // const newSelectedIds = selectedItemIds.filter(
+    //   (item_id) => !currentSelectedIds.includes(String(item_id))
+    // );
+
     const newSelectedIds = selectedItemIds.filter(
-      (item_id) => !currentSelectedIds.includes(String(item_id))
+      (item_id) => !currentSelectedIds.includes(Number(item_id))
     );
 
     console.log("New Selected IDs:", newSelectedIds);
@@ -104,7 +114,7 @@ const ItemSelectionModal = ({
     // );
 
     const newSelectedItemsData = newSelectedIds
-      .map((id) => items.find((item) => String(item.ID) === String(id)))
+      .map((id) => items.find((item) => Number(item.ID) === Number(id)))
       .filter(Boolean);
 
     console.log("New Selected Items Data:", newSelectedItemsData);
@@ -192,13 +202,13 @@ const ItemSelectionModal = ({
               </thead>
               <tbody>
                 {filteredItems.map((item, index) => {
-                  const isSelected = selectedItemIds.includes(item.ID);
+                  // const isSelected = selectedItemIds.includes(item.ID);
+                  const isSelected = selectedItemIds.includes(Number(item.ID));
                   return (
                     <tr
                       key={item.ID}
-                      className={`border-t cursor-pointer hover:bg-gray-50 transition-colors ${
-                        isSelected ? "bg-blue-50 border-blue-200" : ""
-                      }`}
+                      className={`border-t cursor-pointer hover:bg-gray-50 transition-colors ${isSelected ? "bg-blue-50 border-blue-200" : ""
+                        }`}
                       onClick={() => handleRowClick(item.ID)}
                     >
                       <td className="p-2 border text-center">
@@ -221,44 +231,40 @@ const ItemSelectionModal = ({
                       <td className="p-2 border text-center">{item.uom}</td>
                       <td className="p-2 border text-center">
                         <span
-                          className={`px-2 py-1 rounded text-xs ${
-                            item.has_serial === "Y"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
+                          className={`px-2 py-1 rounded text-xs ${item.has_serial === "Y"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                            }`}
                         >
                           {item.has_serial}
                         </span>
                       </td>
                       <td className="p-2 border text-center">
                         <span
-                          className={`px-2 py-1 rounded text-xs ${
-                            item.has_adaptor === "Y"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
+                          className={`px-2 py-1 rounded text-xs ${item.has_adaptor === "Y"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                            }`}
                         >
                           {item.has_adaptor}
                         </span>
                       </td>
                       <td className="p-2 border text-center">
                         <span
-                          className={`px-2 py-1 rounded text-xs ${
-                            item.has_waranty === "Y"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
+                          className={`px-2 py-1 rounded text-xs ${item.has_waranty === "Y"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                            }`}
                         >
                           {item.has_waranty}
                         </span>
                       </td>
                       <td className="p-2 border text-center">
                         <span
-                          className={`px-2 py-1 rounded text-xs ${
-                            item.manual_book === "Y"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
+                          className={`px-2 py-1 rounded text-xs ${item.manual_book === "Y"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                            }`}
                         >
                           {item.manual_book}
                         </span>

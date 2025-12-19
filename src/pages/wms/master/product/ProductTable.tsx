@@ -70,6 +70,8 @@ const ProductTable = () => {
       sortable: false,
       filter: false,
     },
+    
+    { field: "owner_code", headerName: "Owner" },
     { field: "item_code", headerName: "Item Code" },
     { field: "item_name", headerName: "Item Name", width: 300 },
     { field: "barcode", headerName: "Barcode" },

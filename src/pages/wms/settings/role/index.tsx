@@ -29,10 +29,10 @@ const RoleListPage = () => {
   }, []);
 
   return (
-    <Layout title="Master" subTitle="Role">
+    <Layout title="Settings" subTitle="Role">
       <div className="container mx-auto p-4">
         <Title>Role List</Title>
-        <Button onClick={() => router.push("/master/role/create")}>
+        <Button onClick={() => router.push("/wms/settings/role/create")}>
           Create Role
         </Button>
         <div className="mt-6">
@@ -51,7 +51,7 @@ const RoleListPage = () => {
                   <td className="border p-2">{role.name}</td>
                   <td className="border p-2">
                     <Button
-                      onClick={() => router.push(`/master/role/edit/${role.ID}`)}
+                      onClick={() => router.push(`/wms/settings/role/edit/${role.ID}`)}
                     >
                       Edit
                     </Button>

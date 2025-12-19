@@ -9,7 +9,7 @@ module.exports = {
         }, {
             name: "wms-ymid-backend",
             cwd: "D:/Golang Project/backend-wms/fiber-app",
-            script: "./app.exe",   // hasil build Go jadi exe
+            script: "./app.exe",
             exec_mode: "fork",
             watch: false
         }

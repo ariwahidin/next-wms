@@ -449,6 +449,7 @@ export default function ManualForm() {
             </div>
 
             <div className="space-y-1">
+
               <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
@@ -567,9 +568,9 @@ export default function ManualForm() {
                   />
                 </div>
               </div>
+
             </div>
           </div>
-
           <div className="flex items-center gap-2 mt-2">
             <Label
               className="w-24 text-left shrink-0 pt-2"
@@ -639,7 +640,6 @@ export default function ManualForm() {
                   }
                 />
               </div>
-
               <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"

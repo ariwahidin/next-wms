@@ -29,15 +29,16 @@ export interface HeaderFormProps {
 
 export interface ItemFormProps {
   ID: number;
-  item_id?: string;
+  item_id?: number;
   inbound_id: number;
   item_code: string;
   quantity: number;
-  rcv_location?: string;
+  location?: string;
   division?: string;
   uom: string;
   is_serial?: string;
   rec_date?: string;
+  prod_date?: string;
   exp_date?: string;
   lot_number?: string;
   remarks?: string;

@@ -107,10 +107,14 @@ const data = {
           title: "Location",
           url: "/wms/master/location",
         },
-        {
-          title: "UoM Conversion",
-          url: "/wms/master/uom-conversion",
-        },
+        // {
+        //   title: "UoM Conversion",
+        //   url: "/wms/master/uom-conversion",
+        // },
+        // {
+        //   title: "Inventory Policy",
+        //   url: "/wms/master/inventory-policy",
+        // },
         {
           title: "Vas Main",
           url: "/wms/master/main-vas",
@@ -265,6 +269,27 @@ const data = {
         },
       ],
     },
+    {
+      title: "Settings",
+      url: "#",
+      icon: SettingsIcon,
+      isActive: true,
+      items: [
+        {
+          title: "Menu Management",
+          url: "/wms/settings/menu",
+        },
+        {
+          title: "Inventory Policy",
+          url: "/wms/settings/inventory-policy",
+        },
+        {
+          title: "UoM Conversion",
+          url: "/wms/settings/uom-conversion",
+        },
+      ],
+    },
+
     // {
     //   title: "Settings",
     //   url: "#",
@@ -398,7 +423,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavUser user={data.user} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        {/* <NavMain items={data.navMain} /> */}
+        <NavMain items={menus} />
       </SidebarContent>
       <SidebarFooter />
       <SidebarRail />

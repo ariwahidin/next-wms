@@ -1,5 +1,5 @@
 export interface Product {
-    ID: string;
+    ID: number;
     item_code: string;
     item_name: string;
     barcode: string;

@@ -6,6 +6,7 @@ export interface Uom {
 export interface UomConversion {
     ID: number;
     item_code: string;
+    ean? : string;
     from_uom: string;
     to_uom: string;
     conversion_rate: number;

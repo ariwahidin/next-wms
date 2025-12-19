@@ -497,47 +497,21 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
 }
 export async function getStockReport(viewBy: string) {
 
-  let sql = `SELECT 
-  iv.item_code AS [ITEM CODE],
-  iv.barcode AS [GMC CODE],
-  p.item_name AS [ITEM NAME],
-  iv.rec_date AS [RCV DATE],
-  iv.[location] AS [LOCATION],
-  iv.whs_code AS [WH CODE],
-  iv.qa_status AS [QA],
-  SUM(iv.qty_onhand) AS [ON HAND],
-  SUM(iv.qty_allocated) AS [ALLOCATED],
-  SUM(iv.qty_available) AS [AVAILABLE],
-  p.cbm [CBM],
-  (SUM(iv.qty_available)) * p.cbm AS [TOTAL CBM]
-  FROM inventories iv
-  left join products p ON iv.item_code = p.item_code
-  where iv.qty_onhand <> 0
-  group by
-  iv.item_code,
-  iv.barcode,
-  p.item_name,
-  iv.rec_date,
-  iv.[location],
-  iv.whs_code,
-  iv.qa_status,
-  p.cbm
-  ORDER BY iv.item_code ASC`;
-
-  if (viewBy === "item") {
-    sql = `SELECT 
+  let sql = `WITH inv AS (
+  SELECT 
     iv.item_code AS [ITEM CODE],
     iv.barcode AS [GMC CODE],
     p.item_name AS [ITEM NAME],
-    -- iv.rec_date AS [RCV DATE],
-    -- iv.[location] AS [LOCATION],
+    iv.rec_date AS [RCV DATE],
+    iv.[location] AS [LOCATION],
     iv.whs_code AS [WH CODE],
     iv.qa_status AS [QA],
     SUM(iv.qty_onhand) AS [ON HAND],
     SUM(iv.qty_allocated) AS [ALLOCATED],
-    SUM(iv.qty_available) AS [AVAILABLE]
-    -- p.cbm [CBM],
-    -- (SUM(iv.qty_available)) * p.cbm AS [TOTAL CBM]
+    SUM(iv.qty_available) AS [AVAILABLE],
+    p.cbm [CBM],
+    (SUM(iv.qty_available)) * p.cbm AS [TOTAL CBM],
+    iv.uom AS [BASE UNIT]
     FROM inventories iv
     left join products p ON iv.item_code = p.item_code
     where iv.qty_onhand <> 0
@@ -545,12 +519,162 @@ export async function getStockReport(viewBy: string) {
     iv.item_code,
     iv.barcode,
     p.item_name,
-    -- iv.rec_date,
-    -- iv.[location],
+    iv.rec_date,
+    iv.[location],
     iv.whs_code,
-    iv.qa_status
-    -- p.cbm
-    ORDER BY iv.item_code ASC`;
+    iv.qa_status,
+    p.cbm,
+    iv.uom
+    -- ORDER BY iv.item_code ASC
+    ),
+  uom AS (
+    SELECT * 
+    FROM uom_conversions
+  )
+    SELECT inv.*,
+    ISNULL(
+      ROUND(MAX(CASE WHEN uom.from_uom = 'PCS' THEN 
+        CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
+      END), 3), 0
+    ) AS PCS,
+
+    ISNULL(
+      ROUND(MAX(CASE WHEN uom.from_uom = 'BOX' THEN 
+        CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
+      END), 3), 0
+    ) AS BOX,
+
+    ISNULL(
+      ROUND(MAX(CASE WHEN uom.from_uom = 'LTR' THEN 
+        CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
+      END), 3), 0
+    ) AS LTR
+
+    FROM inv 
+    JOIN uom ON inv.[ITEM CODE] = uom.item_code AND inv.[BASE UNIT] = uom.to_uom
+    GROUP BY 
+    inv.[GMC CODE],inv.[RCV DATE],
+    inv.[ITEM CODE], inv.[ITEM NAME], 
+    inv.LOCATION, inv.[WH CODE], 
+    inv.QA, inv.[ON HAND], inv.[ALLOCATED],
+    inv.[CBM], inv.[TOTAL CBM],
+    inv.AVAILABLE, inv.[BASE UNIT]
+    ORDER BY [ITEM CODE] ASC;
+
+    -- SELECT * FROM uom_conversions
+    -- SELECT * from uoms
+    `;
+
+  // let sql = `SELECT 
+  // iv.item_code AS [ITEM CODE],
+  // iv.barcode AS [GMC CODE],
+  // p.item_name AS [ITEM NAME],
+  // iv.rec_date AS [RCV DATE],
+  // iv.[location] AS [LOCATION],
+  // iv.whs_code AS [WH CODE],
+  // iv.qa_status AS [QA],
+  // SUM(iv.qty_onhand) AS [ON HAND],
+  // SUM(iv.qty_allocated) AS [ALLOCATED],
+  // SUM(iv.qty_available) AS [AVAILABLE],
+  // p.cbm [CBM],
+  // (SUM(iv.qty_available)) * p.cbm AS [TOTAL CBM]
+  // FROM inventories iv
+  // left join products p ON iv.item_code = p.item_code
+  // where iv.qty_onhand <> 0
+  // group by
+  // iv.item_code,
+  // iv.barcode,
+  // p.item_name,
+  // iv.rec_date,
+  // iv.[location],
+  // iv.whs_code,
+  // iv.qa_status,
+  // p.cbm
+  // ORDER BY iv.item_code ASC`;
+
+  if (viewBy === "item") {
+
+    sql = `WITH inv AS (
+            SELECT 
+                iv.item_code AS [ITEM CODE],
+                iv.barcode AS [GMC CODE],
+                p.item_name AS [ITEM NAME],
+                iv.whs_code AS [WH CODE],
+                iv.qa_status AS [QA],
+                SUM(iv.qty_onhand) AS [ON HAND],
+                SUM(iv.qty_allocated) AS [ALLOCATED],
+                SUM(iv.qty_available) AS [AVAILABLE],
+              iv.uom AS [BASE UNIT]
+                FROM inventories iv
+                left join products p ON iv.item_code = p.item_code
+                where iv.qty_onhand <> 0
+                group by
+                iv.item_code,
+                iv.barcode,
+                p.item_name,
+                iv.whs_code,
+                iv.qa_status,
+              iv.uom
+                -- ORDER BY iv.item_code ASC
+            ),
+            uom AS (
+              SELECT * 
+              FROM uom_conversions
+            )
+              SELECT inv.*,
+              ISNULL(
+                ROUND(MAX(CASE WHEN uom.from_uom = 'PCS' THEN 
+                  CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
+                END), 3), 0
+              ) AS PCS,
+
+              ISNULL(
+                ROUND(MAX(CASE WHEN uom.from_uom = 'BOX' THEN 
+                  CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
+                END), 3), 0
+              ) AS BOX,
+
+              ISNULL(
+                ROUND(MAX(CASE WHEN uom.from_uom = 'LTR' THEN 
+                  CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
+                END), 3), 0
+              ) AS LTR
+
+              FROM inv 
+              JOIN uom ON inv.[ITEM CODE] = uom.item_code AND inv.[BASE UNIT] = uom.to_uom
+              GROUP BY 
+              inv.[GMC CODE],
+              inv.[ITEM CODE], inv.[ITEM NAME], inv.[WH CODE], 
+              inv.QA, inv.[ON HAND], inv.[ALLOCATED],
+              inv.AVAILABLE, inv.[BASE UNIT]
+              ORDER BY [ITEM CODE] ASC;`;
+
+    // sql = `SELECT 
+    // iv.item_code AS [ITEM CODE],
+    // iv.barcode AS [GMC CODE],
+    // p.item_name AS [ITEM NAME],
+    // -- iv.rec_date AS [RCV DATE],
+    // -- iv.[location] AS [LOCATION],
+    // iv.whs_code AS [WH CODE],
+    // iv.qa_status AS [QA],
+    // SUM(iv.qty_onhand) AS [ON HAND],
+    // SUM(iv.qty_allocated) AS [ALLOCATED],
+    // SUM(iv.qty_available) AS [AVAILABLE]
+    // -- p.cbm [CBM],
+    // -- (SUM(iv.qty_available)) * p.cbm AS [TOTAL CBM]
+    // FROM inventories iv
+    // left join products p ON iv.item_code = p.item_code
+    // where iv.qty_onhand <> 0
+    // group by
+    // iv.item_code,
+    // iv.barcode,
+    // p.item_name,
+    // -- iv.rec_date,
+    // -- iv.[location],
+    // iv.whs_code,
+    // iv.qa_status
+    // -- p.cbm
+    // ORDER BY iv.item_code ASC`;
   }
 
   return queryDB(sql);

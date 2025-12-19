@@ -37,26 +37,26 @@ export default function RolePermissionPage() {
     setRoles(res.data.data);
   };
 
-  // useEffect(() => {
+  useEffect(() => {
 
-  //   const fetchData = async () => {
-  //     setLoading(true);
-  //     try {
-  //       const [rolesRes, permissionsRes] = await Promise.all([
-  //         api.get("/roles", { withCredentials: true }),
-  //         api.get("/permissions", { withCredentials: true }),
-  //       ]);
-  //       setRoles(rolesRes.data.data);
-  //       setPermissions(permissionsRes.data.data);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [rolesRes, permissionsRes] = await Promise.all([
+          api.get("/roles", { withCredentials: true }),
+          api.get("/permissions", { withCredentials: true }),
+        ]);
+        setRoles(rolesRes.data.data);
+        setPermissions(permissionsRes.data.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  //   fetchData();
-  // }, []);
+    fetchData();
+  }, []);
 
   const handleSelectRole = (roleId: number) => {
     const role = roles.find((r) => r.ID === roleId);
@@ -98,7 +98,7 @@ export default function RolePermissionPage() {
   };
 
   return (
-    <Layout title="Master" subTitle="Role Permission">
+    <Layout title="Settings" subTitle="Role Permission">
       <div className="p-6 space-y-6 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold">Role-Permission Management</h1>
 
@@ -126,7 +126,7 @@ export default function RolePermissionPage() {
 
             {selectedRole && (
               <Card>
-                <CardContent className="p-4 space-y-2">
+                <CardContent className="p-4 space-y-2 w-2/3">
                   <h2 className="text-lg font-semibold mb-2">
                     Permissions for {selectedRole?.name}
                   </h2>

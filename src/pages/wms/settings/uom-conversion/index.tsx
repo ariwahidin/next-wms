@@ -14,47 +14,13 @@ import api from "@/lib/api";
 import { Product } from "@/types/item";
 import { ItemOptions } from "@/types/inbound";
 import { Uom, UomConversion } from "@/types/uom";
-
-// type UomRow = {
-//   id: number;
-//   item_code: string;
-//   from_uom: string;
-//   to_uom: string;
-//   conversion_rate: number;
-//   is_base: boolean;
-// };
-
-// const initialData: UomConversion[] = [
-//   {
-//     ID: 1,
-//     item_code: "AQUA1L",
-//     from_uom: "BOX",
-//     to_uom: "PCS",
-//     conversion_rate: 12,
-//     is_base: true,
-//   },
-//   {
-//     ID: 2,
-//     item_code: "AQUA1L",
-//     from_uom: "PALLET",
-//     to_uom: "BOX",
-//     conversion_rate: 20,
-//     is_base: false,
-//   },
-//   {
-//     ID: 3,
-//     item_code: "AQUA1L",
-//     from_uom: "PALLET",
-//     to_uom: "PCS",
-//     conversion_rate: 240,
-//     is_base: true,
-//   },
-// ];
+import { set } from "date-fns";
 
 export default function UomConversionPage() {
   const [form, setForm] = useState<UomConversion>({
     ID: 0,
     item_code: "",
+    ean: "",
     from_uom: "",
     to_uom: "",
     conversion_rate: 1,
@@ -66,6 +32,7 @@ export default function UomConversionPage() {
   const [uoms, setUoms] = useState<Uom[]>([]);
   const [itemCodeOptions, setItemCodeOptions] = useState<ItemOptions[]>([]);
   const [uomOptions, setUomOptions] = useState<ItemOptions[]>([]);
+  const [toUomOptions, setToUomOptions] = useState<ItemOptions[]>([]);
   const [uomConversions, setUomConversions] = useState<UomConversion[]>([]);
   const [uomConversionsFiltered, setUomConversionsFiltered] = useState<
     UomConversion[]
@@ -176,12 +143,25 @@ export default function UomConversionPage() {
       (conversion) => conversion.item_code === form.item_code
     );
     setUomConversionsFiltered(filtered);
-  }, [form.item_code, uomConversions]);
+    console.log("Filtered UOM conversions:", filtered);
+    console.log("Products:", products);
+
+    setToUomOptions(
+      filtered
+        .filter((item) => item.item_code === form.item_code)
+        .map((it) => ({
+          value: it.from_uom,
+          label: it.from_uom,
+        }))
+    );
+
+  }, [form.item_code, uomConversions, products]);
 
   const handleReset = () => {
     setForm({
       ID: 0,
       item_code: "",
+      ean: "",
       from_uom: "",
       to_uom: "",
       conversion_rate: 1,
@@ -190,63 +170,13 @@ export default function UomConversionPage() {
     setEditingId(null);
   };
 
-  //   const handleSubmit = async () => {
-  //     if (editingId) {
-  //       const response = await api.put(`/uoms/${editingId}`, {
-  //         ...form,
-  //       });
-
-  //       console.log("Updating UOM conversion:", response);
-  //       //   setRows((prev) =>
-  //       //     prev.map((r) => (r.ID === editingId ? { ...form, ID: editingId } : r))
-  //       //   );
-  //     } else {
-  //       const response = await api.post("/uoms", {
-  //         ...form,
-  //       });
-
-  //       console.log("Saving UOM conversion:", response);
-
-  //       if (!response.data.success) {
-  //         console.error("Failed to save UOM conversion:", response.data.message);
-  //         return;
-  //       }
-
-  //       //   const newId =
-  //       //     rows.length > 0 ? Math.max(...rows.map((r) => r.ID)) + 1 : 1;
-  //       //   setRows([...rows, { ...form, ID: newId }]);
-  //     }
-
-  //     setForm({
-  //       item_code: "",
-  //       from_uom: "",
-  //       to_uom: "",
-  //       conversion_rate: 1,
-  //       is_base: false,
-  //     });
-  //     setEditingId(null);
-  //   };
-
   return (
-    <Layout title="Master" subTitle="UOM Conversion Management">
+    <Layout title="Settings" subTitle="UOM Conversion Management">
       <div className="p-6 space-y-6">
-        {/* <h1 className="text-xl font-semibold">UOM Conversion Management</h1> */}
 
         {/* FORM */}
         <div className="p-4 border rounded-lg space-y-4 bg-gray-50">
-          {/* <h2 className="text-lg font-medium flex items-center gap-2">
-            {editingId ? (
-              <>
-                <Pencil className="w-4 h-4" /> Edit Conversion
-              </>
-            ) : (
-              <>
-                <PlusCircle className="w-4 h-4" /> Add New Conversion
-              </>
-            )}
-          </h2> */}
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Select
               value={
                 itemCodeOptions.find(
@@ -261,22 +191,28 @@ export default function UomConversionPage() {
                     ...prev,
                     item_code: selectedOption.value,
                   }));
-                  // Filter UOM conversions based on selected item code
                   const filtered = uomConversions.filter(
                     (conversion) =>
                       conversion.item_code === selectedOption.value
                   );
+                  console.log("Filtered UOM conversions:", filtered);
                   setUomConversionsFiltered(filtered);
+                  // setToUomOptions(
+                  //   filtered
+                  //     .filter((item) => item.item_code === form.item_code)
+                  //     .map((it) => ({
+                  //       value: it.from_uom,
+                  //       label: it.from_uom,
+                  //     }))
+                  // );
                 }
               }}
             />
             <Input
-              style={{ display: "none" }}
               type="text"
-              readOnly
-              placeholder="Item Code"
-              value={form.item_code}
-              onChange={(e) => handleFormChange("item_code", e.target.value)}
+              placeholder="EAN"
+              value={form.ean}
+              onChange={(e) => handleFormChange("ean", e.target.value)}
             />
             <Select
               value={
@@ -296,11 +232,11 @@ export default function UomConversionPage() {
             />
             <Select
               value={
-                uomOptions.find((option) => option.value === form.to_uom) ||
+                toUomOptions.find((option) => option.value === form.to_uom) ||
                 null
               }
               placeholder="Select To UOM"
-              options={uomOptions}
+              options={toUomOptions}
               onChange={(selectedOption) => {
                 if (selectedOption) {
                   setForm((prev) => ({
@@ -320,7 +256,7 @@ export default function UomConversionPage() {
             />
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2" style={{ display: 'none' }}>
             <Checkbox
               id="is_base"
               checked={form.is_base}
@@ -345,24 +281,25 @@ export default function UomConversionPage() {
             <thead className="bg-gray-100">
               <tr>
                 <th className="p-2 text-left">Item Code</th>
+                <th className="p-2 text-left">Ean</th>
                 <th className="p-2 text-left">From UOM</th>
                 <th className="p-2 text-left">To UOM</th>
                 <th className="p-2 text-left">Rate</th>
-                <th className="p-2 text-center">Base?</th>
+                {/* <th className="p-2 text-center">Base?</th> */}
                 <th className="p-2 text-center">Action</th>
               </tr>
             </thead>
             <tbody>
               {uomConversionsFiltered.map((row) => (
                 <tr key={row.ID} className="border-t">
-                  {/* <td className="p-2">{row.ID}</td> */}
                   <td className="p-2">{row.item_code}</td>
+                  <td className="p-2">{row.ean || "-"}</td>
                   <td className="p-2">{row.from_uom}</td>
                   <td className="p-2">{row.to_uom}</td>
                   <td className="p-2">{row.conversion_rate}</td>
-                  <td className="p-2 text-center">
+                  {/* <td className="p-2 text-center">
                     {row.is_base ? "✅" : "❌"}
-                  </td>
+                  </td> */}
                   <td className="p-2 text-center">
                     <Button
                       variant="ghost"

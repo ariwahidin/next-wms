@@ -19,6 +19,7 @@ import { XCircle } from "lucide-react"; // untuk icon clear
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
 import { Label } from "@radix-ui/react-dropdown-menu";
+import { InventoryPolicy } from "@/types/inventory";
 
 interface ScannedItem {
   id?: number;
@@ -36,6 +37,14 @@ interface ScannedItem {
   quantity: number;
   status?: string;
   rec_date?: string;
+  prod_date?: string;
+  exp_date?: string;
+  lot_number?: string;
+  uom?: string;
+  qty_display?: number;
+  ean_display?: string;
+  uom_display?: string;
+  owner_code?: string;
 }
 
 const TransferPage = () => {
@@ -45,17 +54,35 @@ const TransferPage = () => {
   const [scanLocation, setScanLocation] = useState("");
   const [scanLocation2, setScanLocation2] = useState("");
   const [qtyTransfer, setQtyTransfer] = useState(0);
+  const [eanTransfer, setEanTransfer] = useState("");
+  const [uomTransfer, setUomTransfer] = useState("");
 
   const [scanBarcode, setScanBarcode] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModalMoveTo, setShowConfirmModalMoveTo] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
   const [itemSelected, setItemSelected] = useState<ScannedItem | null>(null);
   const [listInboundScanned, setListInboundScanned] = useState<ScannedItem[]>(
     []
   );
+
+  const fetchPolicy = async (owner: string) => {
+    try {
+      const response = await api.get("/inventory/policy?owner=" + owner);
+      const data = await response.data;
+      if (data.success) {
+        setInvPolicy(data.data.inventory_policy);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (listInboundScanned.length > 0) fetchPolicy(listInboundScanned[0].owner_code);
+  }, [listInboundScanned]);
 
   const handleSearch = async () => {
     setLoading(true);
@@ -89,6 +116,14 @@ const TransferPage = () => {
           quantity: item.qty_available,
           status: item.status,
           rec_date: item.rec_date,
+          prod_date: item.prod_date,
+          exp_date: item.exp_date,
+          lot_number: item.lot_number,
+          uom: item.uom,
+          qty_display: item.qty_display,
+          ean_display: item.ean_display,
+          uom_display: item.uom_display,
+          owner_code: item.owner_code
         }));
 
         setListInboundScanned(filtered);
@@ -112,6 +147,8 @@ const TransferPage = () => {
     };
 
     console.log("Data to Post:", dataToPost);
+
+    // return;
 
     try {
       const response = await api.post(
@@ -155,6 +192,8 @@ const TransferPage = () => {
       from_location: scanLocation,
       to_location: scanLocation2,
       qty_transfer: qtyTransfer,
+      ean_transfer: eanTransfer,
+      uom_transfer: uomTransfer,
       inventory_id: itemSelected?.id,
       list_inventory: [itemSelected],
     };
@@ -347,9 +386,8 @@ const TransferPage = () => {
                   filteredScannedItems.map((item, index) => (
                     <div
                       key={index}
-                      className={`p-2 border rounded-md cursor-pointer ${
-                        item.qa_status === "A" ? "bg-green-100" : "bg-blue-100"
-                      }`}
+                      className={`p-2 border rounded-md cursor-pointer ${item.qa_status === "A" ? "bg-green-100" : "bg-blue-100"
+                        }`}
                     >
                       <div className="flex justify-between items-start text-sm">
                         <div className="space-y-1">
@@ -358,25 +396,46 @@ const TransferPage = () => {
                             {item.location}
                             <br />
                             <span className="text-gray-600">Barcode:</span>{" "}
-                            {item.barcode}
+                            {item.ean_display}
                             <br />
-                            {/* <span className="text-gray-600">Serial:</span>{" "}
-                            {item.serial_number}
-                            <br /> */}
-                            <span className="text-gray-600">Rcv Date:</span>{" "}
-                            {item.rec_date}
-                            <br />
+
+
+                            {invPolicy?.show_rec_date && (
+                              <>
+                                <span className="text-gray-600">Rcv Date:</span>{" "}
+                                {item.rec_date}
+                                <br />
+                              </>
+                            )}
+
+                            {invPolicy?.require_expiry_date && (
+                              <>
+                                <span className="text-gray-600">Exp Date:</span>{" "}
+                                {item.exp_date}
+                                <br />
+                              </>
+                            )}
+
+
+
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="text-gray-600">QA: </span>{" "}
+                          {invPolicy?.require_lot_number && (
+                            <>
+                              <span className="text-gray-600">Lot:</span>{" "}
+                              {item.lot_number}
+                              <br />
+                            </>
+                          )}
+                          {/* <span className="text-gray-600">QA: </span>{" "}
                           {item.qa_status}
-                          <br />
-                          <span className="text-gray-600">Whs: </span>{" "}
+                          <br /> */}
+                          <span className="text-gray-600">Whs Code: </span>{" "}
                           {item.whs_code}
                           <br />
                           <span className="text-gray-600">Available:</span>{" "}
-                          {item.quantity}
+                          {item.qty_display} {item.uom_display}
                         </div>
                       </div>
 
@@ -385,7 +444,9 @@ const TransferPage = () => {
                         onClick={() => {
                           setShowConfirmModalMoveTo(true);
                           setItemSelected(item);
-                          setQtyTransfer(item.quantity);
+                          setQtyTransfer(item.qty_display);
+                          setUomTransfer(item.uom_display);
+                          setEanTransfer(item.ean_display);
                         }}
                       >
                         <Check size={18} />
@@ -434,7 +495,7 @@ const TransferPage = () => {
               <Label className="mb-1 font-semibold text-gray-700 text-sm">
                 Qty Transfer :
               </Label>
-              <div className="relative">
+              <div className="relative flex">
                 <Input
                   className="mb-2"
                   id="qtyTransfer"
@@ -443,6 +504,16 @@ const TransferPage = () => {
                   type="number"
                   value={qtyTransfer}
                   onChange={(e) => setQtyTransfer(Number(e.target.value))}
+                />
+                <Input
+                  readOnly
+                  className="mb-2 ml-2"
+                  id="uomTransfer"
+                  autoComplete="off"
+                  placeholder="UOM..."
+                  type="text"
+                  value={uomTransfer}
+                  onChange={(e) => setUomTransfer(e.target.value)}
                 />
               </div>
             </div>

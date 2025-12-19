@@ -131,7 +131,7 @@ const EditPermissionPage = () => {
             description: res.data.message,
             type: "success",
           });
-          router.push("/master/permissions");
+          router.push("/wms/settings/permissions");
         }
       });
   };

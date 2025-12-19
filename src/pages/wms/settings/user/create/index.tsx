@@ -5,7 +5,7 @@ import Layout from "@/components/layout";
 
 const CreateUserPage = () => {
   return (
-    <Layout title="Master" subTitle="User">
+    <Layout title="Settings" subTitle="User Management">
       <div className="container mx-auto p-4">
         <Title>Create User</Title>
         <UserForm mode="create" />

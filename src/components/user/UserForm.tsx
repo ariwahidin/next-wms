@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
@@ -150,7 +151,7 @@ const UserForm: React.FC<UserFormProps> = ({ mode, userData }) => {
         description: res.data.message,
         type: "success",
       });
-      router.push("/wms/master/user");
+      router.push("/wms/settings/user");
     }
   };
 
@@ -217,7 +218,7 @@ const UserForm: React.FC<UserFormProps> = ({ mode, userData }) => {
         </div>
       </div>
 
-      <div>
+      {/* <div>
         <Label className="mb-1 block">Permissions</Label>
         <div className="grid grid-cols-2 gap-2">
           {permissions.map((perm) => (
@@ -232,7 +233,7 @@ const UserForm: React.FC<UserFormProps> = ({ mode, userData }) => {
             </label>
           ))}
         </div>
-      </div>
+      </div> */}
 
       <Button type="submit">
         {mode === "create" ? "Create User" : "Update User"}

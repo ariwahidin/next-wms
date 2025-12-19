@@ -228,7 +228,7 @@ export default function ManualForm() {
             setMuatan(
               data.items.map((item) => ({
                 ...item,
-                item_id: String(item.item_id),
+                // item_id: String(item.item_id),
                 item_name: item.product?.item_name || "",
               }))
             );
@@ -345,6 +345,7 @@ export default function ManualForm() {
                 <div className="flex-1">
                   <Select
                     isDisabled={
+                      muatan.length > 0 ||
                       formData.status == "picking" ||
                       formData.status == "complete"
                         ? true

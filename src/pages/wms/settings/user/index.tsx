@@ -38,7 +38,7 @@ export default function UserListPage() {
         return (
           <button
             className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-            onClick={() => router.push(`/wms/master/user/edit/${params.data.ID}`)}
+            onClick={() => router.push(`/wms/settings/user/edit/${params.data.ID}`)}
           >
             Edit
           </button>
@@ -67,7 +67,7 @@ export default function UserListPage() {
   }, []);
 
   return (
-    <Layout title="User Management" subTitle="User List">
+    <Layout title="Settings" subTitle="User Management">
       {isLoading ? (
         <div>Loading...</div>
       ) : (
@@ -75,7 +75,7 @@ export default function UserListPage() {
           {/* Toolbar */}
           <div className="flex justify-between mb-4">
             <Button
-              onClick={() => router.push("/wms/master/user/create")}
+              onClick={() => router.push("/wms/settings/user/create")}
             >
               + Add User
             </Button>

@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,6 +28,7 @@ import eventBus from "@/utils/eventBus";
 import { set } from "date-fns";
 import data from "@/pages/wms/stock-take/data";
 import { se } from "date-fns/locale";
+import { InventoryPolicy } from "@/types/inventory";
 
 // Types
 interface ScanItem {
@@ -37,8 +38,10 @@ interface ScanItem {
   barcode: string;
   serial: string;
   qaStatus: string;
-  scanType: string;
+  scanType?: string;
   qtyScan: number;
+  RecDate?: string;
+  prodDate?: string;
   expDate?: string;
   lotNo?: string;
   uploaded: boolean;
@@ -53,7 +56,11 @@ interface InboundDetail {
   quantity: number;
   scan_qty: number;
   is_serial: boolean;
+  owner_code?: string;
   uom?: string;
+  exp_date?: string;
+  prod_date?: string;
+  lot_number?: string;
 }
 
 interface ScannedItem {
@@ -70,6 +77,9 @@ interface ScannedItem {
   quantity: number;
   status?: string;
   is_serial?: boolean;
+  prod_date?: string;
+  exp_date?: string;
+  lot_number?: string;
 }
 
 const CheckingPage = () => {
@@ -88,12 +98,16 @@ const CheckingPage = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showModalDetail, setShowModalDetail] = useState(false);
 
+  const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
 
 
+
+  const [prodDate, setProdDate] = useState("");
   const [expDate, setExpDate] = useState("");
   const [lotNo, setLotNo] = useState("");
   const [scanQty, setScanQty] = useState<string | number>(1);
 
+  const [uniqueProdDates, setUniqueProdDates] = useState([]);
   const [uniqueExpDates, setUniqueExpDates] = useState([]);
   const [uniqueLotNos, setUniqueLotNos] = useState([]);
   const [uniqueQtys, setUniqueQtys] = useState([]);
@@ -148,14 +162,17 @@ const CheckingPage = () => {
       id: 0,
       location: scanLocation.trim(),
       barcode: scanBarcode.trim(),
-      scanType: scanType,
       qaStatus: scanQa,
       serial: serialNumber,
       qtyScan: scanQty as number,
+      prodDate: prodDate,
       expDate: expDate,
       lotNo: lotNo,
       uploaded: false,
     };
+
+    console.log("Submitting Scan Item:", newItem);
+    // return;
 
     const response = await api.post("/mobile/inbound/scan", newItem);
     const data = await response.data;
@@ -195,6 +212,10 @@ const CheckingPage = () => {
         scan_qty: item.scan_qty,
         is_serial: item.is_serial,
         uom: item.uom,
+        owner_code: item.owner_code,
+        exp_date: item.exp_date,
+        prod_date: item.prod_date,
+        lot_number: item.lot_number,
       }));
 
       setListInboundDetail(filtered);
@@ -220,6 +241,7 @@ const CheckingPage = () => {
         scan_type: item.scan_type,
         quantity: item.quantity,
         status: item.status,
+        prod_date: item.prod_date,
       }));
 
       setListInboundScanned(filtered);
@@ -280,7 +302,8 @@ const CheckingPage = () => {
           .toLowerCase()
           .includes(searchInboundDetail.toLowerCase()) ||
         item?.quantity.toString().includes(searchInboundDetail.toLowerCase()) ||
-        item?.scan_qty.toString().includes(searchInboundDetail.toLowerCase())
+        item?.scan_qty.toString().includes(searchInboundDetail.toLowerCase()) ||
+        item?.prod_date
     ) || [];
 
   const filteredScannedItems =
@@ -290,12 +313,32 @@ const CheckingPage = () => {
         item?.inbound_detail_id.toString().includes(searchTerm.toLowerCase()) ||
         item?.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item?.serial_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item?.location.toLowerCase().includes(searchTerm.toLowerCase())
+        item?.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item?.prod_date
     ) || [];
 
   useEffect(() => {
     if (inbound) fetchInboundDetail();
   }, [inbound]);
+
+
+  const fetchPolicy = async (owner: string) => {
+    try {
+      const response = await api.get("/inventory/policy?owner=" + owner);
+      const data = await response.data;
+      if (data.success) {
+        setInvPolicy(data.data.inventory_policy);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (listInboundDetail.length > 0) fetchPolicy(listInboundDetail[0].owner_code);
+  }, [listInboundDetail]);
+
+
 
   useEffect(() => {
     console.log("Data terbaru:", listInboundScanned);
@@ -346,21 +389,25 @@ const CheckingPage = () => {
     if (res.success) {
 
       const data = (res.data ?? []) as Array<{
+        prod_date: string;
         exp_date: string;
         lot_number: string;
         quantity: number;
       }>;
 
       // ambil nilai unik
+      const prodDates = [...new Set(data.map(d => d.prod_date))];
       const expDates = [...new Set(data.map(d => d.exp_date))];
       const lotNos = [...new Set(data.map(d => d.lot_number))];
       const qtys = [...new Set(data.map(d => d.quantity))];
 
+      setUniqueProdDates(prodDates);
       setUniqueExpDates(expDates);
       setUniqueLotNos(lotNos);
       setUniqueQtys(qtys);
 
       // kalau cuma satu data unik, langsung auto-fill
+      if (prodDates.length === 1) setProdDate(prodDates[0]);
       if (expDates.length === 1) setExpDate(expDates[0]);
       if (lotNos.length === 1) setLotNo(lotNos[0]);
       if (qtys.length === 1) setScanQty(qtys[0]);
@@ -369,6 +416,7 @@ const CheckingPage = () => {
         console.log("Item requires serial:", res);
         setIsSerial(res.is_serial);
         setScanSerial("");
+        setScanQty(1);
         setShowDialog(true);
       } else {
         console.log("Item requires serial:", res);
@@ -487,7 +535,7 @@ const CheckingPage = () => {
 
               <div className="relative mb-2">
                 <label htmlFor="barcode" className="text-sm text-gray-600">
-                  Barcode :{" "}
+                  EAN :{" "}
                 </label>
                 <Input
                   autoComplete="off"
@@ -556,18 +604,36 @@ const CheckingPage = () => {
                         <div>
                           <span className="text-gray-600">Item Code:</span>{" "}
                           {item.item_code} <br />
-                          <span className="text-gray-600">Barcode:</span>{" "}
+                          <span className="text-gray-600">EAN:</span>{" "}
                           {item.barcode} <br />
+
+                          {invPolicy?.use_production_date && (
+                            <>
+                              <span className="text-gray-600">Prod Date:</span>{" "}
+                              {item.prod_date} <br />
+                            </>
+                          )}
+
                           <span className="text-gray-600">Scanned:</span>{" "}
                           {item.scan_qty} / {item.quantity}{" "}
                           <span className="text-gray-600">
                             {item.uom.toLowerCase()}
                           </span>
+
+
+
                         </div>
-                        <div className="text-right">
-                          <span className="text-gray-600">SN :</span>{" "}
-                          {item.is_serial ? "Yes" : "No"}
-                        </div>
+
+                        {item.is_serial && (
+                          <div className="text-right">
+                            <span className="text-gray-600">SN :</span>{" "}
+                            {item.is_serial ? "Yes" : "No"}
+                          </div>
+                        )}
+
+
+
+
                       </div>
                     </div>
                   </li>
@@ -642,13 +708,21 @@ const CheckingPage = () => {
                     <div className="text-xs space-y-1">
                       <div className="flex justify-between">
                         <span>
-                          <strong>Barcode:</strong> {item.barcode}
+                          <strong>EAN:</strong> {item.barcode}
                         </span>
                         <span className="text-gray-400">{item.status}</span>
                       </div>
                       <div>
                         <strong>Serial:</strong> {item.serial_number}
                       </div>
+
+                      {invPolicy?.use_production_date && (
+                        <div>
+                          <strong>Prod Date:</strong>{" "}
+                          {item.prod_date}
+                        </div>
+                      )}
+
                       <div>
                         <strong>Location:</strong> {item.location}
                       </div>
@@ -721,7 +795,7 @@ const CheckingPage = () => {
             <div className="px-4 sm:px-6 py-4 pb-6">
               <div className="mb-4 p-3 bg-gray-100 rounded-md">
                 <p className="text-sm text-gray-600 break-all">
-                  Barcode: <span className="font-mono">{scanBarcode}</span>
+                  EAN: <span className="font-mono">{scanBarcode}</span>
                 </p>
                 {/* Location Display in Modal */}
                 {location && (
@@ -865,104 +939,151 @@ const CheckingPage = () => {
 
                   <div className="space-y-3 mb-6">
 
+                    {invPolicy?.use_production_date && (
+                      // Prod Date
+                      <>
+                        {/* Exp Date */}
+                        <div className="flex items-center gap-3">
+                          <label htmlFor="prod_date" className="text-sm text-gray-600 w-24 text-right">
+                            Prod Date :
+                          </label>
+                          <div className="relative flex-1">
 
-                    {/* Exp Date */}
-                    <div className="flex items-center gap-3">
-                      <label htmlFor="exp_date" className="text-sm text-gray-600 w-24 text-right">
-                        Exp Date :
-                      </label>
-                      <div className="relative flex-1">
-                        {/* <Input
-                          type="date"
-                          className="w-full"
-                          list="expDateOptions"
-                          id="exp_date"
-                          value={expDate}
-                          onChange={(e) => setExpDate(e.target.value)}
-                        />
-                        <datalist id="expDateOptions">
-                          {uniqueExpDates.map((d, i) => (
-                            <option key={i} value={d} />
-                          ))}
-                        </datalist> */}
+                            {uniqueProdDates.length > 1 ? (
+                              // Kalau banyak, pakai <select> saja
+                              <select
+                                id="prod_date"
+                                className="w-full border rounded p-2"
+                                value={prodDate}
+                                onChange={(e) => setProdDate(e.target.value)}
+                              >
+                                <option value="">Choose Production Date...</option>
+                                {uniqueProdDates.map((d, i) => (
+                                  <option key={i} value={d}>
+                                    {d}
+                                  </option>
+                                ))}
+                                {/* <option value="other">Other (manual)</option> */}
+                              </select>
+                            ) : (
+                              // Kalau cuma satu, tetap pakai input date
+                              <Input
+                                type="date"
+                                id="prod_date"
+                                className="w-full"
+                                value={prodDate}
+                                onChange={(e) => setProdDate(e.target.value)}
+                              />
+                            )}
 
-                        {uniqueExpDates.length > 1 ? (
-                          // Kalau banyak, pakai <select> saja
-                          <select
-                            id="exp_date"
-                            className="w-full border rounded p-2"
-                            value={expDate}
-                            onChange={(e) => setExpDate(e.target.value)}
-                          >
-                            <option value="">Pilih Exp Date...</option>
-                            {uniqueExpDates.map((d, i) => (
-                              <option key={i} value={d}>
-                                {d}
-                              </option>
-                            ))}
-                            <option value="other">Other (manual)</option>
-                          </select>
-                        ) : (
-                          // Kalau cuma satu, tetap pakai input date
-                          <Input
-                            type="date"
-                            id="exp_date"
-                            className="w-full"
-                            value={expDate}
-                            onChange={(e) => setExpDate(e.target.value)}
-                          />
-                        )}
+                            {prodDate && (
+                              <button
+                                type="button"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                onClick={() => {
+                                  setProdDate("");
+                                  document.getElementById("prod_date")?.focus();
+                                }}
+                              >
+                                <XCircle size={18} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
 
-                        {expDate && (
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            onClick={() => {
-                              setExpDate("");
-                              document.getElementById("exp_date")?.focus();
-                            }}
-                          >
-                            <XCircle size={18} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Lot No */}
-                    <div className="flex items-center gap-3">
-                      <label htmlFor="lot_no" className="text-sm text-gray-600 w-24 text-right">
-                        Lot No :
-                      </label>
-                      <div className="relative flex-1">
-                        <Input
-                          type="text"
-                          className="w-full"
-                          id="lot_no"
-                          list="lotNoOptions"
-                          value={lotNo}
-                          onChange={(e) => setLotNo(e.target.value)}
-                          placeholder="Enter lot number..."
-                          autoComplete="off"
-                        />
-                        <datalist id="lotNoOptions">
-                          {uniqueLotNos.map((d, i) => (
-                            <option key={i} value={d} />
-                          ))}
-                        </datalist>
-                        {lotNo && (
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            onClick={() => {
-                              setLotNo("");
-                              document.getElementById("lot_no")?.focus();
-                            }}
-                          >
-                            <XCircle size={18} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                    {invPolicy?.use_fefo && invPolicy?.use_lot_no && (
+                      <>
+                        {/* Exp Date */}
+                        <div className="flex items-center gap-3">
+                          <label htmlFor="exp_date" className="text-sm text-gray-600 w-24 text-right">
+                            Exp Date :
+                          </label>
+                          <div className="relative flex-1">
+
+                            {uniqueExpDates.length > 1 ? (
+                              // Kalau banyak, pakai <select> saja
+                              <select
+                                id="exp_date"
+                                className="w-full border rounded p-2"
+                                value={expDate}
+                                onChange={(e) => setExpDate(e.target.value)}
+                              >
+                                <option value="">Choose Exp Date...</option>
+                                {uniqueExpDates.map((d, i) => (
+                                  <option key={i} value={d}>
+                                    {d}
+                                  </option>
+                                ))}
+                                {/* <option value="other">Other (manual)</option> */}
+                              </select>
+                            ) : (
+                              // Kalau cuma satu, tetap pakai input date
+                              <Input
+                                type="date"
+                                id="exp_date"
+                                className="w-full"
+                                value={expDate}
+                                onChange={(e) => setExpDate(e.target.value)}
+                              />
+                            )}
+
+                            {expDate && (
+                              <button
+                                type="button"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                onClick={() => {
+                                  setExpDate("");
+                                  document.getElementById("exp_date")?.focus();
+                                }}
+                              >
+                                <XCircle size={18} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Lot No */}
+                        <div className="flex items-center gap-3">
+                          <label htmlFor="lot_no" className="text-sm text-gray-600 w-24 text-right">
+                            Lot No :
+                          </label>
+                          <div className="relative flex-1">
+                            <Input
+                              type="text"
+                              className="w-full"
+                              id="lot_no"
+                              list="lotNoOptions"
+                              value={lotNo}
+                              onChange={(e) => setLotNo(e.target.value)}
+                              placeholder="Enter lot number..."
+                              autoComplete="off"
+                            />
+                            <datalist id="lotNoOptions">
+                              {uniqueLotNos.map((d, i) => (
+                                <option key={i} value={d} />
+                              ))}
+                            </datalist>
+                            {lotNo && (
+                              <button
+                                type="button"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                onClick={() => {
+                                  setLotNo("");
+                                  document.getElementById("lot_no")?.focus();
+                                }}
+                              >
+                                <XCircle size={18} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+
 
 
                     {/* Qty */}

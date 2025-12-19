@@ -26,6 +26,7 @@ interface ItemInventory {
   qty_out : number;
   cbm_pcs : number;
   cbm_total : number;
+  uom? : string;
 }
 
 const InventoryModal = ({
@@ -132,7 +133,7 @@ const InventoryModal = ({
                   <th className="p-2 border">Location</th>
                   <th className="p-2 border">Item Code</th>
                   <th className="p-2 border">Barcode</th>
-                  {/* <th className="p-2 border w-20">Item Name</th> */}
+                  <th className="p-2 border w-20">UoM</th>
                   <th className="p-2 border w-20">In</th>
                   <th className="p-2 border w-20">On Hand</th>
                   <th className="p-2 border w-20">Avail</th>
@@ -153,7 +154,7 @@ const InventoryModal = ({
                       </td>
                       <td className="p-2 border">{item.item_code}</td>
                       <td className="p-2 border">{item.barcode}</td>
-                      {/* <td className="p-2 border text-center">{item.item_name}</td> */}
+                      <td className="p-2 border text-center">{item.uom}</td>
                       <td className="p-2 border text-center">{item.qty_in}</td>
                       <td className="p-2 border text-center">
                         {item.qty_onhand}

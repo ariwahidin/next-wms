@@ -15,6 +15,9 @@ import { Product } from "@/types/item";
 import api from "@/lib/api";
 import ItemSelectionModal from "@/components/outbound/create-manual/ItemSelectionModal";
 import { useRouter } from "next/router";
+import { InventoryPolicy } from "@/types/inventory";
+import { UomConversion } from "@/types/uom";
+import { tr } from "date-fns/locale";
 
 export default function ItemFormTable({
   muatan,
@@ -38,6 +41,8 @@ export default function ItemFormTable({
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [editingItem, setEditingItem] = useState<ItemFormProps | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
+  const [uomConversion, setUomConversion] = useState<UomConversion>();
   const router = useRouter();
   const path = router.pathname;
   let modeForm: "add" | "edit" | "copy" = "add";
@@ -100,13 +105,18 @@ export default function ItemFormTable({
 
   const fetchData = async () => {
     try {
-      const [products, uoms, vasPages] = await Promise.all([
+      const [products, uoms, vasPages, policies] = await Promise.all([
         api.get("/products?owner=" + headerForm.owner_code),
         api.get("/uoms"),
         api.get("/vas/page"),
+        api.get("/inventory/policy?owner=" + headerForm.owner_code),
       ]);
 
-      if (products.data.success && uoms.data.success && vasPages.data.success) {
+      if (products.data.success
+        && uoms.data.success
+        && vasPages.data.success
+        && policies.data.success
+      ) {
         setProducts(products.data.data);
         setItemCodeOptions(
           products.data.data.map((item: Product) => ({
@@ -115,11 +125,11 @@ export default function ItemFormTable({
           }))
         );
 
-        const defaultUoms = uoms.data.data.map((item: any) => ({
-          value: item.code,
-          label: item.code,
-        }));
-        setDefaultUoms(defaultUoms);
+        // const defaultUoms = uoms.data.data.map((item: any) => ({
+        //   value: item.code,
+        //   label: item.code,
+        // }));
+        // setDefaultUoms(defaultUoms);
 
         setVasPages(vasPages.data.data);
         const vasOptions = vasPages.data.data.map((item: any) => ({
@@ -127,6 +137,15 @@ export default function ItemFormTable({
           label: item.name,
         }));
         setVasOptions(vasOptions);
+
+        // Set default UOM options
+        const defaultUoms = uoms.data.data.map((item: any) => ({
+          value: item.code,
+          label: item.code,
+        }));
+
+        setDefaultOptions(defaultUoms);
+        setInvPolicy(policies.data.data.inventory_policy);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -149,7 +168,7 @@ export default function ItemFormTable({
     setIsModalOpen(true);
   };
 
-  const handleChange = (
+  const handleChange = async (
     id: number,
     field: keyof ItemFormProps,
     value: string | number
@@ -158,7 +177,56 @@ export default function ItemFormTable({
     console.log("Field:", field);
     console.log("Value:", value);
 
-    if (field === "item_code") {
+    if (field === "uom") {
+      console.log("UOM:", value);
+      console.log("ID:", id);
+      console.log("ITEM: ", muatan.find((item) => item.ID === id)?.item_code);
+
+      try {
+        const res = await api.post("/uoms/uom-item", {
+          item_code: muatan.find((item) => item.ID === id)?.item_code,
+          from_uom: value,
+        });
+        if (res.data.success) {
+          console.log("Response:", res.data.data);
+          console.log("Ean:", res.data.data.ean);
+
+          setMuatan((prev) =>
+            prev.map((m) =>
+              m.ID === id
+                ? {
+                  ...m,
+                  barcode: res.data.data.ean,
+                  uom: res.data.data.from_uom
+                  // uom: value,
+                }
+                : m
+            )
+          );
+
+          // const selectedProduct = await products.find(
+          //   (product) => product.item_code === value
+          // );
+          // console.log("Produk yang dipilih:", selectedProduct);
+          // if (selectedProduct) {
+          //   setMuatan((prev) =>
+          //     prev.map((m) =>
+          //       m.ID === id
+          //         ? {
+          //           ...m,
+          //           barcode: res.data.data.ean,
+          //           uom : res.data.data.from_uom
+          //           // uom: value,
+          //         }
+          //         : m
+          //     )
+          //   );
+          // }
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    } else if (field === "item_code") {
       const selectedProduct = products.find(
         (product) => product.item_code === value
       );
@@ -256,6 +324,7 @@ export default function ItemFormTable({
         quantity: 1,
         location: "",
         uom: product.uom,
+        barcode: product.barcode,
         remarks: "",
         mode: "create",
         sn: product.has_serial,
@@ -329,13 +398,22 @@ export default function ItemFormTable({
               UoM
             </th> */}
               {/* <th className="p-2 border">Inv. Location</th> */}
-              {/* <th className="p-2 border">VAS</th> */}
-              <th className="p-2 border" style={{ width: "50px" }}>
+
+              <th className="p-2 border" style={{ width: "30px" }}>
                 UoM
               </th>
-              <th className="p-2 border" style={{ width: "140px" }}>
-                Lot No.
-              </th>
+
+              {invPolicy?.use_vas && (
+                <th className="p-2 border" style={{ width: "140px" }}>VAS</th>
+              )}
+
+              {invPolicy?.use_lot_no && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Lot No.
+                </th>
+              )}
+
+
               <th className="p-2 border" style={{ width: "130px" }}>
                 Action
               </th>
@@ -408,11 +486,11 @@ export default function ItemFormTable({
                       style={{ fontSize: "12px" }}
                       readOnly
                       type="text"
-                      // value={item.barcode}
-                      value={
-                        products.find((p) => p.item_code === item.item_code)
-                          ?.barcode || ""
-                      }
+                      value={item.barcode}
+                    // value={
+                    //   products.find((p) => p.item_code === item.item_code)
+                    //     ?.barcode || ""
+                    // }
                     />
                   </td>
                   <td className="p-2 border">
@@ -436,8 +514,8 @@ export default function ItemFormTable({
                   </td>
                   <td className="p-2 border">
                     <Select
+                      className="w-28"
                       key={item.ID}
-                      className="w-40"
                       options={
                         selectStates[item.ID]?.options ?? defaultOptions
                       }
@@ -451,21 +529,28 @@ export default function ItemFormTable({
                       }
                     />
                   </td>
-                  <td className="p-2 border">
-                    <Input
-                      style={{ fontSize: "12px" }}
-                      type="text"
-                      value={item.lot_number}
-                      onChange={(e) =>
-                        handleChange(item.ID, "lot_number", e.target.value)
-                      }
-                    />
-                    {errors[item.ID]?.remarks && (
-                      <small className="text-red-500">
-                        {errors[item.ID].lot_number}
-                      </small>
-                    )}
-                  </td>
+
+
+
+                  {invPolicy?.use_lot_no && (
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px" }}
+                        type="text"
+                        value={item.lot_number}
+                        onChange={(e) =>
+                          handleChange(item.ID, "lot_number", e.target.value)
+                        }
+                      />
+                      {errors[item.ID]?.remarks && (
+                        <small className="text-red-500">
+                          {errors[item.ID].lot_number}
+                        </small>
+                      )}
+                    </td>
+                  )}
+
+
                   {/* <td className="p-2 border">
                     <Input
                       style={{ fontSize: "12px" }}
@@ -474,20 +559,28 @@ export default function ItemFormTable({
                       value={item.sn}
                     />
                   </td> */}
-                  {/* <td className="p-2 border">
-                    <Select
-                      // isDisabled={headerForm.status == "complete"}
-                      className="text-sm w-34"
-                      isSearchable
-                      value={vasOptions.find(
-                        (option) => option.value === item.vas_id
-                      )}
-                      options={vasOptions}
-                      onChange={(value) =>
-                        handleChange(item.ID, "vas_id", value?.value)
-                      }
-                    />
-                  </td> */}
+
+
+                  {invPolicy?.use_vas && (
+                    <td
+                      className="p-2 border space-x-2 text-center"
+                      style={{ width: "130px" }}
+                    >
+                      <Select
+                        // isDisabled={headerForm.status == "complete"}
+                        className="text-sm w-34"
+                        isSearchable
+                        value={vasOptions.find(
+                          (option) => option.value === item.vas_id
+                        )}
+                        options={vasOptions}
+                        onChange={(value) =>
+                          handleChange(item.ID, "vas_id", value?.value)
+                        }
+                      />
+                    </td>
+                  )}
+
                   <td
                     className="p-2 border space-x-2 text-center"
                     style={{ width: "130px" }}
@@ -503,13 +596,16 @@ export default function ItemFormTable({
                         >
                           <X size={14} />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleCopy(item.ID)}
-                        >
-                          <Copy size={14} />
-                        </Button>
+                        {invPolicy?.use_lot_no && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleCopy(item.ID)}
+                          >
+                            <Copy size={14} />
+                          </Button>
+                        )}
+
                       </>
                     ) : (
                       <>

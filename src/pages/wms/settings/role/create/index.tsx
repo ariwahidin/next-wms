@@ -28,12 +28,12 @@ const CreateRolePage = () => {
         description: res.data.message,
         type: "success",
       });
-      router.push("/master/role");
+      router.push("/wms/settings/role");
     }
   };
 
   return (
-    <Layout title="Master" subTitle="Role">
+    <Layout title="Settings" subTitle="Role">
       <div className="container mx-auto p-4">
         <Title>Create Role</Title>
         <RoleForm mode="create" onSubmit={handleSubmit} />

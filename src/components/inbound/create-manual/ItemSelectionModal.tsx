@@ -30,7 +30,7 @@ const ItemSelectionModal = ({
   const [filteredItems, setFilteredItems] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -69,12 +69,15 @@ const ItemSelectionModal = ({
           (item.item_code?.toLowerCase() || "").includes(searchLower) ||
           (item.item_name?.toLowerCase() || "").includes(searchLower) ||
           (item.barcode?.toLowerCase() || "").includes(searchLower)
-      );
+      ).map((item) => ({
+        ...item,
+        ID: Number(item.ID),
+      }));
       setFilteredItems(filtered);
     }
   }, [searchTerm, items]);
 
-  const handleItemSelect = (itemId: string, isChecked: boolean) => {
+  const handleItemSelect = (itemId: number, isChecked: boolean) => {
     if (mode === "edit") {
       setSelectedItemIds(isChecked ? [itemId] : []);
     } else {
@@ -84,7 +87,7 @@ const ItemSelectionModal = ({
     }
   };
 
-  const handleRowClick = (itemId: string) => {
+  const handleRowClick = (itemId: number) => {
     const isCurrentlySelected = selectedItemIds.includes(itemId);
     handleItemSelect(itemId, !isCurrentlySelected);
   };
@@ -94,17 +97,28 @@ const ItemSelectionModal = ({
       return;
     }
     setSelectedItemIds(isChecked ? filteredItems.map((item) => item.ID) : []);
+    // setSelectedItemIds(isChecked ? filteredItems.map((item) => Number(item.item_id)) : []);
+
   };
 
   const handleApply = () => {
-    const currentSelectedIds = selectedItems.map((item) => item.item_id);
+    // const currentSelectedIds = selectedItems.map((item) => item.item_id);
+    const currentSelectedIds = selectedItems.map((item) => Number(item.item_id));
 
     console.log("Current Selected IDs:", currentSelectedIds);
     console.log("Applying selected items:", selectedItemIds);
 
+    console.log("currentSelectedIds (typeof):", currentSelectedIds.map(i => typeof i));
+    console.log("selectedItemIds (typeof):", selectedItemIds.map(i => typeof i));
+
+    // const newSelectedIds = selectedItemIds.filter(
+    //   (item_id) => !currentSelectedIds.includes(String(item_id))
+    // );
+
     const newSelectedIds = selectedItemIds.filter(
-      (item_id) => !currentSelectedIds.includes(String(item_id))
+      (item_id) => !currentSelectedIds.includes(Number(item_id))
     );
+
 
     console.log("New Selected IDs:", newSelectedIds);
 
@@ -206,9 +220,8 @@ const ItemSelectionModal = ({
                   return (
                     <tr
                       key={item.ID}
-                      className={`border-t cursor-pointer hover:bg-gray-50 transition-colors ${
-                        isSelected ? "bg-blue-50 border-blue-200" : ""
-                      }`}
+                      className={`border-t cursor-pointer hover:bg-gray-50 transition-colors ${isSelected ? "bg-blue-50 border-blue-200" : ""
+                        }`}
                       onClick={() => handleRowClick(item.ID)}
                     >
                       <td className="p-2 border text-center">
@@ -231,11 +244,10 @@ const ItemSelectionModal = ({
                       <td className="p-2 border text-center">{item.uom}</td>
                       <td className="p-2 border text-center">
                         <span
-                          className={`px-2 py-1 rounded text-xs ${
-                            item.has_serial === "Y"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
+                          className={`px-2 py-1 rounded text-xs ${item.has_serial === "Y"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                            }`}
                         >
                           {item.has_serial}
                         </span>

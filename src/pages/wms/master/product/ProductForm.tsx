@@ -156,6 +156,7 @@ export default function ProductForm({
     if (!editData) return;
     console.log("Edit data:", editData);
 
+    setSelectedOwner({ value: editData.owner_code, label: editData.owner_code });
     setItemCode(editData.item_code || "");
     setItemName(editData.item_name || "");
     setGmc(editData.barcode || editData.gmc || "");

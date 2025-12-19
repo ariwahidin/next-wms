@@ -423,7 +423,7 @@ const PickingSheetPrint = () => {
                       <td style={{ textAlign: "center", whiteSpace: "nowrap", fontWeight: "bold", fontSize: "12px" }}>
                         {item.location}
                       </td>
-                      <td style={{ textAlign: "center" }}>{item.quantity}</td>
+                      <td style={{ textAlign: "center" }}>{item.quantity} {item.uom}</td>
                       <td style={{ textAlign: "center" }}>{item.cbm}</td>
                     </tr>
                   ))}

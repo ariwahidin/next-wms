@@ -1,13 +1,11 @@
-// import { authMiddleware } from './middleware/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
 
     const allCookies = req.cookies.getAll();
     console.log("✅ All cookies received in middleware:", allCookies);
 
     const token = req.cookies.get('next-auth-token')?.value;
-    // const tokenPublic = req.cookies.get('token_public')?.value;
 
     if (!token) {
         const url = new URL('/auth/login', req.nextUrl.origin);
