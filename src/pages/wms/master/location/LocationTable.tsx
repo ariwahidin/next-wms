@@ -4,10 +4,11 @@ import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Upload } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import { useCallback, useState, ChangeEvent } from "react";
 import styles from "./LocationTable.module.css";
+import router from "next/router";
 // import "ag-grid-community/styles/ag-grid.css";
 // import "ag-grid-community/styles/ag-theme-alpine.css";
 

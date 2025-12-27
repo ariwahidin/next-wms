@@ -547,14 +547,14 @@ const InventoryPage = () => {
                 </div>
 
                 <div className="flex gap-3">
-                  <button
+                  {/* <button
                     onClick={handleChangeStatus}
                     disabled={selectedIds.length === 0}
                     className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
                   >
                     <ArrowLeftRight size={18} />
                     Change Status
-                  </button>
+                  </button> */}
                   <button
                     onClick={exportCSV}
                     disabled={selectedIds.length === 0}

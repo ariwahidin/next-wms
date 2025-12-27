@@ -11,7 +11,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
+import router from "next/router";
 
 export default function Page() {
   const [editData, setEditData] = useState(null);
@@ -36,10 +37,16 @@ export default function Page() {
     <Layout title="Master" subTitle="Location">
       <div className="p-6 space-y-6">
         <div className="col-span-2">
-          <Button className="absolute left-6 top-18" onClick={handleAdd}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Location
-          </Button>
+          <div className="flex justify-start absolute">
+            <Button className="left-6 h-8 top-18" onClick={handleAdd}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Location
+            </Button>
+            <Button className="left-16 h-8 ml-2 bg-green-500 mb-4 text-slate-950 outline-green-600" onClick={() => { router.push('/wms/master/location/import-excel') }}>
+              <Upload className="mr-2 w-4" />
+              Import Excel
+            </Button>
+          </div>
           <LocationTable setEditData={handleEdit} />
 
           {isOpen && (

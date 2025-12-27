@@ -50,7 +50,7 @@ api.interceptors.response.use(
       });
     }
 
-    if (err.response?.status === 500) {
+    if (err.response?.status === 500 || err.response?.status === 404 || err.response?.status === 400) {
       return Promise.resolve({
         success: false,
         data: err.response?.data || {},
