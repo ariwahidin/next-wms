@@ -81,50 +81,23 @@ export function NavUser({
       .get("/auth/logout", { withCredentials: true })
       .then((res) => {
         if (res.data.success === true) {
-
-          const token = document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("next-auth-token="))
-            ?.split("=")[1];
-          console.log("Next Auth Token:", token);
-          if (token) {
-            document.cookie = `next-auth-token=; path=/; max-age=0; secure; samesite=None`;
-            // 1. Hapus user dari Redux state
-            dispatch(logout());
-            // 2. Hapus Redux Persist dari localStorage
-            persistor.purge().then(() => {
-              // 3. Redirect ke login
-              router.push("/auth/login");
-            });
-          }
-
-          // 1. Hapus user dari Redux state
-          // dispatch(logout());
-
-          // 2. Hapus Redux Persist dari localStorage
-          // persistor.purge().then(() => {
-          //   // 3. Redirect ke login
-          //   router.push("/auth/login");
-          // });
+          console.log("Logout successful");
         }
       })
       .catch((err) => console.log(err));
 
-    // const token = document.cookie
-    //   .split("; ")
-    //   .find((row) => row.startsWith("next-auth-token="))
-    //   ?.split("=")[1];
-    // console.log("Next Auth Token:", token);
-    // if (token) {
-    //   document.cookie = `next-auth-token=; path=/; max-age=0; secure; samesite=None`;
-    //   // 1. Hapus user dari Redux state
-    //   dispatch(logout());
-    //   // 2. Hapus Redux Persist dari localStorage
-    //   persistor.purge().then(() => {
-    //     // 3. Redirect ke login
-    //     router.push("/auth/login");
-    //   });
-    // }
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("next-auth-token="))
+      ?.split("=")[1];
+    console.log("Next Auth Token:", token);
+    if (token) {
+      document.cookie = `next-auth-token=; path=/; max-age=0; secure; samesite=None`;
+      dispatch(logout());
+      persistor.purge().then(() => {
+        router.push("/auth/login");
+      });
+    }
   };
 
   return (

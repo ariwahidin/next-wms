@@ -27,6 +27,7 @@ import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
 import { set } from "date-fns";
 import { InventoryPolicy } from "@/types/inventory";
+import { is } from "date-fns/locale";
 
 // Types
 interface ScanItem {
@@ -51,6 +52,7 @@ interface OutboundDetail {
   has_serial?: string;
   uom?: string;
   owner_code?: string;
+  is_serial?: boolean;
 }
 
 interface ScannedItem {
@@ -190,6 +192,7 @@ const CheckingPage = () => {
         has_serial: item.has_serial,
         uom: item.uom,
         owner_code: item.owner_code,
+        is_serial: item.is_serial,
       }));
 
       setListOutboundDetail(filtered);
@@ -222,6 +225,7 @@ const CheckingPage = () => {
         location_scan: item.location_scan,
         qty_data_scan: item.qty_data_scan,
         uom_scan: item.uom_scan,
+        is_serial: item.is_serial,
       }));
 
       setListOutboundScanned(filtered);
@@ -884,18 +888,6 @@ const CheckingPage = () => {
                             setScanQty(num < 1 ? 1 : num);
                           }}
                         />
-                        {/* {scanQty && (
-                        <button
-                          type="button"
-                          className="absolute right-3 top-11 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          onClick={() => {
-                            setScanQty(1);
-                            document.getElementById("qty")?.focus();
-                          }}
-                        >
-                          <XCircle size={18} />
-                        </button>
-                      )} */}
 
                         <Input
                           readOnly
@@ -904,15 +896,6 @@ const CheckingPage = () => {
                           id="uom"
                           value={scanUom}
                           autoComplete="off"
-                        // onChange={(e) => {
-                        //   const val = e.target.value;
-                        //   if (val === "") {
-                        //     setScanQty("");
-                        //     return;
-                        //   }
-                        //   const num = Number(val);
-                        //   setScanQty(num < 1 ? 1 : num);
-                        // }}
                         />
                       </div>
                     </div>

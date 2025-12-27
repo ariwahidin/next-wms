@@ -48,6 +48,7 @@ export interface ItemFormProps {
   ref_no?: string;
   group?: string;
   category?: string;
+  qa_status?: string;
 }
 
 export interface InboundReference {

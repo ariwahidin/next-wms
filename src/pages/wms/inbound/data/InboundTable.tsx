@@ -404,6 +404,7 @@ const InboundTable = () => {
           <div className="flex items-center">
             {" "}
             <Button
+              className="left-6 h-8"
               onClick={() => {
                 router.push("/wms/inbound/add");
               }}
@@ -411,7 +412,12 @@ const InboundTable = () => {
               <Plus className="mr-1 h-4 w-4" />
               Add
             </Button>
-            <Button
+            <Button className="ml-2 left-6 h-8 bg-green-500 text-slate-950 outline-green-600"
+              onClick={() => { router.push('/wms/inbound/import-excel') }}>
+              <Upload className="mr-2 w-4" />
+              Import Excel
+            </Button>
+            {/* <Button
               className="ml-2"
               variant="secondary"
               onClick={() => {
@@ -420,7 +426,7 @@ const InboundTable = () => {
             >
               <RefreshCcw className="mr-1 h-4 w-4" />
               Wave Inbound
-            </Button>
+            </Button> */}
           </div>
         </div>
 

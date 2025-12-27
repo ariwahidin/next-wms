@@ -37,6 +37,8 @@ export interface MuatanOrderSPK {
   vas_koli?: number;
   total_cbm?: number;
   mode?: "create" | "edit";
+  remarks?: string;
+  use_vas?: boolean;
 }
 
 export interface DetailItemFormPropsSPK {

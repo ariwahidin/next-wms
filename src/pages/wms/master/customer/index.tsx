@@ -25,7 +25,7 @@ import Layout from "@/components/layout";
 export default function Page() {
   const [editData, setEditData] = useState(null);
   useEffect(() => {
-    document.title = "Master Supplier";
+    document.title = "Master Customer";
   }, []);
 
   return (

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Pencil, PlusCircle, RefreshCcw, Save } from "lucide-react";
+import { Pencil, PlusCircle, RefreshCcw, Save, Upload } from "lucide-react";
 import Layout from "@/components/layout";
 import Select from "react-select";
 import { Label } from "@radix-ui/react-label";
@@ -15,6 +15,7 @@ import { Product } from "@/types/item";
 import { ItemOptions } from "@/types/inbound";
 import { Uom, UomConversion } from "@/types/uom";
 import { set } from "date-fns";
+import router from "next/router";
 
 export default function UomConversionPage() {
   const [form, setForm] = useState<UomConversion>({
@@ -146,14 +147,24 @@ export default function UomConversionPage() {
     console.log("Filtered UOM conversions:", filtered);
     console.log("Products:", products);
 
+    const filteredProducts = products.filter((item) => item.item_code === form.item_code);
+    console.log("Filtered products:", filteredProducts);
+
     setToUomOptions(
-      filtered
-        .filter((item) => item.item_code === form.item_code)
-        .map((it) => ({
-          value: it.from_uom,
-          label: it.from_uom,
-        }))
-    );
+      [...new Set(filteredProducts.flatMap((item) => [item.uom]))].map((it) => ({
+        value: it,
+        label: it,
+      }))
+    )
+
+    // setToUomOptions(
+    //   filtered
+    //     .filter((item) => item.item_code === form.item_code)
+    //     .map((it) => ({
+    //       value: it.from_uom,
+    //       label: it.from_uom,
+    //     }))
+    // );
 
   }, [form.item_code, uomConversions, products]);
 
@@ -173,6 +184,15 @@ export default function UomConversionPage() {
   return (
     <Layout title="Settings" subTitle="UOM Conversion Management">
       <div className="p-6 space-y-6">
+
+        <div className="justify-self-start">
+          <div className="flex items-center">
+            <Button className="left-6 top-18 bg-green-500 text-slate-950 outline-green-600" onClick={() => { router.push('/wms/settings/uom-conversion/import-excel') }}>
+              <Upload className="mr-2 w-4" />
+              Import Excel
+            </Button>
+          </div>
+        </div>
 
         {/* FORM */}
         <div className="p-4 border rounded-lg space-y-4 bg-gray-50">

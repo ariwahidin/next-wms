@@ -22,6 +22,7 @@ interface InventoryPolicy {
   allow_mixed_lot: boolean;
   allow_negative_stock: boolean;
   validation_sn?: boolean;
+  require_picking_scan?: boolean;
 }
 
 export default function InventoryPolicyPage() {
@@ -46,6 +47,7 @@ export default function InventoryPolicyPage() {
     allow_mixed_lot: false,
     allow_negative_stock: false,
     validation_sn: false,
+    require_picking_scan: false,
   });
 
   useEffect(() => {
@@ -87,6 +89,7 @@ export default function InventoryPolicyPage() {
       allow_mixed_lot: false,
       allow_negative_stock: false,
       validation_sn: false,
+      require_picking_scan: false,
     });
     setShowModal(true);
   };
@@ -109,6 +112,7 @@ export default function InventoryPolicyPage() {
       allow_mixed_lot: policy.allow_mixed_lot,
       allow_negative_stock: policy.allow_negative_stock,
       validation_sn: (policy as any).validation_sn || false,
+      require_picking_scan: (policy as any).require_picking_scan || false,
     });
     setShowModal(true);
   };
@@ -240,9 +244,11 @@ export default function InventoryPolicyPage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm space-y-1">
+                            {policy.require_picking_scan && <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded mr-1 mb-1">Pick Scan</span>}
                             {policy.validation_sn && <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded mr-1 mb-1">SN Validation</span>}
                             {policy.use_vas && <span className="inline-block bg-teal-100 text-teal-800 px-2 py-1 rounded mr-1 mb-1">VAS</span>}
                             {policy.allow_negative_stock && <span className="inline-block bg-pink-100 text-pink-800 px-2 py-1 rounded mr-1 mb-1">Neg Stock</span>}
+
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -393,6 +399,16 @@ export default function InventoryPolicyPage() {
 
                   <div className="space-y-4">
                     <h3 className="font-semibold text-gray-700 border-b pb-2">Other Settings</h3>
+
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.require_picking_scan}
+                        onChange={(e) => handleCheckboxChange('require_picking_scan', e.target.checked)}
+                        className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Require Picking Scan</span>
+                    </label>
 
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input

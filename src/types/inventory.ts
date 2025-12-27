@@ -11,4 +11,6 @@ export interface InventoryPolicy {
     require_lot_number: boolean;
     show_rec_date: boolean;
     require_scan_pick_location: boolean;
+    validation_sn : boolean;
+    require_picking_scan : boolean;
 }

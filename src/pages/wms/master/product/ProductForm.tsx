@@ -42,6 +42,9 @@ export default function ProductForm({
   const [width, setWidth] = useState<number | "">("");
   const [length, setLength] = useState<number | "">("");
   const [height, setHeight] = useState<number | "">("");
+  const [weight, setWeight] = useState<number | "">("");
+  const toNumber = (v: number | "") => (v === "" ? 0 : v);
+  const [color, setColor] = useState<string>("");
   const [categoryCode, setCategoryCode] = useState<string>("");
   const [groupCode, setGroupCode] = useState<string>("");
   const [groupOptions, setGroupOptions] = useState<ItemOptions[]>([
@@ -164,6 +167,8 @@ export default function ProductForm({
     setLength(typeof editData.length === "number" ? editData.length : "");
     setWidth(typeof editData.width === "number" ? editData.width : "");
     setHeight(typeof editData.height === "number" ? editData.height : "");
+    setWeight(typeof editData.weight === "number" ? editData.weight : "");
+    setColor(editData.color || "");
 
     // group
     if (editData.group) setGroupCode(editData.group);
@@ -199,6 +204,8 @@ export default function ProductForm({
     setHeight("");
     setWidth("");
     setLength("");
+    setWeight("");
+    setColor("");
     setGroupCode("");
     setCategoryCode("");
     setSelectedUom(uomOptions[0] ?? null);
@@ -247,6 +254,8 @@ export default function ProductForm({
         width: width === "" ? 0 : Number(width),
         length: length === "" ? 0 : Number(length),
         height: height === "" ? 0 : Number(height),
+        weight: weight === "" ? 0 : Number(weight),
+        color,
         category: categoryCode,
         group: groupCode,
         serial: selectedSerial.value,
@@ -311,6 +320,20 @@ export default function ProductForm({
     }),
   };
 
+  useEffect(() => {
+    const l = toNumber(length);
+    const w = toNumber(width);
+    const h = toNumber(height);
+
+    if (l > 0 && w > 0 && h > 0) {
+      const result = (l * w * h) / 1_000_000;
+      setCbm(Number(result.toFixed(6)));
+    } else {
+      setCbm("");
+    }
+  }, [length, width, height]);
+
+
   return (
     <Dialog
       open={open}
@@ -319,7 +342,7 @@ export default function ProductForm({
         if (!next) resetForm();
       }}
     >
-      <DialogContent className="max-w-3xl p-0 bg-white">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white">
         <DialogHeader className="px-6 pt-6">
           <DialogTitle className="text-balance">
             {editData ? "Edit Item" : "Add New Item"}
@@ -375,7 +398,7 @@ export default function ProductForm({
                   onChange={(e) => setItemCode(e.target.value)}
                   aria-required
                   aria-invalid={!!error && !itemCode}
-                  placeholder="Contoh: ITM-001"
+                  placeholder="Entry Item Code"
                 />
               </div>
 
@@ -394,22 +417,22 @@ export default function ProductForm({
 
               {/* Barcode (gmc) */}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="barcode">Barcode</Label>
+                <Label htmlFor="barcode">Ean / Barcode / GMC</Label>
                 <Input
                   id="barcode"
                   value={gmc}
                   onChange={(e) => setGmc(e.target.value)}
                   aria-required
                   aria-invalid={!!error && !gmc}
-                  placeholder="Barcode / GMC"
+                  placeholder="Entry Ean / Barcode / GMC"
                 />
               </div>
 
               {/* Group */}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="category">Group</Label>
-                <Select
-                  inputId="category"
+                <Label htmlFor="group">Group</Label>
+                {/* <Select
+                  inputId="group"
                   classNamePrefix="rs"
                   styles={selectStyles}
                   placeholder="Select group"
@@ -417,6 +440,15 @@ export default function ProductForm({
                   value={groupCodeSelected}
                   onChange={(opt: any) => setGroupCode(opt?.value || "")}
                   isClearable
+                /> */}
+
+                <Input
+                  id="group"
+                  value={groupCode}
+                  onChange={(e) => setGroupCode(e.target.value.toUpperCase())}
+                  aria-required
+                  aria-invalid={!!error && !groupCode}
+                  placeholder="Entry Group"
                 />
               </div>
 
@@ -429,7 +461,7 @@ export default function ProductForm({
                   onChange={(e) => setCategoryCode(e.target.value.toUpperCase())}
                   aria-required
                   aria-invalid={!!error && !categoryCode}
-                  placeholder="Category"
+                  placeholder="Entry Category"
                 />
               </div>
 
@@ -444,23 +476,6 @@ export default function ProductForm({
                   options={uomOptions}
                   value={selectedUom}
                   onChange={(opt: any) => setSelectedUom(opt)}
-                />
-              </div>
-
-              {/* CBM */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="cbm">CBM</Label>
-                <Input
-                  id="cbm"
-                  type="number"
-                  inputMode="decimal"
-                  value={cbm}
-                  onChange={(e) =>
-                    setCbm(e.target.value === "" ? "" : Number(e.target.value))
-                  }
-                  placeholder="0.00"
-                  min={0}
-                  step="0.01"
                 />
               </div>
 
@@ -518,6 +533,59 @@ export default function ProductForm({
                   placeholder="0.00"
                   min={0}
                   step="0.01"
+                />
+              </div>
+
+              {/* Weight */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="weight">Weight (kg)</Label>
+                <Input
+                  id="weight"
+                  type="number"
+                  inputMode="decimal"
+                  value={weight}
+                  onChange={(e) =>
+                    setWeight(
+                      e.target.value === "" ? "" : Number(e.target.value)
+                    )
+                  }
+                  placeholder="0.00"
+                  min={0}
+                  step="0.01"
+                />
+              </div>
+
+              {/* CBM */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="cbm">CBM</Label>
+                <Input
+                  readOnly
+                  id="cbm"
+                  type="number"
+                  inputMode="decimal"
+                  value={cbm}
+                  onChange={(e) =>
+                    setCbm(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                  placeholder="0.00"
+                  min={0}
+                  step="0.01"
+                />
+              </div>
+
+              {/* Color */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="height">Color</Label>
+                <Input
+                  id="color"
+                  type="text"
+                  value={color}
+                  onChange={(e) =>
+                    setColor(
+                      e.target.value === "" ? "" : e.target.value.toUpperCase()
+                    )
+                  }
+                  placeholder="Entry Color"
                 />
               </div>
 

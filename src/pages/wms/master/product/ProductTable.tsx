@@ -5,7 +5,7 @@
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import api from "@/lib/api";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2, Upload } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./ProductTable.module.css";
@@ -17,9 +17,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import ProductForm from "./ProductForm";
+import router from "next/router";
 
 
-  
+
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -58,6 +59,7 @@ const ProductTable = () => {
   };
 
   const handleEdit = (data: any) => {
+    console.log("Edit data:", data);
     setEditData(data);
     setIsOpen(true);
   };
@@ -70,18 +72,20 @@ const ProductTable = () => {
       sortable: false,
       filter: false,
     },
-    
+
     { field: "owner_code", headerName: "Owner" },
     { field: "item_code", headerName: "Item Code" },
     { field: "item_name", headerName: "Item Name", width: 300 },
-    { field: "barcode", headerName: "Barcode" },
+    { field: "barcode", headerName: "Ean" },
+    { field: "uom", headerName: "UoM", width: 100 },
     { field: "group", headerName: "Group", width: 150 },
     { field: "category", headerName: "Category", width: 150 },
-    { field: "uom", headerName: "UOM", width: 100 },
+    { field: "width", headerName: "Width (cm)", width: 130 },
+    { field: "length", headerName: "Length (cm)", width: 130 },
+    { field: "height", headerName: "Height (cm)", width: 130 },
+    { field: "weight", headerName: "Weight (kg)", width: 130 },
     { field: "cbm", headerName: "CBM", width: 100 },
-    { field: "width", headerName: "Width", width: 100 },
-    { field: "length", headerName: "Length", width: 100 },
-    { field: "height", headerName: "Height", width: 100 },
+    { field: "color", headerName: "Color", width: 100 },
     { field: "has_serial", headerName: "SN", width: 70, cellStyle: { textAlign: "center" } },
     { field: "has_waranty", headerName: "Waranty", width: 120, cellStyle: { textAlign: "center" } },
     { field: "has_adaptor", headerName: "Adaptor", width: 120, cellStyle: { textAlign: "center" } },
@@ -129,10 +133,10 @@ const ProductTable = () => {
     []
   );
 
-   const  handleClose = () => {
-      setIsOpen(false);
-      setEditData(null);
-    };
+  const handleClose = () => {
+    setIsOpen(false);
+    setEditData(null);
+  };
 
   return (
     <>
@@ -140,9 +144,13 @@ const ProductTable = () => {
         <div className="flex items-center justify-between pb-4">
           <div className="justify-self-start">
             <div className="flex items-center">
-              <Button className="absolute left-6 top-18" onClick={handleAdd}>
+              <Button className="left-6 top-18" onClick={handleAdd}>
                 <Plus className="mr-2 w-4" />
                 Add Item
+              </Button>
+              <Button className="ml-2 left-6 top-18 bg-green-500 text-slate-950 outline-green-600" onClick={() => {router.push('/wms/master/product/import-excel')}}>
+                <Upload className="mr-2 w-4" />
+                Import Excel
               </Button>
             </div>
           </div>

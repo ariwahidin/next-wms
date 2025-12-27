@@ -44,6 +44,7 @@ const muatanSchema = yup.object().shape({
       const date = new Date(value);
       return !isNaN(date.getTime());
     }),
+  qa_status: yup.string().required("Status wajib diisi"),
   whs_code: yup.string().required("Gudang wajib diisi"),
   remarks: yup.string().optional(),
 });
@@ -62,6 +63,11 @@ export default function ItemFormTable({
   const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
   const [itemCodeOptions, setItemCodeOptions] = useState<ItemOptions[]>([]);
   const [whsCodeOptions, setWhsCodeOptions] = useState<ItemOptions[]>([]);
+  const [optionsStatus, setOptionsStatus] = useState<ItemOptions[]>([
+    { value: "A", label: "Accepted" },
+    { value: "Q", label: "Quarantine" },
+    { value: "R", label: "Rejected" },
+  ]);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -151,13 +157,14 @@ export default function ItemFormTable({
         inbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
         item_code: product.item_code,
         quantity: 1,
+        qa_status: "A",
         location: "",
         ref_id: inboundReferences.ID,
         ref_no: inboundReferences.ref_no,
         uom: product.uom,
         division: "REGULAR",
         rec_date: new Date().toISOString().split("T")[0],
-        prod_date: "",
+        prod_date: new Date().toISOString().split("T")[0],
         exp_date: "",
         lot_number: "",
         remarks: "",
@@ -348,6 +355,7 @@ export default function ItemFormTable({
   const [loading, setLoading] = useState(false);
   const [selectStates, setSelectStates] = useState({});
 
+
   const handleFocus = async (itemCode: string, itemId: string | number) => {
     if (!itemCode || itemCode.trim() === "") return;
 
@@ -449,6 +457,9 @@ export default function ItemFormTable({
               <th className="p-2 border" style={{ width: "100px" }}>
                 Qty
               </th>
+              <th className="p-2 border" style={{ width: "100px" }}>
+                Status
+              </th>
 
               {invPolicy?.use_receive_location && (
                 <th className="p-2 border" style={{ width: "130px" }}>
@@ -463,22 +474,22 @@ export default function ItemFormTable({
                 </th>
               )}
 
-
-
               {invPolicy?.use_production_date && (
                 <th className="p-2 border" style={{ width: "140px" }}>
                   Prod Date
                 </th>
               )}
-
               {invPolicy?.use_fefo && invPolicy?.require_expiry_date && (
-                <> <th className="p-2 border" style={{ width: "140px" }}>
+                <th className="p-2 border" style={{ width: "140px" }}>
                   Exp Date
                 </th>
-                  <th className="p-2 border" style={{ width: "140px" }}>
-                    Lot No.
-                  </th> </>
               )}
+              {invPolicy?.use_lot_no && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Lot No.
+                </th>
+              )}
+
               <th className="p-2 border" style={{ width: "220px" }}>
                 Action
               </th>
@@ -533,18 +544,6 @@ export default function ItemFormTable({
                             </small>
                           )}
                         </td>
-                        {/* <td className="p-2 border">
-                          <Input
-                            style={{ fontSize: "12px" }}
-                            readOnly
-                            type="text"
-                            value={
-                              products.find(
-                                (p) => p.item_code === item.item_code
-                              )?.barcode || ""
-                            }
-                          />
-                        </td> */}
                         <td className="p-2 border">
                           <Input
                             style={{ fontSize: "12px" }}
@@ -596,6 +595,23 @@ export default function ItemFormTable({
                               {errors[item.ID].quantity}
                             </small>
                           )}
+                        </td>
+
+                        <td className="p-2 border">
+                          <Select
+                            key={item.ID}
+                            className="w-32"
+                            options={optionsStatus}
+                            onFocus={() => handleFocus(item.item_code, item.ID)}
+                            isLoading={selectStates[item.ID]?.loading ?? false}
+                            value={selectStates[item.ID]?.selectedOption ??
+                              optionsStatus.find(
+                                (option) => option.value === item.qa_status
+                              )}
+                            onChange={(value) =>
+                              handleChange(item.ID, "qa_status", value?.value)
+                            }
+                          />
                         </td>
 
                         {invPolicy?.use_receive_location && (
@@ -652,8 +668,6 @@ export default function ItemFormTable({
                             )}
                           </td>
                         )}
-
-
 
                         {invPolicy?.use_production_date && (
                           <td className="p-2 border">
@@ -722,28 +736,26 @@ export default function ItemFormTable({
                                 </small>
                               )}
                             </td>
-
-                            <td className="p-2 border">
-                              <Input
-                                style={{ fontSize: "12px", width: "100px" }}
-                                type="text"
-                                value={item.lot_number}
-                                onChange={(e) =>
-                                  handleChange(item.ID, "lot_number", e.target.value)
-                                }
-                              />
-                              {errors[item.ID]?.remarks && (
-                                <small className="text-red-500">
-                                  {errors[item.ID].lot_number}
-                                </small>
-                              )}
-                            </td>
                           </>
                         )}
 
-
-
-
+                        {invPolicy?.use_lot_no && (
+                          <td className="p-2 border">
+                            <Input
+                              style={{ fontSize: "12px", width: "100px" }}
+                              type="text"
+                              value={item.lot_number}
+                              onChange={(e) =>
+                                handleChange(item.ID, "lot_number", e.target.value)
+                              }
+                            />
+                            {errors[item.ID]?.remarks && (
+                              <small className="text-red-500">
+                                {errors[item.ID].lot_number}
+                              </small>
+                            )}
+                          </td>
+                        )}
 
                         <td
                           className="p-2 border space-x-2 text-center"
@@ -812,6 +824,7 @@ export default function ItemFormTable({
                         <td className="p-2 border text-center">
                           {item.quantity}
                         </td>
+                        <td className="p-2 border text-center">{item.qa_status}</td>
 
                         {invPolicy?.use_receive_location && (
                           <td className="p-2 border text-center">
@@ -842,8 +855,6 @@ export default function ItemFormTable({
                             {item.lot_number}
                           </td>
                         )}
-
-
                         {/* <td className="p-2 border">{item.remarks}</td> */}
                         <td
                           className="p-2 border space-x-2 text-center"

@@ -48,7 +48,7 @@ export default function ManualForm() {
     no_truck: "",
     driver: "",
     container: "",
-    owner_code: "YMID",
+    owner_code: "YUWELL",
     whs_code: "CKY",
     type: "NORMAL",
     mode: "create",
@@ -186,6 +186,10 @@ export default function ManualForm() {
       ...m,
       ref_no: references.find((ref) => ref.ID === m.ref_id)?.ref_no,
     }));
+    formData.invoice = formData.receipt_id;
+    if (references.length == 1) {
+      references[0].ref_no = formData.receipt_id;
+    }
 
     console.log("Data yang disimpan:", formData, references, newMuatan);
     // return;
@@ -402,6 +406,13 @@ export default function ManualForm() {
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
                   <Select
+                    isDisabled={
+                      muatan.length > 0 ||
+                        formData.status == "checking" ||
+                        formData.status == "complete"
+                        ? true
+                        : false
+                    }
                     options={ownerOptions}
                     defaultValue={ownerOptions.find(
                       (option) => option.value === "YMID"
@@ -818,8 +829,8 @@ export default function ManualForm() {
             key={index}
             className="flex justify-between items-center mb-4 mt-2"
           >
-            <div className="flex items-center gap-2">
-              <Label
+            <div className="flex items-center gap-2 display-none">
+              {/* <Label
                 className="w-24 text-left shrink-0"
                 style={{ fontSize: "12px" }}
               >
@@ -830,7 +841,7 @@ export default function ManualForm() {
                 style={{ fontSize: "12px" }}
                 value={references[index].ref_no}
                 onChange={(e) => handleInvoiceChange(index, e.target.value)}
-              />
+              /> */}
 
               {references?.length > 1 && (
                 <div className="flex-1">

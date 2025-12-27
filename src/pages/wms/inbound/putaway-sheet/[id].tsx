@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import JsBarcode from "jsbarcode";
 import api from "@/lib/api";
+import { InventoryPolicy } from "@/types/inventory";
 
 const PutawaySheetPrint = () => {
   const router = useRouter();
@@ -12,6 +13,7 @@ const PutawaySheetPrint = () => {
   const barcodeRef = useRef<HTMLCanvasElement>(null);
   const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
   const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
+  const [inventoryPolicy, setInventoryPolicy] = useState<InventoryPolicy | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -23,7 +25,8 @@ const PutawaySheetPrint = () => {
     const res = await api.get(`/inbound/putaway/sheet/${id}`, {
       withCredentials: true,
     });
-    setSheet(res.data.data);
+    setSheet(res.data.data.putaway_sheet);
+    setInventoryPolicy(res.data.data.inventory_policy);
   };
 
   useEffect(() => {
@@ -116,12 +119,6 @@ const PutawaySheetPrint = () => {
               <td style={headerValue}>{data.container || "-"}</td>
             </tr>
             <tr>
-              {/* <td style={headerLabel}>End Unloading</td>
-              <td style={headerValue}>{data.end_unloading}</td> */}
-              {/* <td style={headerLabel}>Total CBM</td>
-              <td style={headerValue}>
-                {sheet.reduce((acc, item) => acc + item.cbm, 0).toFixed(4)}
-              </td> */}
               <td></td>
               <td></td>
               <td style={headerLabel}>Koli</td>
@@ -144,9 +141,10 @@ const PutawaySheetPrint = () => {
             <th style={th}>No</th>
             <th style={th}>Item Code</th>
             <th style={th}>Barcode</th>
-            <th style={th}>Whs Code</th>
+            {inventoryPolicy.require_expiry_date && <th style={th}>Exp Date</th>}
+            {/* <th style={th}>Whs Code</th> */}
             <th style={th}>Qty</th>
-            <th style={th}>CBM</th>
+            {/* <th style={th}>CBM</th> */}
           </tr>
         </thead>
         <tbody>
@@ -162,22 +160,28 @@ const PutawaySheetPrint = () => {
                   }}
                 ></canvas>
               </td>
-              <td style={{ ...td, textAlign: "center" }}>{item.whs_code}</td>
-              <td style={{ ...td, textAlign: "center" }}>{item.quantity}</td>
-              <td style={{ ...td, textAlign: "center" }}>{(item.cbm * item.quantity).toFixed(4)}</td>
+              {inventoryPolicy.require_expiry_date && (
+                <td style={{ ...td, textAlign: "center" }}>
+                  {item.exp_date || "-"}
+                </td>
+              )}
+              {/* <td style={{ ...td, textAlign: "center" }}>{item.whs_code}</td> */}
+              <td style={{ ...td, textAlign: "center" }}>{item.quantity} {item.uom}</td>
             </tr>
           ))}
           <tr>
-            <td colSpan={4} style={{ ...td, textAlign: "center" }}>
+            <td colSpan={3} style={{ ...td, textAlign: "center" }}>
               Total
             </td>
+            {inventoryPolicy.require_expiry_date && (
+              <td style={{ ...td }}></td>
+            )}
             <td style={{ ...td, textAlign: "center" }}>
               {sheet.reduce((acc, item) => acc + item.quantity, 0)}
             </td>
-            <td style={{ ...td, textAlign: "center" }}>
-              {/* {sheet.reduce((acc, item) => acc + item.cbm, 0).toFixed(4)} */}
+            {/* <td style={{ ...td, textAlign: "center" }}>
               {sheet.reduce((acc, item) => acc + (item.cbm * item.quantity), 0).toFixed(4)}
-            </td>
+            </td> */}
           </tr>
         </tbody>
       </table>

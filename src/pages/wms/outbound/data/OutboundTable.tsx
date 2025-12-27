@@ -21,6 +21,7 @@ import {
   X,
   Copy,
   RefreshCcw,
+  Upload,
 } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import {
@@ -241,7 +242,7 @@ const OutboundTable = () => {
     try {
       eventBus.emit("loading", true);
       api
-        .post("/outbound/open", { outbound_no: rowData.outbound_no, status : status })
+        .post("/outbound/open", { outbound_no: rowData.outbound_no, status: status })
         .then((response) => {
           eventBus.emit("loading", false);
           if (response.data.success) {
@@ -281,7 +282,7 @@ const OutboundTable = () => {
         outbound_no: scannedItemData?.outbound_no,
         action: action,
         temp_location_name: locationName,
-        status : changeStatus
+        status: changeStatus
       };
 
       eventBus.emit("loading", true);
@@ -633,12 +634,18 @@ const OutboundTable = () => {
           <div className="justify-self-start">
             <div className="flex items-center">
               <Button
+                className="left-6 h-8"
                 onClick={() => {
                   router.push("/wms/outbound/add");
                 }}
               >
-                <Plus className="mr-1 h-4 w-4" />
+                <Plus className="mr-1w-4" />
                 Add
+              </Button>
+              <Button className="ml-2 left-6 h-8 bg-green-500 text-slate-950 outline-green-600"
+                onClick={() => { router.push('/wms/outbound/import-excel') }}>
+                <Upload className="mr-2 w-4" />
+                Import Excel
               </Button>
             </div>
           </div>

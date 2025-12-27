@@ -29,52 +29,7 @@ api.interceptors.response.use(
   res => res,
   async err => {
 
-    // const originalRequest = err.config;
-
-    // if (err.response?.status === 401) {
-
-    //   // Jika gagal saat refresh, jangan ulangi lagi
-    //   if (originalRequest.url.includes('/auth/refresh')) {
-    //     // window.location.href = "/auth/login";
-    //     router.push("/auth/login");
-    //     return Promise.reject(err);
-    //   }
-
-    //   try {
-    //     const refreshRes = await api.post('/auth/refresh');
-    //     const newAccessToken = refreshRes.data.access_token;
-
-    //     // Simpan token baru ke cookie
-    //     document.cookie = `next-auth-token=${newAccessToken}; path=/; max-age=${60 * 60 * 24
-    //       }; secure; samesite=None`;
-
-    //     // Ulang request awal — interceptor akan inject token baru otomatis
-    //     return api(err.config);
-    //   } catch (refreshError) {
-    //     console.warn("Refresh token tidak valid:", refreshError);
-    //     // window.location.href = "/auth/login";
-    //     // return Promise.reject(refreshError);
-    //     eventBus.emit("showAlert", {
-    //       title: "Error!",
-    //       description:
-    //         refreshError.response?.data?.error || // ini error asli dari backend
-    //         refreshError.response?.data?.message || // ini error custom dari backend
-    //         refreshError.message ||
-    //         "Something went wrong with the request",
-    //       type: "error",
-    //     });
-
-    //     return Promise.resolve({
-    //       success: false,
-    //       data: {},
-    //       error: true,
-    //       message: refreshError.response?.data?.message || "Something went wrong",
-    //     });
-    //   }
-
-    //   // return Promise.reject(err);
-    // }
-
+    console.log("API Error Response:", err.response);
     eventBus.emit("showAlert", {
       title: "Error!",
       description:
@@ -85,13 +40,33 @@ api.interceptors.response.use(
       type: "error",
     });
 
+    if (err.response?.status === 401) {
+      router.push("/auth/login");
+      return Promise.resolve({
+        success: false,
+        data: {},
+        error: true,
+        message: "Unauthorized. Redirecting to login.",
+      });
+    }
+
+    if (err.response?.status === 500) {
+      return Promise.resolve({
+        success: false,
+        data: err.response?.data || {},
+        error: true,
+        message: err.response?.data?.message || "Something went wrong",
+      });
+    }
+
     return Promise.resolve({
       success: false,
       data: {},
       error: true,
+      errors : err.response?.data?.errors || null,
+      validation_errors : err.response?.data?.validation_errors || null,
       message: err.response?.data?.message || "Something went wrong",
     });
-    // return Promise.reject(err);
   }
 );
 

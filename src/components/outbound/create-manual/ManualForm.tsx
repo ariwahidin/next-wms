@@ -43,7 +43,7 @@ export default function ManualForm() {
     customer_code: "",
     shipment_id: "",
     whs_code: "CKY",
-    owner_code: "YMID",
+    owner_code: "YUWELL",
     mode: "create",
     picker_name: "",
     cust_address: "",

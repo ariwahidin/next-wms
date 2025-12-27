@@ -99,7 +99,7 @@ export default function ManualForm() {
             type: "success",
           });
           // router.push("/wms/outbound/order-spk/data");
-          router.push("/wms/outbound/data?tab=Order SPK");
+          router.push("/wms/outbound/shipping/data");
         }
       } catch (error) {
         console.error("Error saving outbound:", error);
@@ -124,7 +124,7 @@ export default function ManualForm() {
             type: "success",
           });
           // router.push("/wms/outbound/data");
-          router.push("/wms/outbound/data?tab=Order SPK");
+          router.push("/wms/outbound/shipping/data");
         }
       } catch (error) {
         console.error("Error updating outbound:", error);
@@ -169,7 +169,7 @@ export default function ManualForm() {
             className="bg-black-500 text-black hover:bg-gray-200"
             onClick={() => {
               // eventBus.emit("refreshData");
-              router.push("/wms/outbound/data?tab=Order SPK");
+              router.push("/wms/outbound/shipping/data");
               // router.back();
             }}
           >

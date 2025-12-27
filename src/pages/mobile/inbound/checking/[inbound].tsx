@@ -29,6 +29,7 @@ import { set } from "date-fns";
 import data from "@/pages/wms/stock-take/data";
 import { se } from "date-fns/locale";
 import { InventoryPolicy } from "@/types/inventory";
+import { Product } from "@/types/item";
 
 // Types
 interface ScanItem {
@@ -45,6 +46,7 @@ interface ScanItem {
   expDate?: string;
   lotNo?: string;
   uploaded: boolean;
+  uom?: string;
 }
 
 interface InboundDetail {
@@ -80,6 +82,8 @@ interface ScannedItem {
   prod_date?: string;
   exp_date?: string;
   lot_number?: string;
+  uom?: string;
+  product?: Product;
 }
 
 const CheckingPage = () => {
@@ -105,6 +109,7 @@ const CheckingPage = () => {
   const [prodDate, setProdDate] = useState("");
   const [expDate, setExpDate] = useState("");
   const [lotNo, setLotNo] = useState("");
+  const [uom, setUom] = useState("");
   const [scanQty, setScanQty] = useState<string | number>(1);
 
   const [uniqueProdDates, setUniqueProdDates] = useState([]);
@@ -242,7 +247,11 @@ const CheckingPage = () => {
         quantity: item.quantity,
         status: item.status,
         prod_date: item.prod_date,
+        uom: item.uom,
+        product: item.product,
       }));
+
+      console.log("Filtered Scanned Items:", filtered);
 
       setListInboundScanned(filtered);
     }
@@ -393,6 +402,7 @@ const CheckingPage = () => {
         exp_date: string;
         lot_number: string;
         quantity: number;
+        uom: string;
       }>;
 
       // ambil nilai unik
@@ -407,10 +417,17 @@ const CheckingPage = () => {
       setUniqueQtys(qtys);
 
       // kalau cuma satu data unik, langsung auto-fill
-      if (prodDates.length === 1) setProdDate(prodDates[0]);
-      if (expDates.length === 1) setExpDate(expDates[0]);
-      if (lotNos.length === 1) setLotNo(lotNos[0]);
-      if (qtys.length === 1) setScanQty(qtys[0]);
+      // if (prodDates.length === 1) setProdDate(prodDates[0]);
+      // if (expDates.length === 1) setExpDate(expDates[0]);
+      // if (lotNos.length === 1) setLotNo(lotNos[0]);
+      // if (qtys.length === 1) setScanQty(qtys[0]);
+      if (data.length === 1) {
+        setProdDate(data[0].prod_date);
+        setExpDate(data[0].exp_date);
+        setLotNo(data[0].lot_number);
+        setScanQty(data[0].quantity);
+        setUom(data[0].uom);
+      }
 
       if (res.is_serial) {
         console.log("Item requires serial:", res);
@@ -617,7 +634,7 @@ const CheckingPage = () => {
                           <span className="text-gray-600">Scanned:</span>{" "}
                           {item.scan_qty} / {item.quantity}{" "}
                           <span className="text-gray-600">
-                            {item.uom.toLowerCase()}
+                            {item.uom}
                           </span>
 
 
@@ -712,10 +729,11 @@ const CheckingPage = () => {
                         </span>
                         <span className="text-gray-400">{item.status}</span>
                       </div>
-                      <div>
-                        <strong>Serial:</strong> {item.serial_number}
-                      </div>
-
+                      {item.product.has_serial == "Y" && (
+                        <div>
+                          <strong>Serial:</strong> {item.serial_number}
+                        </div>
+                      )}
                       {invPolicy?.use_production_date && (
                         <div>
                           <strong>Prod Date:</strong>{" "}
@@ -727,7 +745,7 @@ const CheckingPage = () => {
                         <strong>Location:</strong> {item.location}
                       </div>
                       <div className="flex items-center gap-2">
-                        <strong>Qty:</strong>
+                        <strong>Qty / Unit:</strong>
                         {editInboundBarcode ? (
                           <Input
                             key={item.id}
@@ -742,7 +760,7 @@ const CheckingPage = () => {
                             }
                           />
                         ) : (
-                          item.quantity
+                          item.quantity +' '+ item.uom
                         )}
                       </div>
                     </div>
@@ -897,44 +915,6 @@ const CheckingPage = () => {
                 </form>
               ) : (
                 <form onSubmit={handleQuantitySubmit}>
-                  {/* <div className="mb-6">
-                    <div className="relative">
-                      <label htmlFor="qty" className="text-sm text-gray-600">
-                        Qty :{" "}
-                      </label>
-                      <Input
-                        min={1}
-                        type="number"
-                        className="w-full mt-1"
-                        id="qty"
-                        value={scanQty}
-                        autoComplete="off"
-                        onChange={(e) => {
-                          const val = e.target.value;
-
-                          if (val === "") {
-                            setScanQty("");
-                            return;
-                          }
-
-                          const num = Number(val);
-                          setScanQty(num < 1 ? 1 : num);
-                        }}
-                      />
-                      {scanQty && (
-                        <button
-                          type="button"
-                          className="absolute right-3 top-11 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          onClick={() => {
-                            setScanQty(1);
-                            document.getElementById("qty")?.focus();
-                          }}
-                        >
-                          <XCircle size={18} />
-                        </button>
-                      )}
-                    </div>
-                  </div> */}
 
 
                   <div className="space-y-3 mb-6">
@@ -1087,46 +1067,64 @@ const CheckingPage = () => {
 
 
                     {/* Qty */}
-                    <div className="flex items-center gap-3">
-                      <label htmlFor="qty" className="text-sm text-gray-600 w-24 text-right">
-                        Qty :
-                      </label>
-                      <div className="relative flex-1">
-                        <Input
-                          min={1}
-                          type="number"
-                          className="w-full"
-                          id="qty"
-                          list="qtyOptions"
-                          value={scanQty}
-                          autoComplete="off"
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === "") {
-                              setScanQty("");
-                              return;
-                            }
-                            const num = Number(val);
-                            setScanQty(num < 1 ? 1 : num);
-                          }}
-                        />
-                        <datalist id="qtyOptions">
-                          {uniqueQtys.map((d, i) => (
-                            <option key={i} value={d} />
-                          ))}
-                        </datalist>
-                        {scanQty && (
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            onClick={() => {
-                              setScanQty(1);
-                              document.getElementById("qty")?.focus();
+                    <div className="mb-6 space-y-1">
+                      <div className="flex items-center gap-3">
+                        <label htmlFor="qty" className="text-sm text-gray-600 w-24 text-right">
+                          Qty / Unit :
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            min={1}
+                            type="number"
+                            className="w-full"
+                            id="qty"
+                            list="qtyOptions"
+                            value={scanQty}
+                            autoComplete="off"
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "") {
+                                setScanQty("");
+                                return;
+                              }
+                              const num = Number(val);
+                              setScanQty(num < 1 ? 1 : num);
                             }}
-                          >
-                            <XCircle size={18} />
-                          </button>
-                        )}
+                          />
+                          <datalist id="qtyOptions">
+                            {uniqueQtys.map((d, i) => (
+                              <option key={i} value={d} />
+                            ))}
+                          </datalist>
+                          {scanQty && (
+                            <button
+                              type="button"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                              onClick={() => {
+                                setScanQty(1);
+                                document.getElementById("qty")?.focus();
+                              }}
+                            >
+                              <XCircle size={18} />
+                            </button>
+                          )}
+
+                          <Input
+                            type="text"
+                            className="w-full"
+                            id="unit"
+                            // list="unitOptions"
+                            readOnly
+                            value={uom}
+                            autoComplete="off"
+                          // onChange={(e) => setScanUnit(e.target.value)}
+                          />
+                          {/* <datalist id="unitOptions">
+                            {uniqueUnits.map((d, i) => (
+                              <option key={i} value={d} />
+                            ))}
+                          </datalist> */}
+                        </div>
                       </div>
                     </div>
 
