@@ -11,7 +11,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const next_token = document.cookie
     .split("; ")
-    .find((row) => row.startsWith("next-auth-token="))
+    .find((row) => row.startsWith("wms-auth-token="))
     ?.split("=")[1];
 
   if (!next_token || next_token === "undefined") {

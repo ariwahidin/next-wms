@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -24,6 +25,10 @@ interface Inventory {
     pallet: string;
     division_code: string;
     owner_code: string;
+    product : {
+        item_code: string;
+        item_name: string;
+    }
 }
 
 interface Warehouse {
@@ -405,7 +410,7 @@ export default function InventoryTransferForm() {
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-gray-600 mb-1">
-                                                    📦 {inv.barcode}
+                                                    📦 {inv.product.item_name}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
                                                     📍 {inv.whs_code} - {inv.location}

@@ -31,11 +31,11 @@ export default function ProfilePage() {
   const handleLogout = () => {
     const token = document.cookie
       .split("; ")
-      .find((row) => row.startsWith("next-auth-token="))
+      .find((row) => row.startsWith("wms-auth-token="))
       ?.split("=")[1];
-    console.log("Next Auth Token:", token);
+    console.log("WMS Auth Token:", token);
     if (token) {
-      document.cookie = `next-auth-token=; path=/; max-age=0; secure; samesite=None`;
+      document.cookie = `wms-auth-token=; path=/; max-age=0; secure; samesite=None`;
       // 1. Hapus user dari Redux state
       dispatch(logout());
       // 2. Hapus Redux Persist dari localStorage

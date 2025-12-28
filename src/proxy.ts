@@ -5,7 +5,7 @@ export function proxy(req: NextRequest) {
     const allCookies = req.cookies.getAll();
     console.log("✅ All cookies received in middleware:", allCookies);
 
-    const token = req.cookies.get('next-auth-token')?.value;
+    const token = req.cookies.get('wms-auth-token')?.value;
 
     if (!token) {
         const url = new URL('/auth/login', req.nextUrl.origin);

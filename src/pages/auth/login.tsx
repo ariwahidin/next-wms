@@ -68,7 +68,7 @@ export default function LoginPage() {
             })
           );
 
-          document.cookie = `next-auth-token=${res.data.x_token
+          document.cookie = `wms-auth-token=${res.data.x_token
             }; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
           if (res.data.user.base_url === "/dashboard") {
             router.push("/wms/dashboard");
