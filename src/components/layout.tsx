@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation";
 // import { Badge } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAppSelector } from "@/hooks/useAppSelector";
+import { Server } from "lucide-react";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -53,11 +54,6 @@ export default function Layout({
             <Breadcrumb>
               <BreadcrumbList>
                 {/* <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href={props.titleLink || "#"}>
-                    {props.title || "Page Menu"}
-                  </BreadcrumbLink>
-                </BreadcrumbItem> */}
-                <BreadcrumbItem className="hidden md:block">
                   <span className="mr-2 absolute top-5 right-2">
                     <Badge className="bg-gray-500 text-white capitalize">{userRedux.unit}</Badge>
                   </span>
@@ -67,6 +63,26 @@ export default function Layout({
                   >
                     {props.title || "Page Menu"}
                   </span>
+                </BreadcrumbItem> */}
+                <BreadcrumbItem className="hidden md:block">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => router.push(props.titleLink || "#")}
+                    >
+                      {props.title || "Page Menu"}
+                    </span>
+
+                    <div className="
+                    absolute top-5 right-6
+                    flex items-center 
+                    gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-sm">
+                      <Server className="w-3.5 h-3.5" />
+                      <span className="text-xs font-semibold tracking-wide">
+                        {userRedux.unit?.replace(/_/g, ' ').toUpperCase() || 'SYSTEM'}
+                      </span>
+                    </div>
+                  </div>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>

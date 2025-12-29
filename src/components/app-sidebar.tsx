@@ -432,34 +432,3 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   );
 }
 
-// export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-//   const menus = useSelector((state: RootState) => state.user.menus);
-
-//   const pathname = usePathname();
-//   const { open, setOpen } = useSidebar()
-
-//   useEffect(() => {
-//     if (pathname.startsWith("/wms/outbound/edit") || pathname.startsWith("/wms/inbound/edit")) {
-//       setOpen(true); // false = collapse, true = expand
-//     }
-
-//     // setOpen(false);
-//   }, [pathname, setOpen]);
-
-//   return (
-//     <Sidebar collapsible="icon" {...props}>
-//       <SidebarHeader>
-//         {/* <SidebarTrigger /> */}
-//         <NavUser user={data.user} />
-//         {/* <TeamSwitcher teams={data.teams} /> */}
-//       </SidebarHeader>
-//       <SidebarContent>
-//         {/* <NavMain items={menus} /> */}
-//         <NavMain items={data.navMain} />
-//         {/* <NavProjects projects={data.projects} /> */}
-//       </SidebarContent>
-//       <SidebarFooter>{/* <NavUser user={data.user} /> */}</SidebarFooter>
-//       <SidebarRail />
-//     </Sidebar>
-//   );
-// }

@@ -53,7 +53,7 @@ export function NavMain({
   }[];
 }) {
   const pathname = usePathname(); // Mendapatkan path halaman saat ini
-  console.log("Items NavMain:", items);
+  // console.log("Items NavMain:", items);
 
   // const Icon = item.icon ? iconMap[item.icon] : null;
 
