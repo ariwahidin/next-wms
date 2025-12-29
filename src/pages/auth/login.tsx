@@ -23,14 +23,24 @@ export default function LoginPage() {
       subtitle: 'Efficient inventory control'
     },
     {
-      image: '/images/tms_cover.jpeg',
+      image: '/images/truck_yusen2.jpeg',
       title: 'Transport Management',
       subtitle: 'Seamless delivery tracking'
     },
     {
-      image: '/images/gudang.jpg',
+      image: '/images/warehouse_staff.jpeg',
       title: 'Smart Logistics',
       subtitle: 'End-to-end solutions'
+    },
+    {
+      image: '/images/drone.jpeg',
+      title: 'Scalable System',
+      subtitle: 'Grow your warehouse without complexity'
+    },
+    {
+      image: '/images/tms_cover.jpeg',
+      title: 'System Integration',
+      subtitle: 'Connected transport and warehouse flow'
     }
   ];
 
@@ -164,9 +174,9 @@ export default function LoginPage() {
                       className="w-16 h-16 object-contain"
                     />
                   </div>
-                  <div className="flex flex-col" style={{marginLeft : '-12px'}}>
+                  <div className="flex flex-col" style={{ marginLeft: '-12px' }}>
                     <h1 className="text-3xl font-bold text-white">YuTrackWMS</h1>
-                    <p className= "text-sm" style={{marginTop : '-5px', color : '#FF6D10', fontWeight : 'bold' }}>Track Everything in Warehouse</p>
+                    <p className="text-sm" style={{ marginTop: '-5px', color: '#FF6D10', fontWeight: 'bold' }}>Track Everything in Warehouse</p>
                   </div>
                 </div>
                 <p className="text-gray-300 text-lg leading-relaxed">
@@ -249,16 +259,16 @@ export default function LoginPage() {
                       className="w-14 h-14 object-contain"
                     />
                   </div>
-                  <div style={{ marginLeft : '-8px' }}>
+                  <div style={{ marginLeft: '-8px' }}>
                     <h1 className="text-2xl font-bold text-black">YuTrackWMS</h1>
-                    <p className="text-sm" style={{marginTop : '-5px', color : '#FF6D10', fontWeight : 'bold' }}>Track Everything in Warehouse</p>
+                    <p className="text-sm" style={{ marginTop: '-5px', color: '#FF6D10', fontWeight: 'bold' }}>Track Everything in Warehouse</p>
                   </div>
                 </div>
 
                 <div className="space-y-6">
                   <div className="hidden lg:flex flex-col text-center lg:text-left">
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-                    <p className="text-gray-600" style={{marginTop : '-10px'}}>Sign in to your account to continue</p>
+                    <p className="text-gray-600" style={{ marginTop: '-10px' }}>Sign in to your account to continue</p>
                   </div>
 
                   <div className="space-y-5">
@@ -267,7 +277,7 @@ export default function LoginPage() {
                         Email or Username
                       </label>
                       <input
-                        style={{marginTop : '2px'}}
+                        style={{ marginTop: '2px' }}
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
@@ -282,7 +292,7 @@ export default function LoginPage() {
                       </label>
                       <div className="relative">
                         <input
-                          style={{marginTop : '-5px'}}
+                          style={{ marginTop: '-5px' }}
                           type={showPassword ? 'text' : 'password'}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
