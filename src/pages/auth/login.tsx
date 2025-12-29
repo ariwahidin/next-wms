@@ -140,7 +140,7 @@ export default function LoginPage() {
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             {/* Left Side - Branding & Carousel */}
             <div className="hidden lg:block space-y-8">
-              <div className="space-y-4">
+              {/* <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg">
                     <Package className="w-8 h-8 text-white" />
@@ -148,6 +148,25 @@ export default function LoginPage() {
                   <div>
                     <h1 className="text-4xl font-bold text-white">WMS</h1>
                     <p className="text-blue-300 text-sm">Warehouse Management System</p>
+                  </div>
+                </div>
+                <p className="text-gray-300 text-lg leading-relaxed">
+                  Streamline your logistics operations with our comprehensive warehouse and transport management solution
+                </p>
+              </div> */}
+
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <div className="p-2 ">
+                    <img
+                      src="/images/wms.png"
+                      alt="WMS Logo"
+                      className="w-16 h-16 object-contain"
+                    />
+                  </div>
+                  <div className="flex flex-col" style={{marginLeft : '-12px'}}>
+                    <h1 className="text-3xl font-bold text-white">YuTrackWMS</h1>
+                    <p className= "text-sm" style={{marginTop : '-5px', color : '#FF6D10', fontWeight : 'bold' }}>Track Everything in Warehouse</p>
                   </div>
                 </div>
                 <p className="text-gray-300 text-lg leading-relaxed">
@@ -210,7 +229,7 @@ export default function LoginPage() {
             <div className="w-full">
               <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-8 sm:p-10 border border-gray-200/50">
                 {/* Mobile Logo */}
-                <div className="lg:hidden mb-4 text-center">
+                {/* <div className="lg:hidden mb-4 text-center">
                   <div className="inline-flex items-center gap-3 mb-4">
                     <div className="p-2.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
                       <Package className="w-6 h-6 text-white" />
@@ -220,12 +239,26 @@ export default function LoginPage() {
                       <p className="text-xs text-gray-600">Warehouse Management</p>
                     </div>
                   </div>
+                </div> */}
+
+                <div className="lg:hidden flex items-center mb-5">
+                  <div className="p-2 ">
+                    <img
+                      src="/images/wms.png"
+                      alt="WMS Logo"
+                      className="w-14 h-14 object-contain"
+                    />
+                  </div>
+                  <div style={{ marginLeft : '-8px' }}>
+                    <h1 className="text-2xl font-bold text-black">YuTrackWMS</h1>
+                    <p className="text-sm" style={{marginTop : '-5px', color : '#FF6D10', fontWeight : 'bold' }}>Track Everything in Warehouse</p>
+                  </div>
                 </div>
 
                 <div className="space-y-6">
-                  <div className="text-center lg:text-left">
+                  <div className="hidden lg:flex flex-col text-center lg:text-left">
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-                    <p className="text-gray-600">Sign in to your account to continue</p>
+                    <p className="text-gray-600" style={{marginTop : '-10px'}}>Sign in to your account to continue</p>
                   </div>
 
                   <div className="space-y-5">
@@ -234,6 +267,7 @@ export default function LoginPage() {
                         Email or Username
                       </label>
                       <input
+                        style={{marginTop : '2px'}}
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
@@ -248,6 +282,7 @@ export default function LoginPage() {
                       </label>
                       <div className="relative">
                         <input
+                          style={{marginTop : '-5px'}}
                           type={showPassword ? 'text' : 'password'}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}

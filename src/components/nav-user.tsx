@@ -29,12 +29,13 @@ import {
 } from "@/components/ui/sidebar";
 import api from "@/lib/api";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { useDispatch } from "react-redux";
 import { persistor } from "@/store";
 import { logout } from "@/store/userSlice";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "./ui/button";
 
 export function NavUser({
   user,
@@ -43,6 +44,7 @@ export function NavUser({
     name: string;
     email: string;
     avatar: string;
+    role?: string;
   };
 }) {
   const { isMobile } = useSidebar();
@@ -54,6 +56,9 @@ export function NavUser({
   const dispatch = useDispatch();
 
   const handleLogout = () => {
+    // Tutup dialog terlebih dahulu
+    setShowLogoutDialog(false);
+
     api
       .get("/auth/logout", { withCredentials: true })
       .then((res) => {
@@ -75,10 +80,22 @@ export function NavUser({
         router.push("/auth/login");
       });
     }
+
+    // set css pointer-events
+    document.body.style.pointerEvents = "auto";
   };
+
+  useEffect(() => {
+    // set css pointer-events
+    // if (showLogoutDialog === false) {
+    console.log("showLogoutDialog: ", showLogoutDialog);
+    document.body.style.pointerEvents = "auto";
+    // }
+  }, [showLogoutDialog]);
 
   // Get user role badge color
   const getRoleBadge = () => {
+    // const role = userRedux?.role || "user";
     const role = "user";
     const colors = {
       admin: "bg-red-500",
@@ -143,7 +160,8 @@ export function NavUser({
                     <span className="font-semibold text-sm">{userRedux.name}</span>
                     <span className="text-xs text-muted-foreground">{userRedux.email}</span>
                     <Badge className={`${getRoleBadge()} text-white w-fit text-xs mt-1`}>
-                      {"USER"}
+                      {/* {userRedux.role?.toUpperCase() || "USER"} */}
+                      {"User"}
                     </Badge>
                   </div>
                 </div>
@@ -186,7 +204,7 @@ export function NavUser({
       </SidebarMenu>
 
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent className="max-w-md bg-slate-200">
+        <AlertDialogContent className="max-w-md bg-slate-50">
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-3 rounded-full bg-red-100">
@@ -199,13 +217,15 @@ export function NavUser({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <Button className="mt-0"
+              onClick={() => setShowLogoutDialog(false)}
+            >Cancel</Button>
+            <Button
               onClick={handleLogout}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Yes, Log Out
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
