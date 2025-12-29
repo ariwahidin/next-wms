@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -25,7 +26,7 @@ interface Inventory {
     pallet: string;
     division_code: string;
     owner_code: string;
-    product : {
+    product: {
         item_code: string;
         item_name: string;
     }
@@ -35,6 +36,12 @@ interface Warehouse {
     id: number;
     code: string;
     name: string;
+}
+
+interface QaStatus {
+    id: number;
+    qa_status: string;
+    description: string;
 }
 
 interface Location {
@@ -69,6 +76,7 @@ interface TransferFormData {
 
 export default function InventoryTransferForm() {
     const [inventories, setInventories] = useState<Inventory[]>([]);
+    const [qaStatuses, setQaStatuses] = useState<QaStatus[]>([]);
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
     const [locations, setLocations] = useState<Location[]>([]);
     const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
@@ -102,6 +110,7 @@ export default function InventoryTransferForm() {
         fetchInventories();
         fetchWarehouses();
         fetchLocations();
+        fetchQaStatus();
     }, []);
 
     // Filter locations when warehouse changes
@@ -123,6 +132,20 @@ export default function InventoryTransferForm() {
             const response = await api.get("/inventory/all", { withCredentials: true });
             if (response.data.success) {
                 setInventories(response.data.data.inventories || []);
+            }
+        } catch (err: any) {
+            setError("Failed to fetch inventories");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchQaStatus = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get("/qa-status", { withCredentials: true });
+            if (response.data.success) {
+                setQaStatuses(response.data.data || []);
             }
         } catch (err: any) {
             setError("Failed to fetch inventories");
@@ -159,6 +182,7 @@ export default function InventoryTransferForm() {
             ...formData,
             inventory_id: inventory.ID,
             from_whs_code: inventory.whs_code,
+            to_whs_code: inventory.whs_code,
             from_location: inventory.location,
             old_qa_status: inventory.qa_status,
             new_qa_status: inventory.qa_status,
@@ -169,7 +193,7 @@ export default function InventoryTransferForm() {
             pallet: inventory.pallet || "",
             division_code: inventory.division_code || "",
             qty_to_transfer: 0,
-            to_whs_code: "",
+            // to_whs_code: "",
             to_location: "",
         });
         setError("");
@@ -392,8 +416,8 @@ export default function InventoryTransferForm() {
                                                 key={inv.ID}
                                                 onClick={() => handleInventorySelect(inv)}
                                                 className={`w-full text-left p-3 rounded-lg border transition-all ${selectedInventory?.ID === inv.ID
-                                                        ? "border-blue-500 bg-blue-50"
-                                                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                                    ? "border-blue-500 bg-blue-50"
+                                                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                                                     }`}
                                             >
                                                 <div className="flex justify-between items-start mb-1">
@@ -402,8 +426,8 @@ export default function InventoryTransferForm() {
                                                     </span>
                                                     <span
                                                         className={`text-xs px-2 py-0.5 rounded ${inv.qty_available > 0
-                                                                ? "bg-green-100 text-green-800"
-                                                                : "bg-red-100 text-red-800"
+                                                            ? "bg-green-100 text-green-800"
+                                                            : "bg-red-100 text-red-800"
                                                             }`}
                                                     >
                                                         {inv.qty_available} {inv.uom}
@@ -574,10 +598,15 @@ export default function InventoryTransferForm() {
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
                                             >
                                                 <option value="">Keep Current Status</option>
-                                                <option value="PASS">PASS</option>
+                                                {qaStatuses.map((opt) => (
+                                                    <option key={opt.qa_status} value={opt.qa_status}>
+                                                        {opt.description}
+                                                    </option>
+                                                ))}
+                                                {/* <option value="PASS">PASS</option>
                                                 <option value="HOLD">HOLD</option>
                                                 <option value="REJECT">REJECT</option>
-                                                <option value="PENDING">PENDING</option>
+                                                <option value="PENDING">PENDING</option> */}
                                             </select>
                                         </div>
                                         <div>
@@ -611,9 +640,18 @@ export default function InventoryTransferForm() {
                                                 type="number"
                                                 name="qty_to_transfer"
                                                 value={formData.qty_to_transfer}
-                                                onChange={handleInputChange}
-                                                min="0"
-                                                step="0.01"
+                                                min={0}
+                                                step={1}
+                                                inputMode="numeric"
+                                                onWheel={(e) => e.currentTarget.blur()}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+
+                                                    // hanya izinkan angka bulat
+                                                    if (value === '' || /^[0-9]+$/.test(value)) {
+                                                        handleInputChange(e);
+                                                    }
+                                                }}
                                                 required
                                                 disabled={!selectedInventory}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
