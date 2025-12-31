@@ -89,7 +89,7 @@ export default function ProductForm({
       const res = await api.get("/uoms", { withCredentials: true });
       return res.data;
     } catch (err) {
-      console.log("[v0] Fetch UOM error:", err);
+      console.log("Fetch UOM error:", err);
       return { success: false, data: [] };
     }
   };

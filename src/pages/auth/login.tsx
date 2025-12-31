@@ -50,6 +50,7 @@ export default function LoginPage() {
   const dispatch = useAppDispatch();
 
   const handleSubmit = (e: React.FormEvent) => {
+    console.log("Login submitted");
     e.preventDefault();
     eventBus.emit("loading", true);
     api
@@ -67,6 +68,7 @@ export default function LoginPage() {
 
         if (res.data.success === true) {
           // Simpan user ke Redux
+          console.log(" roles => ", res.data.user.roles);
           dispatch(
             setUser({
               name: res.data.user.name,
@@ -75,6 +77,7 @@ export default function LoginPage() {
               token: res.data.x_token,
               menus: res.data.menus,
               unit: res.data.user.unit,
+              roles : res.data.user.roles
             })
           );
 

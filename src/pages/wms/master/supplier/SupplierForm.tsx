@@ -20,6 +20,10 @@ import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Supplier } from "@/types/supplier";
 import { set } from "date-fns";
+// import { Select } from "@radix-ui/react-select";
+import Select from "react-select";
+
+type Option = { value: string; label: string };
 
 export default function SupplierForm({ editData, setEditData }) {
   const [supplier, setSupplier] = useState<Supplier>({
@@ -31,14 +35,46 @@ export default function SupplierForm({ editData, setEditData }) {
     supp_country: "",
     supp_phone: "",
     supp_email: "",
+    owner_code: "",
   });
   const [error, setError] = useState<string | null>(null);
+  // Owner
+  const [ownerOptions, setOwnerOptions] = useState<Option[]>([]);
+  const [selectedOwner, setSelectedOwner] = useState<Option | null>(null);
 
   useEffect(() => {
     if (editData) {
       setSupplier(editData);
     }
   }, [editData]);
+
+  useEffect(() => {
+    (async () => {
+      const [ownerRes] = await Promise.all([
+        fetchOwners(),
+      ]);
+
+      if (ownerRes?.success) {
+        setOwnerOptions(
+          (ownerRes.data || []).map((o: any) => ({
+            value: o.code,
+            label: o.code,
+          }))
+        );
+      }
+    })();
+  }, []);
+
+
+  const fetchOwners = async () => {
+    try {
+      const res = await api.get("/owners", { withCredentials: true });
+      return res.data;
+    } catch (err) {
+      console.log("Fetch Owner error:", err);
+      return { success: false, data: [] };
+    }
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -128,6 +164,23 @@ export default function SupplierForm({ editData, setEditData }) {
       <CardContent>
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
           <div className="grid w-full items-center gap-4">
+            {/* Owner */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="Owner">Owner</Label>
+              <Select<Option>
+                inputId="owner"
+                classNamePrefix="rs"
+                // styles={selectStyles}
+                placeholder="Select owner"
+                options={ownerOptions}
+                value={ownerOptions.find(o => o.value === supplier.owner_code) || null}
+                onChange={(opt: Option | null) => {
+                  setSelectedOwner(opt);
+                  setSupplier({ ...supplier, owner_code: opt?.value || "" });
+                }}
+                isClearable
+              />
+            </div>
             <div className="flex flex-col space-y-1.5">
               <Label htmlFor="supplier_code">Supplier Code</Label>
               <Input
@@ -184,7 +237,6 @@ export default function SupplierForm({ editData, setEditData }) {
                 placeholder=""
               />
             </div>
-
             <div className="flex flex-col space-y-1.5">
               <Label htmlFor="suppPhone">Phone</Label>
               <Input

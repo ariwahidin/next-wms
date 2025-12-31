@@ -58,6 +58,7 @@ export function LoginForm({
               base_url: res.data.user.base_url,
               token: res.data.x_token,
               menus: res.data.menus,
+              roles: res.data.user.roles,
               unit: res.data.user.unit
             })
           );

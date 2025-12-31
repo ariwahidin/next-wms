@@ -1,5 +1,6 @@
 export interface Customer {
     ID: number;
+    owner_code: string;
     customer_code: string;
     customer_name: string;
     cust_addr1 : string;

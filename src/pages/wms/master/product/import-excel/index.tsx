@@ -116,7 +116,8 @@ export default function ProductExcelUpload() {
         };
         headerRow.font = { color: { argb: "FFFFFFFF" }, bold: true };
 
-        // Add sample data
+        // Add sample data 2 rows
+
         worksheet.addRow([
             "PRD001",
             "Sample Product",
@@ -124,6 +125,25 @@ export default function ProductExcelUpload() {
             "40",
             "30",
             "123456789012",
+            "5.5",
+            "Black",
+            "Electronics",
+            "Gadget",
+            "N",
+            "N",
+            "N",
+            "N",
+            "PCS",
+            "OWN001",
+        ]);
+
+        worksheet.addRow([
+            "PRD002",
+            "Sample Product 2",
+            "50",
+            "40",
+            "30",
+            "123456789013",
             "5.5",
             "Black",
             "Electronics",

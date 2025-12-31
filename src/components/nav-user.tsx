@@ -117,7 +117,7 @@ export function NavUser({
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-accent transition-all duration-200"
               >
                 <div className="relative">
-                  <Avatar className="h-10 w-10 rounded-lg ring-2 ring-offset-2 ring-blue-500/20">
+                  <Avatar className="h-8 w-8 rounded-lg ring-2 ring-offset-2 ring-blue-500/20">
                     {user.avatar ? (
                       <AvatarImage src={user.avatar} alt={user.name} />
                     ) : (
@@ -159,10 +159,22 @@ export function NavUser({
                   <div className="flex flex-col gap-1 flex-1">
                     <span className="font-semibold text-sm">{userRedux.name}</span>
                     <span className="text-xs text-muted-foreground">{userRedux.email}</span>
-                    <Badge className={`${getRoleBadge()} text-white w-fit text-xs mt-1`}>
-                      {/* {userRedux.role?.toUpperCase() || "USER"} */}
-                      {"User"}
-                    </Badge>
+
+                    {userRedux.roles.length > 0 && (
+                      userRedux.roles.map((role) => (
+                        <Badge
+                          className={`${getRoleBadge()} text-white w-fit text-xs mt-1`}
+                          key={role.ID}
+                        >
+                          {role.name}
+                        </Badge>
+                      ))
+                    )}
+                    {/* <Badge className={`${getRoleBadge()} text-white w-fit text-xs mt-1`}> */}
+                    {/* {userRedux.role?.toUpperCase() || "USER"} */}
+                    {/* {"User"} */}
+                    {/* {userRedux.roles[0].name || "User"} */}
+                    {/* </Badge> */}
                   </div>
                 </div>
               </DropdownMenuLabel>

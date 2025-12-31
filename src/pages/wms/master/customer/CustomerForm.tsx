@@ -20,10 +20,14 @@ import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Customer } from "@/types/customer";
+import Select from "react-select";
+
+type Option = { value: string; label: string };
 
 export default function CustomerForm({ editData, setEditData }) {
   const [customer, setCustomer] = useState<Customer>({
     ID: 0,
+    owner_code: "",
     customer_code: "",
     customer_name: "",
     cust_addr1: "",
@@ -33,6 +37,9 @@ export default function CustomerForm({ editData, setEditData }) {
   });
 
   const [error, setError] = useState<string | null>(null);
+  // Owner
+  const [ownerOptions, setOwnerOptions] = useState<Option[]>([]);
+  const [selectedOwner, setSelectedOwner] = useState<Option | null>(null);
 
   // 🔥 Jika editData berubah, isi form dengan data produk yang dipilih
   useEffect(() => {
@@ -41,9 +48,36 @@ export default function CustomerForm({ editData, setEditData }) {
     }
   }, [editData]);
 
+  useEffect(() => {
+    (async () => {
+      const [ownerRes] = await Promise.all([
+        fetchOwners(),
+      ]);
+
+      if (ownerRes?.success) {
+        setOwnerOptions(
+          (ownerRes.data || []).map((o: any) => ({
+            value: o.code,
+            label: o.code,
+          }))
+        );
+      }
+    })();
+  }, []);
+
+  const fetchOwners = async () => {
+    try {
+      const res = await api.get("/owners", { withCredentials: true });
+      return res.data;
+    } catch (err) {
+      console.log("Fetch Owner error:", err);
+      return { success: false, data: [] };
+    }
+  };
+
   async function handleSubmit(e) {
     e.preventDefault();
-    
+
 
     try {
       setError(null); // Reset error message jika form valid
@@ -52,21 +86,21 @@ export default function CustomerForm({ editData, setEditData }) {
         console.log(editData);
         // 🔥 Update produk jika sedang dalam mode edit
         await api.put(
-          `/customers/${editData.ID}`,customer,
+          `/customers/${editData.ID}`, customer,
           { withCredentials: true }
         );
       } else {
         // 🔥 Tambah produk baru jika tidak sedang edit
         await api.post(
-          "/customers",customer,
+          "/customers", customer,
           { withCredentials: true }
         );
       }
 
       mutate("/customers");
-      setEditData(null); 
-      setCustomer({ ID: 0, customer_code: "", customer_name: "", cust_addr1: "", cust_addr2: "", cust_city: "", cust_area: "", cust_country: "", cust_phone: "", cust_email: "" });
-      
+      setEditData(null);
+      setCustomer({ ID: 0, owner_code: "", customer_code: "", customer_name: "", cust_addr1: "", cust_addr2: "", cust_city: "", cust_area: "", cust_country: "", cust_phone: "", cust_email: "" });
+
       document.getElementById("customerCode")?.focus();
     } catch (err: any) {
       // Tangani error dengan cara yang lebih ramah
@@ -94,7 +128,7 @@ export default function CustomerForm({ editData, setEditData }) {
   const handleCancel = () => {
     setError(null);
     setEditData(null);
-    setCustomer({ ID: 0, customer_code: "", customer_name: "", cust_addr1: "", cust_addr2: "", cust_city: "", cust_area: "" });
+    setCustomer({ ID: 0, owner_code: "", customer_code: "", customer_name: "", cust_addr1: "", cust_addr2: "", cust_city: "", cust_area: "" });
   };
 
   return (
@@ -115,10 +149,29 @@ export default function CustomerForm({ editData, setEditData }) {
       <CardContent>
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
           <div className="grid w-full items-center gap-4">
+
+            {/* Owner */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="Owner">Owner</Label>
+              <Select<Option>
+                inputId="owner"
+                classNamePrefix="rs"
+                // styles={selectStyles}
+                placeholder="Select owner"
+                options={ownerOptions}
+                value={ownerOptions.find(o => o.value === customer.owner_code) || null}
+                onChange={(opt: Option | null) => {
+                  setSelectedOwner(opt);
+                  setCustomer({ ...customer, owner_code: opt?.value || "" });
+                }}
+                isClearable
+              />
+            </div>
+
             <div className="flex flex-col space-y-1">
               <Label htmlFor="item_code">Customer Code</Label>
               <Input
-                readOnly = {editData ? true : false}
+                readOnly={editData ? true : false}
                 id="customerCode"
                 onChange={(e) => setCustomer({ ...customer, customer_code: e.target.value })}
                 value={customer.customer_code}

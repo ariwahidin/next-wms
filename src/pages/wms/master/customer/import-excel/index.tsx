@@ -97,6 +97,7 @@ export default function CustomerExcelUpload() {
             "PHONE",
             "COUNTRY",
             "EMAIL",
+            "OWNER_CODE",
         ];
 
         // Add header row with styling
@@ -120,6 +121,7 @@ export default function CustomerExcelUpload() {
             "+62 21 1234567",
             "Indonesia",
             "contact@majujaya.com",
+            "OWNER001",
         ]);
         worksheet.addRow([
             "CUST002",
@@ -131,6 +133,7 @@ export default function CustomerExcelUpload() {
             "+62 22 9876543",
             "Indonesia",
             "info@sejahtera.co.id",
+            "OWNER002",
         ]);
         worksheet.addRow([
             "CUST003",
@@ -142,6 +145,7 @@ export default function CustomerExcelUpload() {
             "+62 31 5555666",
             "Indonesia",
             "admin@berkahsentosa.com",
+            "OWNER003",
         ]);
 
         // Set column widths
@@ -155,6 +159,7 @@ export default function CustomerExcelUpload() {
             { width: 18 }, // PHONE
             { width: 15 }, // COUNTRY
             { width: 25 }, // EMAIL
+            { width: 15 }, // OWNER_CODE
         ];
 
         // Generate and download

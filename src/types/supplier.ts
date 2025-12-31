@@ -7,4 +7,5 @@ export interface Supplier {
     supp_country?: string;
     supp_phone?: string;
     supp_email?: string;
+    owner_code?: string;
 }

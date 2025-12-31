@@ -43,6 +43,7 @@ const CustomerTable = ({ setEditData }) => {
 
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
+    { field: "owner_code", headerName: "Owner" },
     { field: "customer_code", headerName: "Customer Code" },
     { field: "customer_name", headerName: "Customer Name" },
     { field: "cust_addr1", headerName: "Address" },
