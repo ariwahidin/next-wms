@@ -5,7 +5,7 @@
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import api from "@/lib/api";
-import { Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { Download, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./ProductTable.module.css";
@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import ProductForm from "./ProductForm";
 import router from "next/router";
+import ExportProductModal from "./ExportProductModal";
 
 
 
@@ -52,6 +53,7 @@ const ProductTable = () => {
   const { data: rowData, error, mutate } = useSWR("/products", fetcher);
   const [editData, setEditData] = useState(null);
   const [isOpen, setIsOpen] = useState(false); // Kontrol modal
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const handleAdd = () => {
     setEditData(null); // Reset form
@@ -143,14 +145,21 @@ const ProductTable = () => {
       <div style={{ width: "100%", height: "530px" }}>
         <div className="flex items-center justify-between pb-4">
           <div className="justify-self-start">
-            <div className="flex items-center">
+            <div className="flex items-center gap-2">
               <Button className="left-6 top-18" onClick={handleAdd}>
                 <Plus className="mr-2 w-4" />
                 Add Item
               </Button>
-              <Button className="ml-2 left-6 top-18 bg-green-500 text-slate-950 outline-green-600" onClick={() => {router.push('/wms/master/product/import-excel')}}>
+              <Button className="left-6 top-18 bg-green-500 text-slate-950 outline-green-600" onClick={() => { router.push('/wms/master/product/import-excel') }}>
                 <Upload className="mr-2 w-4" />
                 Import Excel
+              </Button>
+              <Button
+                className="bg-blue-500 text-white hover:bg-blue-600"
+                onClick={() => setExportModalOpen(true)}
+              >
+                <Download className="mr-2 w-4" />
+                Export Excel
               </Button>
             </div>
           </div>
@@ -199,6 +208,10 @@ const ProductTable = () => {
         />
       </div>
       <ProductForm editData={editData} setEditData={setEditData} open={isOpen} setOpen={setIsOpen} />
+      <ExportProductModal
+        open={exportModalOpen}
+        onOpenChange={setExportModalOpen}
+      />
     </>
   );
 };

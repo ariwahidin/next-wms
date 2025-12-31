@@ -6,11 +6,12 @@ import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Upload } from "lucide-react";
+import { Download, Pencil, Trash2, Upload } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./SupplierTable.module.css";
 import router from "next/router";
+import ExportSupplierModal from "./ExportSupplierModal";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -40,6 +41,7 @@ const HandleDelete = (id: number) => {
 
 const SupplierTable = ({ setEditData }) => {
   const { data: rowData, error, mutate } = useSWR("/suppliers", fetcher);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const [columnDefs, setColumnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No. ", maxWidth: 70 },
@@ -126,10 +128,17 @@ const SupplierTable = ({ setEditData }) => {
 
       <div className="flex justify-between items-center">
         <div className="justify-self-start">
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <Button className="left-6 h-8 bg-green-500 mb-4 text-slate-950 outline-green-600" onClick={() => { router.push('/wms/master/supplier/import-excel') }}>
               <Upload className="mr-2 w-4" />
               Import Excel
+            </Button>
+            <Button
+              className="h-8 bg-blue-500 mb-4 text-white hover:bg-blue-600"
+              onClick={() => setExportModalOpen(true)}
+            >
+              <Download className="mr-2 w-4" />
+              Export Excel
             </Button>
           </div>
         </div>
@@ -170,6 +179,11 @@ const SupplierTable = ({ setEditData }) => {
         paginationPageSize={10} // Set jumlah data per halaman
         paginationPageSizeSelector={[10, 25, 50]} // Opsional: Dropdown pilihan page size
         domLayout="autoHeight"
+      />
+
+      <ExportSupplierModal
+        open={exportModalOpen}
+        onOpenChange={setExportModalOpen}
       />
     </div>
   );

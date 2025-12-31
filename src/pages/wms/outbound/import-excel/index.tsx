@@ -205,7 +205,8 @@ const OutboundExcelUpload: React.FC = () => {
             { header: 'Expiration Date', key: 'exp_date', width: 15 },
             { header: 'Serial Number', key: 'sn', width: 20 },
             { header: 'VAS ID', key: 'vas_id', width: 10 },
-            { header: 'Item Remarks', key: 'item_remarks', width: 30 }
+            { header: 'Item Remarks', key: 'item_remarks', width: 30 },
+            { header: 'Whs Code', key: 'whs_code', width: 30 }
         ];
 
         // Style header row
@@ -250,7 +251,7 @@ const OutboundExcelUpload: React.FC = () => {
             exp_date: '2025-12-01',
             sn: '',
             vas_id: 1,
-            item_remarks: 'Handle with care'
+            item_remarks: 'Handle with care',
         });
 
         worksheet.addRow({
