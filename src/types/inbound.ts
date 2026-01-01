@@ -70,6 +70,11 @@ export interface ItemReceived {
   qa_status: string;
   quantity: number;
   created_at: string;
+  uom?: string;
+  product?: {
+    item_name?: string;
+    has_serial?: string;
+  }
 }
 
 export interface ItemFormTableProps {

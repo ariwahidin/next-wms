@@ -135,15 +135,17 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Received Items</h2>
           <div className="flex gap-2">
-            {selectedItems.length > 0 && headerForm.intergration == false && (
-              <Button
-                onClick={confirmPutaway}
-                disabled={isLoading || selectedItems.length === 0}
-              >
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLoading ? "Processing..." : "Putaway Confirm"}
-              </Button>
-            )}
+            {selectedItems.length > 0
+              // && headerForm.intergration == false
+              && (
+                <Button
+                  onClick={confirmPutaway}
+                  disabled={isLoading || selectedItems.length === 0}
+                >
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isLoading ? "Processing..." : "Putaway Confirm"}
+                </Button>
+              )}
             {itemsReceived.length > 0 && (
               <div>
                 <Button onClick={handleViewInventory}>View Inventory</Button>
@@ -169,26 +171,25 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
             <TableRow>
               <TableHead>
 
-                {selectedItems.length > 0 && headerForm.intergration == false && (
-                  <Checkbox
-                    checked={selectAll}
-                    onCheckedChange={toggleSelectAll}
-                  />
-                )}
-
-                {/* <Checkbox
-                  checked={selectAll}
-                  onCheckedChange={toggleSelectAll}
-                /> */}
+                {selectedItems.length > 0
+                  // && headerForm.intergration == false 
+                  && (
+                    <Checkbox
+                      checked={selectAll}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  )}
               </TableHead>
               <TableHead>No</TableHead>
               <TableHead>Item Code</TableHead>
-              <TableHead>Barcode</TableHead>
+              <TableHead>Item Name</TableHead>
+              <TableHead>Barcode/EAN Scan</TableHead>
               <TableHead>Serial Number</TableHead>
-              <TableHead>Received Location</TableHead>
+              <TableHead>Location Scan</TableHead>
               <TableHead>Whs Code</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Qty</TableHead>
+              <TableHead>Qty Scan</TableHead>
+              <TableHead>UoM Scan</TableHead>
               <TableHead>Created At</TableHead>
             </TableRow>
           </TableHeader>
@@ -196,21 +197,34 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
             {filteredItems.map((item, index) => (
               <TableRow key={item.ID}>
                 <TableCell>
-                  {item.status == "pending" && headerForm.intergration == false && (
-                    <Checkbox
-                      checked={selectedItems.includes(item.ID)}
-                      onCheckedChange={() => toggleSelectItem(item.ID)}
-                    />
-                  )}
+                  {item.status == "pending"
+                    // && headerForm.intergration == false
+                    && (
+                      <Checkbox
+                        checked={selectedItems.includes(item.ID)}
+                        onCheckedChange={() => toggleSelectItem(item.ID)}
+                      />
+                    )}
                 </TableCell>
                 <TableCell className="text-sm">{index + 1}</TableCell>
                 <TableCell className="text-sm">{item.item_code}</TableCell>
+                <TableCell className="text-sm">{item.product.item_name}</TableCell>
                 <TableCell className="text-sm">{item.barcode}</TableCell>
-                <TableCell className="text-sm">{item.serial_number}</TableCell>
+                {item.product.has_serial == "Y" ? (
+                  <>
+                    <TableCell className="text-sm">{item.serial_number}</TableCell>
+                  </>
+                ) :
+                  (
+                    <>
+                      <TableCell className="text-sm">-</TableCell>
+                    </>
+                  )}
                 <TableCell className="text-sm">{item.location}</TableCell>
                 <TableCell className="text-sm">{item.whs_code}</TableCell>
                 <TableCell className="text-sm">{item.status}</TableCell>
                 <TableCell className="text-sm">{item.quantity}</TableCell>
+                <TableCell className="text-sm">{item.uom}</TableCell>
                 <TableCell className="text-sm">
                   {dayjs(item.created_at).format("D MMMM YYYY, HH:mm")}
                 </TableCell>
@@ -219,7 +233,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell colSpan={8} className="text-left font-semibold">
+              <TableCell colSpan={9} className="text-left font-semibold">
                 Total
               </TableCell>
               <TableCell className="font-bold">{totalQty}</TableCell>

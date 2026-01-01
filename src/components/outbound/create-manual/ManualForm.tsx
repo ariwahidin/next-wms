@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import ItemFormTable from "./ItemFormTable";
 import { Button } from "@/components/ui/button";
 import { ArrowBigLeftIcon, RefreshCcw, Save } from "lucide-react";
-import { HeaderFormProps, ItemFormProps, ItemOptions } from "@/types/outbound";
+import { HeaderFormProps, ItemFormProps, ItemOptions, ItemScanDetail } from "@/types/outbound";
 import { Customer } from "@/types/customer";
 import api from "@/lib/api";
 import Select from "react-select";
@@ -19,6 +19,7 @@ import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
 import { Transporter } from "@/types/transporter";
+import ItemScannedTable from "./ItemScannedTable";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -74,6 +75,7 @@ export default function ManualForm() {
   const [customerOptions, setCustomerOptions] = useState<ItemOptions[]>([]);
   const [whsOptions, setWhsOptions] = useState<ItemOptions[]>([]);
   const [ownerOptions, setOwnerOptions] = useState<ItemOptions[]>([]);
+  const [itemScanDetails, setItemScanDetails] = useState<ItemScanDetail[]>([]);
 
   const fetchData = async () => {
     try {
@@ -228,7 +230,6 @@ export default function ManualForm() {
             setMuatan(
               data.items.map((item) => ({
                 ...item,
-                // item_id: String(item.item_id),
                 item_name: item.product?.item_name || "",
               }))
             );
@@ -238,6 +239,42 @@ export default function ManualForm() {
         }
       };
       fetchOutbound();
+
+
+      const fetchOutboundScanDetail = async () => {
+        try {
+          const res = await api.get(`/outbound/scan-details/${no}`, {
+            withCredentials: true,
+          });
+          if (res.data.success) {
+            const data = res.data.data;
+
+            if (mode === "copy") {
+              // reset ID biar dianggap data baru
+              // data = {
+              //   ...data,
+              //   ID: 0,
+              //   outbound_no: "",
+              //   status: "create",
+              //   shipment_id: "",
+              // };
+            }
+
+            // setFormData(data);
+            // setMuatan(
+            //   data.items.map((item) => ({
+            //     ...item,
+            //     item_name: item.product?.item_name || "",
+            //   }))
+            // );
+
+            setItemScanDetails(data);
+          }
+        } catch (error) {
+          console.error("Error fetching outbound scan detail:", error);
+        }
+      };
+      fetchOutboundScanDetail();
     }
   }, [no, mode]);
 
@@ -256,7 +293,7 @@ export default function ManualForm() {
             Back
           </Button>
           <Button
-            disabled = {formData.status === "cancel" ? true : false}
+            disabled={formData.status === "cancel" ? true : false}
             variant="outline"
             className="bg-blue-500 text-white hover:bg-blue-600"
             onClick={handleSave}
@@ -346,8 +383,8 @@ export default function ManualForm() {
                   <Select
                     isDisabled={
                       muatan.length > 0 ||
-                      formData.status == "picking" ||
-                      formData.status == "complete"
+                        formData.status == "picking" ||
+                        formData.status == "complete"
                         ? true
                         : false
                     }
@@ -379,7 +416,7 @@ export default function ManualForm() {
                   <Select
                     isDisabled={
                       formData.status == "picking" ||
-                      formData.status == "complete"
+                        formData.status == "complete"
                         ? true
                         : false
                     }
@@ -985,6 +1022,14 @@ export default function ManualForm() {
         headerForm={formData}
         setHeaderForm={setFormData}
       />
+
+      {itemScanDetails.length > 0 && (
+        <>
+          <hr className="my-6" />
+          <ItemScannedTable itemsReceived={itemScanDetails} />
+        </>
+      )}
+
     </div>
   );
 }

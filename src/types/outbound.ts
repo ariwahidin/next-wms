@@ -85,3 +85,24 @@ export interface KoliItem {
   qty : number
   created_at : string
 }
+
+export interface ItemScanDetail {
+  ID: number;
+  item_code: string;
+  barcode: string;
+  serial_number: string;
+  location_scan?: string;
+  whs_code: string;
+  status: string;
+  quantity: number;
+  qa_status?: string;
+  uom?: string;
+  barcode_data_scan?: string;
+  qty_data_scan?: string;
+  uom_scan?: string;
+  CreatedAt?: string;
+  product : {
+    item_name : string
+    has_serial : string
+  }
+}

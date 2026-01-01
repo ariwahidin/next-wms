@@ -780,14 +780,17 @@ export default function InventoryPolicyPage() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex flex-wrap gap-1">
-                              {policy.require_expiry_date && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-rose-50 text-rose-700 rounded">Expiry</span>}
+                              {policy.use_production_date && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-pink-50 text-pink-700 rounded">Prod Date</span>}
+                              {policy.require_expiry_date && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-rose-50 text-rose-700 rounded">Expiry Date</span>}
                               {policy.require_lot_number && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-orange-50 text-orange-700 rounded">Lot#</span>}
-                              {policy.require_scan_pick_location && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 rounded">Scan</span>}
+                              {policy.require_scan_pick_location && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 rounded">Scan Pick Loc</span>}
                             </div>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex flex-wrap gap-1">
-                              {policy.require_picking_scan && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded">Pick</span>}
+                              {policy.use_receive_location && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-lime-50 text-lime-700 rounded">Receive Loc</span>}
+                              {policy.show_rec_date && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-cyan-50 text-cyan-700 rounded">Rec Date</span>}
+                              {policy.require_picking_scan && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded">Pick Scan</span>}
                               {policy.validation_sn && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-sky-50 text-sky-700 rounded">SN</span>}
                               {policy.use_vas && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-teal-50 text-teal-700 rounded">VAS</span>}
                               {policy.allow_negative_stock && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-pink-50 text-pink-700 rounded">Neg</span>}

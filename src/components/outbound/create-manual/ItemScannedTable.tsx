@@ -23,10 +23,10 @@ import dayjs from "dayjs";
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
 import { useRouter } from "next/router";
-import { KoliItem } from "@/types/outbound";
+import { ItemScanDetail, KoliItem } from "@/types/outbound";
 
 interface ItemScannedTableProps {
-  itemsReceived: ItemReceived[];
+  itemsReceived: ItemScanDetail[];
 }
 
 const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
@@ -38,7 +38,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [koliItems, setKoliItems] = useState<KoliItem[]>([]);
   const router = useRouter();
-  const {no} = router.query
+  const { no } = router.query
   console.log('no', no);
   const toggleSelectAll = () => {
     const newSelectAll = !selectAll;
@@ -46,8 +46,8 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
     setSelectedItems(
       newSelectAll
         ? itemsReceived
-            .filter((item) => item.status === "pending")
-            .map((item) => item.ID)
+          .filter((item) => item.status === "pending")
+          .map((item) => item.ID)
         : []
     );
   };
@@ -121,99 +121,82 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
     }
   };
 
-  const totalQty = koliItems?.reduce(
-    (acc, item) => acc + Number(item.qty),
+  console.log("Item scanned detail:", itemsReceived);
+
+  const totalQty = itemsReceived?.reduce(
+    (acc, item) => acc + Number(item.qty_data_scan),
     0
   );
 
-  useEffect(() => {
+  // useEffect(() => {
 
-    const fetchData = async () => {
-      try {
-        const response = await api.get(
-          `/outbound/koli-details/${no}`,
-          { withCredentials: true }
-        );
-        console.log('response', response);
+  //   const fetchData = async () => {
+  //     try {
+  //       const response = await api.get(
+  //         `/outbound/koli-details/${no}`,
+  //         { withCredentials: true }
+  //       );
+  //       console.log('response', response);
 
-        const data = await response.data;
-        if (data.success === false) return;
-        setKoliItems(data.data);
+  //       const data = await response.data;
+  //       if (data.success === false) return;
+  //       setKoliItems(data.data);
 
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-    // fetchData();
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error);
+  //     }
+  //   };
 
-    if (no) {
-      fetchData();
-    }
+  //   if (no) {
+  //     fetchData();
+  //   }
 
-  }, [no]);
+  // }, [no]);
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Picked Items</h2>
-        {/* {selectedItems.length > 0 && (
-          <div>
-            <Button
-              onClick={confirmPutaway}
-              disabled={isLoading || selectedItems.length === 0}
-            >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? "Processing..." : "Putaway Confirm"}
-            </Button>
-          </div>
-        )} */}
+        <h2 className="text-lg font-semibold">Scan Detail</h2>
       </div>
 
       <Table className="border rounded-md">
         <TableHeader>
           <TableRow>
-            {/* <TableHead>
-              <Checkbox checked={selectAll} onCheckedChange={toggleSelectAll} />
-            </TableHead> */}
             <TableHead>No</TableHead>
             <TableHead>Item Code</TableHead>
-            <TableHead>Barcode</TableHead>
+            <TableHead>Barcode/EAN Scan</TableHead>
+            <TableHead>Item Name</TableHead>
+            <TableHead>Location Scan</TableHead>
             <TableHead>Serial Number</TableHead>
-            {/* <TableHead>Received Location</TableHead>
-            <TableHead>Whs Code</TableHead>
-            <TableHead>Status</TableHead> */}
-            <TableHead>Qty</TableHead>
+            <TableHead>UoM Scan</TableHead>
+            <TableHead>Qty Scan</TableHead>
             <TableHead>Created At</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {koliItems?.map((item, index) => (
+          {itemsReceived?.map((item, index) => (
             <TableRow key={item.ID}>
-              {/* <TableCell>
-                {item.status == "pending" && (
-                  <Checkbox
-                    checked={selectedItems.includes(item.ID)}
-                    onCheckedChange={() => toggleSelectItem(item.ID)}
-                  />
-                )}
-              </TableCell> */}
               <TableCell className="text-sm">{index + 1}</TableCell>
               <TableCell className="text-sm">{item.item_code}</TableCell>
-              <TableCell className="text-sm">{item.barcode}</TableCell>
-              <TableCell className="text-sm">{item.serial_number}</TableCell>
-              {/* <TableCell className="text-sm">{item.location}</TableCell>
-              <TableCell className="text-sm">{item.whs_code}</TableCell>
-              <TableCell className="text-sm">{item.status}</TableCell> */}
-              <TableCell className="text-sm">{item.qty}</TableCell>
+              <TableCell className="text-sm">{item.barcode_data_scan}</TableCell>
+              <TableCell className="text-sm">{item.product.item_name}</TableCell>
+              <TableCell className="text-sm">{item.location_scan}</TableCell>
+              {item.product.has_serial === "Y" ? (
+                <TableCell className="text-sm">{item.serial_number}</TableCell>
+              ) : (
+                <TableCell className="text-sm">-</TableCell>
+              )}
+              <TableCell className="text-sm">{item.uom_scan}</TableCell>
+              <TableCell className="text-sm">{item.qty_data_scan}</TableCell>
               <TableCell className="text-sm">
-                {dayjs(item.created_at).format("D MMMM YYYY, HH:mm")}
+                {dayjs(item.CreatedAt).format("D MMMM YYYY, HH:mm")}
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={4} className="text-left font-semibold">
+            <TableCell colSpan={7} className="text-left font-semibold">
               Total
             </TableCell>
             <TableCell className="font-bold">{totalQty}</TableCell>
