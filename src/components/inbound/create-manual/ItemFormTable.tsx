@@ -126,7 +126,7 @@ export default function ItemFormTable({
 
   useEffect(() => {
     fetchData();
-  }, [headerForm]);
+  }, [headerForm.owner_code]);
 
   // Handle modal untuk add items
   const handleAddItems = () => {

@@ -67,6 +67,7 @@ const TransferPage = () => {
   const [listInboundScanned, setListInboundScanned] = useState<ScannedItem[]>(
     []
   );
+  const [isSubmit, setIsSubmit] = useState(false);
 
   const fetchPolicy = async (owner: string) => {
     try {
@@ -147,7 +148,7 @@ const TransferPage = () => {
     };
 
     console.log("Data to Post:", dataToPost);
-
+    setIsSubmit(true);
     // return;
 
     try {
@@ -174,6 +175,10 @@ const TransferPage = () => {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
+    } finally {
+      setTimeout(() => {
+        setIsSubmit(false);
+      }, 1500);
     }
   };
 
@@ -198,9 +203,7 @@ const TransferPage = () => {
       list_inventory: [itemSelected],
     };
 
-    console.log("Data to Post:", dataToPost);
 
-    // return;
 
     if (qtyTransfer <= 0) {
       eventBus.emit("showAlert", {
@@ -229,6 +232,10 @@ const TransferPage = () => {
       return;
     }
 
+    console.log("Data to Post:", dataToPost);
+    setIsSubmit(true);
+    // return;
+
     try {
       const response = await api.post(
         "/mobile/inventory/transfer-by-inventory-id",
@@ -254,6 +261,10 @@ const TransferPage = () => {
       }
     } catch (error) {
       console.error("Error during transfer:", error);
+    } finally {
+      setTimeout(() => {
+        setIsSubmit(false);
+      }, 1500);
     }
   };
 
@@ -516,6 +527,7 @@ const TransferPage = () => {
                   onChange={(e) => setUomTransfer(e.target.value)}
                 />
               </div>
+              <span className="text-xs text-gray-700">Max Qty: {itemSelected?.qty_display} {itemSelected?.uom_display}</span>
             </div>
 
             <div>
@@ -553,7 +565,17 @@ const TransferPage = () => {
               >
                 Cancel
               </Button>
-              <Button onClick={moveItemToLocation}>Confirm</Button>
+              <Button
+                disabled={isSubmit}
+                onClick={moveItemToLocation}
+              >
+                {isSubmit ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Please wait ...
+                  </>
+                ) : 'Transfer'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -605,7 +627,17 @@ const TransferPage = () => {
               >
                 Cancel
               </Button>
-              <Button onClick={handleConfirmTransfer}>Confirm</Button>
+              <Button
+                disabled={isSubmit}
+                onClick={handleConfirmTransfer}
+              >
+                {isSubmit ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Please wait ...
+                  </>
+                ) : 'Transfer'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

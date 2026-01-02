@@ -125,7 +125,7 @@ export default function ManualForm() {
         api.get("/suppliers"),
         api.get("/transporters"),
         api.get("/warehouses"),
-        api.get("/owners"),
+        api.get("/owners/user"),
         api.get("/origins"),
       ]);
 
@@ -157,11 +157,13 @@ export default function ManualForm() {
           );
         }
 
+        console.log("owners", owners);
+
         if (owners.data.success) {
           setOwnerOptions(
             owners.data.data.map((item: any) => ({
-              value: item.code,
-              label: item.name,
+              value: item.owner_code,
+              label: item.owner_code,
             }))
           );
         }

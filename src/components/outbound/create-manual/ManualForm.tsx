@@ -82,7 +82,7 @@ export default function ManualForm() {
       const [customers, warehouses, owners, transporters] = await Promise.all([
         api.get("/customers"),
         api.get("/warehouses"),
-        api.get("/owners"),
+        api.get("/owners/user"),
         api.get("/transporters"),
       ]);
 
@@ -107,8 +107,8 @@ export default function ManualForm() {
         );
         setOwnerOptions(
           owners.data.data.map((item: any) => ({
-            value: item.code,
-            label: item.name,
+            value: item.owner_code,
+            label: item.owner_code,
           }))
         );
         setTransporter(transporters.data.data);
