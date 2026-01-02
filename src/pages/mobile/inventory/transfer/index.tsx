@@ -56,6 +56,7 @@ const TransferPage = () => {
   const [listInboundScanned, setListInboundScanned] = useState<ScannedItem[]>(
     []
   );
+  const [isSubmit, setIsSubmit] = useState(false);
 
   const handleSearch = async () => {
     setLoading(true);
@@ -113,6 +114,7 @@ const TransferPage = () => {
 
     console.log("Data to Post:", dataToPost);
 
+    setIsSubmit(true);
     try {
       const response = await api.post(
         "/mobile/inventory/transfer/location/barcode",
@@ -137,6 +139,10 @@ const TransferPage = () => {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
+    } finally {
+      setTimeout(() => {
+        setIsSubmit(false);
+      }, 1500);
     }
   };
 
@@ -190,6 +196,8 @@ const TransferPage = () => {
       return;
     }
 
+    setIsSubmit(true);
+
     try {
       const response = await api.post(
         "/mobile/inventory/transfer-by-inventory-id",
@@ -215,6 +223,10 @@ const TransferPage = () => {
       }
     } catch (error) {
       console.error("Error during transfer:", error);
+    } finally {
+      setTimeout(() => {
+        setIsSubmit(false);
+      }, 1500);
     }
   };
 
@@ -347,9 +359,8 @@ const TransferPage = () => {
                   filteredScannedItems.map((item, index) => (
                     <div
                       key={index}
-                      className={`p-2 border rounded-md cursor-pointer ${
-                        item.qa_status === "A" ? "bg-green-100" : "bg-blue-100"
-                      }`}
+                      className={`p-2 border rounded-md cursor-pointer ${item.qa_status === "A" ? "bg-green-100" : "bg-blue-100"
+                        }`}
                     >
                       <div className="flex justify-between items-start text-sm">
                         <div className="space-y-1">
@@ -482,7 +493,18 @@ const TransferPage = () => {
               >
                 Cancel
               </Button>
-              <Button onClick={moveItemToLocation}>Confirm</Button>
+              <Button
+                disabled={isSubmit}
+                onClick={moveItemToLocation}
+              >
+                {isSubmit && (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>Please wait...</span>
+                  </>
+                )}
+                {!isSubmit && "Confirm"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -534,7 +556,18 @@ const TransferPage = () => {
               >
                 Cancel
               </Button>
-              <Button onClick={handleConfirmTransfer}>Confirm</Button>
+              <Button
+                disabled={isSubmit}
+                onClick={handleConfirmTransfer}
+              >
+                {isSubmit && (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>Please wait...</span>
+                  </>)
+                }
+                {!isSubmit && "Confirm"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
