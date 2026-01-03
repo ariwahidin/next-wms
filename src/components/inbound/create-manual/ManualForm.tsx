@@ -328,7 +328,7 @@ export default function ManualForm() {
           {formData.status !== "complete" && (
             <Button
               variant="outline"
-              className="bg-blue-500 text-white hover:bg-blue-600"
+              className="bg-blue-500 text-white hover:bg-blue-600 hover:text-yellow-400"
               onClick={handleSave}
             >
               <Save className="mr-2" />

@@ -191,6 +191,7 @@ export default function ItemFormTable({
           {headerForm.status !== "complete" && (
             <div className="space-x-2">
               <Button
+                className="h-8"
                 type="button"
                 disabled={headerForm.status === "picking"}
                 onClick={handleAddItems}

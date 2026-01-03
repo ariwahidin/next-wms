@@ -7,11 +7,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const viewBy = searchParams.get("viewBy")
 
-    // Validate date parameters
-    // if (!startDate || !endDate) {
-    //     return NextResponse.json({ error: "Start date and end date are required" }, { status: 400 })
-    // }
-
     const stock = await getStockReport(viewBy);
 
     if (stock.length === 0) {
@@ -28,7 +23,6 @@ export async function GET(request: NextRequest) {
             dateStyle: "medium",
             timeStyle: "short",
         })}`,
-        // generatedBy : ""
     })
 
     const buffer = await workbook.xlsx.writeBuffer()

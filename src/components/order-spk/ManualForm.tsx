@@ -166,7 +166,7 @@ export default function ManualForm() {
         <div className="space-x-1">
           <Button
             variant="outline"
-            className="bg-black-500 text-black hover:bg-gray-200"
+            className="bg-black-500 text-black hover:bg-gray-200 h-8"
             onClick={() => {
               // eventBus.emit("refreshData");
               router.push("/wms/outbound/shipping/data");
@@ -187,7 +187,7 @@ export default function ManualForm() {
               </Button> */}
               <Button
                 variant="outline"
-                className="bg-blue-500 text-white hover:bg-blue-600"
+                className="bg-blue-500 text-white hover:bg-blue-600 h-8"
                 onClick={handleSave}
               >
                 <Save className="mr-2" />

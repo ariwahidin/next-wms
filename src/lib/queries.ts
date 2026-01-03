@@ -500,9 +500,12 @@ export async function getStockReport(viewBy: string) {
   let sql = `WITH inv AS (
   SELECT 
     iv.item_code AS [ITEM CODE],
-    iv.barcode AS [GMC CODE],
+    iv.barcode AS [EAN],
     p.item_name AS [ITEM NAME],
     iv.rec_date AS [RCV DATE],
+	iv.prod_date AS [PROD DATE],
+	iv.exp_date AS [EXP DATE],
+	iv.lot_number AS [LOT NO],
     iv.[location] AS [LOCATION],
     iv.whs_code AS [WH CODE],
     iv.qa_status AS [QA],
@@ -520,12 +523,14 @@ export async function getStockReport(viewBy: string) {
     iv.barcode,
     p.item_name,
     iv.rec_date,
+	iv.prod_date,
+	iv.exp_date,
+	iv.lot_number,
     iv.[location],
     iv.whs_code,
     iv.qa_status,
     p.cbm,
     iv.uom
-    -- ORDER BY iv.item_code ASC
     ),
   uom AS (
     SELECT * 
@@ -553,16 +558,13 @@ export async function getStockReport(viewBy: string) {
     FROM inv 
     JOIN uom ON inv.[ITEM CODE] = uom.item_code AND inv.[BASE UNIT] = uom.to_uom
     GROUP BY 
-    inv.[GMC CODE],inv.[RCV DATE],
+    inv.[EAN],inv.[RCV DATE], inv.[PROD DATE], inv.[EXP DATE], inv.[LOT NO],
     inv.[ITEM CODE], inv.[ITEM NAME], 
     inv.LOCATION, inv.[WH CODE], 
     inv.QA, inv.[ON HAND], inv.[ALLOCATED],
     inv.[CBM], inv.[TOTAL CBM],
     inv.AVAILABLE, inv.[BASE UNIT]
     ORDER BY [ITEM CODE] ASC;
-
-    -- SELECT * FROM uom_conversions
-    -- SELECT * from uoms
     `;
 
   // let sql = `SELECT 

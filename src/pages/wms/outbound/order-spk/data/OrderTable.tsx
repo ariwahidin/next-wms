@@ -551,6 +551,7 @@ const OrderTable = () => {
           <div className="justify-self-start">
             <div className="flex items-center">
               <Button
+                className="left-6 h-8 bg-green-500 text-slate-950 outline-green-600"
                 onClick={() => {
                   router.push("/wms/outbound/order-spk/add");
                 }}
