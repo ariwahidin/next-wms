@@ -75,6 +75,9 @@ export interface ItemReceived {
     item_name?: string;
     has_serial?: string;
   }
+  exp_date?: string;
+  prod_date?: string;
+  lot_number?: string;
 }
 
 export interface ItemFormTableProps {

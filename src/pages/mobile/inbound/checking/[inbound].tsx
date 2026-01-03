@@ -405,11 +405,15 @@ const CheckingPage = () => {
         uom: string;
       }>;
 
+      console.log("Check result: " , data);
+
       // ambil nilai unik
       const prodDates = [...new Set(data.map(d => d.prod_date))];
       const expDates = [...new Set(data.map(d => d.exp_date))];
       const lotNos = [...new Set(data.map(d => d.lot_number))];
       const qtys = [...new Set(data.map(d => d.quantity))];
+
+      console.log("Unique values: ", prodDates, expDates, lotNos, qtys);
 
       setUniqueProdDates(prodDates);
       setUniqueExpDates(expDates);
@@ -426,6 +430,8 @@ const CheckingPage = () => {
         setExpDate(data[0].exp_date);
         setLotNo(data[0].lot_number);
         setScanQty(data[0].quantity);
+        setUom(data[0].uom);
+      }else{
         setUom(data[0].uom);
       }
 
@@ -618,7 +624,7 @@ const CheckingPage = () => {
                     {/* Info Barang */}
                     <div className="text-sm space-y-1 relative">
                       <div className="flex justify-between">
-                        <div>
+                        <div className="font-mono text-xs">
                           <span className="text-gray-600">Item Code:</span>{" "}
                           {item.item_code} <br />
                           <span className="text-gray-600">EAN:</span>{" "}
@@ -628,6 +634,18 @@ const CheckingPage = () => {
                             <>
                               <span className="text-gray-600">Prod Date:</span>{" "}
                               {item.prod_date} <br />
+                            </>
+                          )}
+                          {invPolicy?.require_expiry_date && (
+                            <>
+                              <span className="text-gray-600">Exp Date:</span>{" "}
+                              {item.exp_date} <br />
+                            </>
+                          )}
+                          {invPolicy?.use_lot_no && (
+                            <>
+                              <span className="text-gray-600">Lot No:</span>{" "}
+                              {item.lot_number} <br />
                             </>
                           )}
 
@@ -760,7 +778,7 @@ const CheckingPage = () => {
                             }
                           />
                         ) : (
-                          item.quantity +' '+ item.uom
+                          item.quantity + ' ' + item.uom
                         )}
                       </div>
                     </div>
@@ -974,7 +992,7 @@ const CheckingPage = () => {
                     )}
 
 
-                    {invPolicy?.use_fefo && invPolicy?.use_lot_no && (
+                    {invPolicy?.require_expiry_date && (
                       <>
                         {/* Exp Date */}
                         <div className="flex items-center gap-3">
@@ -983,11 +1001,11 @@ const CheckingPage = () => {
                           </label>
                           <div className="relative flex-1">
 
-                            {uniqueExpDates.length > 1 ? (
+                            {uniqueExpDates.length > 0 ? (
                               // Kalau banyak, pakai <select> saja
                               <select
                                 id="exp_date"
-                                className="w-full border rounded p-2"
+                                className="w-full border rounded p-2 text-xs"
                                 value={expDate}
                                 onChange={(e) => setExpDate(e.target.value)}
                               >
@@ -1002,9 +1020,10 @@ const CheckingPage = () => {
                             ) : (
                               // Kalau cuma satu, tetap pakai input date
                               <Input
+                              
                                 type="date"
                                 id="exp_date"
-                                className="w-full"
+                                className="w-full text-xs"
                                 value={expDate}
                                 onChange={(e) => setExpDate(e.target.value)}
                               />
@@ -1024,7 +1043,11 @@ const CheckingPage = () => {
                             )}
                           </div>
                         </div>
+                      </>
+                    )}
 
+                    {invPolicy?.use_lot_no && (
+                      <>
                         {/* Lot No */}
                         <div className="flex items-center gap-3">
                           <label htmlFor="lot_no" className="text-sm text-gray-600 w-24 text-right">
@@ -1033,7 +1056,7 @@ const CheckingPage = () => {
                           <div className="relative flex-1">
                             <Input
                               type="text"
-                              className="w-full"
+                              className="w-full text-xs"
                               id="lot_no"
                               list="lotNoOptions"
                               value={lotNo}
@@ -1068,15 +1091,15 @@ const CheckingPage = () => {
 
                     {/* Qty */}
                     <div className="mb-6 space-y-1">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-4">
                         <label htmlFor="qty" className="text-sm text-gray-600 w-24 text-right">
                           Qty / Unit :
                         </label>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-3">
                           <Input
                             min={1}
                             type="number"
-                            className="w-full"
+                            className="w-20 text-xs"
                             id="qty"
                             list="qtyOptions"
                             value={scanQty}
@@ -1096,7 +1119,7 @@ const CheckingPage = () => {
                               <option key={i} value={d} />
                             ))}
                           </datalist>
-                          {scanQty && (
+                          {/* {scanQty && (
                             <button
                               type="button"
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -1107,11 +1130,11 @@ const CheckingPage = () => {
                             >
                               <XCircle size={18} />
                             </button>
-                          )}
+                          )} */}
 
                           <Input
                             type="text"
-                            className="w-full"
+                            className="w-20 text-xs"
                             id="unit"
                             // list="unitOptions"
                             readOnly

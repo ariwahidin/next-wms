@@ -407,7 +407,7 @@ export default function ItemFormTable({
                 <th className="p-2 border" style={{ width: "140px" }}>VAS</th>
               )}
 
-              {invPolicy?.use_lot_no && (
+              {invPolicy?.use_lot_no && invPolicy?.require_lot_number &&  (
                 <th className="p-2 border" style={{ width: "140px" }}>
                   Lot No.
                 </th>
@@ -532,7 +532,7 @@ export default function ItemFormTable({
 
 
 
-                  {invPolicy?.use_lot_no && (
+                  {invPolicy?.use_lot_no && invPolicy?.require_lot_number &&(
                     <td className="p-2 border">
                       <Input
                         style={{ fontSize: "12px" }}

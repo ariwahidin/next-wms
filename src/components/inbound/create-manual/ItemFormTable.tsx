@@ -63,11 +63,7 @@ export default function ItemFormTable({
   const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
   const [itemCodeOptions, setItemCodeOptions] = useState<ItemOptions[]>([]);
   const [whsCodeOptions, setWhsCodeOptions] = useState<ItemOptions[]>([]);
-  const [optionsStatus, setOptionsStatus] = useState<ItemOptions[]>([
-    { value: "A", label: "Accepted" },
-    { value: "Q", label: "Quarantine" },
-    { value: "R", label: "Rejected" },
-  ]);
+  const [optionsStatus, setOptionsStatus] = useState<ItemOptions[]>([]);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -83,18 +79,20 @@ export default function ItemFormTable({
 
   const fetchData = async () => {
     try {
-      const [products, warehouses, uoms, policies] = await Promise.all([
+      const [products, warehouses, uoms, policies, qa_status] = await Promise.all([
         api.get("/products?owner=" + headerForm.owner_code),
         api.get("/warehouses"),
         api.get("/uoms"),
         api.get("/inventory/policy?owner=" + headerForm.owner_code),
+        api.get("/qa-status"),
       ]);
 
       if (
         products.data.success &&
         warehouses.data.success &&
         uoms.data.success &&
-        policies.data.success
+        policies.data.success && 
+        qa_status.data.success
       ) {
         setProducts(products.data.data);
         setItemCodeOptions(
@@ -118,6 +116,13 @@ export default function ItemFormTable({
 
         setDefaultOptions(defaultUoms);
         setInvPolicy(policies.data.data.inventory_policy);
+
+        setOptionsStatus(
+          qa_status.data.data.map((item: any) => ({
+            value: item.qa_status,
+            label: item.qa_status,
+          }))
+        );
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -445,9 +450,6 @@ export default function ItemFormTable({
               <th className="p-2 border" style={{ width: "300px" }}>
                 Item Code
               </th>
-              {/* <th className="p-2 border" style={{ width: "300px" }}>
-                Base EAN
-              </th> */}
               <th className="p-2 border" style={{ width: "300px" }}>
                 Description
               </th>
@@ -479,7 +481,7 @@ export default function ItemFormTable({
                   Prod Date
                 </th>
               )}
-              {invPolicy?.use_fefo && invPolicy?.require_expiry_date && (
+              {invPolicy?.require_expiry_date && (
                 <th className="p-2 border" style={{ width: "140px" }}>
                   Exp Date
                 </th>
@@ -559,7 +561,7 @@ export default function ItemFormTable({
                         <td className="p-2 border">
                           <Select
                             key={item.ID}
-                            className="w-40"
+                            className="w-24"
                             options={
                               selectStates[item.ID]?.options ?? defaultOptions
                             }
@@ -600,7 +602,7 @@ export default function ItemFormTable({
                         <td className="p-2 border">
                           <Select
                             key={item.ID}
-                            className="w-32"
+                            className="w-20"
                             options={optionsStatus}
                             onFocus={() => handleFocus(item.item_code, item.ID)}
                             isLoading={selectStates[item.ID]?.loading ?? false}
@@ -703,7 +705,7 @@ export default function ItemFormTable({
                           </td>
                         )}
 
-                        {invPolicy?.use_fefo && invPolicy?.require_expiry_date && (
+                        {invPolicy?.require_expiry_date && (
                           <>
                             <td className="p-2 border">
                               <DatePicker
@@ -742,7 +744,7 @@ export default function ItemFormTable({
                         {invPolicy?.use_lot_no && (
                           <td className="p-2 border">
                             <Input
-                              style={{ fontSize: "12px", width: "100px" }}
+                              style={{ fontSize: "12px", width: "130px" }}
                               type="text"
                               value={item.lot_number}
                               onChange={(e) =>
@@ -843,7 +845,7 @@ export default function ItemFormTable({
                           </td>
                         )}
 
-                        {invPolicy?.use_fefo && invPolicy?.require_expiry_date && (
+                        {invPolicy?.require_expiry_date && (
                           <td className="p-2 border text-center">
                             {dayjs(item.exp_date).format("D MMM YYYY")}
                           </td>

@@ -166,7 +166,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
           />
         </div>
 
-        <Table className="border rounded-md">
+        <Table className="border rounded-md text-sm">
           <TableHeader>
             <TableRow>
               <TableHead>
@@ -190,12 +190,15 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
               <TableHead>Status</TableHead>
               <TableHead>Qty Scan</TableHead>
               <TableHead>UoM Scan</TableHead>
+              <TableHead>Lot Number</TableHead>
+              <TableHead>Exp Date</TableHead>
+              <TableHead>Prod Date</TableHead>
               <TableHead>Created At</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="text-sm">
             {filteredItems.map((item, index) => (
-              <TableRow key={item.ID}>
+              <TableRow key={item.ID} className="text-sm">
                 <TableCell>
                   {item.status == "pending"
                     // && headerForm.intergration == false
@@ -225,8 +228,15 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
                 <TableCell className="text-sm">{item.status}</TableCell>
                 <TableCell className="text-sm">{item.quantity}</TableCell>
                 <TableCell className="text-sm">{item.uom}</TableCell>
+                <TableCell className="text-sm">{item.lot_number}</TableCell>
                 <TableCell className="text-sm">
-                  {dayjs(item.created_at).format("D MMMM YYYY, HH:mm")}
+                  {dayjs(item.exp_date).format("DD/MM/YYYY") == "Invalid Date" ? "-" : dayjs(item.exp_date).format("DD/MM/YYYY")}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {dayjs(item.prod_date).format("DD/MM/YYYY") == "Invalid Date" ? "-" : dayjs(item.prod_date).format("DD/MM/YYYY")}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {dayjs(item.created_at).format("DD/MM/YYYY, HH:mm")}
                 </TableCell>
               </TableRow>
             ))}

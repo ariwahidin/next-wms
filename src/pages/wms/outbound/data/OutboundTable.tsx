@@ -167,39 +167,90 @@ const OutboundTable = () => {
   const [tempLocationName, setTempLocationName] = useState("");
   const [showTempLocationInput, setShowTempLocationInput] = useState(false);
   const [changeStatus, setChangeStatus] = useState("open");
+  const [isSubmit, setIsSubmit] = useState(false);
 
+  const isSubmittingRef = useRef(false);
   const HandlePicking = (id: number) => {
+    if (isSubmittingRef.current) return; // 🔒 HARD LOCK
+    // isSubmittingRef.current = true; // 🔒 LOCK DI SINI
+
     showAlert(
       "Picking Confirmation",
-      "The picking process is carried out by the system, are you sure to continue?",
+      "The picking process is carried out by the system, are you sure to continuex?",
       "error",
-      () => {
+      async () => {
         eventBus.emit("loading", true);
-        api
-          .post(
+        isSubmittingRef.current = true;
+        try {
+          const res = await api.post(
             `/outbound/picking/${id}`,
             { inbound_id: id },
             { withCredentials: true }
-          )
-          .then((res) => {
+          );
+
+          if (res.data.success) {
+            eventBus.emit("showAlert", {
+              title: "Success!",
+              description: res.data.message,
+              type: "success",
+            });
+            mutate("/outbound");
+          }
+        } catch (error) {
+          console.error("Error saving inbound:", error);
+        } finally {
+          setTimeout(() => {
             eventBus.emit("loading", false);
-            if (res.data.success) {
-              eventBus.emit("showAlert", {
-                title: "Success!",
-                description: res.data.message,
-                type: "success",
-              });
-              mutate("/outbound");
-            }
-          })
-          .catch((error) => {
-            eventBus.emit("loading", false);
-            console.error("Error saving inbound:", error);
-            // alert("Gagal menyimpan inbound");
-          });
+            isSubmittingRef.current = false;
+          }, 1500)
+        }
       }
     );
   };
+
+
+
+
+  // const HandlePicking = (id: number) => {
+  //   showAlert(
+  //     "Picking Confirmation",
+  //     "The picking process is carried out by the system, are you sure to continue?",
+  //     "error",
+  //     () => {
+  //       if (isSubmit) return;
+  //       eventBus.emit("loading", true);
+  //       setIsSubmit(true);
+  //       api
+  //         .post(
+  //           `/outbound/picking/${id}`,
+  //           { inbound_id: id },
+  //           { withCredentials: true }
+  //         )
+  //         .then((res) => {
+  //           eventBus.emit("loading", false);
+  //           if (res.data.success) {
+  //             eventBus.emit("showAlert", {
+  //               title: "Success!",
+  //               description: res.data.message,
+  //               type: "success",
+  //             });
+  //             mutate("/outbound");
+  //           }
+  //         })
+  //         .catch((error) => {
+  //           eventBus.emit("loading", false);
+  //           console.error("Error saving inbound:", error);
+  //           // alert("Gagal menyimpan inbound");
+  //         }).finally(() => {
+
+  //           setTimeout(() => {
+  //             setIsSubmit(false);
+  //           }, 1500)
+
+  //         });
+  //     }
+  //   );
+  // };
 
   const HandlePickingComplete = (id: number) => {
     showAlert(
@@ -284,8 +335,8 @@ const OutboundTable = () => {
         temp_location_name: locationName,
         status: changeStatus
       };
-
       eventBus.emit("loading", true);
+      setIsSubmit(true);
       api
         .post("/outbound/open/process", payload, { withCredentials: true })
         .then((response) => {
@@ -300,9 +351,13 @@ const OutboundTable = () => {
         })
         .catch((error) => {
           eventBus.emit("loading", false);
+          setIsSubmit(false);
           console.error("Error handling scanned items:", error);
           // notify("Error", "Terjadi kesalahan saat memproses item", "error");
-        });
+        }).then(() => {
+          eventBus.emit("loading", false);
+          setIsSubmit(false);
+        })
     },
     [scannedItemData?.outbound_no, notify, mutate]
   );
@@ -356,6 +411,7 @@ const OutboundTable = () => {
         {!showTempLocationInput ? (
           <DialogFooter className="flex-col sm:flex-col gap-2">
             <Button
+              disabled={isSubmit}
               onClick={() => handleScannedItemChoice("return_to_rack")}
               variant="outline"
               className="w-full"
@@ -364,6 +420,7 @@ const OutboundTable = () => {
               Return to origin location
             </Button>
             <Button
+              disabled={isSubmit}
               onClick={() => handleScannedItemChoice("temp_location")}
               className="w-full"
               type="button"
@@ -393,13 +450,14 @@ const OutboundTable = () => {
               </div>
               <DialogFooter className="gap-2">
                 <Button
+                  disabled={isSubmit}
                   variant="outline"
                   onClick={handleBackToChoice}
                   type="button"
                 >
                   Back
                 </Button>
-                <Button type="submit">Submit</Button>
+                <Button disabled={isSubmit} type="submit">Submit</Button>
               </DialogFooter>
             </div>
           </form>
