@@ -176,7 +176,7 @@ const OutboundTable = () => {
 
     showAlert(
       "Picking Confirmation",
-      "The picking process is carried out by the system, are you sure to continuex?",
+      "The picking process is carried out by the system, are you sure to continue?",
       "error",
       async () => {
         eventBus.emit("loading", true);
