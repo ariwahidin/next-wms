@@ -66,20 +66,27 @@ export function NavUser({
           console.log("Logout successful");
         }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => console.log(err))
+      .finally(() => {
+        document.cookie = `wms-auth-token=; path=/; max-age=0; secure; samesite=None`;
+        dispatch(logout());
+        persistor.purge().then(() => {
+          router.push("/auth/login");
+        });
+      })
 
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("wms-auth-token="))
-      ?.split("=")[1];
-    console.log("Next Auth Token:", token);
-    if (token) {
-      document.cookie = `wms-auth-token=; path=/; max-age=0; secure; samesite=None`;
-      dispatch(logout());
-      persistor.purge().then(() => {
-        router.push("/auth/login");
-      });
-    }
+    // const token = document.cookie
+    //   .split("; ")
+    //   .find((row) => row.startsWith("wms-auth-token="))
+    //   ?.split("=")[1];
+    // console.log("Next Auth Token:", token);
+    // if (token) {
+    //   document.cookie = `wms-auth-token=; path=/; max-age=0; secure; samesite=None`;
+    //   dispatch(logout());
+    //   persistor.purge().then(() => {
+    //     router.push("/auth/login");
+    //   });
+    // }
 
     // set css pointer-events
     document.body.style.pointerEvents = "auto";

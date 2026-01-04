@@ -146,16 +146,16 @@ const ProductTable = () => {
         <div className="flex items-center justify-between pb-4">
           <div className="justify-self-start">
             <div className="flex items-center gap-2">
-              <Button className="left-6 top-18" onClick={handleAdd}>
+              <Button className="left-6 top-18 h-8" onClick={handleAdd}>
                 <Plus className="mr-2 w-4" />
                 Add Item
               </Button>
-              <Button className="left-6 top-18 bg-green-500 text-slate-950 outline-green-600" onClick={() => { router.push('/wms/master/product/import-excel') }}>
+              <Button className="left-6 top-18 bg-green-500 text-slate-950 outline-green-600 h-8" onClick={() => { router.push('/wms/master/product/import-excel') }}>
                 <Upload className="mr-2 w-4" />
                 Import Excel
               </Button>
               <Button
-                className="bg-blue-500 text-white hover:bg-blue-600"
+                className="bg-blue-500 text-white hover:bg-blue-600 h-8"
                 onClick={() => setExportModalOpen(true)}
               >
                 <Download className="mr-2 w-4" />

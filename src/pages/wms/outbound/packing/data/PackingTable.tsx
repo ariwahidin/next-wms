@@ -152,29 +152,28 @@ const PackingTable = () => {
       </head>
       <body>
   ${(() => {
-    const pages = [];
-    for (let i = 0; i < barcodeDataUrls.length; i += 4) {
-      const items = barcodeDataUrls.slice(i, i + 4);
+        const pages = [];
+        for (let i = 0; i < barcodeDataUrls.length; i += 4) {
+          const items = barcodeDataUrls.slice(i, i + 4);
 
-      // Fill remaining slots with empty items if less than 4
-      while (items.length < 4) {
-        items.push(null);
-      }
+          // Fill remaining slots with empty items if less than 4
+          while (items.length < 4) {
+            items.push(null);
+          }
 
-      const htmlItems = items
-        .map((item) => {
-          if (!item) {
-            return `
+          const htmlItems = items
+            .map((item) => {
+              if (!item) {
+                return `
               <div class="packing-item" style="border: none; background: transparent;"></div>
             `;
-          }
-          return `
+              }
+              return `
             <div class="packing-item">
               <div class="packing-code">${item.code}</div>
               <div class="barcode-container">
-                <img src="${item.barcodeDataUrl}" alt="Barcode ${
-            item.code
-          }" class="barcode-image" />
+                <img src="${item.barcodeDataUrl}" alt="Barcode ${item.code
+                }" class="barcode-image" />
               </div>
               <div class="packing-info">
                 Packing Number<br>
@@ -184,13 +183,13 @@ const PackingTable = () => {
               </div>
             </div>
           `;
-        })
-        .join("");
+            })
+            .join("");
 
-      pages.push(`<div class="page">${htmlItems}</div>`);
-    }
-    return pages.join("");
-  })()}
+          pages.push(`<div class="page">${htmlItems}</div>`);
+        }
+        return pages.join("");
+      })()}
       </body>
     </html>
   `;
@@ -421,6 +420,12 @@ const PackingTable = () => {
             setSelectedRows(selected);
           }}
           rowSelection="multiple"
+          defaultColDef={{
+            sortable: true,
+            filter: true,
+            resizable: true,
+            editable: true,
+          }}
         />
       </div>
     </>

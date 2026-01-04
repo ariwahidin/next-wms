@@ -102,7 +102,7 @@ const PickingSheetPrint = () => {
         <p
           style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}
         >
-          PT Yusen Logistics Puninar Indonesia
+          PT Yusen Logistics Interlink Indonesia
         </p>
       </div>
 
@@ -121,7 +121,7 @@ const PickingSheetPrint = () => {
           marginBottom: "10px",
         }}
       >
-        SERIAL NUMBER LIST
+        PACKING LIST
       </h2>
 
       <hr
@@ -277,12 +277,13 @@ const PickingSheetPrint = () => {
       >
         <thead>
           <tr>
-            {/* <th style={th}>NO</th> */}
+            <th style={th}>PACKING NO</th>
             <th style={th}>ITEM</th>
             <th style={th}>DESCRIPTION</th>
-            <th style={th}>GMC</th>
-            <th style={th}>SN</th>
+            <th style={th}>EAN</th>
+            {/* <th style={th}>SN</th> */}
             <th style={th}>QTY</th>
+            <th style={th}>UoM</th>
           </tr>
         </thead>
         <tbody>
@@ -292,6 +293,8 @@ const PickingSheetPrint = () => {
                 (sum, r) => sum + r.quantity,
                 0
               );
+
+              // [packingNo, records] : [string, any]
               const totalCbm = (records as any[]).reduce(
                 (sum, r) => sum + r.cbm,
                 0
@@ -352,10 +355,17 @@ const PickingSheetPrint = () => {
 
                   {records.map((item, j) => (
                     <tr key={j}>
+
+                      {/* PACKING NO */}
+                      <td style={{ textAlign: "center" }}>
+                        {j === 0 ? item.packing_no : ""}
+                      </td>
+
                       {/* ITEM CODE */}
                       <td style={{ textAlign: "center" }}>
                         {j === 0 ? item.item_code : ""}
                       </td>
+                      
 
                       {/* ITEM NAME */}
                       <td
@@ -372,7 +382,7 @@ const PickingSheetPrint = () => {
 
                       {/* BARCODE */}
                       <td style={{ textAlign: "center" }}>
-                        {j === 0 ? item.barcode : ""}
+                        {j === 0 ? item.barcode_scan : ""}
                       </td>
 
                       {/* WH CODE */}
@@ -391,17 +401,18 @@ const PickingSheetPrint = () => {
                       </td> */}
 
                       {/* LOCATION */}
-                      <td
+                      {/* <td
                         style={{
                           textAlign: "center",
                           whiteSpace: "nowrap",
                         }}
                       >
                         {item.serial_number}
-                      </td>
+                      </td> */}
 
                       {/* QTY */}
-                      <td style={{ textAlign: "center" }}>{item.quantity}</td>
+                      <td style={{ textAlign: "center" }}>{item.qty_scan}</td>
+                      <td style={{ textAlign: "center" }}>{item.uom_scan}</td>
 
                       {/* CBM */}
                       {/* <td style={{ textAlign: "center" }}>{item.cbm}</td> */}
@@ -409,11 +420,12 @@ const PickingSheetPrint = () => {
                   ))}
 
                   <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
-                    <td style={{ ...td, textAlign: "center" }}>{itemCode}</td>
+                    <td style={{ ...td, textAlign: "center" }}>{''}</td>
                     <td colSpan={3} style={{ ...td, textAlign: "right" }}>
                       TOTAL
                     </td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
+                    <td style={{ ...td, textAlign: "center" }}>{''}</td>
                   </tr>
                 </React.Fragment>
               );
@@ -426,6 +438,7 @@ const PickingSheetPrint = () => {
               GRAND TOTAL
             </td>
             <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
+            <td style={{ ...td, textAlign: "center" }}>{''}</td>
             {/* <td style={{ ...td, textAlign: "center" }}>{grandTotalCbm}</td> */}
           </tr>
         </tbody>

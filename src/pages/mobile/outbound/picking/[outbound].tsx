@@ -39,6 +39,7 @@ interface ScanItem {
   seq_box?: number;
   location?: string;
   uom?: string;
+  packing_no?: string;
 }
 
 interface OutboundDetail {
@@ -86,6 +87,7 @@ const CheckingPage = () => {
   const [scanWhs, setScanWhs] = useState("CKY");
   const [scanLocation, setScanLocation] = useState("");
   const [scanBarcode, setScanBarcode] = useState("");
+  const [packingNo, setPackingNo] = useState("");
   const [scanSerial, setScanSerial] = useState("");
   // const [qtyScan, setQtyScan] = useState<number>(1);
 
@@ -127,6 +129,7 @@ const CheckingPage = () => {
       serial_no: serialNumber,
       qty: scanQty as number,
       uom: scanUom,
+      packing_no: packingNo,
     };
 
     console.log("New item:", newItem);
@@ -385,7 +388,7 @@ const CheckingPage = () => {
 
   return (
     <>
-      <PageHeader title={`Scan Pick List ${outbound}`} showBackButton />
+      <PageHeader title={`Scan ${outbound}`} showBackButton />
       <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
         <form onSubmit={handleBarcodeSubmit} className="mb-0">
           <Card>
@@ -402,6 +405,7 @@ const CheckingPage = () => {
 
                   <div className="relative w-full">
                     <Input
+                      className="text-sm h-8"
                       autoComplete="off"
                       id="location"
                       placeholder="Entry location..."
@@ -424,6 +428,41 @@ const CheckingPage = () => {
                 </div>
               )}
 
+
+              {invPolicy?.require_packing_scan && (
+                <div className="flex items-center space-x-2">
+                  <label
+                    htmlFor="packing_no"
+                    className="text-sm text-gray-600 whitespace-nowrap"
+                  >
+                    Packing No :
+                  </label>
+
+                  <div className="relative w-full">
+                    <Input
+                      className="text-sm h-8"
+                      autoComplete="off"
+                      id="packing_no"
+                      placeholder="Entry packing no..."
+                      value={packingNo}
+                      onChange={(e) => setPackingNo(e.target.value)}
+                    />
+                    {packingNo && (
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          setPackingNo("");
+                          document.getElementById("packing_no")?.focus();
+                        }}
+                      >
+                        <XCircle size={18} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center space-x-2">
                 <label
                   htmlFor="barcode"
@@ -434,6 +473,7 @@ const CheckingPage = () => {
 
                 <div className="relative w-full">
                   <Input
+                    className="text-sm h-8"
                     autoComplete="off"
                     id="barcode"
                     placeholder="Entry barcode..."
@@ -598,7 +638,7 @@ const CheckingPage = () => {
 
             {/* List Items */}
             {filteredItems.length > 0 ? (
-              <ul className="space-y-3">
+              <ul className="space-y-2">
                 {filteredItems.map((item, idx) => (
                   <li
                     onClick={() => {
@@ -609,7 +649,7 @@ const CheckingPage = () => {
                     className={`flex flex-col sm:flex-row sm:items-center sm:justify-between border p-3 rounded cursor-pointer hover:bg-gray-100`}
                   >
                     {/* Info Barang */}
-                    <div className="text-sm space-y-1">
+                    <div className="text-xs font-mono space-y-0">
                       <div>
                         <strong>Item Code:</strong> {item.item_code}
                       </div>
@@ -635,7 +675,7 @@ const CheckingPage = () => {
         <Dialog open={showModalDetail} onOpenChange={setShowModalDetail}>
           <DialogContent className="bg-white">
             <DialogHeader>
-              <DialogTitle>Scanned Items</DialogTitle>
+              <DialogTitle className="font-mono">Scanned Items</DialogTitle>
             </DialogHeader>
 
             <Input className="w-full" placeholder="Search ..." />
@@ -650,7 +690,7 @@ const CheckingPage = () => {
                           key={koli}
                           className="p-2 border rounded-md bg-gray-50"
                         >
-                          <div className="font-semibold text-sm mb-2">
+                          <div className="font-semibold text-sm font-mono mb-2">
                             Item scan: {(items as ScannedItem[])?.length}, Qty scan:{" "}
                             {items?.reduce(
                               (total, item) => total + item.qty_data_scan,
@@ -665,7 +705,7 @@ const CheckingPage = () => {
                                 : "bg-blue-100"
                                 }`}
                             >
-                              <div className="text-sm space-y-1">
+                              <div className="text-xs space-y-1 font-mono">
                                 <div>
                                   {invPolicy.require_scan_pick_location && (
                                     <>
@@ -690,6 +730,7 @@ const CheckingPage = () => {
                                 <div className="col-span-2 flex items-center">
                                   {item.status === "pending" && (
                                     <Button
+                                      className="h-6 bg-red-500 text-white hover:bg-red-600"
                                       variant="destructive"
                                       size="sm"
                                       onClick={() =>
@@ -699,13 +740,14 @@ const CheckingPage = () => {
                                         )
                                       }
                                     >
-                                      <Trash2 size={16} />
+                                      {/* <Trash2 size={16} /> */}
+                                      Delete
                                     </Button>
                                   )}
                                 </div>
                                 <div className="col-span-1 flex justify-end items-end">
                                   {item.status && (
-                                    <span className="text-xs text-gray-400">
+                                    <span className="text-xs text-gray-400 font-mono">
                                       {item.status}
                                     </span>
                                   )}
@@ -759,7 +801,13 @@ const CheckingPage = () => {
                 <div className="mb-4 p-3 bg-gray-100 rounded-md">
                   {outbound && (
                     <p className="text-sm text-gray-600 mt-1">
-                      Picking ID : <span className="font-medium">{outbound}</span>
+                      Picking ID : <span className="text-gray-800 text-">{outbound}</span>
+                    </p>
+                  )}
+
+                  {invPolicy?.require_packing_scan && (
+                    <p className="text-sm text-gray-600">
+                      Packing No : <span className="font-medium">{packingNo}</span>
                     </p>
                   )}
 
@@ -872,9 +920,10 @@ const CheckingPage = () => {
                           Qty/Unit
                         </label>
                         <Input
+
                           min={1}
                           type="number"
-                          className=" mt-1"
+                          className="h-8 text-sm mt-1"
                           id="qty"
                           value={scanQty}
                           autoComplete="off"
@@ -892,7 +941,7 @@ const CheckingPage = () => {
                         <Input
                           readOnly
                           type="text"
-                          className=" mt-1"
+                          className="h-8 text-sm mt-1"
                           id="uom"
                           value={scanUom}
                           autoComplete="off"
