@@ -268,10 +268,22 @@ const PackingTable = () => {
                   }}
                 >
                   <Printer className="mr-2 h-4 w-4" />
-                  Print Packing
+                  Print Packing List
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    HandlePrintLabel(params.data.packing_no, params.data.outbound_id);
+                  }}
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print Packing Label
+                </DropdownMenuItem>
+
+                {/* <DropdownMenuSeparator />
 
                 <DropdownMenuItem
                   className="cursor-pointer"
@@ -282,7 +294,7 @@ const PackingTable = () => {
                 >
                   <Pencil className="mr-2 h-4 w-4" />
                   View / Edit
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -352,6 +364,11 @@ const PackingTable = () => {
         printWindow.close();
       }, 1000);
     }
+  };
+
+  const HandlePrintLabel = (packing_no: string, id: number) => {
+    console.log("Preview PDF ID:", id);
+    window.open(`/wms/outbound/packing/packing-label/${packing_no}/${id}`, "_blank");
   };
 
   return (

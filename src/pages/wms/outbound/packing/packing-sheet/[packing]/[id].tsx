@@ -27,7 +27,7 @@ const PickingSheetPrint = () => {
     const res = await api.get(`/outbound/${id}/packing/${packing}`, {
       withCredentials: true,
     });
-    setPackingItems(res.data.data);
+    setPackingItems(res.data.data.list);
   };
 
   useEffect(() => {
@@ -64,9 +64,9 @@ const PickingSheetPrint = () => {
         }
       });
 
-      setTimeout(() => {
-        window.print();
-      }, 500);
+      // setTimeout(() => {
+      //   window.print();
+      // }, 500);
     }
   }, [packingItems]);
 
@@ -278,6 +278,7 @@ const PickingSheetPrint = () => {
         <thead>
           <tr>
             <th style={th}>PACKING NO</th>
+            <th style={th}>CTN NO</th>
             <th style={th}>ITEM</th>
             <th style={th}>DESCRIPTION</th>
             <th style={th}>EAN</th>
@@ -360,6 +361,7 @@ const PickingSheetPrint = () => {
                       <td style={{ textAlign: "center" }}>
                         {j === 0 ? item.packing_no : ""}
                       </td>
+                      <td style={{ textAlign: "center" }}>{item.pack_ctn_no}</td>
 
                       {/* ITEM CODE */}
                       <td style={{ textAlign: "center" }}>
@@ -421,7 +423,7 @@ const PickingSheetPrint = () => {
 
                   <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
                     <td style={{ ...td, textAlign: "center" }}>{''}</td>
-                    <td colSpan={3} style={{ ...td, textAlign: "right" }}>
+                    <td colSpan={4} style={{ ...td, textAlign: "right" }}>
                       TOTAL
                     </td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
@@ -434,7 +436,7 @@ const PickingSheetPrint = () => {
 
           {/* grand total */}
           <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
-            <td colSpan={4} style={{ ...td, textAlign: "right" }}>
+            <td colSpan={5} style={{ ...td, textAlign: "right" }}>
               GRAND TOTAL
             </td>
             <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>

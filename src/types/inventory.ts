@@ -16,4 +16,5 @@ export interface InventoryPolicy {
     require_packing_scan : boolean;
     allow_mixed_lot: boolean;
     allow_negative_stock: boolean;
+    picking_single_scan:boolean;
 }

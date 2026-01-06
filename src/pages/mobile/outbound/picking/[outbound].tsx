@@ -40,6 +40,7 @@ interface ScanItem {
   location?: string;
   uom?: string;
   packing_no?: string;
+  pack_ctn_no?: string;
 }
 
 interface OutboundDetail {
@@ -75,6 +76,8 @@ interface ScannedItem {
   qty_data_scan?: number;
   uom_scan?: string;
   is_serial?: boolean;
+  packing_no?: string;
+  pack_ctn_no?: string;
 }
 
 const CheckingPage = () => {
@@ -88,6 +91,7 @@ const CheckingPage = () => {
   const [scanLocation, setScanLocation] = useState("");
   const [scanBarcode, setScanBarcode] = useState("");
   const [packingNo, setPackingNo] = useState("");
+  const [packCtnNo, setPackCtnNo] = useState("");
   const [scanSerial, setScanSerial] = useState("");
   // const [qtyScan, setQtyScan] = useState<number>(1);
 
@@ -130,6 +134,7 @@ const CheckingPage = () => {
       qty: scanQty as number,
       uom: scanUom,
       packing_no: packingNo,
+      pack_ctn_no: packCtnNo === "" ? null : packCtnNo
     };
 
     console.log("New item:", newItem);
@@ -345,11 +350,14 @@ const CheckingPage = () => {
           }
         }, 100);
       } else {
-        console.log("Item requires serial:", res);
         setIsSerial(res.is_serial);
         setScanUom(res.data.uom.from_uom);
         setScanSerial("");
-        setShowDialog(true);
+        if (invPolicy.picking_single_scan) {
+          handleScan();
+        } else {
+          setShowDialog(true);
+        }
       }
     }
   };
@@ -430,37 +438,64 @@ const CheckingPage = () => {
 
 
               {invPolicy?.require_packing_scan && (
-                <div className="flex items-center space-x-2">
-                  <label
-                    htmlFor="packing_no"
-                    className="text-sm text-gray-600 whitespace-nowrap"
-                  >
-                    Packing No :
-                  </label>
+                <>
+                  <div className="flex items-center space-x-2">
+                    <label
+                      htmlFor="packing_no"
+                      className="text-sm text-gray-600 whitespace-nowrap"
+                    >
+                      Pack No :
+                    </label>
 
-                  <div className="relative w-full">
+                    <div className="relative w-full">
+                      <Input
+                        className="text-sm h-8"
+                        autoComplete="off"
+                        id="packing_no"
+                        placeholder="Entry packing no..."
+                        value={packingNo}
+                        onChange={(e) => setPackingNo(e.target.value)}
+                      />
+                      {packingNo && (
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          onClick={() => {
+                            setPackingNo("");
+                            document.getElementById("packing_no")?.focus();
+                          }}
+                        >
+                          <XCircle size={18} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <label
+                      htmlFor="packing_no"
+                      className="text-sm text-gray-600 whitespace-nowrap me-2"
+                    >
+                      Ctn No  :
+                    </label>
+
                     <Input
                       className="text-sm h-8"
                       autoComplete="off"
-                      id="packing_no"
-                      placeholder="Entry packing no..."
-                      value={packingNo}
-                      onChange={(e) => setPackingNo(e.target.value)}
+                      id="ctn_no"
+                      placeholder="Entry ctn no..."
+                      value={packCtnNo}
+                      onChange={(e) => {
+                        const val = e.target.value;
+
+                        // optional: cuma boleh angka
+                        if (/^\d*$/.test(val)) {
+                          setPackCtnNo(val);
+                        }
+                      }}
                     />
-                    {packingNo && (
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        onClick={() => {
-                          setPackingNo("");
-                          document.getElementById("packing_no")?.focus();
-                        }}
-                      >
-                        <XCircle size={18} />
-                      </button>
-                    )}
+
                   </div>
-                </div>
+                </>
               )}
 
               <div className="flex items-center space-x-2">
