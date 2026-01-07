@@ -77,7 +77,7 @@ export default function LoginPage() {
               token: res.data.x_token,
               menus: res.data.menus,
               unit: res.data.user.unit,
-              roles : res.data.user.roles
+              roles: res.data.user.roles
             })
           );
 
@@ -90,7 +90,22 @@ export default function LoginPage() {
           }
         }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        eventBus.emit("loading", false);
+
+        const status = err.response?.status;
+        console.log("API Error Response sam:", err);
+
+        if (status === 409) {
+          console.log("API Error Response conflict in login:", err.response);
+          const conflictId = err.response.data?.conflict_id;
+          router.push(`/auth/conflict?cid=${conflictId}`);
+          return;
+        }
+
+        console.log(err);
+      });
+    // .catch((err) => console.log(err));
   };
 
   useEffect(() => {

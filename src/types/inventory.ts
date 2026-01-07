@@ -17,4 +17,5 @@ export interface InventoryPolicy {
     allow_mixed_lot: boolean;
     allow_negative_stock: boolean;
     picking_single_scan:boolean;
+    require_receive_scan: boolean;
 }

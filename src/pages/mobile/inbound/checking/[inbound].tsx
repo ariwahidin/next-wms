@@ -198,8 +198,9 @@ const CheckingPage = () => {
           target?.focus();
           return; // stop submit
         }
+      }else{
+        closeDialog();
       }
-      // closeDialog();
     }
   };
 
@@ -405,7 +406,7 @@ const CheckingPage = () => {
         uom: string;
       }>;
 
-      console.log("Check result: " , data);
+      console.log("Check result: ", data);
 
       // ambil nilai unik
       const prodDates = [...new Set(data.map(d => d.prod_date))];
@@ -431,7 +432,7 @@ const CheckingPage = () => {
         setLotNo(data[0].lot_number);
         setScanQty(data[0].quantity);
         setUom(data[0].uom);
-      }else{
+      } else {
         setUom(data[0].uom);
       }
 
@@ -476,10 +477,9 @@ const CheckingPage = () => {
     setShowDialog(false);
     const newSerials = serialInputs.map(() => "");
     setSerialInputs(newSerials);
-    // setScanBarcode("");
-    // setScanBarcode("");
+    setScanBarcode("");
     setScanQty(1);
-    // document.getElementById("barcode")?.focus();
+    document.getElementById("barcode")?.focus();
   };
 
   const [initialFocusDone, setInitialFocusDone] = useState(false);
@@ -1020,7 +1020,7 @@ const CheckingPage = () => {
                             ) : (
                               // Kalau cuma satu, tetap pakai input date
                               <Input
-                              
+
                                 type="date"
                                 id="exp_date"
                                 className="w-full text-xs"

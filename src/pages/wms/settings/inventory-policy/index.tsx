@@ -525,6 +525,7 @@ interface InventoryPolicy {
   require_picking_scan?: boolean;
   require_packing_scan?: boolean;
   picking_single_scan?:boolean;
+  require_receive_scan?:boolean;
 }
 
 export default function InventoryPolicyPage() {
@@ -553,7 +554,8 @@ export default function InventoryPolicyPage() {
     validation_sn: false,
     require_picking_scan: false,
     require_packing_scan: false,
-    picking_single_scan: false
+    picking_single_scan: false,
+    require_receive_scan: false
   });
 
   useEffect(() => {
@@ -605,7 +607,8 @@ export default function InventoryPolicyPage() {
       validation_sn: false,
       require_picking_scan: false,
       require_packing_scan: false,
-      picking_single_scan: false
+      picking_single_scan: false,
+      require_receive_scan: false
     });
     setShowModal(true);
   };
@@ -630,7 +633,8 @@ export default function InventoryPolicyPage() {
       validation_sn: (policy as any).validation_sn || false,
       require_picking_scan: (policy as any).require_picking_scan || false,
       require_packing_scan: (policy as any).require_packing_scan || false,
-      picking_single_scan: (policy as any).picking_single_scan || false
+      picking_single_scan: (policy as any).picking_single_scan || false,
+      require_receive_scan: (policy as any).require_receive_scan || false
     });
     setShowModal(true);
   };
@@ -798,6 +802,7 @@ export default function InventoryPolicyPage() {
                             <div className="flex flex-wrap gap-1">
                               {policy.use_receive_location && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-lime-50 text-lime-700 rounded">Receive Loc</span>}
                               {policy.show_rec_date && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-cyan-50 text-cyan-700 rounded">Rec Date</span>}
+                              {policy.require_receive_scan && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-cyan-50 text-cyan-700 rounded">Rec Scan</span>}
                               {policy.require_picking_scan && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded">Pick Scan</span>}
                               {policy.picking_single_scan && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-orange-50 text-emerald-700 rounded">Single Scan</span>}
                               {policy.require_packing_scan && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-sky-50 text-sky-700 rounded">Pack Scan</span>}
@@ -958,6 +963,15 @@ export default function InventoryPolicyPage() {
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">Other Settings</h3>
                       <div className="space-y-2.5">
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.require_receive_scan}
+                            onChange={(e) => handleCheckboxChange('require_receive_scan', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">Receive Scan</span>
+                        </label>
                         <label className="flex items-center gap-2.5 cursor-pointer group">
                           <input
                             type="checkbox"

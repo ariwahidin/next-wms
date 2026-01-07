@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -8,6 +9,7 @@ import JsBarcode from "jsbarcode";
 import api from "@/lib/api";
 import React from "react";
 import { useRouter } from "next/router";
+import { InventoryPolicy } from "@/types/inventory";
 
 const PickingSheetPrint = () => {
   const searchParams = useSearchParams();
@@ -21,6 +23,7 @@ const PickingSheetPrint = () => {
     {}
   );
   const [groupedData, setGroupedData] = useState<{ [key: string]: any[] }>({});
+  const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
 
   useEffect(() => {
     if (id) {
@@ -34,59 +37,26 @@ const PickingSheetPrint = () => {
         withCredentials: true,
       });
       setPickingSheet(res.data.data);
+      if (res.data.data[0]) {
+        fetchInvPolicy(res.data.data[0].owner_code);
+      }
     } catch (error) {
       console.log("[v0] API call failed, using mock data for demo");
-      const mockData = [
-        {
-          outbound_no: "OUT-2024-001",
-          item_code: "ITM001",
-          item_name: "Sample Item 1",
-          barcode: "1234567890123",
-          whs_code: "WH01",
-          rec_date: "2024-01-15",
-          location: "A1-B2-C3",
-          quantity: 10,
-          cbm: 0.5,
-          transporter_code: "TRP001",
-          cust_city: "Jakarta",
-          shipment_id: "SHP001",
-          customer_name: "PT Sample Customer",
-          cust_address: "Jl. Sample No. 123",
-          outbound_date: "2024-01-15T10:00:00",
-          picker_name: "John Doe",
-          deliv_to_name: "Jane Smith",
-          plan_pickup_date: "2024-01-16",
-          plan_pickup_time: "09:00:00",
-          deliv_address: "Jl. Delivery No. 456",
-          deliv_city: "Bandung",
-          remarks: "Handle with care",
-        },
-        {
-          outbound_no: "OUT-2024-001",
-          item_code: "ITM002",
-          item_name: "Sample Item 2",
-          barcode: "2345678901234",
-          whs_code: "WH01",
-          rec_date: "2024-01-15",
-          location: "A2-B3-C4",
-          quantity: 5,
-          cbm: 0.3,
-          transporter_code: "TRP001",
-          cust_city: "Jakarta",
-          shipment_id: "SHP001",
-          customer_name: "PT Sample Customer",
-          cust_address: "Jl. Sample No. 123",
-          outbound_date: "2024-01-15T10:00:00",
-          picker_name: "John Doe",
-          deliv_to_name: "Jane Smith",
-          plan_pickup_date: "2024-01-16",
-          plan_pickup_time: "09:00:00",
-          deliv_address: "Jl. Delivery No. 456",
-          deliv_city: "Bandung",
-          remarks: "Handle with care",
-        },
-      ];
+      const mockData = [];
       setPickingSheet(mockData);
+    }
+  };
+
+  const fetchInvPolicy = async (owwner_code: string) => {
+    try {
+      const res = await api.get(`/inventory/policy?owner=${owwner_code}`, {
+        withCredentials: true,
+      });
+      setInvPolicy(res.data.data.inventory_policy);
+    } catch (error) {
+      console.log("[v0] API call failed, using mock data for demo");
+      // const mockData = [];
+      // setInvPolicy(mockData);
     }
   };
 
@@ -166,6 +136,9 @@ const PickingSheetPrint = () => {
   const grandTotalCbm = pickingSheet
     .reduce((acc, item) => acc + item.cbm, 0)
     .toFixed(4);
+
+
+  if (!invPolicy) return <p>Loading...</p>;
 
   return (
     <div style={{ padding: "10px", fontFamily: "Arial" }}>
@@ -330,9 +303,14 @@ const PickingSheetPrint = () => {
         <thead>
           <tr>
             <th style={{ ...th, width: "25%" }}>ITEM</th>
-            <th style={th}>GMC</th>
+            <th style={th}>EAN</th>
             <th style={th}>WH CODE</th>
-            <th style={th}>REC DATE</th>
+
+            {invPolicy.show_rec_date && (<th style={th}>REC DATE</th>)}
+            {invPolicy.use_production_date && <th style={th}>PROD DATE</th>}
+            {invPolicy.require_expiry_date && <th style={th}>EXP DATE</th>}
+            {invPolicy.use_lot_no && <th style={th}>LOT NO</th>}
+
             <th style={th}>LOCATION</th>
             <th style={th}>QTY</th>
             <th style={th}>CBM</th>
@@ -417,9 +395,29 @@ const PickingSheetPrint = () => {
                       <td style={{ textAlign: "center" }}>
                         {j === 0 ? item.whs_code : ""}
                       </td>
-                      <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
-                        {item.rec_date}
-                      </td>
+
+                      {invPolicy.show_rec_date && (
+                        <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                          {item.rec_date}
+                        </td>
+                      )}
+
+                      {invPolicy.use_production_date && (
+                        <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                          {item.prod_date}
+                        </td>
+                      )}
+                      {invPolicy.require_expiry_date && (
+                        <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                          {item.exp_date}
+                        </td>
+                      )}
+                      {invPolicy.use_lot_no && (
+                        <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                          {item.lot_number}
+                        </td>
+                      )}
+
                       <td style={{ textAlign: "center", whiteSpace: "nowrap", fontWeight: "bold", fontSize: "12px" }}>
                         {item.location}
                       </td>
@@ -429,7 +427,22 @@ const PickingSheetPrint = () => {
                   ))}
 
                   <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
-                    <td colSpan={5} style={{ ...td, textAlign: "right" }}>
+
+
+                    {invPolicy.show_rec_date && (
+                      <td style={{ ...td, textAlign: "right" }}></td>
+                    )}
+                    {invPolicy.use_production_date && (
+                      <td style={{ ...td, textAlign: "right" }}></td>
+                    )}
+                    {invPolicy.require_expiry_date && (
+                      <td style={{ ...td, textAlign: "right" }}></td>
+                    )}
+                    {invPolicy.use_lot_no && (
+                      <td style={{ ...td, textAlign: "right" }}> </td>
+                    )}
+
+                    <td colSpan={4} style={{ ...td, textAlign: "right" }}>
                       TOTAL
                     </td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
@@ -441,7 +454,20 @@ const PickingSheetPrint = () => {
           )}
 
           <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
-            <td colSpan={5} style={{ ...td, textAlign: "right" }}>
+
+            {invPolicy.show_rec_date && (
+              <td style={{ ...td, textAlign: "right" }}></td>
+            )}
+            {invPolicy.use_production_date && (
+              <td style={{ ...td, textAlign: "right" }}></td>
+            )}
+            {invPolicy.require_expiry_date && (
+              <td style={{ ...td, textAlign: "right" }}></td>
+            )}
+            {invPolicy.use_lot_no && (
+              <td style={{ ...td, textAlign: "right" }}> </td>
+            )}
+            <td colSpan={4} style={{ ...td, textAlign: "right" }}>
               GRAND TOTAL
             </td>
             <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>

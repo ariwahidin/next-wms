@@ -15,7 +15,8 @@ api.interceptors.request.use((config) => {
     ?.split("=")[1];
 
   if (!next_token || next_token === "undefined") {
-    router.push("/auth/login");
+    console.log("Request Auth Token not found. Redirecting to login.");
+    // router.push("/auth/login");
     return config;
   }
 
@@ -40,6 +41,20 @@ api.interceptors.response.use(
       type: "error",
     });
 
+
+    if (err.response?.status === 409) {
+      console.log("API Error Response conflict:", err.response);
+      const conflictId = err.response?.data?.cid || null;
+      router.push(`/auth/conflict?cid=${conflictId}`);
+      // return Promise.resolve({
+      //   success: false,
+      //   data: err.response.data,
+      //   error: true,
+      //   message: err.response.data?.message,
+      // });
+    }
+
+
     if (err.response?.status === 401) {
       router.push("/auth/login");
       return Promise.resolve({
@@ -49,6 +64,7 @@ api.interceptors.response.use(
         message: "Unauthorized. Redirecting to login.",
       });
     }
+
 
     if (err.response?.status === 500 || err.response?.status === 404 || err.response?.status === 400) {
       return Promise.resolve({
@@ -63,8 +79,8 @@ api.interceptors.response.use(
       success: false,
       data: {},
       error: true,
-      errors : err.response?.data?.errors || null,
-      validation_errors : err.response?.data?.validation_errors || null,
+      errors: err.response?.data?.errors || null,
+      validation_errors: err.response?.data?.validation_errors || null,
       message: err.response?.data?.message || "Something went wrong",
     });
   }

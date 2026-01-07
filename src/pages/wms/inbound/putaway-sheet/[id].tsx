@@ -54,7 +54,7 @@ const PutawaySheetPrint = () => {
       // Panggil print setelah barcode digambar
       setTimeout(() => {
         window.print();
-      }, 500);
+      }, 1000);
     }
   }, [sheet]);
 
@@ -77,52 +77,58 @@ const PutawaySheetPrint = () => {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
             <tr>
-              <td style={headerLabel}>Inbound ID</td>
-              <td style={headerValue}>{data.inbound_no}</td>
+              <td style={headerLabel}>Owner</td>
+              <td style={headerValue}>{data.owner_code}</td>
               <td style={headerLabel}>Transporter</td>
               <td style={headerValue}>{data.transporter}</td>
             </tr>
             <tr>
-              <td style={headerLabel}>Receipt ID</td>
-              <td style={headerValue}>{data.receipt_id}</td>
+              <td style={headerLabel}>Inbound ID</td>
+              <td style={headerValue}>{data.inbound_no}</td>
               <td style={headerLabel}>Truck No</td>
               <td style={headerValue}>{data.no_truck}</td>
             </tr>
             <tr>
-              <td style={headerLabel}>Supplier</td>
-              <td style={headerValue}>{data.supplier_name}</td>
+              <td style={headerLabel}>Receipt ID</td>
+              <td style={headerValue}>{data.receipt_id}</td>
               <td style={headerLabel}>Driver</td>
               <td style={headerValue}>{data.driver}</td>
             </tr>
             <tr>
-              <td style={headerLabel}>Date</td>
-              <td style={headerValue}>{data.inbound_date}</td>
+              <td style={headerLabel}>Supplier</td>
+              <td style={headerValue}>{data.supplier_name}</td>
               <td style={headerLabel}>Truck Size</td>
               <td style={headerValue}>{data.truck_size}</td>
             </tr>
             <tr>
-              <td style={headerLabel}>Arrival Time</td>
-              <td style={headerValue}>{data.arrival_time}</td>
+              <td style={headerLabel}>Date</td>
+              <td style={headerValue}>{data.inbound_date}</td>
               <td style={headerLabel}>Start Unloading</td>
               <td style={headerValue}>{data.start_unloading}</td>
             </tr>
             <tr>
-              <td style={headerLabel}>BL No</td>
-              <td style={headerValue}>{data.bl_no || "-"}</td>
+              <td style={headerLabel}>Arrival Time</td>
+              <td style={headerValue}>{data.arrival_time}</td>
               <td style={headerLabel}>End Unloading</td>
               <td style={headerValue}>{data.end_unloading}</td>
             </tr>
             <tr>
-              <td style={headerLabel}>Remarks</td>
-              <td style={headerValue}>{data.remarks}</td>
+              <td style={headerLabel}>BL No</td>
+              <td style={headerValue}>{data.bl_no || "-"}</td>
               <td style={headerLabel}>Container</td>
               <td style={headerValue}>{data.container || "-"}</td>
             </tr>
             <tr>
-              <td></td>
-              <td></td>
+              <td style={headerLabel}>Remarks</td>
+              <td style={headerValue}>{data.remarks}</td>
               <td style={headerLabel}>Koli</td>
               <td style={headerValue}>{data.koli || "-"}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td style={headerLabel}></td>
+              <td style={headerValue}></td>
             </tr>
           </tbody>
         </table>
@@ -138,12 +144,13 @@ const PutawaySheetPrint = () => {
       >
         <thead>
           <tr>
-            <th style={th}>No</th>
-            <th style={th}>Item Code</th>
-            <th style={th}>Barcode</th>
-            {inventoryPolicy.require_expiry_date && <th style={th}>Exp Date</th>}
+            <th style={th}>NO</th>
+            <th style={th}>ITEM</th>
+            <th style={th}>EAN</th>
+            {inventoryPolicy.use_lot_no && <th style={th}>LOT NO</th>}
+            {inventoryPolicy.require_expiry_date && <th style={th}>EXP DATE</th>}
             {/* <th style={th}>Whs Code</th> */}
-            <th style={th}>Qty</th>
+            <th style={th}>QTY</th>
             {/* <th style={th}>CBM</th> */}
           </tr>
         </thead>
@@ -151,7 +158,10 @@ const PutawaySheetPrint = () => {
           {sheet.map((item, i) => (
             <tr key={i}>
               <td style={{ ...td, textAlign: "center" }}>{i + 1}</td>
-              <td style={td}>{item.item_code}</td>
+              <td style={td}>
+                <span className="text-xs text-gray-500 font-bold">{item.item_code}</span><br />
+                <span className="text-xs text-gray-500">{item.item_name}</span>
+              </td>
               <td style={td}>
                 <span className="text-xs text-gray-500">{item.barcode}</span>
                 <canvas
@@ -160,6 +170,9 @@ const PutawaySheetPrint = () => {
                   }}
                 ></canvas>
               </td>
+              {inventoryPolicy.use_lot_no && (
+                <td style={{ ...td, textAlign: "center" }}>{item.lot_number}</td>
+              )}
               {inventoryPolicy.require_expiry_date && (
                 <td style={{ ...td, textAlign: "center" }}>
                   {item.exp_date || "-"}
@@ -173,6 +186,7 @@ const PutawaySheetPrint = () => {
             <td colSpan={3} style={{ ...td, textAlign: "center" }}>
               Total
             </td>
+            {inventoryPolicy.use_lot_no && <td style={{ ...td }}></td>}
             {inventoryPolicy.require_expiry_date && (
               <td style={{ ...td }}></td>
             )}

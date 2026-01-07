@@ -64,9 +64,9 @@ const PickingSheetPrint = () => {
         }
       });
 
-      // setTimeout(() => {
-      //   window.print();
-      // }, 500);
+      setTimeout(() => {
+        window.print();
+      }, 500);
     }
   }, [packingItems]);
 
