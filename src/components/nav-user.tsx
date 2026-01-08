@@ -68,7 +68,12 @@ export function NavUser({
       })
       .catch((err) => console.log(err))
       .finally(() => {
-        document.cookie = `wms-auth-token=; path=/; max-age=0; secure; samesite=None`;
+        // document.cookie = `wms-auth-token=; path=/; max-age=0; secure; samesite=None`;
+        document.cookie.split(";").forEach((cookie) => {
+          const eqPos = cookie.indexOf("=");
+          const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+        });
         dispatch(logout());
         persistor.purge().then(() => {
           router.push("/auth/login");
@@ -188,12 +193,12 @@ export function NavUser({
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem className="cursor-pointer group py-2.5">
+              <DropdownMenuItem className="cursor-pointer group py-2.5" onClick={()=> {router.push('/wms/profile/edit')}}>
                 <UserCircle className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                 <span className="font-medium">My Profile</span>
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="cursor-pointer group py-2.5">
+              {/* <DropdownMenuItem className="cursor-pointer group py-2.5">
                 <Package className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                 <span className="font-medium">My Orders</span>
               </DropdownMenuItem>
@@ -206,7 +211,7 @@ export function NavUser({
               <DropdownMenuItem className="cursor-pointer group py-2.5">
                 <Settings className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                 <span className="font-medium">Settings</span>
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
 
               <DropdownMenuSeparator />
 

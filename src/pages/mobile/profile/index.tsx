@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { LogOut, Mail, Phone, User } from "lucide-react";
+import { LogOut, Mail, Pencil, Phone, User } from "lucide-react";
 import BottomNavbar from "@/components/mobile/BottomNavbar";
 import PageHeader from "@/components/mobile/PageHeader";
 import { useAppSelector } from "@/hooks/useAppSelector";
@@ -19,31 +19,57 @@ export default function ProfilePage() {
   const userRedux = useAppSelector((state) => state.user);
   const dispatch = useDispatch();
 
-/**
- * Logs out the user by performing the following actions:
- * 1. Retrieves the authentication token from cookies.
- * 2. If the token exists, it deletes the token from cookies.
- * 3. Dispatches a logout action to remove the user from the Redux state.
- * 4. Clears the Redux Persist data from localStorage.
- * 5. Redirects the user to the login page.
- */
+  /**
+   * Logs out the user by performing the following actions:
+   * 1. Retrieves the authentication token from cookies.
+   * 2. If the token exists, it deletes the token from cookies.
+   * 3. Dispatches a logout action to remove the user from the Redux state.
+   * 4. Clears the Redux Persist data from localStorage.
+   * 5. Redirects the user to the login page.
+   */
 
   const handleLogout = () => {
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("wms-auth-token="))
-      ?.split("=")[1];
-    console.log("WMS Auth Token:", token);
-    if (token) {
-      document.cookie = `wms-auth-token=; path=/; max-age=0; secure; samesite=None`;
-      // 1. Hapus user dari Redux state
-      dispatch(logout());
-      // 2. Hapus Redux Persist dari localStorage
-      persistor.purge().then(() => {
-        // 3. Redirect ke login
-        router.push("/auth/login");
-      });
-    }
+    // const token = document.cookie
+    //   .split("; ")
+    //   .find((row) => row.startsWith("wms-auth-token="))
+    //   ?.split("=")[1];
+
+    // console.log("WMS Auth Token:", token);
+    // if (token) {
+    //   // document.cookie = `wms-auth-token=; path=/; max-age=0; secure; samesite=None`;
+    //   document.cookie.split(";").forEach((cookie) => {
+    //     const eqPos = cookie.indexOf("=");
+    //     const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+    //     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+    //   });
+    //   // 1. Hapus user dari Redux state
+    //   dispatch(logout());
+    //   // 2. Hapus Redux Persist dari localStorage
+    //   persistor.purge().then(() => {
+    //     // 3. Redirect ke login
+    //     router.push("/auth/login");
+    //   });
+    // }
+    api
+      .get("/auth/logout", { withCredentials: true })
+      .then((res) => {
+        if (res.data.success === true) {
+          console.log("Logout successful");
+        }
+      })
+      .catch((err) => console.log(err))
+      .finally(() => {
+        // document.cookie = `wms-auth-token=; path=/; max-age=0; secure; samesite=None`;
+        document.cookie.split(";").forEach((cookie) => {
+          const eqPos = cookie.indexOf("=");
+          const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+        });
+        dispatch(logout());
+        persistor.purge().then(() => {
+          router.push("/auth/login");
+        });
+      })
   };
 
   return (
@@ -78,6 +104,13 @@ export default function ProfilePage() {
         </div> */}
 
         <div className="mt-6">
+          <button
+            onClick={() => router.push("/wms/profile/edit")}
+            className="w-full bg-slate-100 hover:bg-slate-300 text-black font-semibold py-2 rounded-xl flex justify-center items-center space-x-2 mb-2 outline-slate-800 outline outline-1"
+          >
+            <Pencil className="w-4 h-4" />
+            <span>Edit Profile</span>
+          </button>
           <button
             onClick={handleLogout}
             className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-xl flex justify-center items-center space-x-2"

@@ -27,7 +27,7 @@ import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
 import { set } from "date-fns";
 import { InventoryPolicy } from "@/types/inventory";
-import { is } from "date-fns/locale";
+import { is, tr } from "date-fns/locale";
 
 // Types
 interface ScanItem {
@@ -115,6 +115,8 @@ const CheckingPage = () => {
     []
   );
 
+  const [isSubmit, setIsSubmit] = useState(false);
+
   const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
 
   const handleScan = async () => {
@@ -138,33 +140,34 @@ const CheckingPage = () => {
     };
 
     console.log("New item:", newItem);
-
-    // return
-
     setIsLoading(true);
-
-    try {
-      const response = await api.post(
-        "/mobile/outbound/picking/scan/" + outbound,
-        newItem
-      );
-      const data = await response.data;
-      setIsLoading(false);
-      if (data.success) {
-        eventBus.emit("showAlert", {
-          title: "Success!",
-          description: data.message,
-          type: "success",
-        });
-        // document.getElementById("barcode")?.focus();
-        fetchOutboundDetail();
-        closeDialog();
+    if (!isSubmit) {
+      setIsSubmit(true);
+      try {
+        const response = await api.post(
+          "/mobile/outbound/picking/scan/" + outbound,
+          newItem
+        );
+        const data = await response.data;
+        setIsLoading(false);
+        if (data.success) {
+          eventBus.emit("showAlert", {
+            title: "Success!",
+            description: data.message,
+            type: "success",
+          });
+          // document.getElementById("barcode")?.focus();
+          fetchOutboundDetail();
+          closeDialog();
+        }
+      } catch (error) {
+        console.error("Error during scan:", error);
+        setIsLoading(false);
+        setIsSubmit(false);
+      } finally {
+        setIsLoading(false);
+        setIsSubmit(false);
       }
-    } catch (error) {
-      setIsLoading(false);
-      console.error("Error during scan:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -244,21 +247,28 @@ const CheckingPage = () => {
     index: number,
     outbound_detail_id: number
   ) => {
-    try {
-      const response = await api.delete(
-        "/mobile/outbound/picking/scan/" + index,
-        {
-          withCredentials: true,
+
+    if (!isSubmit) {
+      setIsSubmit(true);
+      try {
+        const response = await api.delete(
+          "/mobile/outbound/picking/scan/" + index,
+          {
+            withCredentials: true,
+          }
+        );
+        const data = await response.data;
+        if (data.success) {
+          fetchScannedItems(outbound_detail_id);
+          fetchOutboundDetail();
         }
-      );
-      const data = await response.data;
-      if (data.success) {
-        fetchScannedItems(outbound_detail_id);
-        fetchOutboundDetail();
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsSubmit(false);
       }
-    } catch (error) {
-      console.error("Error fetching data:", error);
     }
+
   };
 
   const filteredItems =
@@ -329,35 +339,45 @@ const CheckingPage = () => {
     };
 
     setIsLoading(true);
+    setIsSubmit(true);
 
-    const response = await api.post(
-      "/mobile/outbound/item-check/" + outbound,
-      newItem
-    );
-    const res = await response.data;
+    if (!isSubmit) {
+      try {
+        const response = await api.post(
+          "/mobile/outbound/item-check/" + outbound,
+          newItem
+        );
+        const res = await response.data;
 
-    if (res.success) {
-      setIsLoading(false);
-      if (res.is_serial) {
-        console.log("Item requires serial:", res);
-        setIsSerial(res.is_serial);
-        setScanSerial("");
-        setShowDialog(true);
-        setTimeout(() => {
-          if (serialInputs.length === 1) {
-            console.log("focus serial 0");
-            document.getElementById("serial-0")?.focus();
+        if (res.success) {
+          setIsLoading(false);
+          if (res.is_serial) {
+            console.log("Item requires serial:", res);
+            setIsSerial(res.is_serial);
+            setScanSerial("");
+            setShowDialog(true);
+            setTimeout(() => {
+              if (serialInputs.length === 1) {
+                console.log("focus serial 0");
+                document.getElementById("serial-0")?.focus();
+              }
+            }, 100);
+          } else {
+            setIsSerial(res.is_serial);
+            setScanUom(res.data.uom.from_uom);
+            setScanSerial("");
+            if (invPolicy.picking_single_scan) {
+              handleScan();
+            } else {
+              setShowDialog(true);
+            }
           }
-        }, 100);
-      } else {
-        setIsSerial(res.is_serial);
-        setScanUom(res.data.uom.from_uom);
-        setScanSerial("");
-        if (invPolicy.picking_single_scan) {
-          handleScan();
-        } else {
-          setShowDialog(true);
         }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+        setIsSubmit(false);
       }
     }
   };
@@ -529,8 +549,8 @@ const CheckingPage = () => {
                   )}
                 </div>
               </div>
-              <Button type="submit" className="w-full">
-                Check
+              <Button disabled={isSubmit} type="submit" className="w-full">
+                {isSubmit ? "Scanning..." : "Scan"}
               </Button>
             </CardContent>
           </Card>
@@ -765,6 +785,7 @@ const CheckingPage = () => {
                                 <div className="col-span-2 flex items-center">
                                   {item.status === "pending" && (
                                     <Button
+                                      disabled={isSubmit}
                                       className="h-6 bg-red-500 text-white hover:bg-red-600"
                                       variant="destructive"
                                       size="sm"
@@ -775,8 +796,7 @@ const CheckingPage = () => {
                                         )
                                       }
                                     >
-                                      {/* <Trash2 size={16} /> */}
-                                      Delete
+                                      {isSubmit ? "Deleting..." : "Delete"}
                                     </Button>
                                   )}
                                 </div>

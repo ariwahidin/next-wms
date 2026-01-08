@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Car, Edit, Save, Trash2 } from "lucide-react";
+import { Car, Edit, Loader2, Save, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -135,8 +135,10 @@ const CheckingPage = () => {
     []
   );
 
+  const [isSubmit, setIsSubmit] = useState(false);
+
   const handleScan = async () => {
-    // if (!scanLocation.trim() || !scanBarcode.trim() || !scanSerial.trim())
+
     if (
       !scanLocation.trim() ||
       !scanBarcode.trim() ||
@@ -177,31 +179,70 @@ const CheckingPage = () => {
     };
 
     console.log("Submitting Scan Item:", newItem);
-    // return;
 
-    const response = await api.post("/mobile/inbound/scan", newItem);
-    const data = await response.data;
-    if (data.success) {
-      eventBus.emit("showAlert", {
-        title: "Success!",
-        description: data.message,
-        type: "success",
-      });
-      fetchInboundDetail();
-      if (isSerial) {
-        const newSerials = serialInputs.map(() => "");
-        setSerialInputs(newSerials);
-        const emptyIndex = serialInputs.findIndex((s) => s.trim() === "");
-        if (emptyIndex !== -1) {
-          // fokus ke input yang kosong
-          const target = document.getElementById(`serial-${emptyIndex}`);
-          target?.focus();
-          return; // stop submit
+    if (isLoading) return;
+    setIsLoading(true);
+    if (!isSubmit) {
+      try {
+        setIsSubmit(true);
+        const response = await api.post("/mobile/inbound/scan", newItem);
+        const data = await response.data;
+        if (data.success) {
+          eventBus.emit("showAlert", {
+            title: "Success!",
+            description: data.message,
+            type: "success",
+          });
+          fetchInboundDetail();
+          if (isSerial) {
+            const newSerials = serialInputs.map(() => "");
+            setSerialInputs(newSerials);
+            const emptyIndex = serialInputs.findIndex((s) => s.trim() === "");
+            if (emptyIndex !== -1) {
+              const target = document.getElementById(`serial-${emptyIndex}`);
+              target?.focus();
+              return;
+            }
+          } else {
+            closeDialog();
+          }
         }
-      }else{
-        closeDialog();
+      } catch (error) {
+        console.error("Error submitting scan item:", error);
+      } finally {
+        setTimeout(() => {
+          setIsLoading(false);
+          setIsSubmit(false);
+        }, 900);
       }
     }
+
+
+    // return;
+    // setIsSubmit(true);
+    // const response = await api.post("/mobile/inbound/scan", newItem);
+    // const data = await response.data;
+    // if (data.success) {
+    //   setIsSubmit(false);
+    //   eventBus.emit("showAlert", {
+    //     title: "Success!",
+    //     description: data.message,
+    //     type: "success",
+    //   });
+    //   fetchInboundDetail();
+    //   if (isSerial) {
+    //     const newSerials = serialInputs.map(() => "");
+    //     setSerialInputs(newSerials);
+    //     const emptyIndex = serialInputs.findIndex((s) => s.trim() === "");
+    //     if (emptyIndex !== -1) {
+    //       const target = document.getElementById(`serial-${emptyIndex}`);
+    //       target?.focus();
+    //       return;
+    //     }
+    //   }else{
+    //     closeDialog();
+    //   }
+    // }
   };
 
   const fetchInboundDetail = async () => {
@@ -261,15 +302,20 @@ const CheckingPage = () => {
   const handleRemoveItem = async (index: number, inbound_detail_id: number) => {
     console.log("ID Inbound Barcod :", index, inbound_detail_id);
 
-    try {
-      const response = await api.delete("/mobile/inbound/scan/" + index);
-      const data = await response.data;
-      if (data.success) {
-        fetchScannedItems(inbound_detail_id);
-        fetchInboundDetail();
+    if (!isSubmit) {
+      try {
+        setIsSubmit(true);
+        const response = await api.delete("/mobile/inbound/scan/" + index);
+        const data = await response.data;
+        if (data.success) {
+          fetchScannedItems(inbound_detail_id);
+          fetchInboundDetail();
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsSubmit(false);
       }
-    } catch (error) {
-      console.error("Error fetching data:", error);
     }
   };
 
@@ -393,61 +439,67 @@ const CheckingPage = () => {
       uploaded: false,
     };
 
-    const response = await api.post("/mobile/inbound/check", newItem);
-    const res = await response.data;
 
-    if (res.success) {
+    if (!isSubmit) {
+      try {
+        setIsSubmit(true);
+        const response = await api.post("/mobile/inbound/check", newItem);
+        const res = await response.data;
+        if (res.success) {
 
-      const data = (res.data ?? []) as Array<{
-        prod_date: string;
-        exp_date: string;
-        lot_number: string;
-        quantity: number;
-        uom: string;
-      }>;
+          const data = (res.data ?? []) as Array<{
+            prod_date: string;
+            exp_date: string;
+            lot_number: string;
+            quantity: number;
+            uom: string;
+          }>;
 
-      console.log("Check result: ", data);
+          console.log("Check result: ", data);
 
-      // ambil nilai unik
-      const prodDates = [...new Set(data.map(d => d.prod_date))];
-      const expDates = [...new Set(data.map(d => d.exp_date))];
-      const lotNos = [...new Set(data.map(d => d.lot_number))];
-      const qtys = [...new Set(data.map(d => d.quantity))];
+          // ambil nilai unik
+          const prodDates = [...new Set(data.map(d => d.prod_date))];
+          const expDates = [...new Set(data.map(d => d.exp_date))];
+          const lotNos = [...new Set(data.map(d => d.lot_number))];
+          const qtys = [...new Set(data.map(d => d.quantity))];
 
-      console.log("Unique values: ", prodDates, expDates, lotNos, qtys);
+          console.log("Unique values: ", prodDates, expDates, lotNos, qtys);
 
-      setUniqueProdDates(prodDates);
-      setUniqueExpDates(expDates);
-      setUniqueLotNos(lotNos);
-      setUniqueQtys(qtys);
+          setUniqueProdDates(prodDates);
+          setUniqueExpDates(expDates);
+          setUniqueLotNos(lotNos);
+          setUniqueQtys(qtys);
 
-      // kalau cuma satu data unik, langsung auto-fill
-      // if (prodDates.length === 1) setProdDate(prodDates[0]);
-      // if (expDates.length === 1) setExpDate(expDates[0]);
-      // if (lotNos.length === 1) setLotNo(lotNos[0]);
-      // if (qtys.length === 1) setScanQty(qtys[0]);
-      if (data.length === 1) {
-        setProdDate(data[0].prod_date);
-        setExpDate(data[0].exp_date);
-        setLotNo(data[0].lot_number);
-        setScanQty(data[0].quantity);
-        setUom(data[0].uom);
-      } else {
-        setUom(data[0].uom);
-      }
+          if (data.length === 1) {
+            setProdDate(data[0].prod_date);
+            setExpDate(data[0].exp_date);
+            setLotNo(data[0].lot_number);
+            setScanQty(data[0].quantity);
+            setUom(data[0].uom);
+          } else {
+            setUom(data[0].uom);
+          }
 
-      if (res.is_serial) {
-        console.log("Item requires serial:", res);
-        setIsSerial(res.is_serial);
-        setScanSerial("");
-        setScanQty(1);
-        setShowDialog(true);
-      } else {
-        console.log("Item requires serial:", res);
-        setIsSerial(res.is_serial);
-        setShowDialog(true);
+          if (res.is_serial) {
+            console.log("Item requires serial:", res);
+            setIsSerial(res.is_serial);
+            setScanSerial("");
+            setScanQty(1);
+            setShowDialog(true);
+          } else {
+            console.log("Item requires serial:", res);
+            setIsSerial(res.is_serial);
+            setShowDialog(true);
+          }
+        }
+
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsSubmit(false);
       }
     }
+
   };
 
   const handleSerialSubmit = async (e: React.FormEvent) => {
@@ -582,8 +634,12 @@ const CheckingPage = () => {
                 )}
               </div>
 
-              <Button type="submit" className="w-full mt-2">
-                Check Item
+              <Button
+                disabled={isSubmit}
+                type="submit"
+                className="w-full mt-2"
+              >
+                {isSubmit ? "Loading..." : "Submit"}
               </Button>
             </form>
           </CardContent>
@@ -654,9 +710,6 @@ const CheckingPage = () => {
                           <span className="text-gray-600">
                             {item.uom}
                           </span>
-
-
-
                         </div>
 
                         {item.is_serial && (
@@ -665,10 +718,6 @@ const CheckingPage = () => {
                             {item.is_serial ? "Yes" : "No"}
                           </div>
                         )}
-
-
-
-
                       </div>
                     </div>
                   </li>
@@ -786,13 +835,15 @@ const CheckingPage = () => {
                     {item.status === "pending" && (
                       <div className="mt-2 flex justify-start">
                         <Button
+                          className="mr-2 h-6"
+                          disabled={isSubmit}
                           variant="destructive"
                           size="sm"
                           onClick={() =>
                             handleRemoveItem(item.id, item.inbound_detail_id)
                           }
                         >
-                          <Trash2 size={14} />
+                          {isSubmit ? "Deleting..." : "Delete"}
                         </Button>
                       </div>
                     )}
@@ -918,8 +969,12 @@ const CheckingPage = () => {
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                    <Button type="submit" className="w-full">
-                      Submit
+                    <Button type="submit" className="w-full" disabled={isSubmit}>
+                      <Loader2
+                        className="mr-2 w-4 h-4 text-white animate-spin"
+                        style={{ display: isSubmit ? "block" : "none" }}
+                      />
+                      {isSubmit ? "Loading..." : "Submit"}
                     </Button>
                     <Button
                       type="button"
@@ -1157,9 +1212,19 @@ const CheckingPage = () => {
 
 
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <Button type="submit" className="w-full">
+                    {/* <Button type="submit" className="w-full">
                       Submit
+                    </Button> */}
+
+
+                    <Button type="submit" className="w-full" disabled={isSubmit}>
+                      <Loader2
+                        className="mr-2 w-4 h-4 text-white animate-spin"
+                        style={{ display: isSubmit ? "block" : "none" }}
+                      />
+                      {isSubmit ? "Loading..." : "Submit"}
                     </Button>
+
                     <Button
                       type="button"
                       className="w-full"
