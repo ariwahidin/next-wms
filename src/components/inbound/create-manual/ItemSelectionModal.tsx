@@ -15,6 +15,7 @@ interface ItemSelectionModalProps {
   api?: any;
   selectedItems?: any[];
   mode?: "create" | "edit";
+  editData?: any;
 }
 
 const ItemSelectionModal = ({
@@ -25,6 +26,7 @@ const ItemSelectionModal = ({
   api,
   selectedItems = [],
   mode = "create",
+  editData,
 }: ItemSelectionModalProps) => {
   const [items, setItems] = useState<Product[]>([]);
   const [filteredItems, setFilteredItems] = useState<Product[]>([]);
@@ -79,13 +81,42 @@ const ItemSelectionModal = ({
 
   const handleItemSelect = (itemId: number, isChecked: boolean) => {
     if (mode === "edit") {
+      // console.log("selectedItemIds : ", selectedItemIds);
+      console.log("editData before: ", editData);
+      console.log("mode edit : ", itemId, isChecked, selectedItemIds);
+
       setSelectedItemIds(isChecked ? [itemId] : []);
+      editData.item_id = itemId;
+      // setSelectedItemIds
+
+      console.log("editData after: ", editData);
+      console.log("selectedItemIds after: ", selectedItemIds);
+      // setSelectedItemIds((prev) => prev.map((id) => (id === itemId ? itemId : id)));
     } else {
       setSelectedItemIds((prev) =>
         isChecked ? [...prev, itemId] : prev.filter((id) => id !== itemId)
       );
     }
   };
+
+  useEffect(() => {
+    console.log("selectedItemIds updated: ", selectedItemIds);
+  }, [selectedItemIds]);
+
+  // const handleItemSelect = (itemId: number, isChecked: boolean) => {
+  //   setSelectedItemIds((prev) => {
+  //     if (mode === "edit") {
+  //       return isChecked ? [itemId] : [];
+  //     }
+
+  //     if (isChecked) {
+  //       return prev.includes(itemId) ? prev : [...prev, itemId];
+  //     }
+
+  //     return prev.filter((id) => id !== itemId);
+  //   });
+  // };
+
 
   const handleRowClick = (itemId: number) => {
     const isCurrentlySelected = selectedItemIds.includes(itemId);
@@ -119,6 +150,10 @@ const ItemSelectionModal = ({
       (item_id) => !currentSelectedIds.includes(Number(item_id))
     );
 
+    if (mode === "edit") {
+      newSelectedIds.push(editData.item_id);
+    }
+
 
     console.log("New Selected IDs:", newSelectedIds);
 
@@ -130,7 +165,12 @@ const ItemSelectionModal = ({
       .map((id) => items.find((item) => String(item.ID) === String(id)))
       .filter(Boolean);
 
+    // if (mode === "edit") {
+    //   newSelectedItemsData[0].ID = editData.item_id;
+    // }
+
     console.log("New Selected Items Data:", newSelectedItemsData);
+
 
     onApply(newSelectedItemsData);
     onClose();
@@ -165,7 +205,7 @@ const ItemSelectionModal = ({
       <div className="bg-white rounded-lg shadow-lg w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">
-            {mode === "edit" ? "Edit Item Selection" : "Select Items"}
+            {mode === "edit" ? "Edit Item "+editData.item_code : "Select Items"}
             {mode === "edit" && (
               <span className="text-sm text-gray-500 ml-2">
                 (Select one item)
@@ -228,7 +268,7 @@ const ItemSelectionModal = ({
                         <input
                           type={mode === "edit" ? "radio" : "checkbox"}
                           name={mode === "edit" ? "selectedItem" : undefined}
-                          checked={isSelected}
+                          checked={mode === "edit" ? editData.item_id === item.ID : isSelected}
                           onChange={(e) =>
                             handleItemSelect(item.ID, e.target.checked)
                           }

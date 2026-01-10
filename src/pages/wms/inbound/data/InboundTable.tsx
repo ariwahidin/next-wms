@@ -188,7 +188,7 @@ const InboundTable = () => {
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
-                {params.data.status !== "open" && (
+                {params.data.status === "checking" && (
                   <>
                     <DropdownMenuItem
                       className="cursor-pointer"
@@ -198,7 +198,7 @@ const InboundTable = () => {
                       }}
                     >
                       <X className="mr-2 h-4 w-4" />
-                      Cancel
+                      Return to Open
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>

@@ -95,7 +95,22 @@ export interface InboundReferenceProps {
   setInboundReferences: React.Dispatch<React.SetStateAction<InboundReference>>;
 }
 
-export interface CombinedInboundProps extends ItemFormTableProps, PropsHeader, InboundReferenceProps { }
+export type InboundDetails = {
+  id: number;
+  item_code: string;
+  barcode: string;
+  item_name: string;
+  quantity: number;
+  qty_scan: number;
+  qa_status: boolean;
+  uom?: string;
+  rec_date?: string;
+  exp_date?: string;
+  prod_date?: string;
+  lot_number?: string;
+}
+
+export interface CombinedInboundProps extends ItemFormTableProps, PropsHeader, InboundReferenceProps, InboundDetailsProps { }
 
 export interface ItemOptions {
   value: string;
@@ -113,3 +128,9 @@ export type InboundItem = {
   scan_qty: number;
   status: "fully received" | "partial" | "open";
 };
+
+export interface InboundDetailsProps {
+  inboundDetails: InboundDetails[];
+  setInboundDetails: React.Dispatch<React.SetStateAction<InboundDetails[]>>;
+}
+

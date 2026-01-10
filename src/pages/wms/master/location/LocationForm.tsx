@@ -150,14 +150,14 @@ export default function LocationForm({ editData, setEditData, onClose }) {
   };
 
   const formFields = [
-    // {
-    //   name: "location_code",
-    //   label: "Location Code",
-    //   icon: MapPin,
-    //   required: true,
-    //   placeholder: "e.g., WH-A1-01",
-    //   description: "Unique identifier for the location",
-    // },
+    {
+      name: "whs_code",
+      label: "WHS Code",
+      icon: MapPin,
+      required: true,
+      placeholder: "e.g., WH-A1-01",
+      description: "Unique identifier for the location",
+    },
     {
       name: "row",
       label: "Row",

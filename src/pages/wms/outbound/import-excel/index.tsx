@@ -206,7 +206,6 @@ const OutboundExcelUpload: React.FC = () => {
             { header: 'Serial Number', key: 'sn', width: 20 },
             { header: 'VAS ID', key: 'vas_id', width: 10 },
             { header: 'Item Remarks', key: 'item_remarks', width: 30 },
-            { header: 'Whs Code', key: 'whs_code', width: 30 }
         ];
 
         // Style header row

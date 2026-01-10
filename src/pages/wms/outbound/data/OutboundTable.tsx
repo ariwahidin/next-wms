@@ -99,22 +99,22 @@ const HandleDelete = (id: number) => {
 
 const HandlePreviewPDF = (id: number) => {
   console.log("Preview PDF ID:", id);
-  // window.open(`/wms/outbound/picking-sheet/${id}`, "_blank");
+  window.open(`/wms/outbound/picking-sheet/${id}`, "_blank");
 
-  const printWindow = window.open(
-    `/wms/outbound/picking-sheet/${id}`,
-    "_blank"
-  );
-  if (printWindow) {
-    // printWindow.document.write(printContent);
-    printWindow.document.close();
+  // const printWindow = window.open(
+  //   `/wms/outbound/picking-sheet/${id}`,
+  //   "_blank"
+  // );
+  // if (printWindow) {
+  //   // printWindow.document.write(printContent);
+  //   printWindow.document.close();
 
-    // Wait for images to load before printing
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 1000);
-  }
+  //   // Wait for images to load before printing
+  //   setTimeout(() => {
+  //     printWindow.print();
+  //     printWindow.close();
+  //   }, 1000);
+  // }
 };
 
 const HandlePrintSerial = (outbound_no: string) => {

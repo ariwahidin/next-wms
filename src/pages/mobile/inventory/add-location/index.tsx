@@ -10,6 +10,7 @@ import eventBus from "@/utils/eventBus";
 
 export default function AddLocationPage() {
   const [newLocation, setNewLocation] = useState("");
+  const [WhsCode, setWhsCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -18,6 +19,7 @@ export default function AddLocationPage() {
     if (!newLocation.trim()) return;
 
     const dataToPost = {
+      whs_code: WhsCode,
       new_location: newLocation,
     };
 
@@ -37,6 +39,8 @@ export default function AddLocationPage() {
           description: data.message,
           type: "success",
         });
+        setNewLocation("");
+        document.getElementById("newLocation").focus();
       }
     } catch (error) {
       console.error("Error saving data:", error);
@@ -51,6 +55,13 @@ export default function AddLocationPage() {
       <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
         <form onSubmit={handleSave}>
           <Input
+            placeholder="Entry Warehouse Code"
+            value={WhsCode}
+            onChange={(e) => setWhsCode(e.target.value.toUpperCase())}
+            className="mb-2"
+          />
+          <Input
+            id = "newLocation"
             placeholder="Entry new location"
             value={newLocation}
             onChange={(e) => setNewLocation(e.target.value)}

@@ -27,6 +27,8 @@ export interface HeaderFormProps {
   truck_size?: string;
   truck_no?: string;
   transporter_code?: string;
+  customer_name?: string;
+  deliv_to_name?: string;
 }
 
 export interface ItemFormProps {

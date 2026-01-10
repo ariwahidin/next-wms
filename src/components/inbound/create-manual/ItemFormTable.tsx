@@ -5,11 +5,12 @@ import { use, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from "react-select";
-import { Trash, Save, Pencil, X, Plus, Copy } from "lucide-react";
+import { Trash, Save, Pencil, X, Plus, Copy, RefreshCcw } from "lucide-react";
 import * as yup from "yup";
 import {
   CombinedInboundProps,
   HeaderFormProps,
+  InboundDetails,
   ItemFormProps,
   ItemFormTableProps,
   ItemOptions,
@@ -56,6 +57,8 @@ export default function ItemFormTable({
   setHeaderForm,
   inboundReferences,
   setInboundReferences,
+  inboundDetails,
+  setInboundDetails,
 }: CombinedInboundProps) {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -77,6 +80,11 @@ export default function ItemFormTable({
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [editingItem, setEditingItem] = useState<ItemFormProps | null>(null);
 
+  const [searchTermMuatan, setSearchTermMuatan] = useState<string>("");
+  const [filteredMuatan, setFilteredMuatan] = useState<ItemFormProps[]>([]);
+
+  console.log("INBOUND DETAILS ", inboundDetails);
+
   const fetchData = async () => {
     try {
       const [products, warehouses, uoms, policies, qa_status] = await Promise.all([
@@ -91,7 +99,7 @@ export default function ItemFormTable({
         products.data.success &&
         warehouses.data.success &&
         uoms.data.success &&
-        policies.data.success && 
+        policies.data.success &&
         qa_status.data.success
       ) {
         setProducts(products.data.data);
@@ -142,6 +150,7 @@ export default function ItemFormTable({
 
   // Handle modal untuk edit item
   const handleEditItem = (item: ItemFormProps) => {
+    console.log("Item yang akan diedit:", item);
     setModalMode("edit");
     setEditingItem(item);
     setIsModalOpen(true);
@@ -178,6 +187,7 @@ export default function ItemFormTable({
       }));
 
       setMuatan((prev) => [...prev, ...newItems]);
+      setFilteredMuatan((prev) => [...prev, ...newItems]);
     } else if (
       modalMode === "edit" &&
       editingItem &&
@@ -186,6 +196,18 @@ export default function ItemFormTable({
       // Edit mode - update item yang sedang diedit
       const selectedProduct = selectedItems[0]; // Ambil item pertama untuk edit
       setMuatan((prev) =>
+        prev.map((m) =>
+          m.ID === editingItem.ID
+            ? {
+              ...m,
+              item_code: selectedProduct.item_code,
+              uom: selectedProduct.uom,
+              is_serial: selectedProduct.has_serial,
+            }
+            : m
+        )
+      );
+      setFilteredMuatan((prev) =>
         prev.map((m) =>
           m.ID === editingItem.ID
             ? {
@@ -212,6 +234,14 @@ export default function ItemFormTable({
     console.log("Value:", value);
 
     setMuatan((prev) =>
+      prev.map((m) =>
+        m.ID === id
+          ? { ...m, [field]: field === "quantity" ? Number(value) : value }
+          : m
+      )
+    );
+
+    setFilteredMuatan((prev) =>
       prev.map((m) =>
         m.ID === id
           ? { ...m, [field]: field === "quantity" ? Number(value) : value }
@@ -274,6 +304,7 @@ export default function ItemFormTable({
   const handleCancel = async (item: ItemFormProps) => {
     if (item.mode === "create") {
       setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
+      setFilteredMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
     } else {
       eventBus.emit("refreshData");
       setErrors((prev) => ({ ...prev, [item.ID]: {} }));
@@ -283,6 +314,33 @@ export default function ItemFormTable({
 
   const handleCopy = (id: number) => {
     setMuatan((prevItems) => {
+      const index = prevItems.findIndex((item) => item.ID === id);
+      if (index === -1) return prevItems; // item tidak ditemukan
+
+      const itemToCopy = prevItems[index];
+
+      // Buat ID baru unik (bisa pakai UUID juga kalau mau)
+      const newID = Math.max(...prevItems.map((i) => i.ID), 0) + 1;
+
+      const duplicatedItem = {
+        ...itemToCopy,
+        ID: newID,
+        mode: "create",
+        exp_date: "",
+        lot_number: "",
+      };
+
+      // Sisipkan hasil copy di posisi setelah item yang dicopy
+      const newItems = [
+        ...prevItems.slice(0, index + 1),
+        duplicatedItem,
+        ...prevItems.slice(index + 1),
+      ];
+
+      return newItems;
+    });
+
+    setFilteredMuatan((prevItems) => {
       const index = prevItems.findIndex((item) => item.ID === id);
       if (index === -1) return prevItems; // item tidak ditemukan
 
@@ -319,6 +377,7 @@ export default function ItemFormTable({
       });
       if (res.data.success) {
         setMuatan((prev) => prev.filter((m) => m.ID !== id));
+        setFilteredMuatan((prev) => prev.filter((m) => m.ID !== id));
         setSelectedIds((prev) => prev.filter((sid) => sid !== id));
         if (editingId === id) setEditingId(null);
       }
@@ -347,6 +406,7 @@ export default function ItemFormTable({
         });
         if (res.data.success) {
           setMuatan((prev) => prev.filter((m) => m.ID !== id));
+          setFilteredMuatan((prev) => prev.filter((m) => m.ID !== id));
           setSelectedIds((prev) => prev.filter((sid) => sid !== id));
           if (editingId === id) setEditingId(null);
         }
@@ -359,6 +419,19 @@ export default function ItemFormTable({
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectStates, setSelectStates] = useState({});
+
+  useEffect(() => {
+    if (searchTermMuatan) {
+      const filtered = muatan.filter((item) =>
+        item.item_code.toLowerCase().includes(searchTermMuatan.toLowerCase())
+        || item.lot_number.toLowerCase().includes(searchTermMuatan.toLowerCase())
+        || products.find((product) => product.item_code === item.item_code)?.item_name.toLowerCase().includes(searchTermMuatan.toLowerCase())
+      );
+      setFilteredMuatan(filtered);
+    } else {
+      setFilteredMuatan(muatan);
+    }
+  }, [searchTermMuatan])
 
 
   const handleFocus = async (itemCode: string, itemId: string | number) => {
@@ -403,7 +476,6 @@ export default function ItemFormTable({
     }
   };
 
-  // const totalQty = muatan?.reduce((sum, item) => sum + item.quantity, 0);
   const allSelected =
     muatan?.length > 0 && selectedIds.length === muatan.length;
 
@@ -413,23 +485,40 @@ export default function ItemFormTable({
         <div className="flex justify-between items-center">
           {headerForm.status !== "complete" && (
             <div className="flex space-x-2">
-              <Button
-                variant="destructive"
-                onClick={handleDeleteSelected}
-                disabled={selectedIds.length === 0}
-                className="flex items-center gap-2 w-auto"
-              >
-                Delete Selected
-              </Button>
-              <Button
-                type="button"
-                onClick={handleAddItems}
-                className="flex items-center gap-2 w-auto"
-              >
-                Add Items
-              </Button>
+              {(headerForm.status === "open" || headerForm.status === "draft") && (
+                <>
+                  {/* <Button
+                    variant="destructive"
+                    onClick={handleDeleteSelected}
+                    disabled={selectedIds.length === 0}
+                    className="flex items-center gap-2 w-auto"
+                  >
+                    Delete Selected
+                  </Button> */}
+
+
+                  <Button
+                    type="button"
+                    onClick={handleAddItems}
+                    className="flex items-center gap-2 w-auto"
+                  >
+                    Add Items
+                  </Button>
+                </>
+              )}
             </div>
           )}
+
+          <div className="flex space-x-2">
+            {/* Input search */}
+            <input
+              type="text"
+              placeholder="Search..."
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={searchTermMuatan}
+              onChange={(e) => setSearchTermMuatan(e.target.value)}
+            />
+          </div>
         </div>
 
         <table
@@ -438,19 +527,21 @@ export default function ItemFormTable({
         >
           <thead className="bg-gray-100">
             <tr>
-              <th className="p-2 border text-center w-8">
-                <input
-                  disabled={headerForm.status === "complete"}
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                />
-              </th>
+              {/* <th className="p-2 border text-center w-8">
+                {headerForm.status == "open" || headerForm.status == "draft" && (
+                  <input
+                    // disabled={headerForm.status === "complete"}
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                  />
+                )}
+              </th> */}
               <th className="p-2 border w-12 text-center">No.</th>
-              <th className="p-2 border" style={{ width: "300px" }}>
+              <th className="p-2 border" style={{ width: "200px" }}>
                 Item Code
               </th>
-              <th className="p-2 border" style={{ width: "300px" }}>
+              <th className="p-2 border" style={{ width: "400px" }}>
                 Description
               </th>
               <th className="p-2 border" style={{ width: "50px" }}>
@@ -459,6 +550,13 @@ export default function ItemFormTable({
               <th className="p-2 border" style={{ width: "100px" }}>
                 Qty
               </th>
+
+              {!["open", "draft"].includes(headerForm.status) && (
+                <th className="p-2 border" style={{ width: "100px" }}>
+                  Qty Scan
+                </th>
+              )}
+
               <th className="p-2 border" style={{ width: "100px" }}>
                 Status
               </th>
@@ -498,25 +596,27 @@ export default function ItemFormTable({
             </tr>
           </thead>
           <tbody>
-            {muatan
+            {filteredMuatan
               .filter((item) => item.ref_id === inboundReferences.ID)
               .map((item, index) => {
                 const isEditing = editingId === item.ID;
                 return (
                   <tr key={item.ID} className="border-t">
-                    <td className="p-2 border text-center">
-                      <input
-                        disabled={headerForm.status === "complete"}
-                        type="checkbox"
-                        checked={selectedIds.includes(item.ID)}
-                        onChange={(e) =>
-                          handleSelect(item.ID, e.target.checked)
-                        }
-                      />
-                    </td>
+                    {/* <td className="p-2 border text-center">
+                      {headerForm.status == "open" && (
+                        <input
+                          // disabled={headerForm.status === "complete"}
+                          type="checkbox"
+                          checked={selectedIds.includes(item.ID)}
+                          onChange={(e) =>
+                            handleSelect(item.ID, e.target.checked)
+                          }
+                        />
+                      )}
+                    </td> */}
                     <td className="p-2 border text-center">{index + 1}</td>
 
-                    {headerForm.status == "open" ||
+                    {headerForm.status == "open" || headerForm.status == "draft" ||
                       headerForm.mode == "create" ? (
                       <>
                         <td className="p-2 border">
@@ -529,14 +629,14 @@ export default function ItemFormTable({
                               className="flex-1"
                               placeholder="Click edit to select item..."
                             />
-                            {item.mode === "create" && (
+                            {['open', 'draft'].includes(headerForm.status) && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleEditItem(item)}
                                 title="Select item"
                               >
-                                <Pencil size={12} />
+                                <RefreshCcw size={12} />
                               </Button>
                             )}
                           </div>
@@ -806,25 +906,20 @@ export default function ItemFormTable({
                       <>
                         <td className="p-2 border">{item.item_code}</td>
 
-                        {/* <td className="p-2 border text-center">
-                          {
-                            products.find((p) => p.item_code === item.item_code)
-                              ?.barcode
-                          }
-                        </td> */}
-
                         <td className="p-2 border text-center">
                           {
                             products.find((p) => p.item_code === item.item_code)
                               ?.item_name
                           }
                         </td>
-                        {/* <td className="p-2 border text-center">
-                          {item.is_serial}
-                        </td> */}
                         <td className="p-2 border text-center">{item.uom}</td>
                         <td className="p-2 border text-center">
                           {item.quantity}
+                        </td>
+                        <td className="p-2 border text-center">
+                          {inboundDetails.find(
+                            (d) => d.id === item.ID
+                          ).qty_scan}
                         </td>
                         <td className="p-2 border text-center">{item.qa_status}</td>
 
@@ -857,7 +952,6 @@ export default function ItemFormTable({
                             {item.lot_number}
                           </td>
                         )}
-                        {/* <td className="p-2 border">{item.remarks}</td> */}
                         <td
                           className="p-2 border space-x-2 text-center"
                           style={{ width: "160px" }}
@@ -872,12 +966,21 @@ export default function ItemFormTable({
           </tbody>
           <tfoot>
             <tr className="bg-gray-100 font-semibold">
-              <td className="p-2 border" colSpan={5}>
+              <td className="p-2 border" colSpan={4}>
                 Total
               </td>
               <td className="p-2 border text-center">
-                {muatan.reduce((acc, item) => acc + item.quantity, 0)}
+                {filteredMuatan.reduce((acc, item) => acc + item.quantity, 0)}
               </td>
+              {!['open', 'draft'].includes(headerForm.status) && (
+                <td className="p-2 border text-center">
+                  {inboundDetails.reduce(
+                    (acc, item) => acc + item.qty_scan,
+                    0
+                  )}
+                </td>
+              )}
+              <td className="p-2 border" colSpan={8}></td>
             </tr>
           </tfoot>
         </table>
@@ -888,6 +991,8 @@ export default function ItemFormTable({
         products={products}
         onApply={handleModalApply}
         selectedItems={muatan}
+        mode={modalMode}
+        editData={editingItem}
       />
     </>
   );

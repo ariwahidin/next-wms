@@ -161,7 +161,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
             placeholder="Search..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 text-sm"
             autoFocus
           />
         </div>
@@ -180,8 +180,8 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
                     />
                   )}
               </TableHead>
-              <TableHead>No</TableHead>
-              <TableHead>Item Code</TableHead>
+              <TableHead className="text-sm">No</TableHead>
+              <TableHead className="text-sm">Item Code</TableHead>
               <TableHead>Item Name</TableHead>
               <TableHead>Barcode/EAN Scan</TableHead>
               <TableHead>Serial Number</TableHead>
@@ -223,7 +223,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
                       <TableCell className="text-sm">-</TableCell>
                     </>
                   )}
-                <TableCell className="text-sm">{item.location}</TableCell>
+                <TableCell className="font-normal text-sm">{item.location}</TableCell>
                 <TableCell className="text-sm">{item.whs_code}</TableCell>
                 <TableCell className="text-sm">{item.status}</TableCell>
                 <TableCell className="text-sm">{item.quantity}</TableCell>

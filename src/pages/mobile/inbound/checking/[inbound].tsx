@@ -101,7 +101,6 @@ const CheckingPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showModalDetail, setShowModalDetail] = useState(false);
-
   const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
 
 
@@ -136,6 +135,11 @@ const CheckingPage = () => {
   );
 
   const [isSubmit, setIsSubmit] = useState(false);
+
+
+  const [filteredInboundDetails, setFilteredInboundDetails] = useState<InboundDetail[]>([]);
+
+  const [showAllInboundDetails, setShowAllInboundDetails] = useState(true);
 
   const handleScan = async () => {
 
@@ -213,36 +217,11 @@ const CheckingPage = () => {
         setTimeout(() => {
           setIsLoading(false);
           setIsSubmit(false);
+          // setSearchInboundDetail(newItem.barcode);
         }, 900);
       }
     }
 
-
-    // return;
-    // setIsSubmit(true);
-    // const response = await api.post("/mobile/inbound/scan", newItem);
-    // const data = await response.data;
-    // if (data.success) {
-    //   setIsSubmit(false);
-    //   eventBus.emit("showAlert", {
-    //     title: "Success!",
-    //     description: data.message,
-    //     type: "success",
-    //   });
-    //   fetchInboundDetail();
-    //   if (isSerial) {
-    //     const newSerials = serialInputs.map(() => "");
-    //     setSerialInputs(newSerials);
-    //     const emptyIndex = serialInputs.findIndex((s) => s.trim() === "");
-    //     if (emptyIndex !== -1) {
-    //       const target = document.getElementById(`serial-${emptyIndex}`);
-    //       target?.focus();
-    //       return;
-    //     }
-    //   }else{
-    //     closeDialog();
-    //   }
-    // }
   };
 
   const fetchInboundDetail = async () => {
@@ -266,6 +245,13 @@ const CheckingPage = () => {
       }));
 
       setListInboundDetail(filtered);
+      setShowAllInboundDetails(true);
+
+      if (searchInboundDetail.length > 0) {
+        filterInboundDetail();
+      } else {
+        setFilteredInboundDetails(filtered);
+      }
     }
   };
 
@@ -348,19 +334,19 @@ const CheckingPage = () => {
     }
   };
 
-  const filteredItems =
-    listInboundDetail.filter(
-      (item) =>
-        item?.item_code
-          .toLowerCase()
-          .includes(searchInboundDetail.toLowerCase()) ||
-        item?.barcode
-          .toLowerCase()
-          .includes(searchInboundDetail.toLowerCase()) ||
-        item?.quantity.toString().includes(searchInboundDetail.toLowerCase()) ||
-        item?.scan_qty.toString().includes(searchInboundDetail.toLowerCase()) ||
-        item?.prod_date
-    ) || [];
+  // const filteredItems =
+  //   listInboundDetail.filter(
+  //     (item) =>
+  //       item?.item_code
+  //         .toLowerCase()
+  //         .includes(searchInboundDetail.toLowerCase()) ||
+  //       item?.barcode
+  //         .toLowerCase()
+  //         .includes(searchInboundDetail.toLowerCase()) ||
+  //       item?.quantity.toString().includes(searchInboundDetail.toLowerCase()) ||
+  //       item?.scan_qty.toString().includes(searchInboundDetail.toLowerCase()) ||
+  //       item?.prod_date
+  //   ) || [];
 
   const filteredScannedItems =
     listInboundScanned.filter(
@@ -373,9 +359,39 @@ const CheckingPage = () => {
         item?.prod_date
     ) || [];
 
+
+  const filterInboundDetail = () => {
+    if (searchInboundDetail === "") {
+      setFilteredInboundDetails(listInboundDetail);
+      return;
+    }
+    const filtered = listInboundDetail.filter((item) => item.item_code.toLowerCase().includes(searchInboundDetail.toLowerCase()));
+    setFilteredInboundDetails(filtered);
+  }
+
+  useEffect(() => {
+    filterInboundDetail();
+  }, [searchInboundDetail]);
+
   useEffect(() => {
     if (inbound) fetchInboundDetail();
   }, [inbound]);
+
+
+  const showFilterInboundDetail = () => {
+    if (!showAllInboundDetails) {
+      const filtered = listInboundDetail.filter((item) => item.quantity != item.scan_qty);
+      setFilteredInboundDetails(filtered);
+      setSearchInboundDetail("");
+    } else {
+      filterInboundDetail();
+      setSearchInboundDetail("");
+    }
+  }
+
+  useEffect(() => {
+    showFilterInboundDetail();
+  }, [showAllInboundDetails])
 
 
   const fetchPolicy = async (owner: string) => {
@@ -393,7 +409,6 @@ const CheckingPage = () => {
   useEffect(() => {
     if (listInboundDetail.length > 0) fetchPolicy(listInboundDetail[0].owner_code);
   }, [listInboundDetail]);
-
 
 
   useEffect(() => {
@@ -645,16 +660,63 @@ const CheckingPage = () => {
           </CardContent>
         </Card>
 
-        <div className="flex justify-center">
-          <span className="ml-2">
-            Total Qty :{" "}
-            {filteredItems.reduce((total, item) => total + item.scan_qty, 0)}/
-            {filteredItems.reduce((total, item) => total + item.quantity, 0)}
-          </span>
+        <div className="flex justify-center gap-4">
+          <div className="flex items-start">
+            <span className="ml-2">
+              Total Qty :{" "}
+              {filteredInboundDetails.reduce((total, item) => total + item.scan_qty, 0)}/
+              {filteredInboundDetails.reduce((total, item) => total + item.quantity, 0)}
+            </span>
+          </div>
+          <div className="flex items-end">
+            {/* <div className="flex items-center gap-2">
+              <span className="text-sm">Show Pending</span>
+              <button
+                type="button"
+                onClick={() => setShowAllInboundDetails(!showAllInboundDetails)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${showAllInboundDetails ? 'bg-blue-500' : 'bg-gray-300'
+                  }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showAllInboundDetails ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                />
+              </button>
+              <span className="text-sm">Show All</span>
+            </div> */}
+            {/* <Button
+              type="button"
+              className="h-6 bg-slate-300 hover:bg-slate-400"
+              onClick={() => {
+                if (showAllInboundDetails) {
+                  setShowAllInboundDetails(false);
+                } else {
+                  setShowAllInboundDetails(true);
+                }
+              }}
+            >
+              {showAllInboundDetails ? "Show All" : "Show Pending"}
+            </Button> */}
+          </div>
         </div>
 
         <Card>
-          <CardContent className="p-4 space-y-4">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Show Pending</span>
+              <button
+                type="button"
+                onClick={() => setShowAllInboundDetails(!showAllInboundDetails)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${showAllInboundDetails ? 'bg-blue-500' : 'bg-gray-300'
+                  }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showAllInboundDetails ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                />
+              </button>
+              <span className="text-sm">Show All</span>
+            </div>
             {/* Search Bar */}
             <div className="flex items-center gap-2">
               <Input
@@ -666,9 +728,9 @@ const CheckingPage = () => {
             </div>
 
             {/* List Items */}
-            {filteredItems.length > 0 ? (
+            {filteredInboundDetails.length > 0 ? (
               <ul className="space-y-3">
-                {filteredItems.map((item, idx) => (
+                {filteredInboundDetails.map((item, idx) => (
                   <li
                     onClick={() => {
                       fetchScannedItems(item.inbound_detail_id);
@@ -1154,7 +1216,7 @@ const CheckingPage = () => {
                           <Input
                             min={1}
                             type="number"
-                            className="w-20 text-xs"
+                            className="w-28 text-xs"
                             id="qty"
                             list="qtyOptions"
                             value={scanQty}

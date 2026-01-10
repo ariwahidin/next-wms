@@ -25,6 +25,8 @@ export async function getInbound(startDate: string, endDate: string) {
     WHERE ih.inbound_date >= '${startDate}' AND ih.inbound_date <= '${endDate}'
     ORDER BY ih.inbound_date DESC
   `;
+
+  console.log(sql);
   return queryDB(sql);
 }
 
@@ -35,7 +37,7 @@ export async function getOutbound(startDate: string, endDate: string) {
   //     od.whs_code AS [WH CODE],
   //     oht.truck_no AS [TRUCK NO],
   //     oh.rcv_do_date AS [PRINT DO DATE],
-	//     oh.rcv_do_time AS [PRINT DO TIME],
+  //     oh.rcv_do_time AS [PRINT DO TIME],
   //     oh.outbound_date AS [OUT DATE],
   //     oh.shipment_id AS [DO NO],
   //     cd.customer_name AS [DELIVERY NAME],
@@ -94,9 +96,11 @@ export async function getOutbound(startDate: string, endDate: string) {
 	  LEFT JOIN order_headers ohd ON ohd.order_no = oht.order_no
     LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
     WHERE
-    oht.order_no IS NOT NULL AND 
+    -- oht.order_no IS NOT NULL AND 
     oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
     ORDER BY oh.outbound_date DESC`;
+
+  console.log(sql);
   return queryDB(sql);
 }
 
@@ -242,51 +246,84 @@ export async function getOutboundHandlingSummary(startDate: string, endDate: str
   return queryDB(sql);
 }
 
+// export async function getStockSummary() {
+//   const sql = `SELECT 
+//     GMC,
+//     [ITEM CODE],
+//     [ITEM NAME],
+//     ISNULL([CKY], 0)   AS [CKY],
+//     ISNULL([NGY], 0)   AS [NGY],
+//     ISNULL([CDY], 0)   AS [CDY],
+//     ISNULL([HADIAH], 0) AS [HADIAH],
+//     ISNULL([PROPERTY_GATSU], 0)   AS [PROPERTY_GATSU],
+//     ISNULL([PROMO], 0)   AS [PROMO],
+//     ISNULL([EX_ASURANSI], 0)   AS [EX_ASURANSI],
+//     ISNULL([FREE_COVER], 0)   AS [FREE_COVER],
+//     ISNULL([TGY], 0)   AS [TGY],
+//     -- TOTAL STOCK = semua gudang dijumlahkan
+//     ISNULL([CKY], 0) 
+//     + ISNULL([NGY], 0) 
+//     + ISNULL([CDY], 0) 
+//     + ISNULL([HADIAH], 0)
+//     + ISNULL([PROPERTY_GATSU], 0)
+//     + ISNULL([PROMO], 0)
+//   	+ ISNULL([EX_ASURANSI], 0)
+//     + ISNULL([FREE_COVER], 0) 
+// 	  + ISNULL([TGY], 0)
+//     AS [TOTAL STOCK]
+// FROM (
+//     SELECT 
+//         inv.barcode       AS GMC,
+//         inv.item_code     AS [ITEM CODE],
+//         p.item_name       AS [ITEM NAME],
+//         inv.whs_code,
+//         inv.qty_onhand
+//     FROM inventories inv
+//     INNER JOIN products p ON inv.item_id = p.id
+// ) AS src
+// PIVOT (
+//     SUM(qty_onhand) 
+//     FOR whs_code IN (
+//         [CKY], [CDY], [NGY], [PROMO],
+//         [EX_ASURANSI], [HADIAH],
+//         [FREE_COVER], [PROPERTY_GATSU], [TGY]
+//     )
+// ) AS pvt
+// ORDER BY GMC DESC;
+//   `;
+//   return queryDB(sql);
+// }
+
 export async function getStockSummary() {
-  const sql = `SELECT 
-    GMC,
-    [ITEM CODE],
-    [ITEM NAME],
-    ISNULL([CKY], 0)   AS [CKY],
-    ISNULL([NGY], 0)   AS [NGY],
-    ISNULL([CDY], 0)   AS [CDY],
-    ISNULL([HADIAH], 0) AS [HADIAH],
-    ISNULL([PROPERTY_GATSU], 0)   AS [PROPERTY_GATSU],
-    ISNULL([PROMO], 0)   AS [PROMO],
-    ISNULL([EX_ASURANSI], 0)   AS [EX_ASURANSI],
-    ISNULL([FREE_COVER], 0)   AS [FREE_COVER],
-    ISNULL([TGY], 0)   AS [TGY],
-    -- TOTAL STOCK = semua gudang dijumlahkan
-    ISNULL([CKY], 0) 
-    + ISNULL([NGY], 0) 
-    + ISNULL([CDY], 0) 
-    + ISNULL([HADIAH], 0)
-    + ISNULL([PROPERTY_GATSU], 0)
-    + ISNULL([PROMO], 0)
-  	+ ISNULL([EX_ASURANSI], 0)
-    + ISNULL([FREE_COVER], 0) 
-	  + ISNULL([TGY], 0)
-    AS [TOTAL STOCK]
-FROM (
-    SELECT 
-        inv.barcode       AS GMC,
-        inv.item_code     AS [ITEM CODE],
-        p.item_name       AS [ITEM NAME],
-        inv.whs_code,
-        inv.qty_onhand
-    FROM inventories inv
-    INNER JOIN products p ON inv.item_id = p.id
-) AS src
-PIVOT (
-    SUM(qty_onhand) 
-    FOR whs_code IN (
-        [CKY], [CDY], [NGY], [PROMO],
-        [EX_ASURANSI], [HADIAH],
-        [FREE_COVER], [PROPERTY_GATSU], [TGY]
-    )
-) AS pvt
-ORDER BY GMC DESC;
-  `;
+  const sql = `select 
+    a.item_code AS [ITEM CODE],
+    a.barcode AS [EAN],
+    b.item_name AS [ITEM NAME],
+    a.qa_status as [QA STATUS],
+    a.whs_code AS [WHS CODE],
+    a.rec_date AS [REC DATE],
+    a.prod_date AS [PROD DATE],
+    a.exp_date AS [EXP DATE],
+    a.lot_number AS [LOT NUMBER],
+    SUM(a.qty_onhand) AS [ON HAND],
+    SUM(a.qty_available) AS [AVAIL],
+    SUM(a.qty_allocated) AS [ALLOCATED],
+    a.[location] AS [LOCATION]
+    from inventories a
+    inner join products b on a.item_id = b.id
+    where a.qty_onhand > 0
+    group by
+    a.item_code,
+    a.barcode,
+    b.item_name,
+    a.qa_status,
+    a.whs_code,
+    a.rec_date,
+    a.prod_date,
+    a.exp_date,
+    a.lot_number,
+    a.location
+    order by a.exp_date asc;`;
   return queryDB(sql);
 }
 

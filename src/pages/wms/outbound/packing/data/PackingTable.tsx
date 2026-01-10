@@ -376,7 +376,7 @@ const PackingTable = () => {
       <div style={{ width: "100%", height: "510px" }}>
         <div className="flex items-center justify-between pb-4">
           <div className="justify-self-start">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 h-4">
               <Button
                 onClick={() => {
                   generatePacking();

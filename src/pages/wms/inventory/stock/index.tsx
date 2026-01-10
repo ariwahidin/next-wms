@@ -310,6 +310,34 @@ const InventoryAvailablePage: React.FC = () => {
                         )}
                     </div>
 
+                    {/* Summary Cards */}
+                    {inventories.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 mb-4">
+                            <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                <div className="text-xs text-slate-600 mb-1">Total Items</div>
+                                <div className="text-xl font-bold text-slate-900">{inventories.length}</div>
+                            </div>
+                            <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                <div className="text-xs text-slate-600 mb-1">Total Available</div>
+                                <div className="text-xl font-bold text-green-600">
+                                    {inventories.reduce((sum, inv) => sum + inv.total_qty_available, 0).toLocaleString()}
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                <div className="text-xs text-slate-600 mb-1">Total Onhand</div>
+                                <div className="text-xl font-bold text-blue-600">
+                                    {inventories.reduce((sum, inv) => sum + inv.total_qty_onhand, 0).toLocaleString()}
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                <div className="text-xs text-slate-600 mb-1">Total Allocated</div>
+                                <div className="text-xl font-bold text-orange-600">
+                                    {inventories.reduce((sum, inv) => sum + inv.total_qty_allocated, 0).toLocaleString()}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Table */}
                     <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                         <div className="overflow-x-auto">
@@ -399,33 +427,7 @@ const InventoryAvailablePage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Summary Cards */}
-                    {inventories.length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-                            <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                <div className="text-xs text-slate-600 mb-1">Total Items</div>
-                                <div className="text-xl font-bold text-slate-900">{inventories.length}</div>
-                            </div>
-                            <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                <div className="text-xs text-slate-600 mb-1">Total Available</div>
-                                <div className="text-xl font-bold text-green-600">
-                                    {inventories.reduce((sum, inv) => sum + inv.total_qty_available, 0).toLocaleString()}
-                                </div>
-                            </div>
-                            <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                <div className="text-xs text-slate-600 mb-1">Total Onhand</div>
-                                <div className="text-xl font-bold text-blue-600">
-                                    {inventories.reduce((sum, inv) => sum + inv.total_qty_onhand, 0).toLocaleString()}
-                                </div>
-                            </div>
-                            <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                <div className="text-xs text-slate-600 mb-1">Total Allocated</div>
-                                <div className="text-xl font-bold text-orange-600">
-                                    {inventories.reduce((sum, inv) => sum + inv.total_qty_allocated, 0).toLocaleString()}
-                                </div>
-                            </div>
-                        </div>
-                    )}
+
                 </div>
             </div>
         </Layout>

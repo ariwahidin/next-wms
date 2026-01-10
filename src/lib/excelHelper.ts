@@ -264,39 +264,39 @@ export const stockSheet = (
   });
 
   // Hitung total untuk kolom numeric
-  const totals: (number | string)[] = [];
-  headers.forEach((h, idx) => {
-    const colValues = data.map((row) => row[h]);
-    const numericVals = colValues
-      .map((v) => (typeof v === "number" ? v : parseFloat(v)))
-      .filter((v) => !isNaN(v));
+  // const totals: (number | string)[] = [];
+  // headers.forEach((h, idx) => {
+  //   const colValues = data.map((row) => row[h]);
+  //   const numericVals = colValues
+  //     .map((v) => (typeof v === "number" ? v : parseFloat(v)))
+  //     .filter((v) => !isNaN(v));
 
-    if (numericVals.length === colValues.length && numericVals.length > 0) {
-      const sum = numericVals.reduce((a, b) => a + b, 0);
-      totals[idx] = sum;
-    } else {
-      totals[idx] = idx === 0 ? "TOTAL" : "";
-    }
-  });
+  //   if (numericVals.length === colValues.length && numericVals.length > 0) {
+  //     const sum = numericVals.reduce((a, b) => a + b, 0);
+  //     totals[idx] = sum;
+  //   } else {
+  //     totals[idx] = idx === 0 ? "TOTAL" : "";
+  //   }
+  // });
 
   // Tambah row total
-  const totalRow = sheet.addRow(totals);
-  totalRow.height = 22;
-  totalRow.eachCell((cell) => {
-    cell.font = { bold: true };
-    cell.alignment = { vertical: "middle", horizontal: "center" };
-    cell.border = {
-      top: { style: "thin" },
-      left: { style: "thin" },
-      bottom: { style: "thin" },
-      right: { style: "thin" },
-    };
-    cell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "D9E1F2" }, // abu-abu muda
-    };
-  });
+  // const totalRow = sheet.addRow(totals);
+  // totalRow.height = 22;
+  // totalRow.eachCell((cell) => {
+  //   cell.font = { bold: true };
+  //   cell.alignment = { vertical: "middle", horizontal: "center" };
+  //   cell.border = {
+  //     top: { style: "thin" },
+  //     left: { style: "thin" },
+  //     bottom: { style: "thin" },
+  //     right: { style: "thin" },
+  //   };
+  //   cell.fill = {
+  //     type: "pattern",
+  //     pattern: "solid",
+  //     fgColor: { argb: "D9E1F2" }, // abu-abu muda
+  //   };
+  // });
 
   // Auto width
   sheet.columns.forEach((col) => {

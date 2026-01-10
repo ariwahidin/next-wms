@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowBigLeft, Plus, RefreshCcw, Save, Trash2 } from "lucide-react";
 import {
   HeaderFormProps,
+  InboundDetails,
   InboundReference,
   ItemFormProps,
   ItemOptions,
@@ -48,6 +49,7 @@ export default function ManualForm() {
     no_truck: "",
     driver: "",
     container: "",
+    status: "draft",
     owner_code: "YUWELL",
     whs_code: "CKY",
     type: "NORMAL",
@@ -91,6 +93,8 @@ export default function ManualForm() {
       ref_no: "",
     },
   ]);
+
+  const [inboundDetails, setInboundDetails] = useState<InboundDetails[]>([]);
 
   const handleAddInvoice = () => {
     setReferences([
@@ -266,10 +270,12 @@ export default function ManualForm() {
           setReferences(res.data.data.references);
           setMuatan(res.data.data.details);
           setItemsReceived(res.data.data.received);
-          eventBus.emit("loading", false);
+          setInboundDetails(res.data.details);
         }
       } catch (error) {
         console.error("Error fetching inbound:", error);
+      } finally {
+        eventBus.emit("loading", false);
       }
     };
 
@@ -871,6 +877,8 @@ export default function ManualForm() {
               setHeaderForm={setFormData}
               inboundReferences={references[index]}
               setInboundReferences={setReferences[index]}
+              inboundDetails={inboundDetails}
+              setInboundDetails={setInboundDetails}
             />
           </div>
         </>

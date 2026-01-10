@@ -10,6 +10,9 @@ import api from "@/lib/api";
 import React from "react";
 import { useRouter } from "next/router";
 import { InventoryPolicy } from "@/types/inventory";
+import { da } from "date-fns/locale";
+import { set } from "date-fns";
+import { HeaderFormProps } from "@/types/outbound";
 
 const PickingSheetPrint = () => {
   const searchParams = useSearchParams();
@@ -24,6 +27,9 @@ const PickingSheetPrint = () => {
   );
   const [groupedData, setGroupedData] = useState<{ [key: string]: any[] }>({});
   const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
+  const [data, setData] = useState<HeaderFormProps>();
+
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -37,12 +43,14 @@ const PickingSheetPrint = () => {
         withCredentials: true,
       });
       setPickingSheet(res.data.data);
+      setData(res.data.data[0]);
       if (res.data.data[0]) {
         fetchInvPolicy(res.data.data[0].owner_code);
       }
     } catch (error) {
       console.log("[v0] API call failed, using mock data for demo");
       const mockData = [];
+      // 
       setPickingSheet(mockData);
     }
   };
@@ -60,47 +68,107 @@ const PickingSheetPrint = () => {
     }
   };
 
+  // useEffect(() => {
+
+  //   console.log("pickingSheet:", pickingSheet);
+
+  //   if (pickingSheet.length > 0) {
+  //     const grouped = pickingSheet
+  //       .filter((item) => item && item.item_code)
+  //       .reduce((acc, item) => {
+  //         if (!acc[item.item_code]) {
+  //           acc[item.item_code] = [];
+  //         }
+  //         acc[item.item_code].push(item);
+  //         return acc;
+  //       }, {});
+  //     setGroupedData(grouped);
+
+  //     if (barcodeRef.current) {
+
+  //       console.log("barcodeRef.current:", barcodeRef.current);
+
+  //       JsBarcode(barcodeRef.current, pickingSheet[0].outbound_no, {
+  //         format: "CODE128",
+  //         displayValue: true,
+  //         fontSize: 14,
+  //         width: 2,
+  //         height: 50,
+  //       });
+  //     }
+
+  //     pickingSheet.forEach((item, index) => {
+  //       const canvasBarcode = barcodeLocationRef.current[index];
+  //       if (canvasBarcode) {
+  //         JsBarcode(canvasBarcode, item.location, {
+  //           format: "CODE128",
+  //           displayValue: false,
+  //           width: 1.5,
+  //           height: 20,
+  //           margin: 0,
+  //         });
+  //       }
+  //     });
+
+  //     // setTimeout(() => {
+  //     //   window.print();
+  //     // }, 500);
+  //   }
+  // }, [pickingSheet,data]);
+
   useEffect(() => {
-    if (pickingSheet.length > 0) {
-      const grouped = pickingSheet
-        .filter((item) => item && item.item_code)
-        .reduce((acc, item) => {
-          if (!acc[item.item_code]) {
-            acc[item.item_code] = [];
-          }
-          acc[item.item_code].push(item);
-          return acc;
-        }, {});
-      setGroupedData(grouped);
+    if (!pickingSheet.length) return;
 
-      if (barcodeRef.current) {
-        JsBarcode(barcodeRef.current, pickingSheet[0].outbound_no, {
-          format: "CODE128",
-          displayValue: true,
-          fontSize: 14,
-          width: 2,
-          height: 50,
-        });
-      }
+    const grouped = pickingSheet
+      .filter(item => item?.item_code)
+      .reduce((acc, item) => {
+        (acc[item.item_code] ??= []).push(item);
+        return acc;
+      }, {} as Record<string, typeof pickingSheet>);
 
-      pickingSheet.forEach((item, index) => {
-        const canvasBarcode = barcodeLocationRef.current[index];
-        if (canvasBarcode) {
-          JsBarcode(canvasBarcode, item.location, {
-            format: "CODE128",
-            displayValue: false,
-            width: 1.5,
-            height: 20,
-            margin: 0,
-          });
-        }
-      });
-
-      // setTimeout(() => {
-      //   window.print();
-      // }, 500);
-    }
+    setGroupedData(grouped);
   }, [pickingSheet]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      if (!pickingSheet.length) return;
+
+      requestAnimationFrame(() => {
+        if (barcodeRef.current) {
+          JsBarcode(barcodeRef.current, pickingSheet[0].outbound_no, {
+            format: "CODE128",
+            displayValue: true,
+            fontSize: 14,
+            width: 2,
+            height: 50,
+          });
+          setIsLoaded(true);
+        }
+
+        // let no = 0;
+
+        // pickingSheet.forEach((item, index) => {
+        //   const canvas = barcodeLocationRef.current[index];
+        //   if (canvas) {
+        //     console.log("canvas:", canvas);
+        //     JsBarcode(canvas, item.location, {
+        //       format: "CODE128",
+        //       displayValue: false,
+        //       width: 1.5,
+        //       height: 20,
+        //       margin: 0,
+        //     });
+        //   }
+        //   no++;
+        // });
+
+        // if (no === pickingSheet.length) {
+          // setIsLoaded(true);
+        // }
+      });
+    }, 3000);
+  }, [pickingSheet]);
+
 
   useEffect(() => {
     if (Object.keys(groupedData).length > 0) {
@@ -122,11 +190,27 @@ const PickingSheetPrint = () => {
         }
       );
     }
-  }, [groupedData]);
+  }, [groupedData, isLoaded]);
+
+
+  useEffect(() => {
+    // Print the page when the component mounts
+    if (!isLoaded) return;
+    window.print();
+    // jika di window close, tutup tab nya
+    window.onafterprint = () => window.close();
+
+    // tutup tab jika tombol close ditekan
+    window.addEventListener("beforeunload", () => {
+      window.close();
+    });
+
+
+  }, [isLoaded]);
 
   if (pickingSheet.length === 0) return <p>Loading...</p>;
 
-  const data = pickingSheet[0];
+  // const data = pickingSheet[0];
 
   const grandTotalQty = pickingSheet.reduce(
     (acc, item) => acc + item.quantity,
@@ -138,7 +222,15 @@ const PickingSheetPrint = () => {
     .toFixed(4);
 
 
+
+
+
   if (!invPolicy) return <p>Loading...</p>;
+
+  if (!data) return <p>Loading...</p>;
+
+
+
 
   return (
     <div style={{ padding: "10px", fontFamily: "Arial" }}>
@@ -304,7 +396,7 @@ const PickingSheetPrint = () => {
           <tr>
             <th style={{ ...th, width: "25%" }}>ITEM</th>
             <th style={th}>EAN</th>
-            <th style={th}>WH CODE</th>
+            {/* <th style={th}>WH CODE</th> */}
 
             {invPolicy.show_rec_date && (<th style={th}>REC DATE</th>)}
             {invPolicy.use_production_date && <th style={th}>PROD DATE</th>}
@@ -392,9 +484,9 @@ const PickingSheetPrint = () => {
                           </div>
                         )}
                       </td>
-                      <td style={{ textAlign: "center" }}>
+                      {/* <td style={{ textAlign: "center" }}>
                         {j === 0 ? item.whs_code : ""}
-                      </td>
+                      </td> */}
 
                       {invPolicy.show_rec_date && (
                         <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
@@ -442,7 +534,7 @@ const PickingSheetPrint = () => {
                       <td style={{ ...td, textAlign: "right" }}> </td>
                     )}
 
-                    <td colSpan={4} style={{ ...td, textAlign: "right" }}>
+                    <td colSpan={3} style={{ ...td, textAlign: "right" }}>
                       TOTAL
                     </td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
@@ -467,7 +559,7 @@ const PickingSheetPrint = () => {
             {invPolicy.use_lot_no && (
               <td style={{ ...td, textAlign: "right" }}> </td>
             )}
-            <td colSpan={4} style={{ ...td, textAlign: "right" }}>
+            <td colSpan={3} style={{ ...td, textAlign: "right" }}>
               GRAND TOTAL
             </td>
             <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>

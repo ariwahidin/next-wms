@@ -4,7 +4,9 @@ import api from '@/lib/api';
 import Layout from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import router from 'next/router';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, WarehouseIcon } from 'lucide-react';
+import { Warning } from 'postcss';
+import Link from 'next/link';
 
 interface ExcelPreviewData {
     headers: string[];
@@ -189,17 +191,17 @@ const LocationExcelUpload: React.FC = () => {
 
         // Add sample data with explanation
         worksheet.addRow({
-            location_code: 'YMK49B102',
+            location_code: 'YM090102',
             whs_code: 'WH01'
         });
 
         worksheet.addRow({
-            location_code: 'YMK50A105',
+            location_code: 'YM080105',
             whs_code: 'WH01'
         });
 
         worksheet.addRow({
-            location_code: 'ABC23C201',
+            location_code: 'AB060201',
             whs_code: 'WH02'
         });
 
@@ -361,19 +363,19 @@ const LocationExcelUpload: React.FC = () => {
                                         <p className="font-semibold mb-2 text-base">📍 Location Code Format Guidelines:</p>
                                         <div className="space-y-2">
                                             <div className="bg-white/60 rounded-lg p-3 border border-emerald-200">
-                                                <p className="font-mono font-bold text-emerald-800 mb-1">Format: RRRBBLNN (9 characters)</p>
+                                                <p className="font-mono font-bold text-emerald-800 mb-1">Format: RRBBLLNN (8 characters)</p>
                                                 <ul className="space-y-1 text-emerald-700">
                                                     <li className="flex items-start">
                                                         <span className="mr-2 font-bold">•</span>
-                                                        <span><strong>RRR:</strong> Row (3 characters, e.g., YMK, ABC)</span>
+                                                        <span><strong>RR:</strong> Row (2 characters, e.g., AA, A1)</span>
                                                     </li>
                                                     <li className="flex items-start">
                                                         <span className="mr-2 font-bold">•</span>
-                                                        <span><strong>BB:</strong> Bay (2 digits, determines area: odd=ganjil, even=genap)</span>
+                                                        <span><strong>BB:</strong> Bay (2 digits, e.g., 01, 02, 03)</span>
                                                     </li>
                                                     <li className="flex items-start">
                                                         <span className="mr-2 font-bold">•</span>
-                                                        <span><strong>L:</strong> Level (1 character, e.g., A, B, C)</span>
+                                                        <span><strong>LL:</strong> Level (2 digits, e.g., 01, 02, 03)</span>
                                                     </li>
                                                     <li className="flex items-start">
                                                         <span className="mr-2 font-bold">•</span>
@@ -383,11 +385,11 @@ const LocationExcelUpload: React.FC = () => {
                                             </div>
                                             <p className="flex items-start">
                                                 <span className="mr-2">💡</span>
-                                                <span><strong>Example:</strong> <code className="bg-emerald-100 px-2 py-0.5 rounded font-mono">YMK49B102</code> = Row: YMK, Bay: 49 (ganjil), Level: B1, Bin: 02</span>
+                                                <span><strong>Example:</strong> <code className="bg-emerald-100 px-2 py-0.5 rounded font-mono">A1010201</code> = Row: A1, Bay: 01 , Level: 02, Bin: 01</span>
                                             </p>
                                             <p className="flex items-start">
-                                                <span className="mr-2">✓</span>
-                                                <span>Location breakdown is automatic - just provide location code and warehouse code</span>
+                                                <span className="mr-2"><WarehouseIcon className="w-4 h-4" /></span>
+                                                <span>Warehouse code, please check your warehouse code on <Link href="/wms/master/warehouse" className="text-blue-600 hover:underline">Warehouse Master</Link></span>
                                             </p>
                                         </div>
                                     </div>
