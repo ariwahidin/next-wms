@@ -103,8 +103,6 @@ const CheckingPage = () => {
   const [showModalDetail, setShowModalDetail] = useState(false);
   const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
 
-
-
   const [prodDate, setProdDate] = useState("");
   const [expDate, setExpDate] = useState("");
   const [lotNo, setLotNo] = useState("");
@@ -116,29 +114,23 @@ const CheckingPage = () => {
   const [uniqueLotNos, setUniqueLotNos] = useState([]);
   const [uniqueQtys, setUniqueQtys] = useState([]);
 
-
   const [editInboundBarcode, setEditInboundBarcode] = useState(false);
   const [itemEditBarcode, setItemEditBarcode] = useState<ScannedItem>(null);
-
   const [showDialog, setShowDialog] = useState<boolean>(false);
   const [isSerial, setIsSerial] = useState<boolean>(false);
   const qtyRef = useRef<HTMLInputElement>(null);
   const serialRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const [listInboundDetail, setListInboundDetail] = useState<InboundDetail[]>(
     []
   );
-
+  const [listInboundDetailAll, setListInboundDetailAll] = useState<InboundDetail[]>(
+    []
+  );
   const [listInboundScanned, setListInboundScanned] = useState<ScannedItem[]>(
     []
   );
-
   const [isSubmit, setIsSubmit] = useState(false);
-
-
-  const [filteredInboundDetails, setFilteredInboundDetails] = useState<InboundDetail[]>([]);
-
   const [showAllInboundDetails, setShowAllInboundDetails] = useState(true);
 
   const handleScan = async () => {
@@ -223,7 +215,6 @@ const CheckingPage = () => {
     }
 
   };
-
   const fetchInboundDetail = async () => {
     const response = await api.get("/mobile/inbound/detail/" + inbound);
     const data = await response.data;
@@ -244,14 +235,14 @@ const CheckingPage = () => {
         lot_number: item.lot_number,
       }));
 
-      setListInboundDetail(filtered);
-      setShowAllInboundDetails(true);
+      // if(showAllInboundDetails){
+      //   setListInboundDetail(filtered);
+      // }else{
+      //   const filteredPending = filtered.filter((item) => item.quantity != item.scan_qty);
+      //   setListInboundDetail(filteredPending);
+      // }
+      setListInboundDetailAll(filtered);
 
-      if (searchInboundDetail.length > 0) {
-        filterInboundDetail();
-      } else {
-        setFilteredInboundDetails(filtered);
-      }
     }
   };
 
@@ -334,20 +325,6 @@ const CheckingPage = () => {
     }
   };
 
-  // const filteredItems =
-  //   listInboundDetail.filter(
-  //     (item) =>
-  //       item?.item_code
-  //         .toLowerCase()
-  //         .includes(searchInboundDetail.toLowerCase()) ||
-  //       item?.barcode
-  //         .toLowerCase()
-  //         .includes(searchInboundDetail.toLowerCase()) ||
-  //       item?.quantity.toString().includes(searchInboundDetail.toLowerCase()) ||
-  //       item?.scan_qty.toString().includes(searchInboundDetail.toLowerCase()) ||
-  //       item?.prod_date
-  //   ) || [];
-
   const filteredScannedItems =
     listInboundScanned.filter(
       (item) =>
@@ -360,39 +337,30 @@ const CheckingPage = () => {
     ) || [];
 
 
-  const filterInboundDetail = () => {
-    if (searchInboundDetail === "") {
-      setFilteredInboundDetails(listInboundDetail);
-      return;
-    }
-    const filtered = listInboundDetail.filter((item) => item.item_code.toLowerCase().includes(searchInboundDetail.toLowerCase()));
-    setFilteredInboundDetails(filtered);
-  }
+  useEffect(() => {
+    const filteredSearch = listInboundDetailAll.filter((item) => item.item_code.toLowerCase().includes(searchInboundDetail.toLowerCase()));
+    setListInboundDetail(filteredSearch);
+  }, [listInboundDetailAll, searchInboundDetail]);
 
   useEffect(() => {
-    filterInboundDetail();
-  }, [searchInboundDetail]);
+    if (showAllInboundDetails) {
+      setListInboundDetail(listInboundDetailAll);
+      if (searchInboundDetail !== '') setListInboundDetail(listInboundDetailAll.filter((item) => item.item_code.toLowerCase().includes(searchInboundDetail.toLowerCase())));
+    } else {
+      const filteredPending = listInboundDetailAll.filter((item) => item.quantity != item.scan_qty);
+
+      if (searchInboundDetail !== '') {
+        filteredPending.filter((item) => item.item_code.toLowerCase().includes(searchInboundDetail.toLowerCase()));
+      }
+
+      setListInboundDetail(filteredPending);
+    }
+  }, [listInboundDetailAll, showAllInboundDetails]);
+
 
   useEffect(() => {
     if (inbound) fetchInboundDetail();
   }, [inbound]);
-
-
-  const showFilterInboundDetail = () => {
-    if (!showAllInboundDetails) {
-      const filtered = listInboundDetail.filter((item) => item.quantity != item.scan_qty);
-      setFilteredInboundDetails(filtered);
-      setSearchInboundDetail("");
-    } else {
-      filterInboundDetail();
-      setSearchInboundDetail("");
-    }
-  }
-
-  useEffect(() => {
-    showFilterInboundDetail();
-  }, [showAllInboundDetails])
-
 
   const fetchPolicy = async (owner: string) => {
     try {
@@ -409,11 +377,6 @@ const CheckingPage = () => {
   useEffect(() => {
     if (listInboundDetail.length > 0) fetchPolicy(listInboundDetail[0].owner_code);
   }, [listInboundDetail]);
-
-
-  useEffect(() => {
-    console.log("Data terbaru:", listInboundScanned);
-  }, [listInboundScanned]);
 
   useEffect(() => {
     if (scanType === "SERIAL") {
@@ -664,8 +627,8 @@ const CheckingPage = () => {
           <div className="flex items-start">
             <span className="ml-2">
               Total Qty :{" "}
-              {filteredInboundDetails.reduce((total, item) => total + item.scan_qty, 0)}/
-              {filteredInboundDetails.reduce((total, item) => total + item.quantity, 0)}
+              {listInboundDetail.reduce((total, item) => total + item.scan_qty, 0)}/
+              {listInboundDetail.reduce((total, item) => total + item.quantity, 0)}
             </span>
           </div>
           <div className="flex items-end">
@@ -728,9 +691,9 @@ const CheckingPage = () => {
             </div>
 
             {/* List Items */}
-            {filteredInboundDetails.length > 0 ? (
+            {listInboundDetail.length > 0 ? (
               <ul className="space-y-3">
-                {filteredInboundDetails.map((item, idx) => (
+                {listInboundDetail.map((item, idx) => (
                   <li
                     onClick={() => {
                       fetchScannedItems(item.inbound_detail_id);
