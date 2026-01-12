@@ -93,10 +93,8 @@ const CheckingPage = () => {
   const [packingNo, setPackingNo] = useState("");
   const [packCtnNo, setPackCtnNo] = useState("");
   const [scanSerial, setScanSerial] = useState("");
-  // const [qtyScan, setQtyScan] = useState<number>(1);
 
   const [searchOutboundDetail, setSearchOutboundDetail] = useState("");
-
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showModalDetail, setShowModalDetail] = useState(false);
@@ -116,8 +114,12 @@ const CheckingPage = () => {
   );
 
   const [isSubmit, setIsSubmit] = useState(false);
-
   const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
+
+  const [showAllOutboundDetail, setShowAllOutboundDetail] = useState(true);
+  const [originalListOutboundDetail, setOriginalListOutboundDetail] = useState<
+    OutboundDetail[]
+  >([]);
 
   const handleScan = async () => {
 
@@ -205,8 +207,8 @@ const CheckingPage = () => {
         owner_code: item.owner_code,
         is_serial: item.is_serial,
       }));
-
-      setListOutboundDetail(filtered);
+      // setListOutboundDetail(filtered);
+      setOriginalListOutboundDetail(filtered);
     }
   };
 
@@ -237,6 +239,8 @@ const CheckingPage = () => {
         qty_data_scan: item.qty_data_scan,
         uom_scan: item.uom_scan,
         is_serial: item.is_serial,
+        packing_no: item.packing_no,
+        pack_ctn_no: item.pack_ctn_no
       }));
 
       setListOutboundScanned(filtered);
@@ -309,19 +313,18 @@ const CheckingPage = () => {
     return groups;
   }, {});
 
-
-
   useEffect(() => {
     if (outbound) fetchOutboundDetail();
   }, [outbound]);
 
-  // useEffect(() => {
-  //   if (scanType === "SERIAL") {
-  //     setScanSerial("");
-  //     setScanLocation("");
-  //     setQtyScan(1);
-  //   }
-  // }, [scanType]);
+  useEffect(() => {
+    const filtered = originalListOutboundDetail.filter((item) => item.quantity != item.scan_qty);
+    if (!showAllOutboundDetail) {
+      setListOutboundDetail(filtered);
+    }else {
+      setListOutboundDetail(originalListOutboundDetail);
+    }
+  }, [originalListOutboundDetail, showAllOutboundDetail]);
 
   const handleBarcodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -523,7 +526,7 @@ const CheckingPage = () => {
                   htmlFor="barcode"
                   className="text-sm text-gray-600 whitespace-nowrap"
                 >
-                  Barcode :
+                  EAN :
                 </label>
 
                 <div className="relative w-full">
@@ -531,7 +534,7 @@ const CheckingPage = () => {
                     className="text-sm h-8"
                     autoComplete="off"
                     id="barcode"
-                    placeholder="Entry barcode..."
+                    placeholder="Entry barcode ean..."
                     value={scanBarcode}
                     onChange={(e) => setScanBarcode(e.target.value)}
                   />
@@ -681,6 +684,23 @@ const CheckingPage = () => {
 
         <Card>
           <CardContent className="p-4 space-y-4">
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Show Pending</span>
+              <button
+                type="button"
+                onClick={() => setShowAllOutboundDetail(!showAllOutboundDetail)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${showAllOutboundDetail ? 'bg-blue-500' : 'bg-gray-300'
+                  }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showAllOutboundDetail ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                />
+              </button>
+              <span className="text-sm">Show All</span>
+            </div>
+
             {/* Search Bar */}
             <div className="flex items-center gap-2">
               <Input
@@ -706,10 +726,10 @@ const CheckingPage = () => {
                     {/* Info Barang */}
                     <div className="text-xs font-mono space-y-0">
                       <div>
-                        <strong>Item Code:</strong> {item.item_code}
+                        <strong>Item Code :</strong> {item.item_code}
                       </div>
                       <div>
-                        <strong>Barcode:</strong> {item.barcode}
+                        <strong>EAN :</strong> {item.barcode}
                       </div>
                       <div>
                         <strong>Scanned:</strong> {item.scan_qty} /{" "}
@@ -769,7 +789,15 @@ const CheckingPage = () => {
                                       <br />
                                     </>
                                   )}
-                                  <strong>Barcode:</strong> {item.barcode_data_scan}
+
+                                  {invPolicy.require_packing_scan && (
+                                    <>
+                                      <strong>Packing No : </strong>{item.packing_no}<br/>
+                                      <strong>Ctn No : </strong>{item.pack_ctn_no} <br/>
+                                    </>
+                                  )}
+
+                                  <strong>EAN :</strong> {item.barcode_data_scan}
                                   <br />
                                   {item.is_serial && (
                                     <>
@@ -874,7 +902,7 @@ const CheckingPage = () => {
                   )}
 
                   <p className="text-sm text-gray-600 break-all">
-                    Barcode : <span className="font-mono">{scanBarcode}</span>
+                    EAN : <span className="font-mono">{scanBarcode}</span>
                   </p>
                 </div>
 

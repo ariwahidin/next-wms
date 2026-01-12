@@ -61,7 +61,7 @@ export interface PropsHeader {
   setHeaderForm: React.Dispatch<React.SetStateAction<HeaderFormProps>>;
 }
 
-export interface CombinedOutboundProps extends ItemFormTableProps, PropsHeader { }
+export interface CombinedOutboundProps extends ItemFormTableProps, PropsHeader, OutboundScanProps { }
 
 export interface ItemOptions {
   value: string;
@@ -107,4 +107,16 @@ export interface ItemScanDetail {
     item_name : string
     has_serial : string
   }
+}
+
+
+export interface OutboundScanProps {
+  outboundScan?: OutboundScan[];
+  setOutboundScan?: React.Dispatch<React.SetStateAction<OutboundScan[]>>;
+}
+export interface OutboundScan {
+  outbound_detail_id : number,
+  item_id : number,
+  item_code : string,
+  scan_qty : number
 }

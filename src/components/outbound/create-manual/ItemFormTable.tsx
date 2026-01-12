@@ -24,6 +24,8 @@ export default function ItemFormTable({
   setMuatan,
   headerForm,
   setHeaderForm,
+  outboundScan,
+  setOutboundScan,
 }: CombinedOutboundProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [vasPages, setVasPages] = useState<any[]>([]);
@@ -391,6 +393,9 @@ export default function ItemFormTable({
               <th className="p-2 border" style={{ width: "100px" }}>
                 Qty
               </th>
+              <th className="p-2 border" style={{ width: "100px" }}>
+                Qty Scan
+              </th>
               {/* <th className="p-2 border" style={{ width: "55px" }}>
                 SN
               </th> */}
@@ -513,6 +518,20 @@ export default function ItemFormTable({
                     )}
                   </td>
                   <td className="p-2 border">
+                    <div>
+                      <Input
+                        readOnly={true}
+                        style={{ fontSize: "12px", textAlign: "center" }}
+                        type="number"
+                        value={outboundScan?.find((scan) => scan.outbound_detail_id === item.ID)?.scan_qty || 0}
+                        // onChange={(e) =>
+                        //   handleChange(item.ID, "weight", e.target.value)
+                        // }
+                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                      />
+                    </div>
+                  </td>
+                  <td className="p-2 border">
                     <Select
                       className="w-28"
                       key={item.ID}
@@ -630,6 +649,9 @@ export default function ItemFormTable({
               </td>
               <td className="p-2 border text-center">
                 {muatan.reduce((acc, item) => acc + item.quantity, 0)}
+              </td>
+              <td className="p-2 border text-center">
+                {outboundScan.reduce((acc, item) => acc + item.scan_qty, 0)}
               </td>
               <td className="p-2 border" colSpan={3}></td>
             </tr>

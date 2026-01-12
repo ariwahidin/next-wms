@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import ItemFormTable from "./ItemFormTable";
 import { Button } from "@/components/ui/button";
 import { ArrowBigLeftIcon, RefreshCcw, Save } from "lucide-react";
-import { HeaderFormProps, ItemFormProps, ItemOptions, ItemScanDetail } from "@/types/outbound";
+import { HeaderFormProps, ItemFormProps, ItemOptions, ItemScanDetail, OutboundScan } from "@/types/outbound";
 import { Customer } from "@/types/customer";
 import api from "@/lib/api";
 import Select from "react-select";
@@ -76,6 +76,7 @@ export default function ManualForm() {
   const [whsOptions, setWhsOptions] = useState<ItemOptions[]>([]);
   const [ownerOptions, setOwnerOptions] = useState<ItemOptions[]>([]);
   const [itemScanDetails, setItemScanDetails] = useState<ItemScanDetail[]>([]);
+  const [outboundScan, setOutboundScan] = useState<OutboundScan[]>([]);
 
   const fetchData = async () => {
     try {
@@ -213,7 +214,7 @@ export default function ManualForm() {
             withCredentials: true,
           });
           if (res.data.success) {
-            let data = res.data.data;
+            let data = res.data.data.outbound;
 
             if (mode === "copy") {
               // reset ID biar dianggap data baru
@@ -233,6 +234,7 @@ export default function ManualForm() {
                 item_name: item.product?.item_name || "",
               }))
             );
+            setOutboundScan(res.data.data.barcodes);
           }
         } catch (error) {
           console.error("Error fetching outbound:", error);
@@ -1021,6 +1023,8 @@ export default function ManualForm() {
         setMuatan={setMuatan}
         headerForm={formData}
         setHeaderForm={setFormData}
+        outboundScan={outboundScan}
+        setOutboundScan={setOutboundScan}
       />
 
       {itemScanDetails.length > 0 && (
