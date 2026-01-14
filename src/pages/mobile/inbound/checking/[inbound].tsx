@@ -548,7 +548,7 @@ const CheckingPage = () => {
             <form onSubmit={handleBarcodeSubmit} className="mb-0">
               <div className="relative mb-2">
                 <label htmlFor="location" className="text-sm text-gray-600">
-                  Receive Location :
+                  Rcv Loc / Pallet ID :
                 </label>
                 <div className="flex items-center mt-1">
                   <Input
@@ -632,34 +632,6 @@ const CheckingPage = () => {
             </span>
           </div>
           <div className="flex items-end">
-            {/* <div className="flex items-center gap-2">
-              <span className="text-sm">Show Pending</span>
-              <button
-                type="button"
-                onClick={() => setShowAllInboundDetails(!showAllInboundDetails)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${showAllInboundDetails ? 'bg-blue-500' : 'bg-gray-300'
-                  }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showAllInboundDetails ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                />
-              </button>
-              <span className="text-sm">Show All</span>
-            </div> */}
-            {/* <Button
-              type="button"
-              className="h-6 bg-slate-300 hover:bg-slate-400"
-              onClick={() => {
-                if (showAllInboundDetails) {
-                  setShowAllInboundDetails(false);
-                } else {
-                  setShowAllInboundDetails(true);
-                }
-              }}
-            >
-              {showAllInboundDetails ? "Show All" : "Show Pending"}
-            </Button> */}
           </div>
         </div>
 
@@ -1199,18 +1171,6 @@ const CheckingPage = () => {
                               <option key={i} value={d} />
                             ))}
                           </datalist>
-                          {/* {scanQty && (
-                            <button
-                              type="button"
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                              onClick={() => {
-                                setScanQty(1);
-                                document.getElementById("qty")?.focus();
-                              }}
-                            >
-                              <XCircle size={18} />
-                            </button>
-                          )} */}
 
                           <Input
                             type="text"
@@ -1222,11 +1182,7 @@ const CheckingPage = () => {
                             autoComplete="off"
                           // onChange={(e) => setScanUnit(e.target.value)}
                           />
-                          {/* <datalist id="unitOptions">
-                            {uniqueUnits.map((d, i) => (
-                              <option key={i} value={d} />
-                            ))}
-                          </datalist> */}
+                          
                         </div>
                       </div>
                     </div>
