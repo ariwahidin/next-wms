@@ -412,11 +412,13 @@ export default function ItemFormTable({
                 <th className="p-2 border" style={{ width: "140px" }}>VAS</th>
               )}
 
-              {invPolicy?.use_lot_no && invPolicy?.require_lot_number &&  (
-                <th className="p-2 border" style={{ width: "140px" }}>
-                  Lot No.
-                </th>
-              )}
+              {invPolicy?.use_lot_no &&
+                (invPolicy?.allocation_lot_by_order ||
+                  invPolicy?.require_lot_number) && (
+                  <th className="p-2 border" style={{ width: "140px" }}>
+                    Lot No.
+                  </th>
+                )}
 
 
               <th className="p-2 border" style={{ width: "130px" }}>
@@ -551,23 +553,25 @@ export default function ItemFormTable({
 
 
 
-                  {invPolicy?.use_lot_no && invPolicy?.require_lot_number &&(
-                    <td className="p-2 border">
-                      <Input
-                        style={{ fontSize: "12px" }}
-                        type="text"
-                        value={item.lot_number}
-                        onChange={(e) =>
-                          handleChange(item.ID, "lot_number", e.target.value)
-                        }
-                      />
-                      {errors[item.ID]?.remarks && (
-                        <small className="text-red-500">
-                          {errors[item.ID].lot_number}
-                        </small>
-                      )}
-                    </td>
-                  )}
+                  {invPolicy?.use_lot_no &&
+                    (invPolicy?.allocation_lot_by_order ||
+                      invPolicy?.require_lot_number) && (
+                      <td className="p-2 border">
+                        <Input
+                          style={{ fontSize: "12px" }}
+                          type="text"
+                          value={item.lot_number}
+                          onChange={(e) =>
+                            handleChange(item.ID, "lot_number", e.target.value)
+                          }
+                        />
+                        {errors[item.ID]?.remarks && (
+                          <small className="text-red-500">
+                            {errors[item.ID].lot_number}
+                          </small>
+                        )}
+                      </td>
+                    )}
 
 
                   {/* <td className="p-2 border">

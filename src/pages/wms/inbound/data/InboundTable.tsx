@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
@@ -11,6 +12,7 @@ import {
   CheckCheck,
   CheckCircle2,
   MoreHorizontal,
+  Package,
   Pencil,
   Plus,
   Printer,
@@ -22,7 +24,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import useSWR, { mutate } from "swr";
-import { ChangeEvent, useCallback, useEffect, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import styles from "./InboundTable.module.css";
 import { useAlert } from "@/contexts/AlertContext";
 import { useRouter } from "next/router";
@@ -45,6 +47,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { set } from "date-fns";
+import JsBarcode from "jsbarcode";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -60,16 +63,349 @@ const fetcher = (url: string) =>
     return [];
   });
 
-// const HandleDelete = (id: number) => {
-//   try {
-//     api.delete(`/inbound/${id}`, { withCredentials: true }).then((res) => {
-//       if (res.data.success === true) {
-//       }
-//     });
-//   } catch (error) {
-//     console.error("Gagal menghapus produk:", error);
-//   }
+// Printable Labels Component
+const PrintableLabels = ({ palletIDs }) => {
+  const currentDate = new Date().toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+
+  // Group into pages (4 labels per page) - tapi tetap dari atas
+  const pages = [];
+  for (let i = 0; i < palletIDs.length; i += 4) {
+    pages.push(palletIDs.slice(i, i + 4));
+  }
+
+  return (
+    <div className="printable-area">
+      {pages.map((pageLabels, pageIndex) => (
+        <div
+          key={pageIndex}
+          className="print-page"
+          style={{
+            pageBreakAfter: pageIndex < pages.length - 1 ? 'always' : 'auto',
+            pageBreakInside: 'avoid'
+          }}
+        >
+          <div className="grid grid-cols-2 gap-4">
+            {/* Selalu render dari kiri atas, tidak skip posisi */}
+            {pageLabels.map((palletID, labelIndex) => (
+              <LabelCard key={`${pageIndex}-${labelIndex}`} palletID={palletID} date={currentDate} />
+            ))}
+            {/* Jangan tambahkan placeholder untuk label kosong */}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Pallet ID Print Modal Component
+// const PalletIDPrintModal = ({ open, onOpenChange, inboundNo }) => {
+//   const [startNumber, setStartNumber] = useState(1);
+//   const [endNumber, setEndNumber] = useState(4);
+//   const [showPreview, setShowPreview] = useState(false);
+
+//   const generatePalletIDs = () => {
+//     const ids = [];
+//     for (let i = startNumber; i <= endNumber; i++) {
+//       ids.push(`${inboundNo}-${i}`);
+//     }
+//     return ids;
+//   };
+
+//   const handlePrint = () => {
+//     setShowPreview(true);
+//     setTimeout(() => {
+//       window.print();
+//       // Reset setelah print
+//       setTimeout(() => {
+//         setShowPreview(false);
+//         onOpenChange(false);
+//       }, 500);
+//     }, 100);
+//   };
+
+//   // Reset state ketika modal ditutup
+//   useEffect(() => {
+//     if (!open) {
+//       setShowPreview(false);
+//       setStartNumber(1);
+//       setEndNumber(4);
+//     }
+//   }, [open]);
+
+//   const palletIDs = generatePalletIDs();
+
+//   return (
+//     <Dialog open={open} onOpenChange={onOpenChange}>
+//       <DialogContent className="max-w-4xl bg-white">
+//         <DialogHeader>
+//           <DialogTitle>Generate Pallet ID Labels</DialogTitle>
+//           <DialogDescription>
+//             Generate barcode labels for inbound: {inboundNo}
+//           </DialogDescription>
+//         </DialogHeader>
+
+//         {!showPreview ? (
+//           <div className="space-y-4">
+//             <div className="grid grid-cols-2 gap-4">
+//               <div>
+//                 <label className="block text-sm font-medium mb-1">Start Carton No.</label>
+//                 <input
+//                   type="number"
+//                   min="1"
+//                   value={startNumber}
+//                   onChange={(e) => setStartNumber(parseInt(e.target.value) || 1)}
+//                   className="w-full border rounded px-3 py-2"
+//                 />
+//               </div>
+//               <div>
+//                 <label className="block text-sm font-medium mb-1">End Carton No.</label>
+//                 <input
+//                   type="number"
+//                   min={startNumber}
+//                   value={endNumber}
+//                   onChange={(e) => setEndNumber(parseInt(e.target.value) || startNumber)}
+//                   className="w-full border rounded px-3 py-2"
+//                 />
+//               </div>
+//             </div>
+
+//             <div className="bg-blue-50 border border-blue-200 rounded p-3">
+//               <p className="text-sm text-blue-800">
+//                 <strong>Total Labels:</strong> {palletIDs.length} labels ({Math.ceil(palletIDs.length / 4)} pages)
+//               </p>
+//               <p className="text-sm text-blue-600 mt-1">
+//                 4 labels per A4 page (2 columns × 2 rows)
+//               </p>
+//             </div>
+
+//             <div className="border rounded p-4 bg-gray-50">
+//               <h3 className="font-semibold mb-2">Preview Labels:</h3>
+//               <div className="flex flex-wrap gap-2">
+//                 {palletIDs.map(id => (
+//                   <span key={id} className="bg-white border px-3 py-1 rounded text-sm">
+//                     {id}
+//                   </span>
+//                 ))}
+//               </div>
+//             </div>
+//           </div>
+//         ) : (
+//           <PrintableLabels palletIDs={palletIDs} />
+//         )}
+
+//         <DialogFooter>
+//           <Button variant="outline" onClick={() => {
+//             setShowPreview(false);
+//             onOpenChange(false);
+//           }}>
+//             Cancel
+//           </Button>
+//           {!showPreview ? (
+//             <Button onClick={handlePrint}>
+//               <Printer className="mr-2 h-4 w-4" />
+//               Print Labels
+//             </Button>
+//           ) : (
+//             <Button onClick={() => setShowPreview(false)}>
+//               Back to Settings
+//             </Button>
+//           )}
+//         </DialogFooter>
+//         <style jsx global>{`
+//           @media print {
+//             body * {
+//               visibility: hidden;
+//             }
+//             .printable-area, .printable-area * {
+//               visibility: visible;
+//             }
+//             .printable-area {
+//               // position: absolute;
+//               left: 0;
+//               top: 0;
+//               width: 100%;
+//             }
+//             .print-page {
+//               page-break-after: always;
+//               page-break-inside: avoid;
+//             }
+//             .print-page:last-child {
+//               page-break-after: auto;
+//             }
+//             @page {
+//               size: A4;
+//               margin: 10mm;
+//             }
+//           }
+//         `}</style>
+//       </DialogContent>
+//     </Dialog>
+//   );
 // };
+
+
+// Pallet ID Print Modal Component
+const PalletIDPrintModal = ({ open, onOpenChange, inboundNo }) => {
+  const [startNumber, setStartNumber] = useState(1);
+  const [endNumber, setEndNumber] = useState(4);
+
+  const handleGenerate = () => {
+    // Buka halaman baru untuk print
+    const url = `/wms/inbound/data/print-pallet-id?inbound_no=${inboundNo}&start=${startNumber}&end=${endNumber}`;
+    window.open(url, '_blank');
+    onOpenChange(false);
+  };
+
+  // Reset state ketika modal ditutup
+  useEffect(() => {
+    if (!open) {
+      setStartNumber(1);
+      setEndNumber(4);
+    }
+  }, [open]);
+
+  const totalLabels = Math.max(0, endNumber - startNumber + 1);
+  const totalPages = Math.ceil(totalLabels / 4);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl bg-white">
+        <DialogHeader>
+          <DialogTitle>Generate Pallet ID Labels</DialogTitle>
+          <DialogDescription>
+            Generate barcode labels for inbound: {inboundNo}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Start Carton No.</label>
+              <input
+                type="number"
+                min="1"
+                value={startNumber}
+                onChange={(e) => setStartNumber(parseInt(e.target.value) || 1)}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">End Carton No.</label>
+              <input
+                type="number"
+                min={startNumber}
+                value={endNumber}
+                onChange={(e) => setEndNumber(parseInt(e.target.value) || startNumber)}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded p-3">
+            <p className="text-sm text-blue-800">
+              <strong>Total Labels:</strong> {totalLabels} labels ({totalPages} pages)
+            </p>
+            <p className="text-sm text-blue-600 mt-1">
+              4 labels per A4 page (2 columns × 2 rows)
+            </p>
+          </div>
+
+          <div className="border rounded p-4 bg-gray-50">
+            <h3 className="font-semibold mb-2">Preview Labels:</h3>
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: Math.min(totalLabels, 20) }, (_, i) => (
+                <span key={i} className="bg-white border px-3 py-1 rounded text-sm">
+                  {inboundNo}-{startNumber + i}
+                </span>
+              ))}
+              {totalLabels > 20 && (
+                <span className="text-sm text-gray-500 px-3 py-1">
+                  ... and {totalLabels - 20} more
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleGenerate}>
+            <Printer className="mr-2 h-4 w-4" />
+            Generate & Print
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Individual Label Card Component
+const LabelCard = ({ palletID, date }) => {
+  const barcodeRef = useRef(null);
+
+  useEffect(() => {
+    if (barcodeRef.current) {
+      try {
+        JsBarcode(barcodeRef.current, palletID, {
+          format: 'CODE128',
+          width: 1,
+          height: 60,
+          displayValue: false,
+          margin: 10,
+        });
+      } catch (error) {
+        console.error('Error generating barcode:', error);
+      }
+    }
+  }, [palletID]);
+
+  return (
+    <div className="border-2 border-black p-4 h-[13.5cm] flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3 pb-2 border-b-2 border-black">
+        <div className="flex items-center gap-2">
+          {/* <Package className="h-8 w-8" /> */}
+          <div>
+            <img src="/images/yl-logo.jpeg" alt="Logo" width="80" />
+            <span style={{ fontSize: "11px" }}>PT Yusen Logistics Interlink Indonesia</span>
+          </div>
+          {/* <div>
+            <div className="font-bold text-lg">WMS SYSTEM</div>
+            <div className="text-xs text-gray-600">Warehouse Management</div>
+          </div> */}
+        </div>
+        <div className="text-right">
+          <div className="text-gray-600" style={{ fontSize: "10px" }}>Generated:</div>
+          <div className="font-semibold" style={{ fontSize: "10px" }}>{date}</div>
+        </div>
+      </div>
+
+      {/* Barcode Area */}
+      <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="mb-2">
+          <svg ref={barcodeRef} className="w-full max-w-[850px] min-w-[550px]"></svg>
+        </div>
+        <div className="font-bold text-2xl tracking-wider mb-1">{palletID}</div>
+        <div className="text-sm text-gray-600">PALLET ID</div>
+      </div>
+
+      {/* Manual Entry Field */}
+      <div className="border-2 border-gray-400 rounded p-3 mt-3">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-sm">Qty Carton:</span>
+          <div className="border-b-2 border-gray-400 w-32 h-8"></div>
+        </div>
+        <div className="text-xs text-gray-500 mt-1">Fill manually</div>
+      </div>
+    </div>
+  );
+};
 
 const InboundTable = () => {
   const { data: rowData, error, mutate } = useSWR("/inbound", fetcher);
@@ -174,6 +510,24 @@ const InboundTable = () => {
                   Print Tally Sheet
                 </DropdownMenuItem>
 
+
+                <DropdownMenuItem onClick={() => handlePrintPalletID(params.data.inbound_no)}>
+                  <Package className="mr-2 h-4 w-4" />
+                  Print Pallet ID
+                </DropdownMenuItem>
+
+
+                {/* <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePrintPalletID(params.data.inbound_no);
+                  }}
+                >
+                  <Package className="mr-2 h-4 w-4" />
+                  Print Pallet ID
+                </DropdownMenuItem> */}
+
                 <DropdownMenuSeparator />
 
                 <DropdownMenuItem
@@ -188,7 +542,7 @@ const InboundTable = () => {
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
-                {params.data.status === "checking" && (
+                {(params.data.status === "checking" || params.data.status === "partially received" || params.data.status === "fully received") && (
                   <>
                     <DropdownMenuItem
                       className="cursor-pointer"
@@ -276,6 +630,18 @@ const InboundTable = () => {
   const [dialogType, setDialogType] = useState<
     "complete" | "cancel" | "checking" | null
   >(null);
+
+  const [palletModalOpen, setPalletModalOpen] = useState(false);
+  const [selectedInbound, setSelectedInbound] = useState(null);
+
+  const handlePrintPalletID = (inbound_no: string) => {
+    setSelectedInbound(inbound_no);
+    setPalletModalOpen(true);
+  };
+
+  useEffect(() => {
+    document.body.style.pointerEvents = "auto";
+  }, [palletModalOpen]);
 
   const handleChecking = (inbound_no: string) => {
     eventBus.emit("loading", true);
@@ -368,27 +734,6 @@ const InboundTable = () => {
         eventBus.emit("loading", false);
         console.error("Error completing inbound:", error);
       });
-
-    // console.log("handleComplete");
-    // console.log(selectedRows);
-
-    // for (const row of selectedRows) {
-    //   api
-    //     .post("/inbound/complete/" + row.inbound_no, {
-    //       inbound_no: row.inbound_no,
-    //     })
-    //     .then((response) => {
-    //       if (response.data.success) {
-    //         notify("Success", response.data.message);
-    //         mutate("/inbound");
-    //       } else {
-    //         // notify("Error", response.data.message, "error");
-    //       }
-    //     })
-    //     .catch((error) => {
-    //       console.error("Error completing inbound:", error);
-    //     });
-    // }
   };
 
   useEffect(() => {
@@ -417,16 +762,6 @@ const InboundTable = () => {
               <Upload className="mr-2 w-4" />
               Import Excel
             </Button>
-            {/* <Button
-              className="ml-2"
-              variant="secondary"
-              onClick={() => {
-                handleWaveInbound();
-              }}
-            >
-              <RefreshCcw className="mr-1 h-4 w-4" />
-              Wave Inbound
-            </Button> */}
           </div>
         </div>
 
@@ -503,6 +838,12 @@ const InboundTable = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PalletIDPrintModal
+        open={palletModalOpen}
+        onOpenChange={setPalletModalOpen}
+        inboundNo={selectedInbound}
+      />
     </div>
   );
 };

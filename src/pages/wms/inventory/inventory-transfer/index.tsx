@@ -116,10 +116,10 @@ export default function InventoryTransferForm() {
     // Filter locations when warehouse changes
     useEffect(() => {
         if (formData.to_whs_code) {
-            //   const filtered = locations.filter(
-            //     (loc) => loc.whs_code === formData.to_whs_code
-            //   );
-            const filtered = locations
+              const filtered = locations.filter(
+                (loc) => loc.whs_code === formData.to_whs_code
+              );
+            // const filtered = locations
             setFilteredLocations(filtered);
         } else {
             setFilteredLocations(locations);
@@ -249,9 +249,10 @@ export default function InventoryTransferForm() {
 
         if (
             formData.from_whs_code === formData.to_whs_code &&
-            formData.from_location === formData.to_location
+            formData.from_location === formData.to_location && 
+            formData.old_qa_status === formData.new_qa_status
         ) {
-            setError("Source and destination cannot be the same");
+            setError("Source and destination are the same. Please select different locations.");
             return false;
         }
 

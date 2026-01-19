@@ -2,6 +2,7 @@ export interface InventoryPolicy {
     ID: number;
     owner_code: string;
     use_lot_no: boolean;
+    use_case_no: boolean;
     use_fifo: boolean;
     use_fefo: boolean;
     use_vas: boolean;
@@ -18,4 +19,7 @@ export interface InventoryPolicy {
     allow_negative_stock: boolean;
     picking_single_scan:boolean;
     require_receive_scan: boolean;
+    require_putaway_scan: boolean;
+    validate_receive_scan: boolean;
+    allocation_lot_by_order: boolean;
 }

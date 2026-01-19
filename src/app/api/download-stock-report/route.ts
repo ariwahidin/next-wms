@@ -6,7 +6,6 @@ import { getStockReport } from "@/lib/queries";
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const viewBy = searchParams.get("viewBy")
-
     const stock = await getStockReport(viewBy);
 
     if (stock.length === 0) {

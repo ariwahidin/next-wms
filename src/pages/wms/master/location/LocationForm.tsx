@@ -93,6 +93,7 @@ const Switch = ({ checked, onCheckedChange, ...props }) => (
 
 type LocationFormValues = {
   is_active: boolean;
+  is_pickable: boolean;
   // tambahkan field lainnya di sini kalau ada, misalnya:
   name: string;
 };
@@ -105,13 +106,14 @@ export default function LocationForm({ editData, setEditData, onClose }) {
     reset,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<LocationFormValues>({
+  } = useForm<LocationFormValues>({ 
     defaultValues: {
       is_active: true,
     },
   });
 
   const isActive = watch("is_active");
+  const isPickable = watch("is_pickable");
 
   useEffect(() => {
     if (editData) {
@@ -286,6 +288,33 @@ export default function LocationForm({ editData, setEditData, onClose }) {
             <Switch
               checked={isActive}
               onCheckedChange={(checked) => setValue("is_active", checked)}
+            />
+          </div>
+        </div>
+
+        {/* Is Pickable Toggle */}
+        <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Activity
+                className={`h-5 w-5 ${
+                  isPickable ? "text-green-600" : "text-gray-400"
+                }`}
+              />
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Is Pickable
+                </label>
+                <p className="text-xs text-gray-500">
+                  {isPickable
+                    ? "This location is pickable and can be used for picking"
+                    : "This location is not pickable and cannot be used for picking"}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={isPickable}
+              onCheckedChange={(checked) => setValue("is_pickable", checked)}
             />
           </div>
         </div>

@@ -18,6 +18,7 @@ export default function InboundCard({ data }: { data: InboundItem }) {
     qty_stock,
     scan_qty,
     status,
+    require_putaway_scan
   } = data;
 
   const handleCheckingClick = (noDO: string) => {
@@ -56,16 +57,16 @@ export default function InboundCard({ data }: { data: InboundItem }) {
           <div className="text-sm text-gray-500">{receipt_id}</div>
           <div className="text-sm text-gray-400">{receive_status}</div>
         </div>
-        <div className="pt-9">
+        <div className="pt-9 flex flex-row gap-2">
           <Button
-            className="w-full"
+            className="w-full flex items-center justify-center"
             onClick={() => handleCheckingClick(inbound_no)}
           >
             Checking
           </Button>
           <Button
-            style={{ display: "none" }}
-            className="w-100"
+            
+            className="w-full flex items-center justify-center"
             onClick={() => handlePutawayClick(inbound_no)}
           >
             Putaway

@@ -30,6 +30,7 @@ import data from "@/pages/wms/stock-take/data";
 import { se } from "date-fns/locale";
 import { InventoryPolicy } from "@/types/inventory";
 import { Product } from "@/types/item";
+import DateInputMobile from "@/components/mobile/DateInputMobile";
 
 // Types
 interface ScanItem {
@@ -452,7 +453,7 @@ const CheckingPage = () => {
             setProdDate(data[0].prod_date);
             setExpDate(data[0].exp_date);
             setLotNo(data[0].lot_number);
-            setScanQty(data[0].quantity);
+            // setScanQty(data[0].quantity);
             setUom(data[0].uom);
           } else {
             setUom(data[0].uom);
@@ -563,10 +564,10 @@ const CheckingPage = () => {
                     onInput={(e) =>
                       setScanLocation((e.target as HTMLInputElement).value)
                     }
-                    onPaste={(e) => {
-                      const pastedData = e.clipboardData.getData("text");
-                      setScanLocation(pastedData);
-                    }}
+                    // onPaste={(e) => {
+                    //   const pastedData = e.clipboardData.getData("text");
+                    //   setScanLocation(pastedData);
+                    // }}
                     inputMode="text"
                     autoFocus
                   />
@@ -806,7 +807,7 @@ const CheckingPage = () => {
                       )}
 
                       <div>
-                        <strong>Location:</strong> {item.location}
+                        <strong>Rcv Loc / Pallet ID:</strong> {item.location}
                       </div>
                       <div className="flex items-center gap-2">
                         <strong>Qty / Unit:</strong>
@@ -879,13 +880,13 @@ const CheckingPage = () => {
             <div className="px-4 sm:px-6 py-4 pb-6">
               <div className="mb-4 p-3 bg-gray-100 rounded-md">
                 <p className="text-sm text-gray-600 break-all">
-                  EAN: <span className="font-mono">{scanBarcode}</span>
+                  EAN : <span className="font-mono">{scanBarcode}</span>
                 </p>
                 {/* Location Display in Modal */}
                 {location && (
                   <p className="text-sm text-gray-600 mt-1">
-                    Location:{" "}
-                    <span className="font-medium">{scanLocation}</span>
+                    Rcv Loc / Pallet ID :{" "}
+                    <span className="font-mono">{scanLocation}</span>
                   </p>
                 )}
               </div>
@@ -993,14 +994,16 @@ const CheckingPage = () => {
                       // Prod Date
                       <>
                         {/* Exp Date */}
-                        <div className="flex items-center gap-3">
-                          <label htmlFor="prod_date" className="text-sm text-gray-600 w-24 text-right">
+                        <div className="flex flex-col">
+                          <label htmlFor="prod_date" className="text-sm text-gray-600 w-24 text-left font-bold">
                             Prod Date :
                           </label>
-                          <div className="relative flex-1">
-
+                          <DateInputMobile
+                            value={prodDate}
+                            onChange={(e) => setProdDate(e.target.value)}
+                          />
+                          {/* <div className="relative flex-1">
                             {uniqueProdDates.length > 1 ? (
-                              // Kalau banyak, pakai <select> saja
                               <select
                                 id="prod_date"
                                 className="w-full border rounded p-2"
@@ -1013,10 +1016,8 @@ const CheckingPage = () => {
                                     {d}
                                   </option>
                                 ))}
-                                {/* <option value="other">Other (manual)</option> */}
                               </select>
                             ) : (
-                              // Kalau cuma satu, tetap pakai input date
                               <Input
                                 type="date"
                                 id="prod_date"
@@ -1038,7 +1039,7 @@ const CheckingPage = () => {
                                 <XCircle size={18} />
                               </button>
                             )}
-                          </div>
+                          </div> */}
                         </div>
                       </>
                     )}
@@ -1047,14 +1048,16 @@ const CheckingPage = () => {
                     {invPolicy?.require_expiry_date && (
                       <>
                         {/* Exp Date */}
-                        <div className="flex items-center gap-3">
-                          <label htmlFor="exp_date" className="text-sm text-gray-600 w-24 text-right">
+                        <div className="flex flex-col">
+                          <label htmlFor="exp_date" className="text-sm text-gray-600 w-24 font-bold">
                             Exp Date :
                           </label>
-                          <div className="relative flex-1">
-
+                          <DateInputMobile
+                            value={expDate}
+                            onChange={(e) => setExpDate(e.target.value)}
+                          />
+                          {/* <div>
                             {uniqueExpDates.length > 0 ? (
-                              // Kalau banyak, pakai <select> saja
                               <select
                                 id="exp_date"
                                 className="w-full border rounded p-2 text-xs"
@@ -1067,10 +1070,8 @@ const CheckingPage = () => {
                                     {d}
                                   </option>
                                 ))}
-                                {/* <option value="other">Other (manual)</option> */}
                               </select>
                             ) : (
-                              // Kalau cuma satu, tetap pakai input date
                               <Input
 
                                 type="date"
@@ -1093,7 +1094,7 @@ const CheckingPage = () => {
                                 <XCircle size={18} />
                               </button>
                             )}
-                          </div>
+                          </div> */}
                         </div>
                       </>
                     )}
@@ -1101,11 +1102,11 @@ const CheckingPage = () => {
                     {invPolicy?.use_lot_no && (
                       <>
                         {/* Lot No */}
-                        <div className="flex items-center gap-3">
-                          <label htmlFor="lot_no" className="text-sm text-gray-600 w-24 text-right">
+                        <div className="flex flex-col">
+                          <label htmlFor="lot_no" className="text-sm text-gray-600 w-24 text-left font-bold">
                             Lot No :
                           </label>
-                          <div className="relative flex-1">
+                          <div className="relative">
                             <Input
                               type="text"
                               className="w-full text-xs"
@@ -1143,8 +1144,8 @@ const CheckingPage = () => {
 
                     {/* Qty */}
                     <div className="mb-6 space-y-1">
-                      <div className="flex items-center gap-4">
-                        <label htmlFor="qty" className="text-sm text-gray-600 w-24 text-right">
+                      <div className="flex flex-col">
+                        <label htmlFor="qty" className="text-sm text-gray-600 w-24 text-left font-bold">
                           Qty / Unit :
                         </label>
                         <div className="flex items-center space-x-3">
@@ -1182,7 +1183,7 @@ const CheckingPage = () => {
                             autoComplete="off"
                           // onChange={(e) => setScanUnit(e.target.value)}
                           />
-                          
+
                         </div>
                       </div>
                     </div>

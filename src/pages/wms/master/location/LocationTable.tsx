@@ -58,6 +58,14 @@ const LocationTable = ({ setEditData }: any) => {
       width: 100,
       cellRenderer: (params) => (params.value ? "Yes" : "No"),
     },
+
+    {
+      field: "is_pickable",
+      headerName: "Is Pickable",
+      width: 120,
+      cellRenderer: (params) => (params.value ? "Yes" : "No"),
+    },
+
     {
       headerName: "Actions",
       sortable: false,

@@ -27,6 +27,7 @@ import {
   ScalingIcon,
   ScanBarcodeIcon,
   PlusIcon,
+  PlusSquare,
 } from "lucide-react";
 
 const inventoryMenus = [
@@ -70,6 +71,11 @@ const inventoryMenus = [
     label: "Add Location",
     icon: <PlusIcon />,
     href: "/mobile/inventory/add-location",
+  },
+  {
+    label: "Add Item",
+    icon: <PlusSquare />,
+    href: "/mobile/inventory/add-item",
   },
 
   // { label: "Search Location", icon: <LocateFixedIcon />, href: "/mobile/inventory/scan-location" },

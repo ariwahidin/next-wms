@@ -126,11 +126,29 @@ export type InboundItem = {
   req_qty: number;
   qty_stock: number;
   scan_qty: number;
-  status: "fully received" | "partial" | "open";
+  status: "fully received" | "partially received" | "open" | "checking";
+  require_putaway_scan?: boolean;
 };
 
 export interface InboundDetailsProps {
   inboundDetails: InboundDetails[];
   setInboundDetails: React.Dispatch<React.SetStateAction<InboundDetails[]>>;
+}
+
+
+export interface InboundBarcodeTask {
+  ID : number;
+  inbound_id : number;
+  item_code : string;
+  barcode : string;
+  rec_date : string;
+  exp_date : string;
+  prod_date : string;
+  lot_number : string;
+  uom : string;
+  quantity : number;
+  location : string;
+  putaway_location : string;
+  putaway_qty : number;
 }
 

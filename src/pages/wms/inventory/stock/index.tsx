@@ -14,6 +14,10 @@ interface InventoryGrouped {
     group: string;
     qa_status: string;
     uom: string;
+    rec_date: string;
+    prod_date: string;
+    exp_date: string;
+    lot_number: string;
     total_qty_available: number;
     total_qty_onhand: number;
     total_qty_allocated: number;
@@ -350,6 +354,10 @@ const InventoryAvailablePage: React.FC = () => {
                                         <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Category</th>
                                         <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Group</th>
                                         <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">QA Status</th>
+                                        <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Rcv Date</th>
+                                        <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Prod Date</th>
+                                        <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Exp Date</th>
+                                        <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Lot</th>
                                         <th className="px-3 py-2.5 text-right text-xs font-semibold text-slate-700">Available</th>
                                         <th className="px-3 py-2.5 text-right text-xs font-semibold text-slate-700">Onhand</th>
                                         <th className="px-3 py-2.5 text-right text-xs font-semibold text-slate-700">Allocated</th>
@@ -400,6 +408,26 @@ const InventoryAvailablePage: React.FC = () => {
                                                             {getQaStatusIcon(inv.qa_status)}
                                                             {inv.qa_status}
                                                         </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-2.5 whitespace-nowrap">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-normal text-slate-900">{inv.rec_date}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-2.5 whitespace-nowrap">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-normal text-slate-900">{inv.prod_date}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-2.5 whitespace-nowrap">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-normal text-slate-900">{inv.exp_date}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-2.5 whitespace-nowrap">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-normal text-slate-900">{inv.lot_number}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right">
