@@ -601,7 +601,7 @@ export default function InventoryTransferForm() {
                                                 <option value="">Keep Current Status</option>
                                                 {qaStatuses.map((opt) => (
                                                     <option key={opt.qa_status} value={opt.qa_status}>
-                                                        {opt.description}
+                                                        {opt.description} ({opt.qa_status})
                                                     </option>
                                                 ))}
                                                 {/* <option value="PASS">PASS</option>

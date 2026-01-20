@@ -49,7 +49,7 @@ export default function Form({ editData, setEditData }) {
         console.log(editData);
         // 🔥 Update produk jika sedang dalam mode edit
         await api.put(
-          `/qa-status/${editData.ID}`,qa);
+          `/qa-status/${editData.id}`,qa);
       } else {
         // 🔥 Tambah produk baru jika tidak sedang edit
         await api.post(

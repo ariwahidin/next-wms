@@ -614,7 +614,8 @@ const InboundTable = () => {
     },
     { field: "total_line", headerName: "Items", width: 80 },
     { field: "total_qty", headerName: "Request", width: 90 },
-    { field: "qty_scan", headerName: "Received", width: 90 },
+    { field: "qty_scan", headerName: "Scan", width: 90 },
+    { field: "qty_putaway", headerName: "Putaway", width: 90 },
   ]);
 
   const [quickFilterText, setQuickFilterText] = useState<string>();
