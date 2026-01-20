@@ -2,7 +2,6 @@
 import { useRouter } from 'next/router';
 import { useEffect, useRef } from 'react';
 import JsBarcode from 'jsbarcode';
-import { Package } from 'lucide-react';
 
 const LabelCard = ({ palletID, date }) => {
     const barcodeRef = useRef(null);
@@ -24,7 +23,13 @@ const LabelCard = ({ palletID, date }) => {
     }, [palletID]);
 
     return (
-        <div className="border-2 border-black p-4 h-[13.5cm] flex flex-col">
+        <div className="relative border-2 border-black p-4 h-[14.8cm] flex flex-col">
+            {/* Cutting guides - dashed lines */}
+            <div className="absolute top-0 left-0 right-0 h-0 border-t-2 border-dashed border-gray-400" style={{ top: '-1px' }}></div>
+            <div className="absolute bottom-0 left-0 right-0 h-0 border-b-2 border-dashed border-gray-400" style={{ bottom: '-1px' }}></div>
+            <div className="absolute top-0 bottom-0 left-0 w-0 border-l-2 border-dashed border-gray-400" style={{ left: '-1px' }}></div>
+            <div className="absolute top-0 bottom-0 right-0 w-0 border-r-2 border-dashed border-gray-400" style={{ right: '-1px' }}></div>
+            
             <div className="flex items-center justify-between mb-3 pb-2 border-b-2 border-black">
                 <div className="flex items-center gap-2">
                     {/* <Package className="h-8 w-8" />
@@ -42,14 +47,6 @@ const LabelCard = ({ palletID, date }) => {
                     <div className="font-semibold" style={{ fontSize: "10px" }}>{date}</div>
                 </div>
             </div>
-
-            {/* <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="mb-2">
-                    <svg ref={barcodeRef} className="w-full max-w-[250px]"></svg>
-                </div>
-                <div className="font-bold text-2xl tracking-wider mb-1">{palletID}</div>
-                <div className="text-sm text-gray-600">PALLET ID</div>
-            </div> */}
 
             {/* Barcode Area */}
             <div className="flex-1 flex flex-col items-center justify-center">
@@ -115,7 +112,7 @@ export default function PrintPalletID() {
         @media print {
           @page {
             size: A4;
-            margin: 7mm;
+            margin: 0;
           }
           body {
             margin: 0;
@@ -126,16 +123,12 @@ export default function PrintPalletID() {
           }
           .print-page {
             page-break-after: always;
-            // page-break-inside: avoid;
-          }
-          .print-page:last-child {
-            // page-break-after: auto;
           }
         }
         @media screen {
           body {
             background: #f5f5f5;
-            padding: 0px;
+            padding: 20px;
           }
         }
       `}</style>
@@ -166,8 +159,8 @@ export default function PrintPalletID() {
             </div>
 
             {pages.map((pageLabels, pageIndex) => (
-                <div key={pageIndex} className="print-page bg-white p-4 mb-4">
-                    <div className="grid grid-cols-2 gap-4">
+                <div key={pageIndex} className="print-page bg-white mb-4">
+                    <div className="grid grid-cols-2">
                         {pageLabels.map((palletID, labelIndex) => (
                             <LabelCard
                                 key={`${pageIndex}-${labelIndex}`}
