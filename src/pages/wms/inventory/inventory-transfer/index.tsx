@@ -615,6 +615,7 @@ export default function InventoryTransferForm() {
                                                 Division Code <span className="text-red-500">*</span>
                                             </label>
                                             <input
+                                                readOnly
                                                 type="text"
                                                 name="division_code"
                                                 value={formData.division_code}
@@ -681,6 +682,7 @@ export default function InventoryTransferForm() {
                                                 Pallet
                                             </label>
                                             <input
+                                                readOnly
                                                 type="text"
                                                 name="pallet"
                                                 value={formData.pallet}

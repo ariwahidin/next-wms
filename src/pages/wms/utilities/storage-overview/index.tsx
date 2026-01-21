@@ -137,6 +137,7 @@ export default function RackVisualization() {
   };
 
   const handleBinClick = (binItem) => {
+    console.log('Clicked bin:', binItem);
     setSelectedBin(binItem);
     setShowModal(true);
   };
@@ -272,7 +273,7 @@ export default function RackVisualization() {
 
     return (
       <div className="bg-gradient-to-br from-gray-100 to-gray-200 p-8 rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold mb-6 text-gray-700 text-center">Top View - Complete Warehouse Layout</h3>
+        <h3 className="text-lg font-semibold mb-6 text-gray-700 text-center">Top View - Warehouse Layout Overview</h3>
         
         {allRows.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
@@ -307,7 +308,7 @@ export default function RackVisualization() {
 
             <div className="mt-8 max-w-2xl p-4 bg-white rounded-lg border-2 border-gray-300 shadow">
               <p className="text-sm text-gray-700 text-center">
-                <span className="font-semibold">Top View:</span> Shows complete warehouse layout.
+                <span className="font-semibold">Top View:</span> Shows the warehouse layout.
                 Odd rows (A1, B1) are separated from even rows (A2, B2) by aisles.
                 For detailed Level and Bin information, use <span className="font-semibold text-blue-600">Side View</span>.
               </p>
@@ -358,7 +359,7 @@ export default function RackVisualization() {
                             const itemsInBin = getItemsInBin(binItem.location_code);
                             const hasItems = itemsInBin.length > 0;
                             const isBinBlink = blinkBin.includes(binItem.location_code);
-                            const isPicking = binItem.is_pickable;
+                            const isPickable = binItem.is_pickable;
                             
                             return (
                               <div
@@ -366,7 +367,7 @@ export default function RackVisualization() {
                                 onClick={() => handleBinClick(binItem)}
                                 className="relative"
                               >
-                                {!isPicking && (
+                                {!isPickable && (
                                   <div className="absolute -top-2 -right-2 z-10 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-lg animate-bounce">
                                     !P
                                   </div>
@@ -689,12 +690,12 @@ export default function RackVisualization() {
                       {selectedBin.is_active ? 'Active' : 'Inactive'}
                     </p>
                   </div>
-                  {/* <div>
-                    <p className="text-xs text-gray-500">Picking Status</p>
-                    <p className={`font-bold ${!selectedBin.is_picking ? 'text-orange-600' : 'text-gray-600'}`}>
-                      {!selectedBin.is_picking ? 'Cannot Pick' : 'Available'}
+                  <div>
+                    <p className="text-xs text-gray-500">Is Pickable</p>
+                    <p className={`font-bold ${selectedBin.is_pickable ? 'text-green-600' : 'text-red-600'}`}>
+                      {selectedBin.is_pickable ? 'True' : 'False'}
                     </p>
-                  </div> */}
+                  </div>
                 </div>
 
                 <div className="border-t pt-4">

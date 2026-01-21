@@ -3,7 +3,7 @@ import { CircleX, CrossIcon, Trash, X } from 'lucide-react';
 import React, { useState } from 'react';
 
 // Component yang bisa langsung dipakai
-const DateInputMobile = ({ value, onChange }) => {
+const DateInputMobile = ({ label, value, onChange }) => {
     const today = new Date();
     const [day, setDay] = useState('');
     const [month, setMonth] = useState('');
@@ -81,7 +81,7 @@ const DateInputMobile = ({ value, onChange }) => {
     };
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-0">
             {/* Quick Buttons */}
             {/* <div className="grid grid-cols-2 gap-2">
                 <button
@@ -99,6 +99,21 @@ const DateInputMobile = ({ value, onChange }) => {
                     Kemarin
                 </button>
             </div> */}
+
+            {/* Label */}
+            <div className="text-sm font-medium text-black-500">
+                {label}
+
+                {value && (
+                    <span className="text-gray-400 text-xs ml-2">
+                        {new Date(value).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                        })}
+                    </span>
+                )}
+            </div>
 
             {/* Manual Input */}
             <div className="flex gap-2 items-center">
@@ -146,7 +161,7 @@ const DateInputMobile = ({ value, onChange }) => {
             </div>
 
             {/* Preview */}
-            {value && (
+            {/* {value && (
                 <div className="text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded mt-11" >
                     {new Date(value).toLocaleDateString('id-ID', {
                         day: 'numeric',
@@ -154,7 +169,7 @@ const DateInputMobile = ({ value, onChange }) => {
                         year: 'numeric'
                     })}
                 </div>
-            )}
+            )} */}
         </div>
     );
 };

@@ -549,7 +549,7 @@ const CheckingPage = () => {
             <form onSubmit={handleBarcodeSubmit} className="mb-0">
               <div className="relative mb-2">
                 <label htmlFor="location" className="text-sm text-gray-600">
-                  Rcv Loc / Pallet ID :
+                  Pallet ID :
                 </label>
                 <div className="flex items-center mt-1">
                   <Input
@@ -807,7 +807,7 @@ const CheckingPage = () => {
                       )}
 
                       <div>
-                        <strong>Rcv Loc / Pallet ID:</strong> {item.location}
+                        <strong>Pallet ID:</strong> {item.location}
                       </div>
                       <div className="flex items-center gap-2">
                         <strong>Qty / Unit:</strong>
@@ -885,7 +885,7 @@ const CheckingPage = () => {
                 {/* Location Display in Modal */}
                 {location && (
                   <p className="text-sm text-gray-600 mt-1">
-                    Rcv Loc / Pallet ID :{" "}
+                    Pallet ID :{" "}
                     <span className="font-mono">{scanLocation}</span>
                   </p>
                 )}
@@ -995,10 +995,8 @@ const CheckingPage = () => {
                       <>
                         {/* Exp Date */}
                         <div className="flex flex-col">
-                          <label htmlFor="prod_date" className="text-sm text-gray-600 w-24 text-left font-bold">
-                            Prod Date :
-                          </label>
                           <DateInputMobile
+                            label={"Prod Date : "}
                             value={prodDate}
                             onChange={(e) => setProdDate(e.target.value)}
                           />
@@ -1049,10 +1047,8 @@ const CheckingPage = () => {
                       <>
                         {/* Exp Date */}
                         <div className="flex flex-col">
-                          <label htmlFor="exp_date" className="text-sm text-gray-600 w-24 font-bold">
-                            Exp Date :
-                          </label>
                           <DateInputMobile
+                            label={"Exp Date : "}
                             value={expDate}
                             onChange={(e) => setExpDate(e.target.value)}
                           />

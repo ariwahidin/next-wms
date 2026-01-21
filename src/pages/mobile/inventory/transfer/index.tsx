@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import PageHeader from "@/components/mobile/PageHeader";
 
-import { Check, CheckCheck, Loader2, Search } from "lucide-react";
+import { Check, CheckCheck, Loader2, Search, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -69,6 +69,8 @@ const TransferPage = () => {
   );
   const [isSubmit, setIsSubmit] = useState(false);
 
+  const [showForm, setShowForm] = useState(true);
+
   const fetchPolicy = async (owner: string) => {
     try {
       const response = await api.get("/inventory/policy?owner=" + owner);
@@ -127,6 +129,16 @@ const TransferPage = () => {
           owner_code: item.owner_code
         }));
 
+        if (filtered.length === 0) {
+          // eventBus.emit("showAlert", {
+          //   title: "Not Found",
+          //   description: "Item Not Found",
+          //   type: "error",
+          // });
+          setListInboundScanned([]);
+          return;
+        }
+        setShowForm(false);
         setListInboundScanned(filtered);
       }
     } catch (error) {
@@ -164,14 +176,16 @@ const TransferPage = () => {
 
       if (data.success) {
         setShowConfirmModal(false);
-
+        setListInboundScanned([]);
+        setScanLocation2("");
+        setShowForm(true);
         eventBus.emit("showAlert", {
           title: "Success!",
           description: data.message,
           type: "success",
         });
 
-        handleSearch();
+        // handleSearch();
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -202,8 +216,6 @@ const TransferPage = () => {
       inventory_id: itemSelected?.id,
       list_inventory: [itemSelected],
     };
-
-
 
     if (qtyTransfer <= 0) {
       eventBus.emit("showAlert", {
@@ -255,7 +267,9 @@ const TransferPage = () => {
         });
         setShowConfirmModalMoveTo(false);
         setScanLocation2("");
-        handleSearch();
+        setListInboundScanned([]);
+        setShowForm(true);
+        // handleSearch();
       } else {
         console.error("Transfer failed:", data.message);
       }
@@ -284,68 +298,73 @@ const TransferPage = () => {
     <>
       <PageHeader title={`Internal Transfer`} showBackButton />
       <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <div>
-              <Label className="mb-1 font-semibold text-gray-700 text-sm">
-                Origin Location :
-              </Label>
-              <div className="relative">
-                <Input
-                  id="location"
-                  placeholder="Entry origin location..."
-                  value={scanLocation}
-                  onChange={(e) => setScanLocation(e.target.value)}
-                />
-                {scanLocation && (
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    onClick={() => {
-                      setScanLocation("");
-                      setListInboundScanned([]);
-                      document.getElementById("location")?.focus();
-                    }}
-                  >
-                    <XCircle size={18} />
-                  </button>
-                )}
-              </div>
-            </div>
 
-            <div>
-              <Label className="mb-1 font-semibold text-gray-700 text-sm">
-                Item Barcode :
-              </Label>
-              <div className="relative">
-                <Input
-                  id="barcode"
-                  placeholder="Entry item barcode..."
-                  value={scanBarcode}
-                  onChange={(e) => setScanBarcode(e.target.value)}
-                />
-                {scanBarcode && (
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    onClick={() => {
-                      setScanBarcode("");
-                      setListInboundScanned([]); // Clear the scanned items
-                      document.getElementById("barcode")?.focus();
-                    }}
-                  >
-                    <XCircle size={18} />
-                  </button>
-                )}
-              </div>
-            </div>
+        {showForm && (
 
-            <Button onClick={handleSearch} className="w-full">
-              <Search size={18} />
-              Search
-            </Button>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <div>
+                <Label className="mb-1 font-semibold text-gray-700 text-sm">
+                  Origin Location :
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="location"
+                    placeholder="Entry origin location..."
+                    value={scanLocation}
+                    onChange={(e) => setScanLocation(e.target.value)}
+                  />
+                  {scanLocation && (
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      onClick={() => {
+                        setScanLocation("");
+                        setListInboundScanned([]);
+                        document.getElementById("location")?.focus();
+                      }}
+                    >
+                      <XCircle size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <Label className="mb-1 font-semibold text-gray-700 text-sm">
+                  Item Barcode :
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="barcode"
+                    placeholder="Entry item barcode..."
+                    value={scanBarcode}
+                    onChange={(e) => setScanBarcode(e.target.value)}
+                  />
+                  {scanBarcode && (
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      onClick={() => {
+                        setScanBarcode("");
+                        setListInboundScanned([]); // Clear the scanned items
+                        document.getElementById("barcode")?.focus();
+                      }}
+                    >
+                      <XCircle size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <Button onClick={handleSearch} className="w-full">
+                <Search size={18} />
+                Search
+              </Button>
+            </CardContent>
+          </Card>
+
+        )}
 
         {/* Loading Indicator */}
 
@@ -476,13 +495,35 @@ const TransferPage = () => {
         {/* Floating Upload Button */}
 
         {listInboundScanned.length > 0 && !loading && (
-          <div className="items-center justify-center fixed bottom-0 left-0 right-0 bg-white shadow-md">
+          // <div className="items-center justify-center fixed bottom-0 left-0 right-0 bg-white shadow-md">
+          //   <Button
+          //     onClick={() => setShowConfirmModal(true)}
+          //     className="fixed bottom-6 w-90 left-2 right-2"
+          //   >
+          //     <CheckCheck size={28} />
+          //     Transfer All
+          //   </Button>
+          // </div>
+
+          <div className="fixed bottom-6 left-2 right-2 flex gap-4">
             <Button
               onClick={() => setShowConfirmModal(true)}
-              className="fixed bottom-6 w-90 left-2 right-2"
+              className="flex-1"
             >
               <CheckCheck size={28} />
-              Transfer All
+              Putaway All
+            </Button>
+
+            <Button
+              onClick={() => {
+                setShowForm(true);
+                setListInboundScanned([]);
+              }}
+              className="flex-1"
+              variant="destructive"
+            >
+              <X size={28} />
+              Cancel
             </Button>
           </div>
         )}

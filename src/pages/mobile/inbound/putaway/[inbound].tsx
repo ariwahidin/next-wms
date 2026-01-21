@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import PageHeader from "@/components/mobile/PageHeader";
-import { CheckCheck, Loader2, XCircle } from "lucide-react";
+import { CheckCheck, Loader2, X, XCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -84,6 +84,7 @@ const usePutawayTasks = (inboundNo: string[]) => {
   const [tasks, setTasks] = useState<InboundBarcodeTask[]>([]);
   const [allTasks, setAllTasks] = useState<InboundBarcodeTask[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(true);
 
   const fetchTasks = useCallback(async () => {
     if (!inboundNo) return;
@@ -124,6 +125,19 @@ const usePutawayTasks = (inboundNo: string[]) => {
 
       if (success) {
         const data = await response.data.data;
+
+        if (data.inbound.length === 0) {
+          eventBus.emit("showAlert", {
+            title: "Info",
+            description: "No putaway tasks found",
+            type: "info",
+          });
+          setAllTasks([]);
+          setTasks([]);
+          return;
+        }
+
+        setShowForm(false);
         setAllTasks(data.inbound);
         setTasks(data.inbound);
       }
@@ -140,7 +154,7 @@ const usePutawayTasks = (inboundNo: string[]) => {
     }
   }, [inboundNo]);
 
-  return { tasks, allTasks, loading, fetchTasks, setTasks };
+  return { tasks, allTasks, loading, fetchTasks, setTasks, showForm, setShowForm };
 };
 
 const usePutawayItems = () => {
@@ -234,9 +248,11 @@ interface ScanFormProps {
   filter?: string;
   palletID?: string;
   setPalletID?: React.Dispatch<React.SetStateAction<string>>;
+  showForm?: boolean;
+  setShowForm?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const ScanForm: React.FC<ScanFormProps> = ({ onSubmit, loading, inbound_no, filter, palletID, setPalletID }) => {
+const ScanForm: React.FC<ScanFormProps> = ({ onSubmit, loading, inbound_no, filter, palletID, setPalletID, showForm, setShowForm }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,36 +273,38 @@ const ScanForm: React.FC<ScanFormProps> = ({ onSubmit, loading, inbound_no, filt
   };
 
   return (
-    <Card>
-      <CardContent className="p-4">
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="relative">
-            <label htmlFor="palletID" className="text-sm text-gray-600">
-              Rcv Loc / Pallet ID:
-            </label>
-            <Input
-              id="palletID"
-              value={palletID}
-              onChange={(e) => setPalletID(e.target.value)}
-              className="mt-1"
-              autoFocus
-              autoComplete="off"
-            />
-            {palletID && (
-              <button
-                type="button"
-                className="absolute right-2 top-9 text-gray-400 hover:text-gray-600"
-                onClick={() => {
-                  setPalletID("");
-                  document.getElementById("palletID")?.focus();
-                }}
-              >
-                <XCircle size={18} />
-              </button>
-            )}
-          </div>
+    <>
+      {showForm && filter === "working" && (
+        <Card>
+          <CardContent className="p-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="relative">
+                <label htmlFor="palletID" className="text-sm text-gray-600">
+                  Pallet ID:
+                </label>
+                <Input
+                  id="palletID"
+                  value={palletID}
+                  onChange={(e) => setPalletID(e.target.value)}
+                  className="mt-1"
+                  autoFocus
+                  autoComplete="off"
+                />
+                {palletID && (
+                  <button
+                    type="button"
+                    className="absolute right-2 top-9 text-gray-400 hover:text-gray-600"
+                    onClick={() => {
+                      setPalletID("");
+                      document.getElementById("palletID")?.focus();
+                    }}
+                  >
+                    <XCircle size={18} />
+                  </button>
+                )}
+              </div>
 
-          {/* <div className="relative">
+              {/* <div className="relative">
             <label htmlFor="barcode" className="text-sm text-gray-600">
               Barcode:
             </label>
@@ -311,12 +329,15 @@ const ScanForm: React.FC<ScanFormProps> = ({ onSubmit, loading, inbound_no, filt
             )}
           </div> */}
 
-          <Button type="submit" className="w-full" disabled={loading || filter !== "working"}>
-            {loading ? "Loading..." : "Next"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+              <Button type="submit" className="w-full" disabled={loading || filter !== "working"}>
+                {loading ? "Loading..." : "Next"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+    </>
   );
 };
 
@@ -328,6 +349,8 @@ interface TaskListProps {
   onSearchChange: (value: string) => void;
   filter: string;
   setFilter: (value: string) => void;
+  showForm?: boolean;
+  setShowForm?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const TaskList: React.FC<TaskListProps> = ({
@@ -338,7 +361,8 @@ const TaskList: React.FC<TaskListProps> = ({
   onSearchChange,
   filter,
   setFilter,
-
+  showForm,
+  setShowForm
 }) => {
   const totalQty = useMemo(
     () => tasks.reduce((sum, task) => sum + task.putaway_qty, 0),
@@ -360,35 +384,39 @@ const TaskList: React.FC<TaskListProps> = ({
 
       <Card>
         <CardContent className="p-4 space-y-3">
-          <div className="inline-flex rounded-lg border border-gray-200 p-1 gap-1">
-            <button
-              onClick={() => setFilter('working')}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${filter === 'working'
-                ? 'bg-blue-500 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
-                }`}
-            >
-              Working
-            </button>
-            <button
-              onClick={() => setFilter('completed')}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${filter === 'completed'
-                ? 'bg-green-500 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
-                }`}
-            >
-              Completed
-            </button>
-            <button
-              onClick={() => setFilter('pending')}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${filter === 'pending'
-                ? 'bg-gray-500 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
-                }`}
-            >
-              Pending
-            </button>
-          </div>
+
+          {/* {showForm && ( */}
+            <div className="inline-flex rounded-lg border border-gray-200 p-1 gap-1">
+              <button
+                onClick={() => setFilter('working')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${filter === 'working'
+                  ? 'bg-blue-500 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+              >
+                Working
+              </button>
+              <button
+                onClick={() => setFilter('completed')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${filter === 'completed'
+                  ? 'bg-green-500 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+              >
+                Completed
+              </button>
+              <button
+                onClick={() => setFilter('pending')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${filter === 'pending'
+                  ? 'bg-gray-500 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+              >
+                Pending
+              </button>
+            </div>
+          {/* )} */}
+
 
 
           <div className="relative">
@@ -456,7 +484,7 @@ const TaskList: React.FC<TaskListProps> = ({
                       )}
                       {task.location && (
                         <>
-                          <span className="text-gray-600">Rcv Loc / Pallet ID:</span> {task.location}
+                          <span className="text-gray-600">Pallet ID:</span> {task.location}
                         </>
                       )}
 
@@ -512,12 +540,10 @@ const PutawayPage = () => {
   const { inbound } = router.query;
 
   // const [tasks, setTasks] = useState<InboundBarcodeTask[]>([]);
-
   const [showModalTransfer, setShowModalTransfer] = useState(false);
   const [locationPutaway, setLocationPutaway] = useState<string | null>(null);
-
-
-  const { tasks, allTasks, loading: tasksLoading, fetchTasks, setTasks } = usePutawayTasks([inboundNo, filter, palletID]);
+  // const [showForm, setShowForm] = useState(true);
+  const { tasks, allTasks, loading: tasksLoading, showForm, setShowForm, fetchTasks, setTasks } = usePutawayTasks([inboundNo, filter, palletID]);
   // if (!inbound) return null;
 
   useEffect(() => {
@@ -592,6 +618,10 @@ const PutawayPage = () => {
     if (filter === "pending") {
       fetchTasks();
     }
+
+    if (filter === "working") {
+      setShowForm(true);
+    }
   }, [filter])
 
   const handleTaskClick = async (task: InboundBarcodeTask) => {
@@ -631,6 +661,7 @@ const PutawayPage = () => {
           description: message,
           type: "success",
         });
+        setShowForm(true);
         setShowModalTransfer(false);
         setLocationPutaway("");
         setTasks([]);
@@ -658,7 +689,7 @@ const PutawayPage = () => {
       <PageHeader title={`Putaway ${inbound}`} showBackButton />
 
       <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
-        <ScanForm onSubmit={handleScanSubmit} loading={isSubmitting} inbound_no={inbound as string} filter={filter} palletID={palletID} setPalletID={setPalletID} />
+        <ScanForm onSubmit={handleScanSubmit} loading={isSubmitting} inbound_no={inbound as string} filter={filter} palletID={palletID} setPalletID={setPalletID} showForm={showForm} setShowForm={setShowForm} />
 
         <TaskList
           tasks={tasks}
@@ -668,18 +699,34 @@ const PutawayPage = () => {
           onSearchChange={setSearchTerm}
           filter={filter}
           setFilter={setFilter}
+          showForm={showForm}
+          setShowForm={setShowForm}
         />
 
         {tasks.length > 0 && filter === "working" && (
-          <div className="items-center justify-center fixed bottom-0 left-0 right-0 bg-white shadow-md">
+          <div className="fixed bottom-6 left-2 right-2 flex gap-4">
             <Button
               onClick={() => setShowModalTransfer(true)}
-              className="fixed bottom-6 w-90 left-2 right-2"
+              className="flex-1"
             >
               <CheckCheck size={28} />
               Putaway All
             </Button>
+
+            <Button
+              onClick={() => {
+                setTasks([]);
+                setPalletID("");
+                setShowForm(true);
+              }}
+              className="flex-1"
+              variant="destructive"
+            >
+              <X size={28} />
+              Cancel
+            </Button>
           </div>
+
         )}
 
 
