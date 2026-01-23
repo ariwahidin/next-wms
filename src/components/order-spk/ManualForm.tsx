@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ItemFormTable from "./ItemFormTable";
@@ -15,7 +15,7 @@ import eventBus from "@/utils/eventBus";
 import { useRouter } from "next/router";
 import DatePicker from "react-datepicker";
 import { format, parseISO } from "date-fns";
-import { id } from "date-fns/locale";
+import { id, is } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
 import { Transporter } from "@/types/transporter";
 import { HeaderSPK, MuatanOrderSPK } from "@/types/order-spk";
@@ -48,6 +48,8 @@ export default function ManualForm() {
     { value: "CDE", label: "CDE" },
   ]);
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const fetchData = async () => {
     try {
       const [transporters, trucks] = await Promise.all([
@@ -77,59 +79,107 @@ export default function ManualForm() {
     }
   };
 
+  const isSubmittingRef = useRef(false);
   const handleSave = async () => {
-    console.log("Data SPK yang akan disimpan:", formData, muatan);
-    // return;
-    if (formData.ID === 0) {
-      try {
-        const res = await api.post(
-          "/order",
-          {
-            ...formData,
-            items: muatan,
-          },
-          {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsLoading(true);
+
+    try {
+      const payload = {
+        ...formData,
+        items: muatan,
+      };
+
+      const res =
+        formData.ID === 0
+          ? await api.post("/order", payload, { withCredentials: true })
+          : await api.put(`/order/${formData.order_no}`, payload, {
             withCredentials: true,
-          }
-        );
-        if (res.data.success) {
-          eventBus.emit("showAlert", {
-            title: "Success!",
-            description: res.data.message,
-            type: "success",
           });
-          router.push("/wms/outbound/data?tab=Order SPK");
-        }
-      } catch (error) {
-        console.error("Error saving outbound:", error);
-        alert("Error saving outbound");
+
+      if (res.data.success) {
+        eventBus.emit("showAlert", {
+          title: "Success!",
+          description: res.data.message,
+          type: "success",
+        });
+        router.push("/wms/outbound/data?tab=Order SPK");
       }
-    } else {
-      try {
-        const res = await api.put(
-          `/order/${formData.order_no}`,
-          {
-            ...formData,
-            items: muatan,
-          },
-          {
-            withCredentials: true,
-          }
-        );
-        if (res.data.success) {
-          eventBus.emit("showAlert", {
-            title: "Success!",
-            description: res.data.message,
-            type: "success",
-          });
-          router.push("/wms/outbound/data?tab=Order SPK");
-        }
-      } catch (error) {
-        console.error("Error updating outbound:", error);
-        alert("Error updating outbound");
-      }
+    } catch (error) {
+      console.error("Save outbound error:", error);
+      alert("Error saving outbound");
+    } finally {
+      isSubmittingRef.current = false;
+      setIsLoading(false);
     }
   };
+
+
+  // const handleSave = async () => {
+  //   console.log("Data SPK yang akan disimpan:", formData, muatan);
+  //   // return;
+
+  //   if (isSubmitting) return; // Prevent multiple submissions
+  //   setIsSubmitting(true);
+  //   if (formData.ID === 0) {
+  //     try {
+  //       const res = await api.post(
+  //         "/order",
+  //         {
+  //           ...formData,
+  //           items: muatan,
+  //         },
+  //         {
+  //           withCredentials: true,
+  //         }
+  //       );
+  //       if (res.data.success) {
+  //         eventBus.emit("showAlert", {
+  //           title: "Success!",
+  //           description: res.data.message,
+  //           type: "success",
+  //         });
+  //         router.push("/wms/outbound/data?tab=Order SPK");
+  //       }
+  //     } catch (error) {
+  //       console.error("Error saving outbound:", error);
+  //       alert("Error saving outbound");
+  //     } finally {
+  //       setTimeout(() => {
+  //         setIsSubmitting(false);
+  //       }, 1500);
+  //     }
+  //   } else {
+  //     try {
+  //       const res = await api.put(
+  //         `/order/${formData.order_no}`,
+  //         {
+  //           ...formData,
+  //           items: muatan,
+  //         },
+  //         {
+  //           withCredentials: true,
+  //         }
+  //       );
+  //       if (res.data.success) {
+  //         eventBus.emit("showAlert", {
+  //           title: "Success!",
+  //           description: res.data.message,
+  //           type: "success",
+  //         });
+  //         router.push("/wms/outbound/data?tab=Order SPK");
+  //       }
+  //     } catch (error) {
+  //       console.error("Error updating outbound:", error);
+  //       alert("Error updating outbound");
+  //     } finally {
+  //       setTimeout(() => {
+  //         setIsSubmitting(false);
+  //       }, 1500);
+  //     }
+  //   }
+  // };
 
   useEffect(() => {
     fetchData();
@@ -175,11 +225,16 @@ export default function ManualForm() {
           {formData.status !== "complete" && (
             <>
               <Button
+                disabled={isLoading}
                 variant="outline"
                 className="bg-blue-500 text-white hover:bg-blue-600"
                 onClick={handleSave}
               >
-                <Save className="mr-2" />
+                {isLoading ? (
+                  <RefreshCcw className="mr-2 animate-spin" />
+                ) : (
+                  <Save className="mr-2" />
+                )}
                 Save
               </Button>
             </>
