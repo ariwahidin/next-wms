@@ -233,10 +233,32 @@ export default function ItemFormTable({
     console.log("Field:", field);
     console.log("Value:", value);
 
+    // setMuatan((prev) =>
+    //   prev.map((m) =>
+    //     m.ID === id
+    //       ? { ...m, [field]: field === "quantity" ? Number(value) : value }
+    //       : m
+    //   )
+    // );
+
+    // setFilteredMuatan((prev) =>
+    //   prev.map((m) =>
+    //     m.ID === id
+    //       ? { ...m, [field]: field === "quantity" ? Number(value) : value }
+    //       : m
+    //   )
+    // );
+
     setMuatan((prev) =>
       prev.map((m) =>
         m.ID === id
-          ? { ...m, [field]: field === "quantity" ? Number(value) : value }
+          ? {
+            ...m,
+            [field]:
+              field === "quantity"
+                ? value === "" ? "" : Number(value)
+                : value,
+          }
           : m
       )
     );
@@ -244,10 +266,18 @@ export default function ItemFormTable({
     setFilteredMuatan((prev) =>
       prev.map((m) =>
         m.ID === id
-          ? { ...m, [field]: field === "quantity" ? Number(value) : value }
+          ? {
+            ...m,
+            [field]:
+              field === "quantity"
+                ? value === "" ? "" : Number(value)
+                : value,
+          }
           : m
       )
     );
+
+
   };
 
   const handleSaveItem = async () => {
@@ -970,7 +1000,12 @@ export default function ItemFormTable({
                 Total
               </td>
               <td className="p-2 border text-center">
-                {filteredMuatan.reduce((acc, item) => acc + item.quantity, 0)}
+                {/* {filteredMuatan.reduce((acc, item) => acc + item.quantity, 0)} */}
+                {filteredMuatan.reduce(
+                  (acc, item) => acc + ((item.quantity as unknown as string) === "" ? 0 : Number(item.quantity)),
+                  0
+                )
+                }
               </td>
               {!['open', 'draft'].includes(headerForm.status) && (
                 <td className="p-2 border text-center">

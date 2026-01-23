@@ -30,6 +30,19 @@ api.interceptors.response.use(
   res => res,
   async err => {
 
+
+    if (err.response?.status === 409) {
+      console.log("API Error Response conflict:", err.response);
+      const conflictId = err.response?.data?.cid || null;
+      router.push(`/auth/conflict?cid=${conflictId}`);
+      return Promise.resolve({
+        success: false,
+        data: {},
+        error: true,
+        message: err.response?.data?.message || "Something went wrong",
+      });
+    }
+
     console.log("API Error Response:", err.response);
     eventBus.emit("showAlert", {
       title: "Error!",
@@ -42,17 +55,7 @@ api.interceptors.response.use(
     });
 
 
-    if (err.response?.status === 409) {
-      console.log("API Error Response conflict:", err.response);
-      const conflictId = err.response?.data?.cid || null;
-      router.push(`/auth/conflict?cid=${conflictId}`);
-      // return Promise.resolve({
-      //   success: false,
-      //   data: err.response.data,
-      //   error: true,
-      //   message: err.response.data?.message,
-      // });
-    }
+
 
 
     if (err.response?.status === 401) {

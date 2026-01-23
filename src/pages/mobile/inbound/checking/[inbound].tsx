@@ -50,6 +50,19 @@ interface ScanItem {
   uom?: string;
 }
 
+interface ResultCheckItem {
+  ID: number;
+  inbound_no: string;
+  item_code: string;
+  barcode: string;
+  quantity: number;
+  owner_code?: string;
+  uom?: string;
+  exp_date?: string;
+  prod_date?: string;
+  lot_number?: string;
+}
+
 interface InboundDetail {
   id: number;
   inbound_no: string;
@@ -133,6 +146,8 @@ const CheckingPage = () => {
   );
   const [isSubmit, setIsSubmit] = useState(false);
   const [showAllInboundDetails, setShowAllInboundDetails] = useState(true);
+
+  const [resultCheckItems, setResultCheckItems] = useState<ResultCheckItem[]>([]);
 
   const handleScan = async () => {
 
@@ -433,6 +448,11 @@ const CheckingPage = () => {
             quantity: number;
             uom: string;
           }>;
+
+          console.log("Response Data: ", res.data);
+          if (res.data.length > 0) {
+            setResultCheckItems(res.data);
+          }
 
           console.log("Check result: ", data);
 
@@ -879,12 +899,15 @@ const CheckingPage = () => {
 
             <div className="px-4 sm:px-6 py-4 pb-6">
               <div className="mb-4 p-3 bg-gray-100 rounded-md">
-                <p className="text-sm text-gray-600 break-all">
+                <p className="text-xs text-gray-600 break-all">
                   EAN : <span className="font-mono">{scanBarcode}</span>
+                </p>
+                <p className="text-xs text-gray-600 break-all">
+                  Item Code : <span className="font-mono">{resultCheckItems[0].item_code}</span>
                 </p>
                 {/* Location Display in Modal */}
                 {location && (
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-xs text-gray-600 break-all">
                     Pallet ID :{" "}
                     <span className="font-mono">{scanLocation}</span>
                   </p>
@@ -1162,6 +1185,7 @@ const CheckingPage = () => {
                               const num = Number(val);
                               setScanQty(num < 1 ? 1 : num);
                             }}
+                            onWheel={(e) => (e.target as HTMLInputElement).blur()}
                           />
                           <datalist id="qtyOptions">
                             {uniqueQtys.map((d, i) => (
