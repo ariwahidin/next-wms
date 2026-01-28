@@ -58,7 +58,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { stat } from "fs";
-import FilterOutbound, { FilterValues } from "./FilterOutbound";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -140,31 +139,7 @@ const HandlePrintWaranty = (outbound_no: string) => {
 };
 
 const OutboundTable = () => {
-  // Filter state
-  const [filterValues, setFilterValues] = useState<FilterValues>({
-    dateFrom: new Date(new Date().setDate(new Date().getDate() - 7)),
-    dateTo: new Date(),
-    status: "all",
-  });
-
-  // Build URL with filter params
-  const buildFilterUrl = useCallback(() => {
-    const params = new URLSearchParams();
-    
-    if (filterValues.dateFrom) {
-      params.append("date_from", filterValues.dateFrom.toISOString().split('T')[0]);
-    }
-    if (filterValues.dateTo) {
-      params.append("date_to", filterValues.dateTo.toISOString().split('T')[0]);
-    }
-    if (filterValues.status && filterValues.status !== "all") {
-      params.append("status", filterValues.status);
-    }
-    
-    return `/outbound?${params.toString()}`;
-  }, [filterValues]);
-
-  const { data: rowData, error, mutate } = useSWR(buildFilterUrl, fetcher);
+  const { data: rowData, error, mutate } = useSWR("/outbound", fetcher);
   const { showAlert, notify } = useAlert();
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
 
@@ -196,7 +171,7 @@ const OutboundTable = () => {
                 description: res.data.message,
                 type: "success",
               });
-              mutate();
+              mutate("/outbound");
             }
           })
           .catch((error) => {
@@ -229,7 +204,7 @@ const OutboundTable = () => {
                 description: res.data.message,
                 type: "success",
               });
-              mutate();
+              mutate("/outbound");
             }
           })
           .catch((error) => {
@@ -254,7 +229,7 @@ const OutboundTable = () => {
           eventBus.emit("loading", false);
           if (response.data.success) {
             // notify("Success", response.data.message, "success");
-            // mutate();
+            // mutate("/outbound");
             setScannedItemData({
               outbound_no: rowData.outbound_no,
               scanned_items: rowData.scanned_items || [],
@@ -299,7 +274,7 @@ const OutboundTable = () => {
           eventBus.emit("loading", false);
           if (response.data.success) {
             notify("Success", response.data.message, "success");
-            mutate();
+            mutate("/outbound");
             closeScannedItemDialog();
           } else {
             // notify("Error", response.data.message, "error");
@@ -636,7 +611,7 @@ const OutboundTable = () => {
       <div style={{ width: "100%", height: "510px" }}>
         <div className="flex items-center justify-between pb-4">
           <div className="justify-self-start">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center">
               <Button
                 onClick={() => {
                   router.push("/wms/outbound/add");
@@ -645,7 +620,6 @@ const OutboundTable = () => {
                 <Plus className="mr-1 h-4 w-4" />
                 Add
               </Button>
-              <FilterOutbound onFilterChange={setFilterValues} />
             </div>
           </div>
 
