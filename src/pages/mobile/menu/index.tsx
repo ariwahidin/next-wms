@@ -13,6 +13,8 @@ import {
   PackagePlus,
   Undo2,
   FileText,
+  UtilityPoleIcon,
+  UtilityPole,
 } from "lucide-react";
 
 const menus = [
@@ -31,11 +33,11 @@ const menus = [
     icon: <Boxes />,
     href: "/mobile/inventory",
   },
-  // {
-  //   label: "Returns",
-  //   icon: <Undo2 />,
-  //   href: "/returns",
-  // },
+  {
+    label: "Utility",
+    icon: <UtilityPoleIcon />,
+    href: "/mobile/utility",
+  },
   // {
   //   label: "Reports",
   //   icon: <FileText />,

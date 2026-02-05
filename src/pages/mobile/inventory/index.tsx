@@ -67,16 +67,16 @@ const inventoryMenus = [
     icon: <ScanBarcode />,
     href: "/mobile/inventory/scan-item"
   },
-  {
-    label: "Add Location",
-    icon: <PlusIcon />,
-    href: "/mobile/inventory/add-location",
-  },
-  {
-    label: "Add Item",
-    icon: <PlusSquare />,
-    href: "/mobile/inventory/add-item",
-  },
+  // {
+  //   label: "Add Location",
+  //   icon: <PlusIcon />,
+  //   href: "/mobile/inventory/add-location",
+  // },
+  // {
+  //   label: "Add Item",
+  //   icon: <PlusSquare />,
+  //   href: "/mobile/inventory/add-item",
+  // },
 
   // { label: "Search Location", icon: <LocateFixedIcon />, href: "/mobile/inventory/scan-location" },
   {
