@@ -378,6 +378,7 @@ const PackingTable = () => {
           <div className="justify-self-start">
             <div className="flex items-center gap-2 h-4">
               <Button
+                className="h-8 w-42"
                 onClick={() => {
                   generatePacking();
                 }}
