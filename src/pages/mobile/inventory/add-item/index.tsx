@@ -64,20 +64,20 @@ export default function RegisterProductPage() {
     const [ean, setEan] = useState("");
     const [uom, setUom] = useState("");
     const [loading, setLoading] = useState(false);
-
+    
     // Data states
     const [owners, setOwners] = useState<Owner[]>([]);
     const [uoms, setUoms] = useState<Uom[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-
+    
     // UI states
     const [activeTab, setActiveTab] = useState<"register" | "list">("register");
     const [searchQuery, setSearchQuery] = useState("");
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-
+    
     // Edit form states
     const [editOwnerCode, setEditOwnerCode] = useState("");
     const [editSku, setEditSku] = useState("");
@@ -85,7 +85,7 @@ export default function RegisterProductPage() {
     const [editEan, setEditEan] = useState("");
     const [editUom, setEditUom] = useState("");
     const [editLoading, setEditLoading] = useState(false);
-
+    
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -341,20 +341,22 @@ export default function RegisterProductPage() {
                     <div className="flex max-w-md mx-auto">
                         <button
                             onClick={() => setActiveTab("register")}
-                            className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === "register"
+                            className={`flex-1 py-4 text-sm font-medium transition-colors ${
+                                activeTab === "register"
                                     ? "text-blue-600 border-b-2 border-blue-600"
                                     : "text-gray-500 hover:text-gray-700"
-                                }`}
+                            }`}
                         >
                             <Plus className="inline-block w-4 h-4 mr-1" />
                             Register Product
                         </button>
                         <button
                             onClick={() => setActiveTab("list")}
-                            className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === "list"
+                            className={`flex-1 py-4 text-sm font-medium transition-colors ${
+                                activeTab === "list"
                                     ? "text-blue-600 border-b-2 border-blue-600"
                                     : "text-gray-500 hover:text-gray-700"
-                                }`}
+                            }`}
                         >
                             <Search className="inline-block w-4 h-4 mr-1" />
                             Product List ({products.length})
@@ -553,7 +555,7 @@ export default function RegisterProductPage() {
                                                 </button>
                                             </div>
                                         </div>
-
+                                        
                                         <div className="grid grid-cols-2 gap-3 text-sm">
                                             <div>
                                                 <span className="text-gray-500">EAN:</span>
@@ -590,11 +592,11 @@ export default function RegisterProductPage() {
                                     <ChevronLeft className="h-4 w-4" />
                                     Previous
                                 </button>
-
+                                
                                 <span className="text-sm text-gray-700">
                                     Page {currentPage} of {totalPages}
                                 </span>
-
+                                
                                 <button
                                     onClick={() => handlePageChange(currentPage + 1)}
                                     disabled={currentPage === totalPages}
@@ -611,82 +613,85 @@ export default function RegisterProductPage() {
 
             {/* Edit Dialog */}
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent className="max-w-md bg-slate-50">
-                    <DialogHeader>
+                <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0 gap-0 bg-slate-50">
+                    <DialogHeader className="px-6 pt-6 pb-4 border-b">
                         <DialogTitle>Edit Product</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">OWNER</label>
-                            <Select value={editOwnerCode} onValueChange={setEditOwnerCode}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Owner" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {owners.map((owner) => (
-                                        <SelectItem key={owner.id} value={owner.code}>
-                                            {owner.code} - {owner.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <div className="overflow-y-auto flex-1 px-6 py-4">
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">OWNER</label>
+                                <Select value={editOwnerCode} onValueChange={setEditOwnerCode}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Owner" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {owners.map((owner) => (
+                                            <SelectItem key={owner.id} value={owner.code}>
+                                                {owner.code} - {owner.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">UOM</label>
-                            <Select value={editUom} onValueChange={setEditUom}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select UOM" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {uoms.map((uomItem) => (
-                                        <SelectItem key={uomItem.id} value={uomItem.code}>
-                                            {uomItem.code}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">UOM</label>
+                                <Select value={editUom} onValueChange={setEditUom}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select UOM" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {uoms.map((uomItem) => (
+                                            <SelectItem key={uomItem.id} value={uomItem.code}>
+                                                {uomItem.code}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">SKU</label>
-                            <Input
-                                placeholder="Enter SKU"
-                                value={editSku}
-                                onChange={(e) => setEditSku(e.target.value.toUpperCase())}
-                            />
-                        </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">SKU</label>
+                                <Input
+                                    placeholder="Enter SKU"
+                                    value={editSku}
+                                    onChange={(e) => setEditSku(e.target.value.toUpperCase())}
+                                />
+                            </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">MODEL</label>
-                            <Input
-                                placeholder="Enter Model"
-                                value={editUnitModel}
-                                onChange={(e) => setEditUnitModel(e.target.value.toUpperCase())}
-                            />
-                        </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">MODEL</label>
+                                <Input
+                                    placeholder="Enter Model"
+                                    value={editUnitModel}
+                                    onChange={(e) => setEditUnitModel(e.target.value.toUpperCase())}
+                                />
+                            </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">EAN</label>
-                            <Input
-                                placeholder="Enter EAN"
-                                value={editEan}
-                                onChange={(e) => setEditEan(e.target.value.toUpperCase())}
-                            />
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">EAN</label>
+                                <Input
+                                    placeholder="Enter EAN"
+                                    value={editEan}
+                                    onChange={(e) => setEditEan(e.target.value.toUpperCase())}
+                                />
+                            </div>
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="px-6 py-4 border-t bg-gray-50 flex-row gap-2 sm:gap-0">
                         <Button
                             variant="outline"
                             onClick={() => setEditDialogOpen(false)}
                             disabled={editLoading}
+                            className="flex-1 sm:flex-none"
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={handleUpdate}
                             disabled={editLoading}
-                            className="bg-blue-500 hover:bg-blue-600"
+                            className="bg-blue-500 hover:bg-blue-600 flex-1 sm:flex-none"
                         >
                             {editLoading ? (
                                 <>
@@ -703,26 +708,26 @@ export default function RegisterProductPage() {
 
             {/* Delete Confirmation Dialog */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <AlertDialogContent className="max-w-md bg-slate-50">
+                <AlertDialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-slate-50">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Product</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete this product?
-                            <div className="mt-4 p-3 bg-gray-50 rounded-lg space-y-1">
-                                <p className="font-medium text-gray-900">{selectedProduct?.sku}</p>
-                                <p className="text-sm text-gray-600">Model: {selectedProduct?.unit_model}</p>
-                                <p className="text-sm text-gray-600">EAN: {selectedProduct?.ean}</p>
+                        <AlertDialogDescription className="space-y-4">
+                            <span className="block">Are you sure you want to delete this product?</span>
+                            <div className="p-3 bg-gray-50 rounded-lg space-y-1">
+                                <p className="font-medium text-gray-900 break-words">{selectedProduct?.sku}</p>
+                                <p className="text-sm text-gray-600 break-words">Model: {selectedProduct?.unit_model}</p>
+                                <p className="text-sm text-gray-600 break-words">EAN: {selectedProduct?.ean}</p>
                             </div>
-                            <p className="mt-4 text-sm text-red-600">
+                            <span className="block text-sm text-red-600">
                                 This action cannot be undone.
-                            </p>
+                            </span>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+                        <AlertDialogCancel className="w-full sm:w-auto mt-0">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmDelete}
-                            className="bg-red-500 hover:bg-red-600"
+                            className="bg-red-500 hover:bg-red-600 w-full sm:w-auto"
                         >
                             Delete
                         </AlertDialogAction>
