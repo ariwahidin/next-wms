@@ -366,10 +366,11 @@ const CartonLabelPrinter: React.FC = () => {
             border: 2px solid #1a1a1a;
             box-sizing: border-box;
             background: white;
-            padding: 6mm;
+            padding: 5mm;
             font-family: 'Segoe UI', Arial, sans-serif;
-            page-break-after: always;
+            // page-break-after: always;
             page-break-inside: avoid;
+            break-inside: avoid;
           }
 
           .label-header {
