@@ -167,7 +167,7 @@ const CartonLabelPrinter: React.FC = () => {
 
                 if (caseBarcode) {
                     try {
-                        JsBarcode(caseBarcode, `${carton.shipment_id}${carton.pack_ctn_no.padStart(2, '0')}`, {
+                        JsBarcode(caseBarcode, `${carton.outbound_no}${carton.pack_ctn_no.padStart(2, '0')}`, {
                             format: 'CODE128',
                             width: 1.5,
                             height: 30,
@@ -225,10 +225,10 @@ const CartonLabelPrinter: React.FC = () => {
                                 <div className="header-to">To :</div>
                                 <div className="header-customer">
                                     <div className="customer-name">{carton.customer_name}</div>
-                                    <div className="customer-details">
-                                        {/* <div>SHIPMENT ID : {carton.shipment_id}</div> */}
+                                    {/* <div className="customer-details">
+                                        <div>SHIPMENT ID : {carton.shipment_id}</div>
                                         <div>STORE CODE : {carton.deliv_to}</div>
-                                    </div>
+                                    </div> */}
                                     <div className="customer-address">{carton.deliv_address}</div>
                                 </div>
                             </div>
@@ -252,7 +252,7 @@ const CartonLabelPrinter: React.FC = () => {
                                     <div className="grid-value">{carton.total_quantity}</div>
                                 </div>
                                 <div className="grid-right">
-                                    <div className="grid-label">Case <span className="case-number">{carton.pack_ctn_no} Of {totalCartons}</span></div>
+                                    <div className="grid-label">Case <span className="case-number">{carton.pack_ctn_no} of {totalCartons}</span></div>
                                 </div>
                             </div>
 
