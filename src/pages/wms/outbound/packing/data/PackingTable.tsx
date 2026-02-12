@@ -292,6 +292,16 @@ const PackingTable = () => {
                   <Printer className="mr-2 h-4 w-4" />
                   Label Custom 1
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    HandlePrintLabelCustom2(params.data.packing_no, params.data.outbound_id);
+                  }}
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Label Custom 2
+                </DropdownMenuItem>
 
                 {/* <DropdownMenuSeparator />
 
@@ -383,6 +393,11 @@ const PackingTable = () => {
   const HandlePrintLabelCustom1 = (packing_no: string, id: number) => {
     console.log("Preview PDF ID:", id);
     window.open(`/wms/outbound/packing/label-custom-1/${packing_no}/${id}`, "_blank");
+  };
+
+  const HandlePrintLabelCustom2 = (packing_no: string, id: number) => {
+    console.log("Preview PDF ID:", id);
+    window.open(`/wms/outbound/packing/label-custom-2/${packing_no}/${id}`, "_blank");
   };
 
   return (
