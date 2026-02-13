@@ -79,6 +79,18 @@ export default function ManualForm() {
 
   const handleSave = async () => {
     console.log("Data SPK yang akan disimpan:", formData, muatan);
+
+    if (formData.truck_no === undefined || formData.driver === undefined || formData.load_date === undefined || formData.load_start_time === undefined || formData.load_end_time === undefined ||
+      formData.truck_no === "" || formData.driver === "" || formData.load_date === "" || formData.load_start_time === "" || formData.load_end_time === ""
+    ) {
+      eventBus.emit("showAlert", {
+        title: "Error!",
+        description: "Please fill in all required fields: Truck No., Driver, Load Date, Start Load Time, and End Load Time.",
+        type: "error",
+      });
+      return;
+    }
+
     // return;
     if (formData.ID === 0) {
       try {
