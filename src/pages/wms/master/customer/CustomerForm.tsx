@@ -173,7 +173,7 @@ export default function CustomerForm({ editData, setEditData }) {
               <Input
                 readOnly={editData ? true : false}
                 id="customerCode"
-                onChange={(e) => setCustomer({ ...customer, customer_code: e.target.value })}
+                onChange={(e) => setCustomer({ ...customer, customer_code: e.target.value.toLocaleUpperCase() })}
                 value={customer.customer_code}
                 placeholder=""
               />

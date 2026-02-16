@@ -27,6 +27,12 @@ interface PackingItem {
   plan_pickup_date: string;
   transporter_code: string;
   user_def1?: string;
+  ctn_length?: number;
+  ctn_width?: number;
+  ctn_height?: number;
+  ctn_max_weight?: number;
+  ctn_tare_weight?: number;
+  ctn_volume?: number;
 }
 
 interface GroupedCarton {
@@ -53,6 +59,12 @@ interface GroupedCarton {
   }>;
   total_items: number;
   total_quantity: number;
+  ctn_length?: number;
+  ctn_width?: number;
+  ctn_height?: number;
+  ctn_max_weight?: number;
+  ctn_tare_weight?: number;
+  ctn_volume?: number;
 }
 
 const CartonLabelPrinter: React.FC = () => {
@@ -100,6 +112,12 @@ const CartonLabelPrinter: React.FC = () => {
           items: [],
           total_items: 0,
           total_quantity: 0,
+          ctn_length: item.ctn_length,
+          ctn_width: item.ctn_width,
+          ctn_height: item.ctn_height,
+          ctn_max_weight: item.ctn_max_weight,
+          ctn_tare_weight: item.ctn_tare_weight,
+          ctn_volume: item.ctn_volume
         });
       }
 
@@ -277,12 +295,26 @@ const CartonLabelPrinter: React.FC = () => {
                     </div>
 
                     {/* Bottom Grid Section */}
-                    <div className="bottom-section">
+                    {/* <div className="bottom-section">
                       {carton.items.map((item, idx) => (
                         <div className="bottom-label" key={idx}>
                           <span>{item.item_code}</span> {' - '}<span>{item.item_name}</span>
                         </div>
                       ))}
+                    </div> */}
+
+                    <div className="bottom-section">
+                      {carton.items.slice(0, 3).map((item, idx) => (
+                        <div className="bottom-label" key={idx}>
+                          <span>{item.item_code}</span> {' - '}<span>{item.item_name}</span>
+                        </div>
+                      ))}
+
+                      {carton.items.length > 3 && (
+                        <div className="bottom-label">
+                          More than 3 item, please check in packing list
+                        </div>
+                      )}
                     </div>
 
                     <div className="footer-section-delivered">
@@ -297,9 +329,10 @@ const CartonLabelPrinter: React.FC = () => {
                     <div className="footer-section">
                       {/* <div className="footer-left">Dimension : {carton.items.map(item => item.user_def1).join(' , ')}</div> */}
                       <div className="footer-left">
-                        Dimension : {carton.items.length > 1
-                          ? ''
-                          : carton.items[0]?.user_def1 || ''}
+                        L x W x H : {carton.ctn_length} x {carton.ctn_width} x {carton.ctn_height} cm <br />
+                        {/* Max Weight : {carton.ctn_max_weight} kg <br />
+                        Tare Weight : {carton.ctn_tare_weight} kg <br />
+                        Volume : {carton.ctn_volume} m³ */}
                       </div>
                       <div className="footer-right">{new Date().toLocaleString('en-US', {
                         month: '2-digit',

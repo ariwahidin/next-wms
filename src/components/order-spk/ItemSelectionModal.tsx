@@ -191,6 +191,7 @@ const ItemSelectionModal = ({
                   {/* <th className="p-2 border">Total Koli</th> */}
                   <th className="p-2 border">Total Item</th>
                   <th className="p-2 border">Total Qty</th>
+                  <th className="p-2 border">Total Ctn</th>
                   <th className="p-2 border">Total CBM</th>
                 </tr>
               </thead>
@@ -200,9 +201,8 @@ const ItemSelectionModal = ({
                   return (
                     <tr
                       key={item.outbound_no}
-                      className={`border-t cursor-pointer hover:bg-gray-50 transition-colors ${
-                        isSelected ? "bg-blue-50 border-blue-200" : ""
-                      }`}
+                      className={`border-t cursor-pointer hover:bg-gray-50 transition-colors ${isSelected ? "bg-blue-50 border-blue-200" : ""
+                        }`}
                       onClick={() => handleRowClick(item.outbound_no)}
                     >
                       <td className="p-2 border text-center">
@@ -210,10 +210,10 @@ const ItemSelectionModal = ({
                           type={mode === "edit" ? "radio" : "checkbox"}
                           name={mode === "edit" ? "selectedItem" : undefined}
                           checked={isSelected}
-                            onChange={(e) =>
-                              handleItemSelect(
-                                item.outbound_no, e.target.checked)
-                            }
+                          onChange={(e) =>
+                            handleItemSelect(
+                              item.outbound_no, e.target.checked)
+                          }
                           onClick={(e) => e.stopPropagation()}
                         />
                       </td>
@@ -233,6 +233,9 @@ const ItemSelectionModal = ({
                       </td>
                       <td className="p-2 border text-center">
                         {item?.total_qty}
+                      </td>
+                      <td className="p-2 border text-center">
+                        {item?.qty_koli}
                       </td>
                       <td className="p-2 border text-center">
                         {item?.total_cbm}
