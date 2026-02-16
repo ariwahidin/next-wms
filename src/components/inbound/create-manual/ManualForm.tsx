@@ -51,7 +51,7 @@ export default function ManualForm() {
     container: "",
     status: "draft",
     owner_code: "YUWELL",
-    whs_code: "CKY",
+    whs_code: "WH-B",
     type: "NORMAL",
     mode: "create",
     origin: "",

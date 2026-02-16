@@ -92,6 +92,7 @@ const ProductTable = () => {
     { field: "has_waranty", headerName: "Waranty", width: 120, cellStyle: { textAlign: "center" } },
     { field: "has_adaptor", headerName: "Adaptor", width: 120, cellStyle: { textAlign: "center" } },
     { field: "manual_book", headerName: "Manual Book", width: 150, cellStyle: { textAlign: "center" } },
+    { field: "user_def1", headerName: "User Def 1", width: 150, cellStyle: { textAlign: "center" } },
     {
       cellStyle: { textAlign: "center" },
       headerName: "Actions",

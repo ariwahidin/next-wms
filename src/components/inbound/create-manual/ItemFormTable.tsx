@@ -172,7 +172,7 @@ export default function ItemFormTable({
         item_code: product.item_code,
         quantity: 1,
         qa_status: "A",
-        location: "",
+        location: "STAGING",
         ref_id: inboundReferences.ID,
         ref_no: inboundReferences.ref_no,
         uom: product.uom,

@@ -43,6 +43,7 @@ export default function ProductForm({
   const [length, setLength] = useState<number | "">("");
   const [height, setHeight] = useState<number | "">("");
   const [weight, setWeight] = useState<number | "">("");
+  const [user_def1, setUser_def1] = useState("");
   const toNumber = (v: number | "") => (v === "" ? 0 : v);
   const [color, setColor] = useState<string>("");
   const [categoryCode, setCategoryCode] = useState<string>("");
@@ -192,6 +193,9 @@ export default function ProductForm({
       );
       if (found) setSelectedUom(found);
     }
+
+    // user def 1
+    setUser_def1(editData.user_def1 || "");
   }, [editData, uomOptions, yesNo]);
 
   const resetForm = () => {
@@ -213,6 +217,7 @@ export default function ProductForm({
     setSelectedWaranty(yesNo[1]);
     setSelectedAdaptor(yesNo[1]);
     setSelectedManualBook(yesNo[1]);
+    setUser_def1("");
   };
 
   const handleCancel = () => {
@@ -264,6 +269,7 @@ export default function ProductForm({
         manual_book: selectedManualBook.value,
         uom: selectedUom.value,
         owner_code: selectedOwner.value,
+        user_def1: user_def1,
       };
 
       let response;
@@ -635,6 +641,19 @@ export default function ProductForm({
                   options={yesNo}
                   value={selectedManualBook}
                   onChange={(opt: any) => setSelectedManualBook(opt)}
+                />
+              </div>
+
+
+              {/* User Def 1 */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="user_def1">User Def 1</Label>
+                <Input
+                  id="user_def1"
+                  type="text"
+                  value={user_def1}
+                  onChange={(e) => setUser_def1(e.target.value)}
+                  placeholder="Entry User Def 1"
                 />
               </div>
 

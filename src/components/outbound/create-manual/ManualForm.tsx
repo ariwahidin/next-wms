@@ -63,7 +63,7 @@ export default function ManualForm() {
     qty_koli_seal: 0,
     truck_size: "",
     truck_no: "",
-    transporter_code: "L5W",
+    transporter_code: "",
   });
 
   const [muatan, setMuatan] = useState<ItemFormProps[]>([]);
@@ -438,7 +438,7 @@ export default function ManualForm() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" style={{display : "none"}}>
                 <Label
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
@@ -460,7 +460,7 @@ export default function ManualForm() {
                   }
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" style={{display : "none"}}>
                 <Label
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}

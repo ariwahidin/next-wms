@@ -272,16 +272,16 @@ const PickingSheetPrint = () => {
               <div
                 style={{
                   fontSize: "12px",
-                  border: "1px solid black",
+                  // border: "1px solid black",
                   padding: "5px",
                   width: "220px",
                 }}
               >
-                <span style={{ fontWeight: "bold" }}>
+                {/* <span style={{ fontWeight: "bold" }}>
                   {data.transporter_code}
                   {" to "}
                   {data.cust_city}
-                </span>
+                </span> */}
               </div>
             </td>
             <td style={{ textAlign: "center" }}>
@@ -334,8 +334,10 @@ const PickingSheetPrint = () => {
               <td style={headerValue}>{data.cust_city}</td>
             </tr>
             <tr>
-              <td style={headerLabel}>Picker</td>
-              <td style={headerValue}>{data.picker_name}</td>
+              {/* <td style={headerLabel}>Picker</td>
+              <td style={headerValue}>{data.picker_name}</td> */}
+              <td style={headerLabel}></td>
+              <td style={headerValue}></td>
               <td style={headerLabel}>Delivery To</td>
               <td style={headerValue}>{data.deliv_to_name}</td>
             </tr>
@@ -620,7 +622,7 @@ const PickingSheetPrint = () => {
           <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
           <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
         </div>
-        <div>
+        {/* <div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>
             Loading Checked by <br /> Delivery Driver
           </p>
@@ -628,7 +630,7 @@ const PickingSheetPrint = () => {
           <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
           <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
           <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );
