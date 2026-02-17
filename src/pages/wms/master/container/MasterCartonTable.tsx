@@ -45,8 +45,8 @@ const MasterCartonTable = ({ setEditData }) => {
 
     const [columnDefs, setColumnDefs] = useState<ColDef[]>([
         { field: "no", headerName: "No.", maxWidth: 70 },
-        { field: "carton_code", headerName: "Carton Code", width: 130 },
-        { field: "carton_name", headerName: "Carton Name", width: 150 },
+        { field: "carton_code", headerName: "Container Code", width: 150 },
+        { field: "carton_name", headerName: "Container Name", width: 150 },
         {
             field: "dimensions",
             headerName: "Dimensions",
@@ -81,9 +81,9 @@ const MasterCartonTable = ({ setEditData }) => {
             width: 100,
             cellRenderer: (params) => {
                 return params.value ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-2" />
                 ) : (
-                    <Circle className="h-5 w-5 text-gray-300" />
+                    <Circle className="h-5 w-5 text-gray-300 mt-2" />
                 );
             },
         },

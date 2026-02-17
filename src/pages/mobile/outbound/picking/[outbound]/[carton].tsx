@@ -14,7 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Box, Loader2, Trash2 } from "lucide-react";
+import { Box, List, Loader2, Trash2 } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -130,6 +130,12 @@ const CheckingPage = () => {
     const [showDeleteCartonConfirm, setShowDeleteCartonConfirm] = useState(false);
     const [cartonToDelete, setCartonToDelete] = useState<string>("");
 
+    // States for Seal Container
+    const [showSealContainerDialog, setShowSealContainerDialog] = useState(false);
+    const [showConfirmSealContainer, setShowConfirmSealContainer] = useState(false);
+    const [containerWeight, setContainerWeight] = useState<string>("");
+    const [isSealingContainer, setIsSealingContainer] = useState(false);
+
     const [listOutboundDetail, setListOutboundDetail] = useState<
         OutboundDetail[]
     >([]);
@@ -151,6 +157,9 @@ const CheckingPage = () => {
     const [masterCarton, setMasterCarton] = useState<MasterCarton | null>(null);
     const [isLoadingMasterCarton, setIsLoadingMasterCarton] = useState(false);
 
+    // States for List Container
+    const [showListContainerDialog, setShowListContainerDialog] = useState(false);
+
 
     // State untuk edit carton
     const [showEditCartonDialog, setShowEditCartonDialog] = useState(false);
@@ -159,6 +168,7 @@ const CheckingPage = () => {
     const [masterCartonsList, setMasterCartonsList] = useState<MasterCarton[]>([]);
     const [selectedNewCartonId, setSelectedNewCartonId] = useState<string>("");
     const [isUpdatingCarton, setIsUpdatingCarton] = useState(false);
+    const [listContainerSummary, setListContainerSummary] = useState([]);
 
     // Fetch master carton details
     useEffect(() => {
@@ -382,12 +392,97 @@ const CheckingPage = () => {
                 console.error("Error deleting carton:", error);
                 eventBus.emit("showAlert", {
                     title: "Error!",
-                    description: "Failed to delete carton",
+                    description: "Failed to delete container",
                     type: "error",
                 });
             } finally {
                 setIsSubmit(false);
             }
+        }
+    };
+
+    // Handle Seal Container
+    const handleSealContainer = () => {
+        // if (!packCtnNo) {
+        //     eventBus.emit("showAlert", {
+        //         title: "Warning",
+        //         description: "No container number found",
+        //         type: "error",
+        //     });
+        //     return;
+        // }
+
+        // // Check if there are items in this container
+        // const containerItems = listOutboundScanned.filter(
+        //     item => item.pack_ctn_no === packCtnNo
+        // );
+
+        // if (containerItems.length === 0) {
+        //     eventBus.emit("showAlert", {
+        //         title: "Warning",
+        //         description: "No items found in this container",
+        //         type: "error",
+        //     });
+        //     return;
+        // }
+
+        setContainerWeight("");
+        setShowSealContainerDialog(true);
+    };
+
+    const handleConfirmSeal = () => {
+        if (!containerWeight || parseFloat(containerWeight) <= 0) {
+            eventBus.emit("showAlert", {
+                title: "Warning",
+                description: "Please enter a valid weight",
+                type: "error",
+            });
+            return;
+        }
+
+        setShowSealContainerDialog(false);
+        setShowConfirmSealContainer(true);
+    };
+
+    const handleSealContainerSubmit = async () => {
+        setIsSealingContainer(true);
+
+        try {
+            const payload = {
+                outbound_no: Array.isArray(outbound) ? outbound[0] : outbound,
+                packing_no: packingNo,
+                ctn_no: packCtnNo,
+                weight: parseFloat(containerWeight)
+            };
+
+            const response = await api.post(
+                "/mobile/outbound/picking/seal-container/" + outbound,
+                payload,
+                { withCredentials: true }
+            );
+
+            if (response.data.success) {
+                setShowConfirmSealContainer(false);
+                setContainerWeight("");
+
+                eventBus.emit("showAlert", {
+                    title: "Success!",
+                    description: `Container ${packCtnNo} sealed successfully`,
+                    type: "success",
+                });
+
+                // Optionally redirect or refresh data
+                // router.back();
+            }
+        } catch (error: any) {
+            console.error("Error sealing container:", error);
+            eventBus.emit("showAlert", {
+                title: "Error!",
+                description: error.response?.data?.message || "Failed to seal container",
+                type: "error",
+            });
+        } finally {
+            setIsSealingContainer(false);
         }
     };
 
@@ -651,10 +746,54 @@ const CheckingPage = () => {
         }
     };
 
+
+    // Grouped data for List Container dialog
+    // const listContainerSummary = uniqueCartons.map((ctnNo) => {
+    //     const items = listOutboundScanned.filter(item => item.pack_ctn_no === ctnNo);
+    //     const totalQty = items.reduce((sum, item) => sum + (item.qty_data_scan || 0), 0);
+    //     const totalItems = items.length;
+    //     const barcodes = Array.from(new Set(items.map(i => i.barcode_data_scan).filter(Boolean)));
+    //     return { ctnNo, totalQty, totalItems, barcodes, items };
+    // });
+
+    const fetchCartonByOutboundNo = async () => {
+        try {
+            const response = await api.get(`/mobile/outbound/${outbound}/cartons`, {
+                withCredentials: true,
+            });
+
+            const response2 = await api.get(`/mobile/outbound/${outbound}/cartons/items`, {
+                withCredentials: true,
+            });
+
+            if (response.data.success && response2.data.success) {
+                const cartons = response.data.data.cartons;
+                const items = response2.data.data.cartons;
+
+                cartons.forEach((carton) => {
+                    carton.items = items.filter((item) => item.pack_ctn_no === carton.pack_ctn_no).map((item) => `${item.barcode} -> ${item.total_qty}`);
+                })
+
+                setListContainerSummary(cartons)
+            }
+        } catch (error) {
+            console.error("Error fetching carton by outbound no:", error);
+        } finally {
+            // setIsLoadingMasterCarton(false);
+        }
+    }
+
+    useEffect(() => {
+        if (showListContainerDialog) {
+            fetchCartonByOutboundNo();
+        }
+
+    }, [showListContainerDialog])
+
     return (
         <>
-            <PageHeader title={`Scan ${outbound}`} showBackButton />
-            <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
+            <PageHeader title={`${outbound}`} showBackButton />
+            <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-40 max-w-md mx-auto">
                 <form onSubmit={handleBarcodeSubmit} className="mb-0">
                     <Card>
                         <CardContent className="p-4 space-y-3">
@@ -728,43 +867,6 @@ const CheckingPage = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex items-center space-x-2">
-                                        <label
-                                            htmlFor="packing_no"
-                                            className="text-sm text-gray-600 whitespace-nowrap me-2"
-                                        >
-                                            CTN  :
-                                        </label>
-
-                                        <Input
-                                            readOnly
-                                            className="text-sm h-8 w-12"
-                                            autoComplete="off"
-                                            id="ctn_no"
-                                            placeholder="Entry ctn no..."
-                                            value={packCtnNo}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-
-                                                if (/^\d*$/.test(val)) {
-                                                    setPackCtnNo(val);
-                                                }
-                                            }}
-                                        />
-
-                                        {masterCarton && (
-                                            <button
-                                                type="button"
-                                                onClick={handleEditCarton}
-                                                className="text-sm text-gray-600 hover:text-blue-600 transition-colors flex-1 text-left"
-                                            >
-                                                <span className="font-semibold hover:underline">
-                                                    {masterCarton.display_name}
-                                                </span>
-                                            </button>
-                                        )}
-
-                                    </div>
 
                                 </>
                             )}
@@ -800,7 +902,7 @@ const CheckingPage = () => {
                                     )}
                                 </div>
                             </div>
-                            <Button disabled={isSubmit} type="submit" className="w-full">
+                            <Button disabled={isSubmit} type="submit" className="w-full" size="sm">
                                 {isSubmit ? "Scanning..." : "Scan"}
                             </Button>
                         </CardContent>
@@ -884,9 +986,155 @@ const CheckingPage = () => {
                     </CardContent>
                 </Card>
 
+                {/* Seal Container Dialog - Input Weight */}
+                <Dialog open={showSealContainerDialog} onOpenChange={setShowSealContainerDialog}>
+                    <DialogContent className="bg-white sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Seal Container</DialogTitle>
+                        </DialogHeader>
 
+                        <div className="space-y-4">
+                            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                                <div className="space-y-1 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Outbound No:</span>
+                                        <span className="font-semibold">{outbound}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Packing No:</span>
+                                        <span className="font-semibold">{packingNo}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Container No:</span>
+                                        <span className="font-semibold">{packCtnNo}</span>
+                                    </div>
+                                    {masterCarton && (
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-600">Carton Type:</span>
+                                            <span className="font-semibold">{masterCarton.carton_name}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
+                            <div className="space-y-2">
+                                <label htmlFor="container_weight" className="text-sm font-medium text-gray-700">
+                                    Container Weight (kg) <span className="text-red-500">*</span>
+                                </label>
+                                <Input
+                                    id="container_weight"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="Enter weight in kg..."
+                                    value={containerWeight}
+                                    onChange={(e) => setContainerWeight(e.target.value)}
+                                    autoFocus
+                                    className="w-full"
+                                />
+                                {masterCarton && (
+                                    <p className="text-xs text-gray-500">
+                                        Max weight: {masterCarton.max_weight} kg | Tare weight: {masterCarton.tare_weight} kg
+                                    </p>
+                                )}
+                            </div>
+                        </div>
 
+                        <DialogFooter className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setShowSealContainerDialog(false);
+                                    setContainerWeight("");
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleConfirmSeal}
+                                className="bg-green-600 hover:bg-green-700"
+                            >
+                                Next
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Seal Container Confirmation Dialog */}
+                <Dialog open={showConfirmSealContainer} onOpenChange={setShowConfirmSealContainer}>
+                    <DialogContent className="bg-white sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Confirm Seal Container</DialogTitle>
+                        </DialogHeader>
+
+                        <div className="space-y-3">
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                                <p className="text-sm text-gray-800 font-semibold mb-2">
+                                    ⚠️ Confirmation Required
+                                </p>
+                                <p className="text-sm text-gray-700">
+                                    You are about to seal <strong>Container #{packCtnNo}</strong>.
+                                    Once sealed, you cannot add more items to this container.
+                                </p>
+                            </div>
+
+                            <div className="space-y-2 border rounded-md p-3">
+                                <h4 className="font-semibold text-sm text-gray-800">Container Details:</h4>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div className="text-gray-600">Outbound No:</div>
+                                    <div className="font-medium text-right">{outbound}</div>
+
+                                    <div className="text-gray-600">Packing No:</div>
+                                    <div className="font-medium text-right">{packingNo}</div>
+
+                                    <div className="text-gray-600">Container No:</div>
+                                    <div className="font-medium text-right">{packCtnNo}</div>
+
+                                    <div className="text-gray-600">Weight:</div>
+                                    <div className="font-medium text-right text-green-600">{containerWeight} kg</div>
+
+                                    {masterCarton && (
+                                        <>
+                                            <div className="text-gray-600">Carton Type:</div>
+                                            <div className="font-medium text-right">{masterCarton.carton_name}</div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <p className="text-xs text-gray-500 italic">
+                                Please verify all information is correct before confirming.
+                            </p>
+                        </div>
+
+                        <DialogFooter className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setShowConfirmSealContainer(false);
+                                    setShowSealContainerDialog(true);
+                                }}
+                                disabled={isSealingContainer}
+                            >
+                                Back
+                            </Button>
+                            <Button
+                                onClick={handleSealContainerSubmit}
+                                disabled={isSealingContainer}
+                                className="bg-green-600 hover:bg-green-700"
+                            >
+                                {isSealingContainer ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Sealing...
+                                    </>
+                                ) : (
+                                    "Confirm Seal"
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Edit Carton Dialog */}
                 <Dialog open={showEditCartonDialog} onOpenChange={setShowEditCartonDialog}>
@@ -1055,11 +1303,6 @@ const CheckingPage = () => {
                     </DialogContent>
                 </Dialog>
 
-
-
-
-
-
                 {/* Modal Detail dengan filter carton */}
                 <Dialog open={showModalDetail} onOpenChange={setShowModalDetail}>
                     <DialogContent className="bg-white max-w-lg">
@@ -1080,7 +1323,7 @@ const CheckingPage = () => {
                             {invPolicy?.require_packing_scan && uniqueCartons.length > 0 && (
                                 <div className="flex items-center gap-2">
                                     <label className="text-sm text-gray-600 whitespace-nowrap">
-                                        Filter Carton:
+                                        Filter Container:
                                     </label>
                                     <Select
                                         value={selectedCarton}
@@ -1090,10 +1333,10 @@ const CheckingPage = () => {
                                             <SelectValue placeholder="Select carton" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All Cartons</SelectItem>
+                                            <SelectItem value="all">All Container</SelectItem>
                                             {uniqueCartons.map((carton) => (
                                                 <SelectItem key={carton} value={carton}>
-                                                    Carton {carton}
+                                                    Container {carton}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -1108,7 +1351,15 @@ const CheckingPage = () => {
                                     {Object.keys(groupedItems).length > 0 ? (
                                         <div className="space-y-2">
                                             {Object.entries(groupedItems).map(([koli, items]) => {
-                                                const cartonNo = (items as ScannedItem[])[0]?.pack_ctn_no;
+                                                let cartonNo = (items as ScannedItem[])[0]?.pack_ctn_no;
+
+                                                if (selectedCarton == "all") {
+                                                    // Tampilkan semua carton
+                                                    cartonNo = "ALL";
+                                                } else if (cartonNo !== selectedCarton) {
+                                                    // Sembunyikan carton yang tidak sesuai filter
+                                                    // return null;
+                                                }
 
                                                 return (
                                                     <div
@@ -1118,17 +1369,21 @@ const CheckingPage = () => {
                                                         <div className="font-semibold text-sm font-mono mb-2 flex justify-between items-center">
                                                             <div>
                                                                 {invPolicy?.require_packing_scan && cartonNo && (
-                                                                    <div className="text-xs text-gray-600">
-                                                                        Carton: {cartonNo}
+                                                                    <div className="text-sm text-gray-600">
+                                                                        CTN : {cartonNo}
                                                                     </div>
                                                                 )}
-                                                                Item scan: {(items as ScannedItem[])?.length}, Qty scan:{" "}
+                                                                ITEM : {(items as ScannedItem[])?.length}, QTY : {" "}
                                                                 {items?.reduce(
                                                                     (total, item) => total + item.qty_data_scan,
                                                                     0
                                                                 )}
                                                             </div>
-                                                            {invPolicy?.require_packing_scan && cartonNo && (
+
+
+
+
+                                                            {invPolicy?.require_packing_scan && cartonNo && cartonNo !== "ALL" && (
                                                                 <Button
                                                                     variant="destructive"
                                                                     size="sm"
@@ -1139,8 +1394,8 @@ const CheckingPage = () => {
                                                                         setShowDeleteCartonConfirm(true);
                                                                     }}
                                                                 >
-                                                                    <Trash2 size={14} className="mr-1" />
-                                                                    Delete Carton
+                                                                    {/* <Trash2 size={14} className="mr-1" /> */}
+                                                                    Delete Container
                                                                 </Button>
                                                             )}
                                                         </div>
@@ -1164,8 +1419,8 @@ const CheckingPage = () => {
 
                                                                         {invPolicy.require_packing_scan && (
                                                                             <>
-                                                                                <strong>Packing No : </strong>{item.packing_no}<br />
-                                                                                <strong>Ctn No : </strong>{item.pack_ctn_no} <br />
+                                                                                <strong>PACK : </strong>{item.packing_no}<br />
+                                                                                <strong>CTN : </strong>{item.pack_ctn_no} <br />
                                                                             </>
                                                                         )}
 
@@ -1177,7 +1432,7 @@ const CheckingPage = () => {
                                                                                 <br />
                                                                             </>
                                                                         )}
-                                                                        <strong>Qty:</strong> {item.qty_data_scan} {item.uom_scan}
+                                                                        <strong>QTY:</strong> {item.qty_data_scan} {item.uom_scan}
                                                                     </div>
                                                                 </div>
 
@@ -1239,11 +1494,11 @@ const CheckingPage = () => {
                 <Dialog open={showDeleteCartonConfirm} onOpenChange={setShowDeleteCartonConfirm}>
                     <DialogContent className="bg-white">
                         <DialogHeader>
-                            <DialogTitle>Confirm Delete Carton</DialogTitle>
+                            <DialogTitle>Confirm Delete Container</DialogTitle>
                         </DialogHeader>
                         <div className="py-4">
                             <p className="text-sm text-gray-600">
-                                Are you sure you want to delete all items in Carton <strong>{cartonToDelete}</strong>?
+                                Are you sure you want to delete all items in Container <strong>{cartonToDelete}</strong>?
                             </p>
                             <p className="text-sm text-red-600 mt-2">
                                 This action cannot be undone.
@@ -1272,12 +1527,197 @@ const CheckingPage = () => {
                                 }}
                                 disabled={isSubmit}
                             >
-                                {isSubmit ? "Deleting..." : "Delete Carton"}
+                                {isSubmit ? "Deleting..." : "Delete Container"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+
+                {/* List Container Dialog */}
+                <Dialog open={showListContainerDialog} onOpenChange={setShowListContainerDialog}>
+                    <DialogContent className="bg-white sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="text-sm font-semibold text-gray-800">
+                                List Container — {outbound}
+                            </DialogTitle>
+                        </DialogHeader>
+
+                        <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-1">
+                            {listContainerSummary.length === 0 ? (
+                                <div className="text-center py-8 text-gray-400 text-xs">
+                                    No container data found
+                                </div>
+                            ) : (
+                                listContainerSummary.map(({ pack_ctn_no, qty : totalQty, totalItems, items : barcodes }) => {
+                                    const isCurrent = pack_ctn_no === packCtnNo;
+                                    return (
+                                        <div
+                                            key={pack_ctn_no}
+                                            className={`rounded-lg border p-3 space-y-1.5 ${isCurrent
+                                                ? "border-blue-400 bg-blue-50"
+                                                : "border-gray-200 bg-gray-50"
+                                                }`}
+                                        >
+                                            {/* Header row */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Box size={13} className={isCurrent ? "text-blue-600" : "text-gray-500"} />
+                                                    <span className={`text-xs font-bold font-mono ${isCurrent ? "text-blue-700" : "text-gray-700"}`}>
+                                                        CTN # {pack_ctn_no}
+                                                    </span>
+                                                    {isCurrent && (
+                                                        <span className="text-[10px] bg-blue-600 text-white rounded px-1.5 py-0.5 font-medium leading-none">
+                                                            Active
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-xs font-bold text-gray-800">
+                                                        {totalQty} <span className="font-normal text-gray-500">qty</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Stats row */}
+                                            {/* <div className="flex gap-3 text-[11px] text-gray-500">
+                                                <span>{totalItems} item{totalItems !== 1 ? "s" : ""} scanned</span>
+                                            </div> */}
+
+                                            {/* Barcodes */}
+                                            {barcodes.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 pt-0.5">
+                                                    {barcodes.map((bc, i) => (
+                                                        <span
+                                                            key={i}
+                                                            className="text-[10px] font-mono bg-white border border-gray-200 text-gray-600 rounded px-1.5 py-0.5"
+                                                        >
+                                                            {bc}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* Summary footer */}
+                        {listContainerSummary.length > 0 && (
+                            <div className="border-t pt-3 flex justify-between text-xs text-gray-600">
+                                <span>{listContainerSummary.length} container{listContainerSummary.length !== 1 ? "s" : ""} total</span>
+                                <span className="font-semibold text-gray-800">
+                                    {listContainerSummary.reduce((sum, c) => sum + c.qty, 0)} total qty
+                                </span>
+                            </div>
+                        )}
+
+                        <DialogFooter>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full text-xs h-8"
+                                onClick={() => setShowListContainerDialog(false)}
+                            >
+                                Close
                             </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
             </div>
+
+            {/* Fixed Bottom Bar - CTN & Seal Container */}
+            {invPolicy?.require_packing_scan && (
+                <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg px-4 pt-3 pb-4 space-y-3">
+
+                    {/* Container Info Row */}
+                    <div className="flex items-center justify-between gap-3">
+
+                        {/* CTN # Counter */}
+                        <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-2 py-1 flex-1">
+                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                                CTN #
+                            </span>
+
+                            {/* Decrement Button */}
+                            <button
+                                onClick={() => {
+                                    let newVal: number | string = parseInt(packCtnNo) - 1;
+                                    if (newVal < 1) newVal = "";
+                                    setPackCtnNo(newVal.toString());
+                                }}
+                                disabled={parseInt(packCtnNo) <= 0}
+                                className={`
+            w-6 h-6 rounded-lg flex items-center justify-center font-bold text-lg leading-none transition-all duration-150 select-none
+            ${parseInt(packCtnNo) <= 0
+                                        ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                                        : "bg-white border border-gray-300 text-gray-600 active:scale-90 active:bg-gray-100 shadow-sm"
+                                    }
+          `}
+                            >
+                                −
+                            </button>
+
+                            {/* Value Display */}
+                            <span className="flex-1 text-center text-lg font-bold text-gray-800 tabular-nums min-w-[2rem]">
+                                {packCtnNo}
+                            </span>
+
+                            {/* Increment Button */}
+                            <button
+                                onClick={() => setPackCtnNo((prev) => {
+                                    const current = parseInt(prev) || 0;
+                                    return (current + 1).toString();
+                                })}
+                                className="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-lg leading-none bg-blue-600 text-white active:scale-90 active:bg-blue-700 shadow-sm transition-all duration-150 select-none"
+                            >
+                                +
+                            </button>
+                        </div>
+
+                        {/* Master Carton Badge */}
+                        {masterCarton && (
+                            <button
+                                type="button"
+                                onClick={handleEditCarton}
+                                className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline truncate block w-full text-left"
+                            >
+                                {masterCarton.display_name}
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex gap-2">
+                        {/* Seal Button Row */}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-8 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-base shadow-md"
+                            onClick={() => setShowListContainerDialog(true)}
+                            // onClick={fetchCartonByOutboundNo}
+                        >
+                            <List size={14} className="mr-0" />
+                            List Container
+                        </Button>
+                        {/* Seal Button Row */}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-8 bg-green-600 hover:bg-green-700 text-white font-semibold text-base shadow-md"
+                            onClick={handleSealContainer}
+                        >
+                            <Box size={14} className="mr-0" />
+                            Seal Container
+                        </Button>
+                    </div>
+
+
+
+                </div>
+            )}
 
             {/* Modal Dialog untuk Scan */}
             {showDialog && (

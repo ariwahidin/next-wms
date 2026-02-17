@@ -139,7 +139,7 @@ export default function MasterCartonForm({ editData, setEditData }) {
         <Card className="w-full">
             <CardHeader>
                 <CardTitle>
-                    {editData ? "Edit Master Carton" : "Add Master Carton"}
+                    {editData ? "Edit Master Container" : "Add Master Container"}
                 </CardTitle>
                 {error && (
                     <Alert variant="destructive">
@@ -155,7 +155,7 @@ export default function MasterCartonForm({ editData, setEditData }) {
                         {/* Carton Code */}
                         <div className="flex flex-col space-y-1.5">
                             <Label htmlFor="carton_code">
-                                Carton Code <span className="text-red-500">*</span>
+                                Container Code <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="carton_code"
@@ -170,7 +170,7 @@ export default function MasterCartonForm({ editData, setEditData }) {
                         {/* Carton Name */}
                         <div className="flex flex-col space-y-1.5">
                             <Label htmlFor="carton_name">
-                                Carton Name <span className="text-red-500">*</span>
+                                Container Name <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="carton_name"
@@ -314,7 +314,7 @@ export default function MasterCartonForm({ editData, setEditData }) {
                                 }
                             />
                             <Label htmlFor="is_default" className="cursor-pointer">
-                                Set as default carton
+                                Set as default container
                             </Label>
                         </div>
                     </div>

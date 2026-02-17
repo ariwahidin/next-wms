@@ -82,12 +82,17 @@ const inventoryMenus = [
         icon: <PlusIcon />,
         href: "/mobile/utility/add-location",
     },
+    {
+        label: "Add Container",
+        icon: <BoxSelect />,
+        href: "/mobile/utility/add-container",
+    }
 ];
 
 export default function InventoryMenuPage() {
     return (
         <>
-            <PageHeader title="Inventory" showBackButton />
+            <PageHeader title="Utility" showBackButton />
             <div className="min-h-screen bg-gray-50 px-4 pt-4 pb-20 max-w-md mx-auto">
                 <div className="space-y-3">
                     {inventoryMenus.map((menu, idx) => (

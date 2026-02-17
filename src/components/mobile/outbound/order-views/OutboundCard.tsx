@@ -10,16 +10,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "@/components/ui/select";
+import Select from "react-select";
 import api from "@/lib/api";
 import { OutboundItem } from "@/types/outbound";
-import { Box, Package, RefreshCcw, ScanBarcode, Ruler } from "lucide-react";
+// import { Select } from "@radix-ui/react-select";
+import { Box, Package, RefreshCcw, ScanBarcode, Ruler, Plus } from "lucide-react";
 import router from "next/router";
 import { useState, useEffect } from "react";
 
@@ -28,6 +30,8 @@ interface CartonData {
   qty: number;
   count: number;
   carton_id?: number | null;
+  ctn_actual_weight?: number | null;
+  ctn_status?: string | null;
 }
 
 interface MasterCarton {
@@ -198,6 +202,28 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
     return masterCartons.find((c) => c.id.toString() === selectedMasterCarton);
   };
 
+  // Prepare options for react-select
+const cartonOptions = masterCartons.map((carton) => ({
+  value: carton.id,
+  label: `${carton.carton_name}${carton.is_default ? ' (Default)' : ''} - ${carton.dimensions} - Max: ${carton.max_weight}kg`,
+  carton_name: carton.carton_name,
+  searchLabel: [
+    carton.carton_code,
+    carton.carton_name,
+    carton.length.toString(),
+    carton.width.toString(),
+    carton.height.toString(),
+    carton.dimensions
+  ].join(' ').toLowerCase(), // Gabungkan semua field untuk pencarian
+  ...carton
+}));
+
+// Custom filter function for searching by carton code/name
+const customFilterOption = (option, inputValue) => {
+  const searchValue = inputValue.toLowerCase();
+  return option.data.searchLabel.includes(searchValue);
+};
+
   return (
     <>
       <Card className="p-3 relative">
@@ -257,12 +283,12 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
         <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader>
             <DialogTitle>
-              {showMasterCartonSelect ? "Select Carton Type" : "Choose Carton"}
+              {showMasterCartonSelect ? "Select Container Type" : "Choose Container"}
             </DialogTitle>
             <DialogDescription>
               {showMasterCartonSelect
-                ? "Select the type of carton for packing"
-                : "Create new carton or continue with existing one"}
+                ? "Select the type of container for packing"
+                : "Create new container or continue with existing one"}
             </DialogDescription>
           </DialogHeader>
 
@@ -273,7 +299,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
               // Master Carton Selection View
               <>
                 <div className="space-y-3">
-                  <Select
+                  {/* <Select
                     value={selectedMasterCarton}
                     onValueChange={setSelectedMasterCarton}
                   >
@@ -302,7 +328,73 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
                         </SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
+                  </Select> */}
+
+                  {/* Show selected carton details */}
+                  {/* {getSelectedMasterCartonDetails() && (
+                    <Card className="p-3 bg-blue-50 border-blue-200">
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Ruler size={16} className="text-blue-600" />
+                          <span className="font-semibold text-blue-900">
+                            {getSelectedMasterCartonDetails()?.carton_name}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                          <div>
+                            <span className="font-medium">Size:</span>{" "}
+                            {getSelectedMasterCartonDetails()?.dimensions}
+                          </div>
+                          <div>
+                            <span className="font-medium">Max Weight:</span>{" "}
+                            {getSelectedMasterCartonDetails()?.max_weight}kg
+                          </div>
+                          <div>
+                            <span className="font-medium">Volume:</span>{" "}
+                            {getSelectedMasterCartonDetails()?.volume.toLocaleString()}
+                            cm³
+                          </div>
+                          <div>
+                            <span className="font-medium">Material:</span>{" "}
+                            {getSelectedMasterCartonDetails()?.material}
+                          </div>
+                        </div>
+                        {getSelectedMasterCartonDetails()?.description && (
+                          <p className="text-xs text-gray-600 italic">
+                            {getSelectedMasterCartonDetails()?.description}
+                          </p>
+                        )}
+                      </div>
+                    </Card>
+                  )} */}
+
+                    <div className="flex">
+                  <Select
+                    options={cartonOptions}
+                    value={cartonOptions.find(
+                      (option) => option.value.toString() === selectedMasterCarton
+                    )}
+                    onChange={(selectedOption) => {
+                      setSelectedMasterCarton(selectedOption ? selectedOption.value.toString() : "");
+                    }}
+                    filterOption={customFilterOption}
+                    placeholder="Search carton by code..."
+                    isClearable
+                    isSearchable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                  />
+                  <Button
+                    className="ml-2 bg-blue-400 hover:bg-blue-500 text-white"                   
+                    variant="outline"
+                    size="default"
+                    onClick={() => {
+                      router.push("/mobile/utility/add-container");
+                    }}
+                  ><Plus size={16} />
+                    
+                  </Button>
+                </div>
 
                   {/* Show selected carton details */}
                   {getSelectedMasterCartonDetails() && (
@@ -341,6 +433,28 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
                       </div>
                     </Card>
                   )}
+
+{/* Show selected carton details */}
+{/* {getSelectedMasterCartonDetails() && (
+  <div className="selected-carton-details">
+    <h3>{getSelectedMasterCartonDetails()?.carton_name}</h3>
+    <p>
+      <strong>Size:</strong> {getSelectedMasterCartonDetails()?.dimensions}
+    </p>
+    <p>
+      <strong>Max Weight:</strong> {getSelectedMasterCartonDetails()?.max_weight}kg
+    </p>
+    <p>
+      <strong>Volume:</strong> {getSelectedMasterCartonDetails()?.volume.toLocaleString()} cm³
+    </p>
+    <p>
+      <strong>Material:</strong> {getSelectedMasterCartonDetails()?.material}
+    </p>
+    {getSelectedMasterCartonDetails()?.description && (
+      <p className="description">{getSelectedMasterCartonDetails()?.description}</p>
+    )}
+  </div>
+)} */}
                 </div>
 
                 <div className="flex gap-2 pt-2">
@@ -370,14 +484,14 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
                   onClick={handleShowMasterCartonSelect}
                 >
                   <Package size={16} className="mr-2" />
-                  New Carton
+                  New Container
                 </Button>
 
                 {/* Daftar karton existing */}
                 {cartonList.length > 0 ? (
                   <>
                     <div className="text-sm font-medium text-gray-500 mt-4 mb-2">
-                      Or continue existing carton:
+                      Or continue existing container:
                     </div>
                     {cartonList.map((carton) => (
                       <Button
@@ -386,17 +500,17 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
                         variant="outline"
                         onClick={() => handleSelectCarton(carton.pack_ctn_no, carton.carton_id || 0)}
                       >
-                        <span>Carton {carton.pack_ctn_no}</span>
+                        <span>Container #{carton.pack_ctn_no} <span className="text-xs text-gray-500">({carton.ctn_status})</span></span>
                         <div className="flex gap-2 text-xs text-gray-500">
                           <span>Qty: {carton.qty}</span>
-                          <span>Items: {carton.count}</span>
+                          {/* <span>Items: {carton.count}</span> */}
                         </div>
                       </Button>
                     ))}
                   </>
                 ) : (
                   <div className="text-center text-sm text-gray-500 py-4">
-                    No existing carton found
+                    No existing container found
                   </div>
                 )}
               </>

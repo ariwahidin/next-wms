@@ -254,7 +254,7 @@ const OutboundTable = () => {
 
   const HandlePickingComplete = (id: number) => {
     showAlert(
-      "Picking Complete Confirmation",
+      "Complete Confirmation",
       "Are you sure you want to save this data?",
       "error",
       () => {
@@ -540,7 +540,7 @@ const OutboundTable = () => {
                   </DropdownMenuItem>
                 )}
 
-                {params.data.status === "picking" && (
+                {params.data.status === "picking" || params.data.status === "packing" && (
                   <DropdownMenuItem
                     className="cursor-pointer"
                     onClick={(e) => {
@@ -549,7 +549,7 @@ const OutboundTable = () => {
                     }}
                   >
                     <CheckCheck className="mr-2 h-4 w-4" />
-                    Complete Picking
+                    Complete
                   </DropdownMenuItem>
                 )}
 
@@ -650,6 +650,9 @@ const OutboundTable = () => {
             break;
           case "picking":
             color = "bg-yellow-500 text-black";
+            break;
+          case "packing":
+            color = "bg-orange-500 text-white";
             break;
           case "completed":
             color = "bg-green-500";
