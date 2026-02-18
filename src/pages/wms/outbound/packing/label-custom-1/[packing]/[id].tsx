@@ -26,6 +26,13 @@ interface PackingItem {
   barcode_scan: string;
   plan_pickup_date: string;
   transporter_code: string;
+  user_def1?: string;
+  ctn_length?: number;
+  ctn_width?: number;
+  ctn_height?: number;
+  ctn_max_weight?: number;
+  ctn_tare_weight?: number;
+  ctn_volume?: number;
 }
 
 interface GroupedCarton {
@@ -48,9 +55,16 @@ interface GroupedCarton {
     item_name: string;
     quantity: number;
     barcode_scan: string;
+    user_def1?: string;
   }>;
   total_items: number;
   total_quantity: number;
+  ctn_length?: number;
+  ctn_width?: number;
+  ctn_height?: number;
+  ctn_max_weight?: number;
+  ctn_tare_weight?: number;
+  ctn_volume?: number;
 }
 
 const CartonLabelPrinter: React.FC = () => {
@@ -97,7 +111,13 @@ const CartonLabelPrinter: React.FC = () => {
           transporter_code: item.transporter_code,
           items: [],
           total_items: 0,
-          total_quantity: 0
+          total_quantity: 0,
+          ctn_length: item.ctn_length,
+          ctn_width: item.ctn_width,
+          ctn_height: item.ctn_height,
+          ctn_max_weight: item.ctn_max_weight,
+          ctn_tare_weight: item.ctn_tare_weight,
+          ctn_volume: item.ctn_volume
         });
       }
 
@@ -112,7 +132,8 @@ const CartonLabelPrinter: React.FC = () => {
           item_code: item.item_code,
           item_name: item.item_name,
           quantity: item.quantity,
-          barcode_scan: item.barcode_scan
+          barcode_scan: item.barcode_scan,
+          user_def1: item.user_def1
         });
       }
 
@@ -330,7 +351,10 @@ const CartonLabelPrinter: React.FC = () => {
 
               {/* Footer Section */}
               <div className="footer-section">
-                <div className="footer-left">{carton.outbound_no}</div>
+                <div className="footer-left">
+                  {/* {carton.outbound_no} */}
+                  L x W x H : {carton.ctn_length} x {carton.ctn_width} x {carton.ctn_height} cm <br />
+                </div>
                 <div className="footer-right">{new Date().toLocaleString('en-US', {
                   month: '2-digit',
                   day: '2-digit',
