@@ -210,48 +210,6 @@ const OutboundTable = () => {
 
 
 
-
-  // const HandlePicking = (id: number) => {
-  //   showAlert(
-  //     "Picking Confirmation",
-  //     "The picking process is carried out by the system, are you sure to continue?",
-  //     "error",
-  //     () => {
-  //       if (isSubmit) return;
-  //       eventBus.emit("loading", true);
-  //       setIsSubmit(true);
-  //       api
-  //         .post(
-  //           `/outbound/picking/${id}`,
-  //           { inbound_id: id },
-  //           { withCredentials: true }
-  //         )
-  //         .then((res) => {
-  //           eventBus.emit("loading", false);
-  //           if (res.data.success) {
-  //             eventBus.emit("showAlert", {
-  //               title: "Success!",
-  //               description: res.data.message,
-  //               type: "success",
-  //             });
-  //             mutate("/outbound");
-  //           }
-  //         })
-  //         .catch((error) => {
-  //           eventBus.emit("loading", false);
-  //           console.error("Error saving inbound:", error);
-  //           // alert("Gagal menyimpan inbound");
-  //         }).finally(() => {
-
-  //           setTimeout(() => {
-  //             setIsSubmit(false);
-  //           }, 1500)
-
-  //         });
-  //     }
-  //   );
-  // };
-
   const HandlePickingComplete = (id: number) => {
     showAlert(
       "Complete Confirmation",

@@ -565,17 +565,63 @@ export async function getStockReport(viewBy: string) {
 
   if (viewBy === "item") {
 
-    sql = `WITH inv AS (
-            SELECT 
-                iv.item_code AS [ITEM CODE],
-                iv.barcode AS [GMC CODE],
+    // sql = `WITH inv AS (
+    //         SELECT 
+    //             iv.item_code AS [SKU],
+    //             iv.barcode AS [EAN],
+    //             p.item_name AS [ITEM NAME],
+    //             iv.whs_code AS [WH CODE],
+    //             iv.qa_status AS [QA],
+    //             SUM(iv.qty_onhand) AS [ON HAND],
+    //             SUM(iv.qty_allocated) AS [ALLOCATED],
+    //             SUM(iv.qty_available) AS [AVAILABLE],
+    //           iv.uom AS [BASE UNIT]
+    //             FROM inventories iv
+    //             left join products p ON iv.item_code = p.item_code
+    //             where iv.qty_onhand <> 0
+    //             group by
+    //             iv.item_code,
+    //             iv.barcode,
+    //             p.item_name,
+    //             iv.whs_code,
+    //             iv.qa_status,
+    //           iv.uom
+    //         ),
+    //         uom AS (
+    //           SELECT * 
+    //           FROM uom_conversions
+    //         )
+    //           SELECT inv.*,
+    //           ISNULL(
+    //             ROUND(MAX(CASE WHEN uom.from_uom = 'PCS' THEN 
+    //               CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
+    //             END), 3), 0
+    //           ) AS PCS,
+
+    //           ISNULL(
+    //             ROUND(MAX(CASE WHEN uom.from_uom = 'CTN' THEN 
+    //               CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
+    //             END), 3), 0
+    //           ) AS BOX
+
+    //           FROM inv 
+    //           JOIN uom ON inv.[SKU] = uom.item_code AND inv.[BASE UNIT] = uom.to_uom
+    //           GROUP BY 
+    //           inv.[EAN],
+    //           inv.[SKU], inv.[ITEM NAME], inv.[WH CODE], 
+    //           inv.QA, inv.[ON HAND], inv.[ALLOCATED],
+    //           inv.AVAILABLE, inv.[BASE UNIT]
+    //           ORDER BY [SKU] ASC;`;
+
+    sql = ` SELECT 
+                iv.item_code AS [SKU],
+                iv.barcode AS [EAN],
                 p.item_name AS [ITEM NAME],
                 iv.whs_code AS [WH CODE],
                 iv.qa_status AS [QA],
                 SUM(iv.qty_onhand) AS [ON HAND],
                 SUM(iv.qty_allocated) AS [ALLOCATED],
-                SUM(iv.qty_available) AS [AVAILABLE],
-              iv.uom AS [BASE UNIT]
+                SUM(iv.qty_available) AS [AVAILABLE]
                 FROM inventories iv
                 left join products p ON iv.item_code = p.item_code
                 where iv.qty_onhand <> 0
@@ -585,34 +631,7 @@ export async function getStockReport(viewBy: string) {
                 p.item_name,
                 iv.whs_code,
                 iv.qa_status,
-              iv.uom
-                -- ORDER BY iv.item_code ASC
-            ),
-            uom AS (
-              SELECT * 
-              FROM uom_conversions
-            )
-              SELECT inv.*,
-              ISNULL(
-                ROUND(MAX(CASE WHEN uom.from_uom = 'PCS' THEN 
-                  CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
-                END), 3), 0
-              ) AS PCS,
-
-              ISNULL(
-                ROUND(MAX(CASE WHEN uom.from_uom = 'CTN' THEN 
-                  CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
-                END), 3), 0
-              ) AS BOX
-
-              FROM inv 
-              JOIN uom ON inv.[ITEM CODE] = uom.item_code AND inv.[BASE UNIT] = uom.to_uom
-              GROUP BY 
-              inv.[GMC CODE],
-              inv.[ITEM CODE], inv.[ITEM NAME], inv.[WH CODE], 
-              inv.QA, inv.[ON HAND], inv.[ALLOCATED],
-              inv.AVAILABLE, inv.[BASE UNIT]
-              ORDER BY [ITEM CODE] ASC;`;
+              iv.uom`;
   }
 
   return queryDB(sql);
