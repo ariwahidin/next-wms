@@ -28,27 +28,28 @@ import {
     ScanBarcodeIcon,
     PlusIcon,
     PlusSquare,
+    Music,
 } from "lucide-react";
 
 const inventoryMenus = [
     {
-        label: "Register Item",
-        icon: <PlusSquare />,
-        href: "/mobile/utility/register-item",
+        label: "Sound Settings",
+        icon: <Music />,
+        href: "/mobile/settings/sound-settings",
     },
-    {
-        label: "Add Location",
-        icon: <PlusIcon />,
-        href: "/mobile/utility/add-location",
-    },
-    {
-        label: "Add Container",
-        icon: <BoxSelect />,
-        href: "/mobile/utility/add-container",
-    }
+    // {
+    //     label: "Add Location",
+    //     icon: <PlusIcon />,
+    //     href: "/mobile/utility/add-location",
+    // },
+    // {
+    //     label: "Add Container",
+    //     icon: <BoxSelect />,
+    //     href: "/mobile/utility/add-container",
+    // }
 ];
 
-export default function UtilityMenuPage() {
+export default function SettingMenuPage() {
     return (
         <>
             <PageHeader title="Utility" showBackButton />

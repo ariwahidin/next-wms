@@ -7,6 +7,7 @@ import { store, persistor } from "@/store";
 import { PersistGate } from "redux-persist/integration/react";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import LoadingOverlay from "@/components/LoadingOverlay";
+import GlobalAlertSound from "@/components/GlobalAlertSound";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
@@ -14,6 +15,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <PersistGate loading={null} persistor={persistor}>
         <AlertProvider>
           <LoadingProvider>
+            <GlobalAlertSound />
             <Component {...pageProps} />
             <Toaster
               position="top-right"

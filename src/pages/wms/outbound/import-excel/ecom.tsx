@@ -1,11 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ExcelJS from 'exceljs';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import router from 'next/router';
 import { ArrowLeft } from 'lucide-react';
 import Layout from '@/components/layout';
+import Select from "react-select";
+import { Customer } from '@/types/customer';
+import { ItemOptions } from '@/types/outbound';
+import { set } from 'date-fns';
 
 // ─────────────────────────────────────────────
 // Types
@@ -54,30 +58,30 @@ const PLATFORM_OPTIONS: PlatformOption[] = [
         borderColor: 'border-orange-400',
         logo: '🛍️',
     },
-    {
-        value: 'TOKOPEDIA',
-        label: 'Tokopedia',
-        color: 'text-green-700',
-        bgColor: 'bg-green-50',
-        borderColor: 'border-green-400',
-        logo: '🟢',
-    },
-    {
-        value: 'LAZADA',
-        label: 'Lazada',
-        color: 'text-blue-700',
-        bgColor: 'bg-blue-50',
-        borderColor: 'border-blue-400',
-        logo: '🔵',
-    },
-    {
-        value: 'TIKTOK',
-        label: 'TikTok Shop',
-        color: 'text-pink-700',
-        bgColor: 'bg-pink-50',
-        borderColor: 'border-pink-400',
-        logo: '🎵',
-    },
+    // {
+    //     value: 'TOKOPEDIA',
+    //     label: 'Tokopedia',
+    //     color: 'text-green-700',
+    //     bgColor: 'bg-green-50',
+    //     borderColor: 'border-green-400',
+    //     logo: '🟢',
+    // },
+    // {
+    //     value: 'LAZADA',
+    //     label: 'Lazada',
+    //     color: 'text-blue-700',
+    //     bgColor: 'bg-blue-50',
+    //     borderColor: 'border-blue-400',
+    //     logo: '🔵',
+    // },
+    // {
+    //     value: 'TIKTOK',
+    //     label: 'TikTok Shop',
+    //     color: 'text-pink-700',
+    //     bgColor: 'bg-pink-50',
+    //     borderColor: 'border-pink-400',
+    //     logo: '🎵',
+    // },
 ];
 
 const EXPECTED_HEADERS = ['No', 'Date', 'Platform', 'Order Number', 'AWB Number', 'Product Name', 'Qty', 'SKU'];
@@ -95,6 +99,66 @@ const EcommerceExcelUpload: React.FC = () => {
     const [showAlert, setShowAlert] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [customer, setCustomer] = useState<Customer[]>([]);
+    const [customerOptions, setCustomerOptions] = useState<ItemOptions[]>([]);
+    const [customerSelected, setCustomerSelected] = useState<string>("");
+
+    useEffect(() => {
+        setSelectedPlatform(PLATFORM_OPTIONS[0].value);
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            const [customers
+                // , warehouses,
+                // owners,
+                // transporters
+            ] = await Promise.all([
+                api.get("/customers"),
+                // api.get("/warehouses"),
+                // api.get("/owners/user"),
+                // api.get("/transporters"),
+            ]);
+
+            if (
+                customers.data.success
+                // warehouses.data.success &&
+                // owners.data.success &&
+                // transporters.data.success
+            ) {
+                setCustomer(customers.data.data);
+                setCustomerOptions(
+                    customers.data.data.map((item: Customer) => ({
+                        value: item.customer_code,
+                        label: item.customer_name,
+                    }))
+                );
+                // setWhsOptions(
+                //   warehouses.data.data.map((item: any) => ({
+                //     value: item.code,
+                //     label: item.code,
+                //   }))
+                // );
+                // setOwnerOptions(
+                //   owners.data.data.map((item: any) => ({
+                //     value: item.owner_code,
+                //     label: item.owner_code,
+                //   }))
+                // );
+                // setTransporter(transporters.data.data);
+                // setTransporterOptions(
+                //   transporters.data.data.map((item: Transporter) => ({
+                //     value: item.transporter_code,
+                //     label: item.transporter_name,
+                //   }))
+                // );
+            }
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        }
+    };
 
     // ── Utilities ──────────────────────────────
 
@@ -311,6 +375,9 @@ const EcommerceExcelUpload: React.FC = () => {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('platform', selectedPlatform);
+            if (customerSelected) {
+                formData.append('customer', customerSelected);
+            }
 
             const response = await api.post('/outbound/upload-ecommerce-excel', formData, {
                 withCredentials: true,
@@ -324,6 +391,9 @@ const EcommerceExcelUpload: React.FC = () => {
                 setFile(null);
                 setPreview(null);
                 if (fileInputRef.current) fileInputRef.current.value = '';
+                setTimeout(() => {
+                    router.push('/wms/outbound/data');
+                }, 1500);
             }
         } catch (error: any) {
             const errorData = error.response?.data;
@@ -363,7 +433,7 @@ const EcommerceExcelUpload: React.FC = () => {
                     </div>
 
                     {/* Page Header */}
-                    <div className="mb-8">
+                    <div className="mb-8" style={{ display: "none" }}>
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">
                             Upload Ecommerce Orders to Outbound
                         </h1>
@@ -511,10 +581,44 @@ const EcommerceExcelUpload: React.FC = () => {
                             {/* Action Buttons */}
                             {file && (
                                 <div className="mt-4 flex gap-3">
+                                    <div className="flex-1">
+                                        <Select
+                                            placeholder="Select Customer (optional)"
+                                            value={customerOptions.find(
+                                                (option) => option.value === customerSelected
+                                            )}
+                                            options={customerOptions}
+                                            onChange={(selectedOption) => {
+                                                if (selectedOption) {
+                                                    setCustomerSelected(selectedOption.value);
+                                                }
+                                            }}
+                                        // formatOptionLabel={(option, { context }) => {
+                                        //     const cust = customer.find(
+                                        //         (c) => c.customer_code === option.value
+                                        //     );
+
+                                        //     if (context === "menu") {
+                                        //         // tampil di dropdown
+                                        //         return (
+                                        //             <div>
+                                        //                 <div>{option.label}</div>
+                                        //                 <div className="text-xs text-gray-500">
+                                        //                     {cust?.cust_addr1}, {cust?.cust_city}
+                                        //                 </div>
+                                        //             </div>
+                                        //         );
+                                        //     }
+
+                                        //     // tampil setelah kepilih (hanya label utama)
+                                        //     return <div>{option.label}</div>;
+                                        // }}
+                                        />
+                                    </div>
                                     <button
                                         onClick={handleUpload}
                                         disabled={loading || !selectedPlatform}
-                                        className="flex-1 inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                                        className="flex-1 h-9 inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                                     >
                                         {loading ? (
                                             <>
@@ -536,7 +640,7 @@ const EcommerceExcelUpload: React.FC = () => {
                                     <button
                                         onClick={clearFile}
                                         disabled={loading}
-                                        className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="px-6 h-9 py-0 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
                                         Clear
                                     </button>

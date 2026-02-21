@@ -1,10 +1,5 @@
 import mitt from "mitt";
 
-// type Events = {
-//   showAlert: { title: string; description?: string; type?: "error" | "success" | "info" };
-//   loading: boolean;
-// };
-
 type Events = {
   showAlert: { title: string; description?: string; type?: "error" | "success" | "info" };
   loading: boolean;

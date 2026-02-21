@@ -136,7 +136,6 @@ export default function HomePage() {
           Ada 2 stok item yang hampir habis!
         </div> */}
       </div>
-
       <BottomNavbar />
     </>
   );

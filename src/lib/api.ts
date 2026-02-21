@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true // agar cookie dikirim otomatis
+  withCredentials: true
 });
 
 api.interceptors.request.use((config) => {
@@ -16,7 +16,6 @@ api.interceptors.request.use((config) => {
 
   if (!next_token || next_token === "undefined") {
     console.log("Request Auth Token not found. Redirecting to login.");
-    // router.push("/auth/login");
     return config;
   }
 

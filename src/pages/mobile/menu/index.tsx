@@ -38,6 +38,11 @@ const menus = [
     icon: <UtilityPoleIcon />,
     href: "/mobile/utility",
   },
+  {
+    label: "Settings",
+    icon: <Settings />,
+    href: "/mobile/settings",
+  },
   // {
   //   label: "Reports",
   //   icon: <FileText />,

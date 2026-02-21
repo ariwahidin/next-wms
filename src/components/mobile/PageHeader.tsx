@@ -1,7 +1,6 @@
 // components/PageHeader.tsx
 import { ArrowLeft, Server } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Badge } from "../ui/badge";
 import { useAppSelector } from "@/hooks/useAppSelector";
 
 type PageHeaderProps = {
@@ -15,7 +14,6 @@ export default function PageHeader({
 }: PageHeaderProps) {
   const router = useRouter();
   const userRedux = useAppSelector((state) => state.user);
-
   return (
     <div className="flex items-center gap-3 px-4 py-3 bg-white border-b shadow-sm sticky top-0 z-50">
       {showBackButton && (
@@ -23,11 +21,6 @@ export default function PageHeader({
           <ArrowLeft className="w-5 h-5" />
         </button>
       )}
-
-      {/* <span className="mr-2 absolute top-3 right-2">
-        <Badge className="bg-gray-500 text-white capitalize">{userRedux.unit}</Badge>
-      </span> */}
-
       <div className="
                     absolute top-4 right-2
                     flex items-center 

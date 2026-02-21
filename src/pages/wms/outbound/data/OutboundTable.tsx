@@ -22,6 +22,7 @@ import {
   Copy,
   RefreshCcw,
   Upload,
+  ShoppingCart,
 } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import {
@@ -168,6 +169,7 @@ const OutboundTable = () => {
   const [showTempLocationInput, setShowTempLocationInput] = useState(false);
   const [changeStatus, setChangeStatus] = useState("open");
   const [isSubmit, setIsSubmit] = useState(false);
+  const [openImportModal, setOpenImportModal] = useState(false);
 
   const isSubmittingRef = useRef(false);
   const HandlePicking = (id: number) => {
@@ -592,7 +594,7 @@ const OutboundTable = () => {
         });
       },
     },
-    { field: "shipment_id", headerName: "DO No", width: 120 },
+    { field: "shipment_id", headerName: "DO No", width: 150 },
     { field: "order_no", headerName: "SPK No.", width: 150 },
     {
       field: "status",
@@ -623,12 +625,12 @@ const OutboundTable = () => {
         return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
       },
     },
-    { field: "customer_code", headerName: "Customer Code", width: 140 },
-    { field: "customer_name", headerName: "Customer Name", width: 320 },
+    // { field: "customer_code", headerName: "Customer Code", width: 140 },
+    { field: "customer_name", headerName: "Customer", width: 320 },
     { field: "total_item", headerName: "Total Item", width: 100 },
     { field: "qty_req", headerName: "Qty Req", width: 100 },
     { field: "qty_plan", headerName: "Qty Pick", width: 100 },
-    { field: "qty_pack", headerName: "Qty Scan", width: 100 },
+    { field: "qty_pack", headerName: "Qty Pack", width: 100 },
   ]);
 
   const [quickFilterText, setQuickFilterText] = useState<string>();
@@ -661,8 +663,10 @@ const OutboundTable = () => {
                 <Plus className="mr-1w-4" />
                 Add
               </Button>
-              <Button className="ml-2 left-6 h-8 bg-green-500 text-slate-950 outline-green-600"
-                onClick={() => { router.push('/wms/outbound/import-excel') }}>
+              <Button
+                className="ml-2 left-6 h-8 bg-green-500 text-slate-950 outline-green-600"
+                onClick={() => setOpenImportModal(true)}
+              >
                 <Upload className="mr-2 w-4" />
                 Import Excel
               </Button>
@@ -712,6 +716,36 @@ const OutboundTable = () => {
         />
       </div>
       <ScannedItemDialog />
+      <Dialog open={openImportModal} onOpenChange={setOpenImportModal}>
+        <DialogContent className="sm:max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle>Pilih Tipe Import</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <button
+              onClick={() => {
+                setOpenImportModal(false);
+                router.push("/wms/outbound/import-excel");
+              }}
+              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-green-500 hover:bg-green-50"
+            >
+              <Package className="h-10 w-10 text-slate-600" />
+              <span className="text-sm font-semibold text-slate-700">Default</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setOpenImportModal(false);
+                router.push("/wms/outbound/import-excel/ecom");
+              }}
+              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-blue-500 hover:bg-blue-50"
+            >
+              <ShoppingCart className="h-10 w-10 text-slate-600" />
+              <span className="text-sm font-semibold text-slate-700">E-Commerce</span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
