@@ -24,6 +24,11 @@ interface NotifForm {
   email_footer: string;
   header_color: string;
   is_active: boolean;
+  with_attachment: boolean;
+  attachment_name: string;
+  attachment_fields: string; // JSON array string
+  attachment_source: string; // 'event' | 'query'
+  attachment_query: string;  // raw SQL
 }
 
 const PRESET_COLORS = ['#1E3A5F', '#1E40AF', '#0F766E', '#065F46', '#7C3AED', '#B91C1C', '#92400E', '#374151'];
@@ -43,6 +48,12 @@ const defaultForm: NotifForm = {
   email_footer: '© {{year}} Warehouse Management System. This is an automated message — please do not reply.',
   header_color: '#1E40AF',
   is_active: true,
+  with_attachment: false,
+  attachment_name: '',
+  attachment_fields: '[]',
+  attachment_source: 'event',
+  attachment_query: '',
+
 };
 
 const formatDate = (d: string) => new Date(d).toLocaleString('id-ID', {
@@ -74,6 +85,7 @@ export default function NotificationFormPage() {
   // Template active section
   const [tmplSection, setTmplSection] = useState<'subject' | 'header' | 'body' | 'footer'>('body');
   const [showPreview, setShowPreview] = useState(false);
+  const [attachFields, setAttachFields] = useState<string[]>([]);
 
   // ─── Fetch ─────────────────────────────────────────────────────────────────
 
@@ -94,8 +106,14 @@ export default function NotificationFormPage() {
           email_footer: n.email_footer || '',
           header_color: n.header_color || '#1E40AF',
           is_active: n.is_active,
+          with_attachment: n.with_attachment || false,
+          attachment_name: n.attachment_name || '',
+          attachment_fields: n.attachment_fields || '[]',
+          attachment_source: n.attachment_source || 'event',
+          attachment_query: n.attachment_query || '',
         });
         setRecipients(n.recipients || []);
+        setAttachFields(JSON.parse(n.attachment_fields || '[]'));
       });
       api.get(`/notifications/${id}/history?limit=30`, { withCredentials: true })
         .then(r => setHistories(r.data.data || []));
@@ -269,6 +287,147 @@ export default function NotificationFormPage() {
                     <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.is_active ? 'left-5' : 'left-0.5'}`} />
                   </div>
                 </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <div>
+                    <div className="text-sm font-medium text-gray-700">Attachment Excel</div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      Sertakan file Excel berisi data event sebagai attachment email
+                    </div>
+                  </div>
+                  <div
+                    onClick={() => setForm({ ...form, with_attachment: !form.with_attachment })}
+                    className={`w-10 h-5 rounded-full cursor-pointer relative transition-colors ${form.with_attachment ? 'bg-blue-600' : 'bg-gray-300'
+                      }`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.with_attachment ? 'left-5' : 'left-0.5'
+                      }`} />
+                  </div>
+                </div>
+
+                {/* Attachment Config (hanya tampil kalau with_attachment = true) */}
+                {form.with_attachment && (
+                  <div className="border border-blue-100 bg-blue-50/30 rounded-xl p-4 space-y-4">
+                    <div className="text-xs font-semibold text-blue-700">Konfigurasi Attachment</div>
+
+                    {/* Nama file */}
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Nama File</label>
+                      <input
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="outbound_{{outbound_no}}_{{date}}.xlsx"
+                        value={form.attachment_name}
+                        onChange={e => setForm({ ...form, attachment_name: e.target.value })}
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Support placeholder: <span className="font-mono">{'{{outbound_no}}'}</span>, <span className="font-mono">{'{{date}}'}</span>, dll
+                      </p>
+                    </div>
+
+                    {/* Source toggle */}
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2">Sumber Data Excel</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { key: 'event', label: '⚡ Event Data', desc: 'Field dari event (outbound_no, customer, dll)' },
+                          { key: 'query', label: '🗄 SQL Query', desc: 'Query custom, bisa JOIN, multi baris' },
+                        ].map(s => (
+                          <button key={s.key}
+                            onClick={() => setForm({ ...form, attachment_source: s.key })}
+                            className={`border rounded-xl p-3 text-left transition-colors ${form.attachment_source === s.key
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 bg-white hover:bg-gray-50'
+                              }`}>
+                            <div className={`text-sm font-medium ${form.attachment_source === s.key ? 'text-blue-700' : 'text-gray-700'}`}>
+                              {s.label}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-0.5">{s.desc}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Event source — pilih fields */}
+                    {form.attachment_source === 'event' && (
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">
+                          Pilih field yang masuk ke Excel
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            'outbound_no', 'customer_code', 'owner_code', 'whs_code',
+                            'picker_name', 'complete_time', 'deliv_to', 'deliv_address',
+                            'deliv_city', 'driver', 'truck_no', 'transporter_code',
+                            'awb_no', 'remarks',
+                          ].map(field => {
+                            const isSelected = attachFields.includes(field);
+                            return (
+                              <button key={field}
+                                onClick={() => {
+                                  const updated = isSelected
+                                    ? attachFields.filter(f => f !== field)
+                                    : [...attachFields, field];
+                                  setAttachFields(updated);
+                                  setForm({ ...form, attachment_fields: JSON.stringify(updated) });
+                                }}
+                                className={`text-xs px-3 py-1.5 rounded-full border font-mono transition-colors ${isSelected
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                                  }`}>
+                                {isSelected ? '✓ ' : ''}{field}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {attachFields.length > 0 && (
+                          <div className="mt-2">
+                            <div className="text-xs text-gray-400 mb-1">{attachFields.length} kolom dipilih:</div>
+                            <div className="flex gap-1 flex-wrap">
+                              {attachFields.map((f, i) => (
+                                <span key={f} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded font-mono">
+                                  {i + 1}. {f.toUpperCase().replace(/_/g, ' ')}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Query source — SQL editor */}
+                    {form.attachment_source === 'query' && (
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">
+                          SQL Query <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                          rows={10}
+                          placeholder={`SELECT
+  oh.outbound_no,
+  oh.customer_code,
+  oh.whs_code,
+  od.item_code,
+  od.quantity,
+  od.uom
+FROM outbound_headers oh
+JOIN outbound_details od ON od.outbound_id = oh.id
+WHERE oh.outbound_no = '{{outbound_no}}'`}
+                          value={form.attachment_query}
+                          onChange={e => setForm({ ...form, attachment_query: e.target.value })}
+                        />
+                        <div className="mt-1.5 space-y-1">
+                          <p className="text-xs text-gray-400">
+                            Hanya SELECT yang diizinkan — INSERT, UPDATE, DELETE akan ditolak.
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Gunakan placeholder dari event: <span className="font-mono text-blue-600">{'{{outbound_no}}'}</span>, <span className="font-mono text-blue-600">{'{{customer_code}}'}</span>, dll — akan di-replace saat email dikirim.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

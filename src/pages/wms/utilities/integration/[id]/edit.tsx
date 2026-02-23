@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 'use client';
@@ -31,6 +32,12 @@ interface IntegrationForm {
     email_config_id: number | null;
     notify_on_success: boolean; notify_on_failure: boolean;
     notify_email_subject: string; notify_email_body: string; is_active: boolean;
+    direction: string;       // 'outbound' | 'inbound'
+    action: string;          // 'create_outbound'
+    source_path: string;     // path folder/remote untuk pull
+    archive_path: string;    // file dipindah ke sini kalau sukses
+    error_path: string;      // file dipindah ke sini kalau gagal
+    column_mapping: string;  // JSON string hasil column mapping
 }
 
 const defaultForm: IntegrationForm = {
@@ -43,6 +50,12 @@ const defaultForm: IntegrationForm = {
     email_config_id: null,
     notify_on_success: false, notify_on_failure: true,
     notify_email_subject: '', notify_email_body: '', is_active: true,
+    direction: 'outbound',
+    action: 'create_outbound',
+    source_path: '',
+    archive_path: '',
+    error_path: '',
+    column_mapping: '',
 };
 
 const defaultConn: Connection = {
@@ -68,7 +81,7 @@ export default function IntegrationFormPage() {
     const [emailConfigs, setEmailConfigs] = useState<EmailConfig[]>([]);
     const [recipients, setRecipients] = useState<Recipient[]>([]);
     const [histories, setHistories] = useState<History[]>([]);
-    const [activeTab, setActiveTab] = useState<'general' | 'connection' | 'notification' | 'recipients' | 'history'>('general');
+    const [activeTab, setActiveTab] = useState<'general' | 'mapping' | 'connection' | 'notification' | 'recipients' | 'history'>('general');
     const [saving, setSaving] = useState(false);
     const [savingConn, setSavingConn] = useState(false);
     const [error, setError] = useState('');
@@ -79,6 +92,12 @@ export default function IntegrationFormPage() {
     const [rcptEmail, setRcptEmail] = useState('');
     const [rcptName, setRcptName] = useState('');
     const [rcptType, setRcptType] = useState<'TO' | 'CC'>('TO');
+
+    const [fileHeaders, setFileHeaders] = useState<string[]>([]);
+    const [wmsFields, setWmsFields] = useState<{ key: string; label: string }[]>([]);
+    const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+    const [detectingHeaders, setDetectingHeaders] = useState(false);
+    const [pulling, setPulling] = useState(false);
 
     // ─── Fetch ─────────────────────────────────────────────────────────────────
 
@@ -98,10 +117,16 @@ export default function IntegrationFormPage() {
                     schedule_hour: d.schedule_hour || 8, schedule_minute: d.schedule_minute || 0,
                     schedule_day_of_week: d.schedule_day_of_week || null,
                     schedule_day_of_month: d.schedule_day_of_month || null,
-                    email_config_id: d.email_config_id || '',
+                    email_config_id: d.email_config_id || null,
                     notify_on_success: d.notify_on_success, notify_on_failure: d.notify_on_failure,
                     notify_email_subject: d.notify_email_subject || '',
                     notify_email_body: d.notify_email_body || '', is_active: d.is_active,
+                    direction: d.direction || 'outbound',
+                    action: d.action || 'create_outbound',
+                    source_path: d.source_path || '',
+                    archive_path: d.archive_path || '',
+                    error_path: d.error_path || '',
+                    column_mapping: d.column_mapping || '',
                 });
                 if (d.connection) setConn({ ...defaultConn, ...d.connection });
                 setRecipients(d.recipients || []);
@@ -186,9 +211,19 @@ export default function IntegrationFormPage() {
     const isFileChannel = ['sftp', 'ftp', 'file'].includes(form.channel_type);
     const isAPIChannel = form.channel_type === 'api';
 
+    // const tabs = [
+    //     { key: 'general', label: 'General' },
+    //     { key: 'connection', label: 'Connection' },
+    //     ...(form.direction === 'inbound' ? [{ key: 'mapping', label: 'Column Mapping' }] : []),
+    //     { key: 'notification', label: 'Notifikasi Email' },
+    //     { key: 'recipients', label: `Recipients (${recipients.length})` },
+    //     { key: 'history', label: 'History' },
+    // ] as const;
+
     const tabs = [
         { key: 'general', label: 'General' },
         { key: 'connection', label: 'Connection' },
+        ...(form.direction === 'inbound' ? [{ key: 'mapping', label: 'Column Mapping' }] : []),
         { key: 'notification', label: 'Notifikasi Email' },
         { key: 'recipients', label: `Recipients (${recipients.length})` },
         { key: 'history', label: 'History' },
@@ -211,6 +246,60 @@ export default function IntegrationFormPage() {
             }, 3000);
         } catch (e: any) {
             setError(e.response?.data?.error || 'Gagal retrigger');
+        }
+    };
+
+
+    const handleDetectHeaders = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setDetectingHeaders(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await api.post(`/integrations/${id}/detect-headers`, formData, {
+                withCredentials: true,
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            setFileHeaders(res.data.headers || []);
+            setWmsFields(res.data.wms_fields || []);
+            // Load mapping yang sudah tersimpan
+            if (form.column_mapping) {
+                try { setColumnMapping(JSON.parse(form.column_mapping)); } catch { }
+            }
+        } catch (e: any) {
+            setError(e.response?.data?.error || 'Gagal detect headers');
+        } finally {
+            setDetectingHeaders(false);
+        }
+    };
+
+    const handleSaveMapping = async () => {
+        const mappingJson = JSON.stringify(columnMapping);
+        const updated = { ...form, column_mapping: mappingJson };
+        setForm(updated);
+        try {
+            await api.put(`/integrations/${id}`, updated, { withCredentials: true });
+            setSuccess('Column mapping berhasil disimpan');
+        } catch (e: any) {
+            setError(e.response?.data?.error || 'Gagal simpan mapping');
+        }
+    };
+
+    const handleManualPull = async () => {
+        if (!confirm('Jalankan pull sekarang?')) return;
+        setPulling(true);
+        try {
+            await api.post(`/integrations/${id}/pull`, {}, { withCredentials: true });
+            setSuccess('Pull dimulai! Cek history untuk hasilnya.');
+            setTimeout(() => {
+                api.get(`/integrations/${id}/history?limit=30`, { withCredentials: true })
+                    .then(r => setHistories(r.data.data || []));
+            }, 3000);
+        } catch (e: any) {
+            setError(e.response?.data?.error || 'Gagal pull');
+        } finally {
+            setPulling(false);
         }
     };
 
@@ -249,7 +338,7 @@ export default function IntegrationFormPage() {
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <div className="flex border-b border-gray-200 overflow-x-auto">
                         {tabs.map(t => (
-                            <button key={t.key} onClick={() => setActiveTab(t.key)}
+                            <button key={t.key} onClick={() => setActiveTab(t.key as any)}
                                 className={`px-5 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === t.key ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
                                     }`}>{t.label}</button>
                         ))}
@@ -302,6 +391,78 @@ export default function IntegrationFormPage() {
                                         ))}
                                     </div>
                                 </div>
+
+
+                                {/* Direction */}
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-2">Direction *</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                            { key: 'outbound', label: '↑ Outbound', desc: 'WMS kirim data ke sistem eksternal' },
+                                            { key: 'inbound', label: '↓ Inbound', desc: 'WMS terima/ambil data dari sistem eksternal' },
+                                        ].map(d => (
+                                            <button key={d.key} onClick={() => setForm({ ...form, direction: d.key })}
+                                                className={`border rounded-xl p-4 text-left transition-colors ${form.direction === d.key ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                                                    }`}>
+                                                <div className={`text-sm font-medium ${form.direction === d.key ? 'text-blue-700' : 'text-gray-700'}`}>{d.label}</div>
+                                                <div className="text-xs text-gray-400 mt-1">{d.desc}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Inbound Config (hanya tampil kalau direction = inbound) */}
+                                {form.direction === 'inbound' && (
+                                    <div className="border border-blue-100 bg-blue-50/30 rounded-xl p-4 space-y-3">
+                                        <div className="text-xs font-semibold text-blue-700 mb-2">Inbound Configuration</div>
+
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Action</label>
+                                            <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={form.action}
+                                                onChange={e => setForm({ ...form, action: e.target.value })}>
+                                                <option value="create_outbound">Create Outbound</option>
+                                            </select>
+                                            <p className="text-xs text-gray-400 mt-1">Aksi yang dilakukan setelah data berhasil dibaca</p>
+                                        </div>
+
+                                        {/* Source Path (untuk SFTP/FTP/File) */}
+                                        {form.channel_type !== 'api' && (
+                                            <>
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-1">Source Path</label>
+                                                    <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="/incoming/orders" value={form.source_path || ''}
+                                                        onChange={e => setForm({ ...form, source_path: e.target.value })} />
+                                                    <p className="text-xs text-gray-400 mt-1">Folder/path tempat WMS membaca file baru</p>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">Archive Path</label>
+                                                        <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            placeholder="/incoming/done" value={form.archive_path || ''}
+                                                            onChange={e => setForm({ ...form, archive_path: e.target.value })} />
+                                                        <p className="text-xs text-gray-400 mt-1">File dipindah ke sini jika sukses</p>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">Error Path</label>
+                                                        <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            placeholder="/incoming/error" value={form.error_path || ''}
+                                                            onChange={e => setForm({ ...form, error_path: e.target.value })} />
+                                                        <p className="text-xs text-gray-400 mt-1">File dipindah ke sini jika gagal</p>
+                                                    </div>
+                                                </div>
+                                                {/* Manual Pull Button */}
+                                                {isEdit && (
+                                                    <button onClick={handleManualPull} disabled={pulling}
+                                                        className="w-full border border-blue-300 bg-white hover:bg-blue-50 text-blue-700 text-sm py-2 rounded-lg disabled:opacity-50 font-medium">
+                                                        {pulling ? '⏳ Pulling...' : '⬇ Jalankan Pull Sekarang'}
+                                                    </button>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* File Format (hanya untuk non-API) */}
                                 {isFileChannel && (
@@ -437,6 +598,93 @@ export default function IntegrationFormPage() {
                                         <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.is_active ? 'left-5' : 'left-0.5'}`} />
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+
+                        {activeTab === 'mapping' && (
+                            <div className="space-y-4">
+                                {!isEdit ? (
+                                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm px-4 py-3 rounded-lg">
+                                        Simpan integrasi terlebih dahulu.
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Upload sample file untuk auto-detect */}
+                                        <div className="border border-dashed border-gray-300 rounded-xl p-5 text-center space-y-3">
+                                            <div className="text-gray-500 text-sm">Upload sample file untuk auto-detect kolom</div>
+                                            <input type="file" accept=".csv,.xlsx,.xls,.json,.xml,.txt"
+                                                onChange={handleDetectHeaders}
+                                                className="hidden" id="sample-file" />
+                                            <label htmlFor="sample-file"
+                                                className="cursor-pointer inline-block bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-4 py-2 rounded-lg">
+                                                {detectingHeaders ? '⏳ Mendeteksi...' : '📁 Pilih File Sample'}
+                                            </label>
+                                            {fileHeaders.length > 0 && (
+                                                <div className="text-xs text-green-600 font-medium">
+                                                    ✓ Terdeteksi {fileHeaders.length} kolom dari file
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Column Mapping Table */}
+                                        {wmsFields.length > 0 && (
+                                            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                                <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                                                    <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-gray-600">
+                                                        <div>WMS Field</div>
+                                                        <div>Kolom di File</div>
+                                                    </div>
+                                                </div>
+                                                <div className="divide-y divide-gray-100">
+                                                    {wmsFields.map(field => (
+                                                        <div key={field.key} className="px-4 py-3 grid grid-cols-2 gap-4 items-center">
+                                                            <div>
+                                                                <div className="text-sm text-gray-700">{field.label}</div>
+                                                                <div className="text-xs font-mono text-gray-400">{field.key}</div>
+                                                            </div>
+                                                            <select
+                                                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                value={columnMapping[field.key] || ''}
+                                                                onChange={e => {
+                                                                    const newMapping = { ...columnMapping };
+                                                                    if (e.target.value) {
+                                                                        newMapping[field.key] = e.target.value;
+                                                                    } else {
+                                                                        delete newMapping[field.key];
+                                                                    }
+                                                                    setColumnMapping(newMapping);
+                                                                }}>
+                                                                <option value="">-- Tidak di-map --</option>
+                                                                {fileHeaders.map(h => (
+                                                                    <option key={h} value={h}>{h}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Simpan mapping */}
+                                        {wmsFields.length > 0 && (
+                                            <button onClick={handleSaveMapping}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-5 py-2 rounded-lg">
+                                                Simpan Column Mapping
+                                            </button>
+                                        )}
+
+                                        {/* Tampil JSON mapping yang tersimpan */}
+                                        {form.column_mapping && (
+                                            <div>
+                                                <div className="text-xs text-gray-500 mb-1">Mapping tersimpan:</div>
+                                                <pre className="text-xs font-mono bg-gray-50 border border-gray-200 rounded-lg p-3 overflow-auto">
+                                                    {JSON.stringify(JSON.parse(form.column_mapping || '{}'), null, 2)}
+                                                </pre>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         )}
 
@@ -734,7 +982,17 @@ export default function IntegrationFormPage() {
                                                         </td>
                                                         <td className="px-4 py-3 text-xs text-gray-600 uppercase">{h.channel_type}</td>
                                                         <td className="px-4 py-3 text-xs text-gray-500">{h.triggered_by}</td>
-                                                        <td className="px-4 py-3 text-xs text-gray-500 max-w-xs truncate">{h.message}</td>
+                                                        {/* <td className="px-4 py-3 text-xs text-gray-500 max-w-xs truncate">{h.message}</td> */}
+                                                        <td className="px-4 py-3 text-xs text-gray-500 max-w-xs">
+                                                            <div className="relative group">
+                                                                <div className="truncate cursor-pointer">{h.message}</div>
+                                                                {h.message && h.message.length > 50 && (
+                                                                    <div className="absolute z-50 hidden group-hover:block top-full left-0 mt-1 w-80 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 shadow-lg break-words whitespace-pre-wrap">
+                                                                        {h.message}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
                                                         <td className="px-4 py-3 text-center">
                                                             <button
                                                                 onClick={() => handleRetrigger(h.id)}
