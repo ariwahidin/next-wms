@@ -50,7 +50,7 @@ export default function EmailNotificationPage() {
 
     return (
         <Layout title="Utilities" subTitle="Email Notification" description="Kelola notifikasi email otomatis berdasarkan event sistem">
-            <div className="p-6 max-w-6xl mx-auto space-y-4">
+            <div className="p-6 max-w-8xl mx-auto space-y-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>

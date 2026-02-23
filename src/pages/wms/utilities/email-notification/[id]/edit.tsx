@@ -174,11 +174,29 @@ export default function NotificationFormPage() {
     { key: 'history', label: 'History' },
   ] as const;
 
+  const handleRetrigger = async (historyId: number) => {
+    if (!confirm('Kirim ulang notifikasi ini dengan data yang sama?')) return;
+    try {
+      await api.post(
+        `/notifications/${id}/history/${historyId}/retrigger`,
+        {},
+        { withCredentials: true }
+      );
+      setSuccess('Retrigger dimulai! Cek history dalam beberapa detik.');
+      setTimeout(() => {
+        api.get(`/notifications/${id}/history?limit=30`, { withCredentials: true })
+          .then(r => setHistories(r.data.data || []));
+      }, 3000);
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'Gagal retrigger');
+    }
+  };
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
     <Layout title="Utilities" subTitle="Email Notification" description="Kelola notifikasi email otomatis berdasarkan event sistem">
-      <div className="p-6 max-w-4xl mx-auto space-y-4">
+      <div className="p-6 max-w-6xl mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -415,7 +433,7 @@ export default function NotificationFormPage() {
             )}
 
             {/* ── History ───────────────────────────────────────────────────── */}
-            {activeTab === 'history' && (
+            {/* {activeTab === 'history' && (
               <div className="space-y-3">
                 {!isEdit ? (
                   <div className="p-6 text-center text-gray-400 text-sm">Simpan notifikasi terlebih dahulu.</div>
@@ -442,6 +460,50 @@ export default function NotificationFormPage() {
                               </span>
                             </td>
                             <td className="px-4 py-3 text-xs text-gray-500">{h.message}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )} */}
+            {activeTab === 'history' && (
+              <div className="space-y-3">
+                {!isEdit ? (
+                  <div className="p-6 text-center text-gray-400 text-sm">Simpan notifikasi terlebih dahulu.</div>
+                ) : histories.length === 0 ? (
+                  <div className="p-6 text-center text-gray-400 text-sm">Belum ada history pengiriman</div>
+                ) : (
+                  <div className="border border-gray-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="text-left px-4 py-3 text-gray-600 font-medium">Waktu</th>
+                          <th className="text-center px-4 py-3 text-gray-600 font-medium">Status</th>
+                          <th className="text-left px-4 py-3 text-gray-600 font-medium">Keterangan</th>
+                          <th className="text-center px-4 py-3 text-gray-600 font-medium">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {histories.map(h => (
+                          <tr key={h.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{formatDate(h.sent_at)}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${h.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                }`}>
+                                {h.status === 'success' ? '✓ Sukses' : '✕ Gagal'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-gray-500">{h.message}</td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => handleRetrigger(h.id)}
+                                className="text-xs text-blue-600 hover:underline whitespace-nowrap"
+                              >
+                                ↺ Retrigger
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
