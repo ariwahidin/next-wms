@@ -49,6 +49,7 @@ export default function ManualForm() {
     picker_name: "",
     cust_address: "",
     cust_city: "",
+    order_type: "",
     plan_pickup_date: "",
     plan_pickup_time: "",
     rcv_do_date: "",
@@ -77,6 +78,12 @@ export default function ManualForm() {
   const [ownerOptions, setOwnerOptions] = useState<ItemOptions[]>([]);
   const [itemScanDetails, setItemScanDetails] = useState<ItemScanDetail[]>([]);
   const [outboundScan, setOutboundScan] = useState<OutboundScan[]>([]);
+
+  const ordertypeOptions: ItemOptions[] = [
+    { value: "B2B - Consignment", label: "B2B - Consignment" },
+    { value: "B2B - Normal", label: "B2B - Normal" },
+    { value: "B2C - Marketplace", label: "B2C - Marketplace" },
+  ];
 
   const fetchData = async () => {
     try {
@@ -406,6 +413,8 @@ export default function ManualForm() {
                 </div>
               </div>
 
+
+
               <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
@@ -438,7 +447,26 @@ export default function ManualForm() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2" style={{display : "none"}}>
+
+              <div className="flex items-center gap-2">
+                <Label className="w-24 text-left shrink-0" style={{ fontSize: "12px" }}>
+                  Order Type
+                </Label>
+                <span className="shrink-0">:</span>
+                <div className="flex-1">
+                  {/* ── Opsi diperluas: TRIP, MULTI DROP, B2B - Consignment, B2B - Normal, B2C - Marketplace ── */}
+                  <Select
+                    // className="w-56"
+                    value={ordertypeOptions.find((o) => o.value === formData.order_type)}
+                    options={ordertypeOptions}
+                    onChange={(opt) => {
+                      if (opt) setFormData({ ...formData, order_type: opt.value });
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2" style={{ display: "none" }}>
                 <Label
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
@@ -460,7 +488,7 @@ export default function ManualForm() {
                   }
                 />
               </div>
-              <div className="flex items-center gap-2" style={{display : "none"}}>
+              <div className="flex items-center gap-2" style={{ display: "none" }}>
                 <Label
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
@@ -489,6 +517,8 @@ export default function ManualForm() {
 
             {/* Column 2 */}
             <div className="space-y-1 ps-8">
+
+
               <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"

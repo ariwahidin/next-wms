@@ -280,7 +280,7 @@ const SPKSheetPrint = () => {
         }}
       >
         <div>
-          <p style={{ textAlign: "center", fontSize: "10px" }}>Checker</p>
+          <p style={{ textAlign: "center", fontSize: "10px" }}>Supervisor</p>
           <div style={signatureLine}></div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
           <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>

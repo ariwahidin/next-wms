@@ -12,6 +12,7 @@ export interface HeaderFormProps {
   picker_name?: string;
   cust_address?: string;
   cust_city?: string;
+  order_type?: string;
   plan_pickup_date?: string;
   plan_pickup_time?: string;
   rcv_do_date?: string;

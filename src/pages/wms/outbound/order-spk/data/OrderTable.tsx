@@ -49,6 +49,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MuatanOrderSPK } from "@/types/order-spk";
+import { useAppSelector } from "@/hooks/useAppSelector";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -113,6 +114,7 @@ const OrderTable = () => {
   const [scannedItemData, setScannedItemData] = useState<any>(null);
   const [tempLocationName, setTempLocationName] = useState("");
   const [showTempLocationInput, setShowTempLocationInput] = useState(false);
+  const userRedux = useAppSelector((state) => state.user);
 
   // ─── Update Status ──────────────────────────────────────────────────────────
 
@@ -364,12 +366,13 @@ const OrderTable = () => {
   const [columnDefs] = useState<ColDef[]>([
     {
       headerCheckboxSelection: true,
-      checkboxSelection: true,
+      checkboxSelection: (params) => {
+        return params.data?.status !== "loaded"
+      },
       maxWidth: 48,
       pinned: "left",
       suppressMovable: true,
       resizable: false,
-      field: "checkbox",
       headerName: "",
     },
     { field: "no", headerName: "No.", maxWidth: 60 },
@@ -461,7 +464,7 @@ const OrderTable = () => {
                 )}
 
                 {/* Reopen - hanya tampil jika status loaded */}
-                {status === "loaded" && (
+                {status === "loaded"  && userRedux.roles.some((role) => role.name === "SUPERADMIN") && (
                   <DropdownMenuItem
                     className="cursor-pointer text-blue-600 focus:text-blue-700"
                     onClick={(e) => {
@@ -625,6 +628,7 @@ const OrderTable = () => {
           domLayout="autoHeight"
           rowSelection="multiple"
           suppressRowClickSelection={true}
+          isRowSelectable={(params) => params.data.status !== "loaded"}
           onSelectionChanged={(e) => {
             const selected = e.api.getSelectedRows();
             setSelectedRows(selected);

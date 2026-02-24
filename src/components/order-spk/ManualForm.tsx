@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // /* eslint-disable @typescript-eslint/no-unused-vars */
 // "use client";
 
@@ -576,9 +577,6 @@ export default function ManualForm() {
   const ordertypeOptions: ItemOptions[] = [
     { value: "TRIP", label: "TRIP" },
     { value: "MULTI DROP", label: "MULTI DROP" },
-    { value: "B2B - Consignment", label: "B2B - Consignment" },
-    { value: "B2B - Normal", label: "B2B - Normal" },
-    { value: "B2C - Marketplace", label: "B2C - Marketplace" },
   ];
 
   const [truckTypeOptions, setTruckTypeOptions] = useState<ItemOptions[]>([

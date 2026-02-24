@@ -594,7 +594,8 @@ const OutboundTable = () => {
         });
       },
     },
-    { field: "shipment_id", headerName: "DO No", width: 150 },
+    { field: "shipment_id", headerName: "DO No.", width: 150 },
+    { field: "order_type", headerName: "Order Type", width: 150 },
     { field: "order_no", headerName: "SPK No.", width: 150 },
     {
       field: "status",
@@ -625,7 +626,6 @@ const OutboundTable = () => {
         return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
       },
     },
-    // { field: "customer_code", headerName: "Customer Code", width: 140 },
     { field: "customer_name", headerName: "Customer", width: 320 },
     { field: "total_item", headerName: "Total Item", width: 100 },
     { field: "qty_req", headerName: "Qty Req", width: 100 },
