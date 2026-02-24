@@ -12,12 +12,9 @@ import {
   Pencil,
   Plus,
   Printer,
-  Forklift,
+  Truck,
   CheckCheck,
-  CheckCircle2,
-  Package,
-  Package2,
-  Blocks,
+  RotateCcw,
 } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import {
@@ -26,15 +23,12 @@ import {
   useState,
   useMemo,
   useRef,
-  use,
   useEffect,
 } from "react";
 import styles from "./OrderTable.module.css";
 import router, { useRouter } from "next/router";
 import { useAlert } from "@/contexts/AlertContext";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
-import { emit } from "process";
 import eventBus from "@/utils/eventBus";
 import {
   DropdownMenu,
@@ -71,137 +65,154 @@ const fetcher = (url: string) =>
   });
 
 const HandleEdit = (item: any) => {
-  console.log("Edit ID:", item.outbound_no);
   router.push(`/wms/outbound/order-spk/edit/${item.order_no}`);
-  // window.location.href = `/wms/outbound/order-spk/edit/${item.order_no}`;
 };
 
-// const HandleDelete = (id: number) => {
-//   try {
-//     api.delete(`/outbound/${id}`, { withCredentials: true }).then((res) => {
-//       if (res.data.success === true) {
-//         // mutate("/inbound/detail/draft"); // 🔥 Auto-refresh tabel tanpa reload halaman
-//       }
-//     });
-//   } catch (error) {
-//     console.error("Gagal menghapus produk:", error);
-//   }
-// };
-
 const HandlePreviewPDF = (item: MuatanOrderSPK) => {
-  console.log("Preview PDF Order No:", item.order_no);
-  const printWindow = window.open(
+  window.open(
     `/wms/outbound/order-spk/spk-sheet/${item.order_no}`,
     "_blank"
   );
+};
 
+// Badge warna berdasarkan status
+const StatusBadge = ({ status }: { status: string }) => {
+  const statusMap: Record<string, { label: string; className: string }> = {
+    open: {
+      label: "Open",
+      className: "bg-blue-100 text-blue-700 border border-blue-300",
+    },
+    loaded: {
+      label: "Loaded",
+      className: "bg-green-100 text-green-700 border border-green-300",
+    },
+  };
 
-  // const printWindow = window.open(
-  //   `/wms/outbound/order-spk/spk-sheet/${item.order_no}`,
-  //   "_blank"
-  // );
-  // if (printWindow) {
-  //   // printWindow.document.write(printContent);
-  //   printWindow.document.close();
+  const config = statusMap[status?.toLowerCase()] ?? {
+    label: status ?? "-",
+    className: "bg-gray-100 text-gray-600 border border-gray-300",
+  };
 
-  //   // Wait for images to load before printing
-  //   setTimeout(() => {
-  //     printWindow.print();
-  //     printWindow.close();
-  //   }, 1000);
-  // }
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${config.className}`}
+    >
+      {config.label}
+    </span>
+  );
 };
 
 const OrderTable = () => {
   const { data: rowData, error, mutate } = useSWR("/order", fetcher);
   const { showAlert, notify } = useAlert();
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const gridRef = useRef<AgGridReact>(null);
 
-  // Dialog states
+  // Dialog states (existing)
   const [isScannedItemDialog, setIsScannedItemDialog] = useState(false);
   const [scannedItemData, setScannedItemData] = useState<any>(null);
   const [tempLocationName, setTempLocationName] = useState("");
   const [showTempLocationInput, setShowTempLocationInput] = useState(false);
 
-  const HandlePicking = (id: number) => {
-    showAlert(
-      "Picking Confirmation",
-      "The picking process is carried out by the system, are you sure to continue?",
-      "error",
-      () => {
-        console.log(id);
-        api
-          .post(
-            `/outbound/picking/${id}`,
-            { inbound_id: id },
-            { withCredentials: true }
-          )
-          .then((res) => {
+  // ─── Update Status ──────────────────────────────────────────────────────────
+
+  /**
+   * Update status satu order (dari dropdown action)
+   */
+  const handleUpdateStatusSingle = useCallback(
+    (orderNo: string, newStatus: string) => {
+      const label = newStatus === "loaded" ? "Mark as Loaded" : "Reopen";
+      showAlert(
+        `${label} Confirmation`,
+        `Are you sure you want to change the status of order ${orderNo} to "${newStatus}"?`,
+        "error",
+        async () => {
+          try {
+            const res = await api.patch(
+              "/order/status",
+              { order_nos: [orderNo], status: newStatus },
+              { withCredentials: true }
+            );
             if (res.data.success) {
               eventBus.emit("showAlert", {
                 title: "Success!",
                 description: res.data.message,
                 type: "success",
               });
-              mutate("/outbound");
+              mutate("/order");
             }
-          })
-          .catch((error) => {
-            console.error("Error saving inbound:", error);
-            alert("Gagal menyimpan inbound");
-          });
-      }
-    );
-  };
+          } catch (err) {
+            eventBus.emit("showAlert", {
+              title: "Error",
+              description: "Failed to update status",
+              type: "error",
+            });
+          }
+        }
+      );
+    },
+    [showAlert, mutate]
+  );
 
-  const HandlePickingComplete = (id: number) => {
-    showAlert(
-      "Picking Complete Confirmation",
-      "Are you sure you want to save this data?",
-      "error",
-      () => {
-        api
-          .post(
-            `/outbound/picking/complete/${id}`,
-            { outbound_id: id },
-            { withCredentials: true }
-          )
-          .then((res) => {
+  /**
+   * Update status banyak order sekaligus (bulk)
+   */
+  const handleBulkUpdateStatus = useCallback(
+    (newStatus: string) => {
+      if (selectedRows.length === 0) {
+        notify("Warning", "Please select at least one order first", "error");
+        return;
+      }
+      const orderNos = selectedRows.map((r) => r.order_no);
+      const label = newStatus === "loaded" ? "Mark as Loaded" : "Reopen";
+      showAlert(
+        `${label} - Bulk Action`,
+        `Update ${orderNos.length} selected order(s) to "${newStatus}"?`,
+        "error",
+        async () => {
+          try {
+            const res = await api.patch(
+              "/order/status",
+              { order_nos: orderNos, status: newStatus },
+              { withCredentials: true }
+            );
             if (res.data.success) {
               eventBus.emit("showAlert", {
                 title: "Success!",
                 description: res.data.message,
                 type: "success",
               });
-              mutate("/outbound");
+              mutate("/order");
+              // Clear selection
+              gridRef.current?.api?.deselectAll();
+              setSelectedRows([]);
             }
-          })
-          .catch((error) => {
-            console.error("Error saving inbound:", error);
-            alert("Gagal menyimpan inbound");
-          });
-      }
-    );
-  };
+          } catch (err) {
+            eventBus.emit("showAlert", {
+              title: "Error",
+              description: "Failed to bulk update status",
+              type: "error",
+            });
+          }
+        }
+      );
+    },
+    [selectedRows, showAlert, notify, mutate]
+  );
 
-  // Handle open untuk single row dari dropdown action
+  // ─── Existing scanned item dialog logic ─────────────────────────────────────
+
   const handleOpenSingle = (rowData: any) => {
-    console.log("handleOpenSingle", rowData);
-
     try {
       api
         .post("/outbound/open", { outbound_no: rowData.outbound_no })
         .then((response) => {
           if (response.data.success) {
-            // notify("Success", response.data.message, "success");
-            // mutate("/outbound");
             setScannedItemData({
               outbound_no: rowData.outbound_no,
               scanned_items: rowData.scanned_items || [],
             });
             setIsScannedItemDialog(true);
-          } else {
-            // notify("Error", response.data.message, "error");
           }
         })
         .catch((error) => {
@@ -212,7 +223,6 @@ const OrderTable = () => {
     }
   };
 
-  // Handle pilihan user untuk item yang sudah di-scan
   const handleScannedItemChoice = (choice: string) => {
     if (choice === "temp_location") {
       setShowTempLocationInput(true);
@@ -221,7 +231,6 @@ const OrderTable = () => {
     }
   };
 
-  // Process pilihan user
   const processScannedItems = useCallback(
     (action: string, locationName: string | null = null) => {
       const payload = {
@@ -229,7 +238,6 @@ const OrderTable = () => {
         action: action,
         temp_location_name: locationName,
       };
-
       api
         .post("/outbound/open/process", payload, { withCredentials: true })
         .then((response) => {
@@ -249,14 +257,10 @@ const OrderTable = () => {
     [scannedItemData?.outbound_no, notify, mutate]
   );
 
-  // Handle input change dengan ref untuk menghindari re-render
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Submit temp location tanpa dependency tempLocationName
   const handleTempLocationSubmit = useCallback(() => {
     const currentValue = inputRef.current?.value || tempLocationName;
-    console.log("tempLocationName:", currentValue);
-
     if (!currentValue.trim()) {
       notify("Error", "Temporary location name is required", "error");
       return;
@@ -264,7 +268,6 @@ const OrderTable = () => {
     processScannedItems("temp_location", currentValue.trim());
   }, [processScannedItems, notify, tempLocationName]);
 
-  // Close dialog dan reset state
   const closeScannedItemDialog = useCallback(() => {
     setIsScannedItemDialog(false);
     setScannedItemData(null);
@@ -272,7 +275,6 @@ const OrderTable = () => {
     setShowTempLocationInput(false);
   }, []);
 
-  // Handle back button
   const handleBackToChoice = useCallback(() => {
     setShowTempLocationInput(false);
   }, []);
@@ -283,7 +285,15 @@ const OrderTable = () => {
     }
   }, [isScannedItemDialog]);
 
-  // Simplest approach - no complex memoization
+  useEffect(() => {
+    if (!isScannedItemDialog) {
+      setScannedItemData(null);
+      setTempLocationName("");
+    }
+  }, [isScannedItemDialog]);
+
+  // ─── Scanned Item Dialog ─────────────────────────────────────────────────────
+
   const ScannedItemDialog = () => (
     <Dialog open={isScannedItemDialog} onOpenChange={closeScannedItemDialog}>
       <DialogContent className="sm:max-w-md bg-white">
@@ -294,7 +304,6 @@ const OrderTable = () => {
             {scannedItemData?.outbound_no}. Select the action to perform:
           </DialogDescription>
         </DialogHeader>
-
         {!showTempLocationInput ? (
           <DialogFooter className="flex-col sm:flex-col gap-2">
             <Button
@@ -350,9 +359,31 @@ const OrderTable = () => {
     </Dialog>
   );
 
-  const [columnDefs, setColumnDefs] = useState<ColDef[]>([
-    { field: "no", headerName: "No. ", maxWidth: 70 },
-    { field: "order_no", headerName: "Order No", maxWidth: 150 },
+  // ─── Column Defs ─────────────────────────────────────────────────────────────
+
+  const [columnDefs] = useState<ColDef[]>([
+    {
+      headerCheckboxSelection: true,
+      checkboxSelection: true,
+      maxWidth: 48,
+      pinned: "left",
+      suppressMovable: true,
+      resizable: false,
+      field: "checkbox",
+      headerName: "",
+    },
+    { field: "no", headerName: "No.", maxWidth: 60 },
+    { field: "order_no", headerName: "Order No", maxWidth: 160 },
+    {
+      field: "status",
+      headerName: "Status",
+      maxWidth: 110,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center h-full">
+          <StatusBadge status={params.value} />
+        </div>
+      ),
+    },
     {
       headerName: "Actions",
       pinned: "right",
@@ -361,6 +392,7 @@ const OrderTable = () => {
       field: "ID",
       maxWidth: 80,
       cellRenderer: (params: any) => {
+        const status = params.data?.status?.toLowerCase();
         return (
           <div
             className="flex justify-center pt-2"
@@ -382,71 +414,13 @@ const OrderTable = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-48"
+                className="w-52"
                 onClick={(e) => e.stopPropagation()}
               >
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                {/* Mark as Open - untuk status yang bukan open */}
-                {/* {params.data.status !== "open" && (
-                  <>
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenSingle(params.data);
-                      }}
-                    >
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Cancel
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )} */}
-
-                {/* Conditional Actions based on status */}
-                {/* {params.data.status === "open" && (
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      HandlePicking(params.data.ID);
-                    }}
-                  >
-                    <Blocks className="mr-2 h-4 w-4" />
-                    Picking
-                  </DropdownMenuItem>
-                )} */}
-
-                {/* {params.data.status === "picking" && (
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      HandlePickingComplete(params.data.ID);
-                    }}
-                  >
-                    <CheckCheck className="mr-2 h-4 w-4" />
-                    Complete Picking
-                  </DropdownMenuItem>
-                )} */}
-
-                {/* {params.data.status !== "open" && (
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      HandlePreviewPDF(params.data.ID);
-                    }}
-                  >
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print Picking Sheet
-                  </DropdownMenuItem>
-                )} */}
-
-                {/* <DropdownMenuSeparator /> */}
-
+                {/* View / Edit */}
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={(e) => {
@@ -457,6 +431,8 @@ const OrderTable = () => {
                   <Pencil className="mr-2 h-4 w-4" />
                   View / Edit
                 </DropdownMenuItem>
+
+                {/* Print SPK */}
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={(e) => {
@@ -467,6 +443,36 @@ const OrderTable = () => {
                   <Printer className="mr-2 h-4 w-4" />
                   Print SPK
                 </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                {/* Mark as Loaded - hanya tampil jika status open */}
+                {status === "open" && (
+                  <DropdownMenuItem
+                    className="cursor-pointer text-green-600 focus:text-green-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUpdateStatusSingle(params.data.order_no, "loaded");
+                    }}
+                  >
+                    <Truck className="mr-2 h-4 w-4" />
+                    Mark as Loaded
+                  </DropdownMenuItem>
+                )}
+
+                {/* Reopen - hanya tampil jika status loaded */}
+                {status === "loaded" && (
+                  <DropdownMenuItem
+                    className="cursor-pointer text-blue-600 focus:text-blue-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUpdateStatusSingle(params.data.order_no, "open");
+                    }}
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reopen
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -476,7 +482,7 @@ const OrderTable = () => {
     {
       field: "order_date",
       headerName: "Order Date",
-      width: 140,
+      width: 130,
       valueFormatter: (params: any) => {
         if (!params.value) return "";
         const date = new Date(params.value);
@@ -490,7 +496,7 @@ const OrderTable = () => {
     { field: "transporter_name", headerName: "Transporter", maxWidth: 250 },
     { field: "truck_no", headerName: "Truck No", maxWidth: 120 },
     { field: "driver", headerName: "Driver", maxWidth: 120 },
-    { field: "order_type", headerName: "Order Type", maxWidth: 120 },
+    { field: "order_type", headerName: "Order Type", maxWidth: 150 },
     {
       field: "total_do",
       headerName: "Total DO",
@@ -536,32 +542,51 @@ const OrderTable = () => {
     []
   );
 
-  useEffect(() => {
-    console.log("isScannedItemDialog", isScannedItemDialog);
-    if (!isScannedItemDialog) {
-      setScannedItemData(null);
-      setTempLocationName("");
-    }
-  }, [isScannedItemDialog]);
+  const hasSelected = selectedRows.length > 0;
 
   return (
     <>
       <div style={{ width: "100%", height: "510px" }}>
         <div className="flex items-center justify-between pb-4">
-          <div className="justify-self-start">
-            <div className="flex items-center">
-              <Button
-                className="left-6 h-8 bg-green-500 text-slate-950 outline-green-600"
-                onClick={() => {
-                  router.push("/wms/outbound/order-spk/add");
-                }}
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                Add
-              </Button>
-            </div>
+          {/* Left: Add + Bulk Actions */}
+          <div className="flex items-center gap-2">
+            <Button
+              className="h-8 bg-green-500 text-slate-950 outline-green-600"
+              onClick={() => {
+                router.push("/wms/outbound/order-spk/add");
+              }}
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Add
+            </Button>
+
+            {/* Bulk action buttons - muncul jika ada baris terpilih */}
+            {hasSelected && (
+              <>
+                <div className="h-5 w-px bg-gray-300 mx-1" />
+                <span className="text-xs text-gray-500 mr-1">
+                  {selectedRows.length} selected
+                </span>
+                <Button
+                  className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                  onClick={() => handleBulkUpdateStatus("loaded")}
+                >
+                  <Truck className="mr-1 h-3.5 w-3.5" />
+                  Mark as Loaded
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-8 text-xs border-blue-400 text-blue-600 hover:bg-blue-50"
+                  onClick={() => handleBulkUpdateStatus("open")}
+                >
+                  <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                  Reopen
+                </Button>
+              </>
+            )}
           </div>
 
+          {/* Right: Search */}
           <div className="justify-self-end">
             <div className={styles.inputWrapper}>
               <svg
@@ -579,7 +604,6 @@ const OrderTable = () => {
                   fill="currentColor"
                 />
               </svg>
-
               <input
                 type="text"
                 id="filter-text-box"
@@ -589,7 +613,9 @@ const OrderTable = () => {
             </div>
           </div>
         </div>
+
         <AgGridReact
+          ref={gridRef}
           rowData={rowData}
           columnDefs={columnDefs}
           quickFilterText={quickFilterText}
@@ -597,11 +623,12 @@ const OrderTable = () => {
           paginationPageSize={10}
           paginationPageSizeSelector={[10, 25, 50]}
           domLayout="autoHeight"
+          rowSelection="multiple"
+          suppressRowClickSelection={true}
           onSelectionChanged={(e) => {
             const selected = e.api.getSelectedRows();
             setSelectedRows(selected);
           }}
-          rowSelection={undefined}
         />
       </div>
       <ScannedItemDialog />

@@ -20,6 +20,11 @@ interface Connection {
     host: string; port: number; username: string; password: string; remote_path: string;
     url: string; method: string; headers: string; auth_type: string; auth_value: string;
     timeout_sec: number; body_template: string; output_path: string;
+    spreadsheet_id: string;
+    sheet_name: string;
+    credentials_json: string;
+    append_mode: string;
+    header_row: boolean;
 }
 
 interface IntegrationForm {
@@ -62,6 +67,11 @@ const defaultConn: Connection = {
     host: '', port: 0, username: '', password: '', remote_path: '',
     url: '', method: 'POST', headers: '{}', auth_type: 'none', auth_value: '',
     timeout_sec: 30, body_template: '', output_path: '',
+    spreadsheet_id: '',
+    sheet_name: 'Sheet1',
+    credentials_json: '',
+    append_mode: 'append',
+    header_row: true,
 };
 
 const formatDate = (d: string) => new Date(d).toLocaleString('id-ID', {
@@ -379,6 +389,7 @@ export default function IntegrationFormPage() {
                                             { key: 'ftp', label: 'FTP', icon: '📂' },
                                             { key: 'api', label: 'REST API', icon: '🔗' },
                                             { key: 'file', label: 'File', icon: '💾' },
+                                            { key: 'google_sheets', label: 'Google Sheets', icon: '📊' },
                                         ].map(ch => (
                                             <button key={ch.key} onClick={() => setForm({ ...form, channel_type: ch.key })}
                                                 className={`border rounded-xl p-3 text-center transition-colors ${form.channel_type === ch.key ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
@@ -806,10 +817,98 @@ export default function IntegrationFormPage() {
                                             </div>
                                         )}
 
-                                        <button onClick={handleSaveConn} disabled={savingConn}
+                                        {form.channel_type === 'google_sheets' && (
+                                            <div className="space-y-4">
+                                                {/* Spreadsheet ID */}
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-1">Spreadsheet ID *</label>
+                                                    <input
+                                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
+                                                        value={conn.spreadsheet_id || ''}
+                                                        onChange={e => setConn({ ...conn, spreadsheet_id: e.target.value })}
+                                                    />
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        Ambil dari URL: docs.google.com/spreadsheets/d/<span className="font-mono text-blue-600">ID_INI</span>/edit
+                                                    </p>
+                                                </div>
+
+                                                {/* Sheet Name */}
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-1">Sheet Name</label>
+                                                    <input
+                                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="Sheet1"
+                                                        value={conn.sheet_name || ''}
+                                                        onChange={e => setConn({ ...conn, sheet_name: e.target.value })}
+                                                    />
+                                                    <p className="text-xs text-gray-400 mt-1">Nama tab sheet tujuan (default: Sheet1)</p>
+                                                </div>
+
+                                                {/* Append Mode */}
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-2">Mode</label>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {[
+                                                            { key: 'append', label: '+ Append', desc: 'Tambah baris baru di bawah data yang ada' },
+                                                            { key: 'overwrite', label: '↺ Overwrite', desc: 'Hapus semua data lama, tulis ulang dari awal' },
+                                                        ].map(m => (
+                                                            <button key={m.key}
+                                                                onClick={() => setConn({ ...conn, append_mode: m.key })}
+                                                                className={`border rounded-xl p-3 text-left transition-colors ${(conn.append_mode || 'append') === m.key
+                                                                        ? 'border-blue-500 bg-blue-50'
+                                                                        : 'border-gray-200 hover:bg-gray-50'
+                                                                    }`}>
+                                                                <div className={`text-sm font-medium ${(conn.append_mode || 'append') === m.key ? 'text-blue-700' : 'text-gray-700'}`}>
+                                                                    {m.label}
+                                                                </div>
+                                                                <div className="text-xs text-gray-400 mt-0.5">{m.desc}</div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Header Row Toggle */}
+                                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-700">Tulis Header Otomatis</div>
+                                                        <div className="text-xs text-gray-400 mt-0.5">Tulis nama kolom di baris pertama jika sheet masih kosong</div>
+                                                    </div>
+                                                    <div
+                                                        onClick={() => setConn({ ...conn, header_row: !conn.header_row })}
+                                                        className={`w-10 h-5 rounded-full cursor-pointer relative transition-colors ${conn.header_row !== false ? 'bg-blue-600' : 'bg-gray-300'
+                                                            }`}>
+                                                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${conn.header_row !== false ? 'left-5' : 'left-0.5'
+                                                            }`} />
+                                                    </div>
+                                                </div>
+
+                                                {/* Credentials JSON */}
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-1">Service Account Credentials JSON *</label>
+                                                    <textarea
+                                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                                        rows={8}
+                                                        placeholder={'{\n  "type": "service_account",\n  "project_id": "...",\n  "private_key": "...",\n  "client_email": "..."\n}'}
+                                                        value={conn.credentials_json || ''}
+                                                        onChange={e => setConn({ ...conn, credentials_json: e.target.value })}
+                                                    />
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        Paste isi file JSON yang didownload dari Google Cloud Console → IAM → Service Accounts → Keys
+                                                    </p>
+                                                </div>
+
+                                                <button onClick={handleSaveConn} disabled={savingConn}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-5 py-2 rounded-lg disabled:opacity-50">
+                                                    {savingConn ? 'Menyimpan...' : 'Simpan Connection'}
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* <button onClick={handleSaveConn} disabled={savingConn}
                                             className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-5 py-2 rounded-lg disabled:opacity-50">
                                             {savingConn ? 'Menyimpan...' : 'Simpan Connection'}
-                                        </button>
+                                        </button> */}
                                     </>
                                 )}
                             </div>
