@@ -25,6 +25,7 @@ interface Connection {
     credentials_json: string;
     append_mode: string;
     header_row: boolean;
+    key_column: string;
 }
 
 interface IntegrationForm {
@@ -72,6 +73,7 @@ const defaultConn: Connection = {
     credentials_json: '',
     append_mode: 'append',
     header_row: true,
+    key_column: '',
 };
 
 const formatDate = (d: string) => new Date(d).toLocaleString('id-ID', {
@@ -221,15 +223,6 @@ export default function IntegrationFormPage() {
     const isFileChannel = ['sftp', 'ftp', 'file'].includes(form.channel_type);
     const isAPIChannel = form.channel_type === 'api';
 
-    // const tabs = [
-    //     { key: 'general', label: 'General' },
-    //     { key: 'connection', label: 'Connection' },
-    //     ...(form.direction === 'inbound' ? [{ key: 'mapping', label: 'Column Mapping' }] : []),
-    //     { key: 'notification', label: 'Notifikasi Email' },
-    //     { key: 'recipients', label: `Recipients (${recipients.length})` },
-    //     { key: 'history', label: 'History' },
-    // ] as const;
-
     const tabs = [
         { key: 'general', label: 'General' },
         { key: 'connection', label: 'Connection' },
@@ -316,7 +309,7 @@ export default function IntegrationFormPage() {
     // ─── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <Layout title="Integration Hub" subTitle={isEdit ? 'Edit Integrasi' : 'Tambah Integrasi'} backLink="/wms/utilities/integration">
+        <Layout title="Integration Hub" subTitle={isEdit ? 'Edit Integrasi' : 'Tambah Integrasi'}>
             <div className="p-4 max-w-6xl mx-auto space-y-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -845,6 +838,20 @@ export default function IntegrationFormPage() {
                                                     <p className="text-xs text-gray-400 mt-1">Nama tab sheet tujuan (default: Sheet1)</p>
                                                 </div>
 
+                                                {/* Key Column */}
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-1">Key Column</label>
+                                                    <input
+                                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="SPK NO"
+                                                        value={conn.key_column || ''}
+                                                        onChange={e => setConn({ ...conn, key_column: e.target.value })}
+                                                    />
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        Nama kolom di sheet yang dipakai sebagai key untuk update/upsert.
+                                                    </p>
+                                                </div>
+
                                                 {/* Append Mode */}
                                                 <div>
                                                     <label className="block text-xs text-gray-500 mb-2">Mode</label>
@@ -856,8 +863,8 @@ export default function IntegrationFormPage() {
                                                             <button key={m.key}
                                                                 onClick={() => setConn({ ...conn, append_mode: m.key })}
                                                                 className={`border rounded-xl p-3 text-left transition-colors ${(conn.append_mode || 'append') === m.key
-                                                                        ? 'border-blue-500 bg-blue-50'
-                                                                        : 'border-gray-200 hover:bg-gray-50'
+                                                                    ? 'border-blue-500 bg-blue-50'
+                                                                    : 'border-gray-200 hover:bg-gray-50'
                                                                     }`}>
                                                                 <div className={`text-sm font-medium ${(conn.append_mode || 'append') === m.key ? 'text-blue-700' : 'text-gray-700'}`}>
                                                                     {m.label}
