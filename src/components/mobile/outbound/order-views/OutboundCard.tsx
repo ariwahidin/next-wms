@@ -86,6 +86,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
   const [targetPage, setTargetPage] = useState<string>("");
   const [showMasterCartonSelect, setShowMasterCartonSelect] = useState(false);
 
+
   // Fetch master cartons saat component mount
   useEffect(() => {
     fetchMasterCartons();
@@ -185,7 +186,6 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
     }
     
     const newCartonNo = cartonList.length + 1;
-    // Pass master carton ID sebagai query parameter
     router.push(
       `/mobile/outbound/${targetPage}/${outbound_no}/${newCartonNo}?master_carton_id=${selectedMasterCarton}`
     );
@@ -299,74 +299,6 @@ const customFilterOption = (option, inputValue) => {
               // Master Carton Selection View
               <>
                 <div className="space-y-3">
-                  {/* <Select
-                    value={selectedMasterCarton}
-                    onValueChange={setSelectedMasterCarton}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select carton type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {masterCartons.map((carton) => (
-                        <SelectItem
-                          key={carton.id}
-                          value={carton.id.toString()}
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {carton.carton_name}
-                              {carton.is_default && (
-                                <span className="ml-2 text-xs text-blue-500">
-                                  (Default)
-                                </span>
-                              )}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {carton.dimensions} - Max: {carton.max_weight}kg
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select> */}
-
-                  {/* Show selected carton details */}
-                  {/* {getSelectedMasterCartonDetails() && (
-                    <Card className="p-3 bg-blue-50 border-blue-200">
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Ruler size={16} className="text-blue-600" />
-                          <span className="font-semibold text-blue-900">
-                            {getSelectedMasterCartonDetails()?.carton_name}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
-                          <div>
-                            <span className="font-medium">Size:</span>{" "}
-                            {getSelectedMasterCartonDetails()?.dimensions}
-                          </div>
-                          <div>
-                            <span className="font-medium">Max Weight:</span>{" "}
-                            {getSelectedMasterCartonDetails()?.max_weight}kg
-                          </div>
-                          <div>
-                            <span className="font-medium">Volume:</span>{" "}
-                            {getSelectedMasterCartonDetails()?.volume.toLocaleString()}
-                            cm³
-                          </div>
-                          <div>
-                            <span className="font-medium">Material:</span>{" "}
-                            {getSelectedMasterCartonDetails()?.material}
-                          </div>
-                        </div>
-                        {getSelectedMasterCartonDetails()?.description && (
-                          <p className="text-xs text-gray-600 italic">
-                            {getSelectedMasterCartonDetails()?.description}
-                          </p>
-                        )}
-                      </div>
-                    </Card>
-                  )} */}
 
                     <div className="flex">
                   <Select
@@ -434,27 +366,6 @@ const customFilterOption = (option, inputValue) => {
                     </Card>
                   )}
 
-{/* Show selected carton details */}
-{/* {getSelectedMasterCartonDetails() && (
-  <div className="selected-carton-details">
-    <h3>{getSelectedMasterCartonDetails()?.carton_name}</h3>
-    <p>
-      <strong>Size:</strong> {getSelectedMasterCartonDetails()?.dimensions}
-    </p>
-    <p>
-      <strong>Max Weight:</strong> {getSelectedMasterCartonDetails()?.max_weight}kg
-    </p>
-    <p>
-      <strong>Volume:</strong> {getSelectedMasterCartonDetails()?.volume.toLocaleString()} cm³
-    </p>
-    <p>
-      <strong>Material:</strong> {getSelectedMasterCartonDetails()?.material}
-    </p>
-    {getSelectedMasterCartonDetails()?.description && (
-      <p className="description">{getSelectedMasterCartonDetails()?.description}</p>
-    )}
-  </div>
-)} */}
                 </div>
 
                 <div className="flex gap-2 pt-2">

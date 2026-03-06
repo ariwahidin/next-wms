@@ -396,26 +396,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { setOpen } = useSidebar();
   const hasAutoCollapsed = React.useRef(false); // Flag biar cuma jalan sekali
 
-  useEffect(() => {
-    const collapsedPaths = [
-      "/wms/inbound/add",
-      "/wms/outbound/add",
-      "/wms/outbound/edit",
-      "/wms/outbound/waranty",
-      "/wms/outbound/handling/edit",
-      "/wms/inbound/edit",
-    ];
+  // useEffect(() => {
+  //   const collapsedPaths = [
+  //     "/wms/inbound/add",
+  //     "/wms/outbound/add",
+  //     "/wms/outbound/edit",
+  //     "/wms/outbound/waranty",
+  //     "/wms/outbound/handling/edit",
+  //     "/wms/inbound/edit",
+  //   ];
 
-    if (
-      collapsedPaths.some((path) => pathname.startsWith(path)) &&
-      !hasAutoCollapsed.current
-    ) {
-      setOpen(false); // Tutup sekali saja
-      hasAutoCollapsed.current = true; // Tandai sudah auto collapse
-    } else if (!collapsedPaths.some((path) => pathname.startsWith(path))) {
-      hasAutoCollapsed.current = false; // Reset flag kalau keluar dari path itu
-    }
-  }, [pathname, setOpen]);
+  //   if (
+  //     collapsedPaths.some((path) => pathname.startsWith(path)) &&
+  //     !hasAutoCollapsed.current
+  //   ) {
+  //     setOpen(false); // Tutup sekali saja
+  //     hasAutoCollapsed.current = true; // Tandai sudah auto collapse
+  //   } else if (!collapsedPaths.some((path) => pathname.startsWith(path))) {
+  //     hasAutoCollapsed.current = false; // Reset flag kalau keluar dari path itu
+  //   }
+  // }, [pathname, setOpen]);
 
   return (
     <Sidebar collapsible="icon" {...props}>

@@ -13,6 +13,7 @@ export async function getInbound(startDate: string, endDate: string) {
       ih.receipt_id AS [INVOICE NO],
       s.supplier_name AS SUPPLIER,
       id.item_code AS [ITEM CODE],
+      p.item_name AS [ITEM NAME],
       id.quantity AS QUANTITY,
       p.cbm AS [M3 PCS],
       p.cbm * id.quantity AS [TOTAL M3],
@@ -44,6 +45,7 @@ export async function getOutbound(startDate: string, endDate: string) {
       cd.cust_city AS CITY,
       cd.cust_addr1 AS [DELIVERY ADD],
       od.item_code AS [ITEM CODE],
+      p.item_name AS [ITEM NAME],
       od.quantity AS QTY,
       p.cbm AS [M3 PCS],
       p.cbm * od.quantity AS [M3 TOTAL],
@@ -386,7 +388,8 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
                     c.cust_addr1 AS [ADDRESS],
                     c.cust_city AS CITY,
                     od.item_code AS [ITEM CODE],
-                  od.barcode AS [GMC CODE],
+                  od.barcode AS [EAN],
+                    p.item_name AS [ITEM NAME],
                     CASE WHEN oh.[status] = 'open' OR oh.[status] = 'picking' THEN od.quantity ELSE ob.quantity END AS QTY,
                   oh.picker_name AS [PICKER],
 	                us.name AS [SCAN BY],
@@ -433,7 +436,8 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
                   c.cust_addr1 AS [ADDRESS],
                   c.cust_city AS CITY,
                   od.item_code AS [ITEM CODE],
-                od.barcode AS [GMC CODE],
+                od.barcode AS [EAN],
+                p.item_name AS [ITEM NAME],
                 od.quantity AS [QTY],
                   p.cbm AS [M3 PCS],
                   p.cbm * od.quantity AS [M3 TOTAL]
@@ -510,7 +514,8 @@ export async function getStockReport(viewBy: string) {
 	iv.lot_number AS [LOT NO],
     iv.[location] AS [LOCATION],
     iv.whs_code AS [WH CODE],
-    iv.qa_status AS [QA],
+    -- iv.qa_status AS [QA],
+	qa.[description] AS [QA],
     SUM(iv.qty_onhand) AS [ON HAND],
     SUM(iv.qty_allocated) AS [ALLOCATED],
     SUM(iv.qty_available) AS [AVAILABLE],
@@ -519,6 +524,7 @@ export async function getStockReport(viewBy: string) {
     iv.uom AS [BASE UNIT]
     FROM inventories iv
     left join products p ON iv.item_code = p.item_code
+	JOIN qa_statuses qa ON iv.qa_status = qa.qa_status 
     where iv.qty_onhand <> 0
     group by
     iv.item_code,
@@ -532,7 +538,8 @@ export async function getStockReport(viewBy: string) {
     iv.whs_code,
     iv.qa_status,
     p.cbm,
-    iv.uom
+    iv.uom,
+	qa.[description]
     ),
   uom AS (
     SELECT * 
@@ -565,65 +572,18 @@ export async function getStockReport(viewBy: string) {
 
   if (viewBy === "item") {
 
-    // sql = `WITH inv AS (
-    //         SELECT 
-    //             iv.item_code AS [SKU],
-    //             iv.barcode AS [EAN],
-    //             p.item_name AS [ITEM NAME],
-    //             iv.whs_code AS [WH CODE],
-    //             iv.qa_status AS [QA],
-    //             SUM(iv.qty_onhand) AS [ON HAND],
-    //             SUM(iv.qty_allocated) AS [ALLOCATED],
-    //             SUM(iv.qty_available) AS [AVAILABLE],
-    //           iv.uom AS [BASE UNIT]
-    //             FROM inventories iv
-    //             left join products p ON iv.item_code = p.item_code
-    //             where iv.qty_onhand <> 0
-    //             group by
-    //             iv.item_code,
-    //             iv.barcode,
-    //             p.item_name,
-    //             iv.whs_code,
-    //             iv.qa_status,
-    //           iv.uom
-    //         ),
-    //         uom AS (
-    //           SELECT * 
-    //           FROM uom_conversions
-    //         )
-    //           SELECT inv.*,
-    //           ISNULL(
-    //             ROUND(MAX(CASE WHEN uom.from_uom = 'PCS' THEN 
-    //               CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
-    //             END), 3), 0
-    //           ) AS PCS,
-
-    //           ISNULL(
-    //             ROUND(MAX(CASE WHEN uom.from_uom = 'CTN' THEN 
-    //               CASE WHEN uom.conversion_rate > 0 THEN 1.0 * inv.AVAILABLE / uom.conversion_rate ELSE 0 END 
-    //             END), 3), 0
-    //           ) AS BOX
-
-    //           FROM inv 
-    //           JOIN uom ON inv.[SKU] = uom.item_code AND inv.[BASE UNIT] = uom.to_uom
-    //           GROUP BY 
-    //           inv.[EAN],
-    //           inv.[SKU], inv.[ITEM NAME], inv.[WH CODE], 
-    //           inv.QA, inv.[ON HAND], inv.[ALLOCATED],
-    //           inv.AVAILABLE, inv.[BASE UNIT]
-    //           ORDER BY [SKU] ASC;`;
-
     sql = ` SELECT 
                 iv.item_code AS [SKU],
                 iv.barcode AS [EAN],
                 p.item_name AS [ITEM NAME],
                 iv.whs_code AS [WH CODE],
-                iv.qa_status AS [QA],
+                qa.[description] AS [QA],
                 SUM(iv.qty_onhand) AS [ON HAND],
                 SUM(iv.qty_allocated) AS [ALLOCATED],
                 SUM(iv.qty_available) AS [AVAILABLE]
                 FROM inventories iv
                 left join products p ON iv.item_code = p.item_code
+				join qa_statuses qa ON qa.qa_status = iv.qa_status
                 where iv.qty_onhand <> 0
                 group by
                 iv.item_code,
@@ -631,6 +591,7 @@ export async function getStockReport(viewBy: string) {
                 p.item_name,
                 iv.whs_code,
                 iv.qa_status,
+				qa.[description],
               iv.uom`;
   }
 

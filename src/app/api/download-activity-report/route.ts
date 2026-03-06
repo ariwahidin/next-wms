@@ -17,12 +17,12 @@ export async function GET(request: NextRequest) {
     const outbound = await getOutbound(startDate, endDate);
     const stockSummary = await getStockSummary();
 
-    if (inbound.length === 0 || outbound.length === 0) {
-        return NextResponse.json({
-            success: false,
-            message: "Inbound or outbound data is empty for this date range.",
-        });
-    }
+    // if (inbound.length === 0 || outbound.length === 0) {
+    //     return NextResponse.json({
+    //         success: false,
+    //         message: "Inbound or outbound data is empty for this date range.",
+    //     });
+    // }
 
     const workbook = new ExcelJS.Workbook()
     createStyledSheet(workbook, "Inbound", inbound)

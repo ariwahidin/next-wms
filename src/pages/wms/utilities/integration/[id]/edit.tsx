@@ -26,6 +26,7 @@ interface Connection {
     append_mode: string;
     header_row: boolean;
     key_column: string;
+    schedule_mode: string; // 'upsert' | 'overwrite' | 'append' | 'new_sheet'
 }
 
 interface IntegrationForm {
@@ -74,6 +75,7 @@ const defaultConn: Connection = {
     append_mode: 'append',
     header_row: true,
     key_column: '',
+    schedule_mode: 'upsert'
 };
 
 const formatDate = (d: string) => new Date(d).toLocaleString('id-ID', {
@@ -852,28 +854,82 @@ export default function IntegrationFormPage() {
                                                     </p>
                                                 </div>
 
-                                                {/* Append Mode */}
-                                                <div>
-                                                    <label className="block text-xs text-gray-500 mb-2">Mode</label>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        {[
-                                                            { key: 'append', label: '+ Append', desc: 'Tambah baris baru di bawah data yang ada' },
-                                                            { key: 'overwrite', label: '↺ Overwrite', desc: 'Hapus semua data lama, tulis ulang dari awal' },
-                                                        ].map(m => (
-                                                            <button key={m.key}
-                                                                onClick={() => setConn({ ...conn, append_mode: m.key })}
-                                                                className={`border rounded-xl p-3 text-left transition-colors ${(conn.append_mode || 'append') === m.key
-                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                    : 'border-gray-200 hover:bg-gray-50'
-                                                                    }`}>
-                                                                <div className={`text-sm font-medium ${(conn.append_mode || 'append') === m.key ? 'text-blue-700' : 'text-gray-700'}`}>
-                                                                    {m.label}
-                                                                </div>
-                                                                <div className="text-xs text-gray-400 mt-0.5">{m.desc}</div>
-                                                            </button>
-                                                        ))}
+                                                {form.channel_type === 'google_sheets' && form.timing === 'scheduled' && (
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-2">Schedule Mode</label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {[
+                                                                {
+                                                                    key: 'overwrite',
+                                                                    label: '↺ Overwrite',
+                                                                    desc: 'Hapus semua data lama, tulis ulang dari awal',
+                                                                    icon: '↺',
+                                                                },
+                                                                {
+                                                                    key: 'append',
+                                                                    label: '+ Append',
+                                                                    desc: 'Tambah data baru di bawah data yang sudah ada',
+                                                                    icon: '+',
+                                                                },
+                                                                {
+                                                                    key: 'new_sheet',
+                                                                    label: '📅 New Sheet',
+                                                                    desc: 'Buat tab baru per tanggal (2026-02-25)',
+                                                                    icon: '📅',
+                                                                },
+                                                                {
+                                                                    key: 'upsert',
+                                                                    label: '⟳ Upsert',
+                                                                    desc: 'Update by key column, append kalau belum ada',
+                                                                    icon: '⟳',
+                                                                },
+                                                            ].map(m => (
+                                                                <button
+                                                                    key={m.key}
+                                                                    onClick={() => setConn({ ...conn, schedule_mode: m.key })}
+                                                                    className={`border rounded-xl p-3 text-left transition-colors ${(conn.schedule_mode || 'overwrite') === m.key
+                                                                        ? 'border-blue-500 bg-blue-50'
+                                                                        : 'border-gray-200 hover:bg-gray-50'
+                                                                        }`}
+                                                                >
+                                                                    <div className={`text-sm font-medium ${(conn.schedule_mode || 'overwrite') === m.key ? 'text-blue-700' : 'text-gray-700'
+                                                                        }`}>
+                                                                        {m.label}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-400 mt-0.5">{m.desc}</div>
+                                                                </button>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                )}
+
+
+
+                                                {/* Append Mode (only for non-Google Sheets) */}
+                                                {form.channel_type !== 'google_sheets' && (
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-2">Mode</label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {[
+                                                                { key: 'append', label: '+ Append', desc: 'Tambah baris baru di bawah data yang ada' },
+                                                                { key: 'overwrite', label: '↺ Overwrite', desc: 'Hapus semua data lama, tulis ulang dari awal' },
+                                                            ].map(m => (
+                                                                <button key={m.key}
+                                                                    onClick={() => setConn({ ...conn, append_mode: m.key })}
+                                                                    className={`border rounded-xl p-3 text-left transition-colors ${(conn.append_mode || 'append') === m.key
+                                                                        ? 'border-blue-500 bg-blue-50'
+                                                                        : 'border-gray-200 hover:bg-gray-50'
+                                                                        }`}>
+                                                                    <div className={`text-sm font-medium ${(conn.append_mode || 'append') === m.key ? 'text-blue-700' : 'text-gray-700'}`}>
+                                                                        {m.label}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-400 mt-0.5">{m.desc}</div>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                )}
 
                                                 {/* Header Row Toggle */}
                                                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
@@ -889,6 +945,8 @@ export default function IntegrationFormPage() {
                                                             }`} />
                                                     </div>
                                                 </div>
+
+
 
                                                 {/* Credentials JSON */}
                                                 <div>

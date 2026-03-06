@@ -170,6 +170,39 @@ const CheckingPage = () => {
     const [isUpdatingCarton, setIsUpdatingCarton] = useState(false);
     const [listContainerSummary, setListContainerSummary] = useState([]);
 
+    const [isCreatingCarton, setIsCreatingCarton] = useState(false);
+
+    const handleNewCarton = async () => {
+        if (isCreatingCarton) return;
+        setIsCreatingCarton(true);
+
+        try {
+            const response = await api.get(
+                `/mobile/outbound/picking/${outbound}/cartons/next`,
+                { withCredentials: true }
+            );
+
+            if (response.data.success) {
+                const next = response.data.next_ctn_no.toString();
+                setPackCtnNo(next);
+                eventBus.emit("showAlert", {
+                    title: "Success!",
+                    description: `Moved to Carton #${next}`,
+                    type: "success",
+                });
+            }
+        } catch (error) {
+            console.error("Error creating new carton:", error);
+            eventBus.emit("showAlert", {
+                title: "Error!",
+                description: "Failed to create new carton",
+                type: "error",
+            });
+        } finally {
+            setIsCreatingCarton(false);
+        }
+    };
+
     // Fetch master carton details
     useEffect(() => {
         if (master_carton_id) {
@@ -747,15 +780,6 @@ const CheckingPage = () => {
     };
 
 
-    // Grouped data for List Container dialog
-    // const listContainerSummary = uniqueCartons.map((ctnNo) => {
-    //     const items = listOutboundScanned.filter(item => item.pack_ctn_no === ctnNo);
-    //     const totalQty = items.reduce((sum, item) => sum + (item.qty_data_scan || 0), 0);
-    //     const totalItems = items.length;
-    //     const barcodes = Array.from(new Set(items.map(i => i.barcode_data_scan).filter(Boolean)));
-    //     return { ctnNo, totalQty, totalItems, barcodes, items };
-    // });
-
     const fetchCartonByOutboundNo = async () => {
         try {
             const response = await api.get(`/mobile/outbound/${outbound}/cartons`, {
@@ -1108,6 +1132,7 @@ const CheckingPage = () => {
                         </div>
 
                         <DialogFooter className="flex gap-2">
+
                             <Button
                                 variant="outline"
                                 onClick={() => {
@@ -1549,7 +1574,7 @@ const CheckingPage = () => {
                                     No container data found
                                 </div>
                             ) : (
-                                listContainerSummary.map(({ pack_ctn_no, qty : totalQty, totalItems, items : barcodes }) => {
+                                listContainerSummary.map(({ pack_ctn_no, qty: totalQty, totalItems, items: barcodes }) => {
                                     const isCurrent = pack_ctn_no === packCtnNo;
                                     return (
                                         <div
@@ -1641,7 +1666,7 @@ const CheckingPage = () => {
                             </span>
 
                             {/* Decrement Button */}
-                            <button
+                            {/* <button
                                 onClick={() => {
                                     let newVal: number | string = parseInt(packCtnNo) - 1;
                                     if (newVal < 1) newVal = "";
@@ -1657,7 +1682,7 @@ const CheckingPage = () => {
           `}
                             >
                                 −
-                            </button>
+                            </button> */}
 
                             {/* Value Display */}
                             <span className="flex-1 text-center text-lg font-bold text-gray-800 tabular-nums min-w-[2rem]">
@@ -1665,7 +1690,7 @@ const CheckingPage = () => {
                             </span>
 
                             {/* Increment Button */}
-                            <button
+                            {/* <button
                                 onClick={() => setPackCtnNo((prev) => {
                                     const current = parseInt(prev) || 0;
                                     return (current + 1).toString();
@@ -1673,7 +1698,7 @@ const CheckingPage = () => {
                                 className="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-lg leading-none bg-blue-600 text-white active:scale-90 active:bg-blue-700 shadow-sm transition-all duration-150 select-none"
                             >
                                 +
-                            </button>
+                            </button> */}
                         </div>
 
                         {/* Master Carton Badge */}
@@ -1689,6 +1714,21 @@ const CheckingPage = () => {
                     </div>
 
                     <div className="flex gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base shadow-md disabled:opacity-60"
+                            onClick={handleNewCarton}
+                            disabled={isCreatingCarton}
+                        >
+                            {isCreatingCarton ? (
+                                <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                                <Box size={14} />
+                            )}
+                            New Ctn
+                        </Button>
                         {/* Seal Button Row */}
                         <Button
                             type="button"
@@ -1696,10 +1736,10 @@ const CheckingPage = () => {
                             size="sm"
                             className="w-full h-8 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-base shadow-md"
                             onClick={() => setShowListContainerDialog(true)}
-                            // onClick={fetchCartonByOutboundNo}
+                        // onClick={fetchCartonByOutboundNo}
                         >
                             <List size={14} className="mr-0" />
-                            List Container
+                            List
                         </Button>
                         {/* Seal Button Row */}
                         <Button
@@ -1710,7 +1750,7 @@ const CheckingPage = () => {
                             onClick={handleSealContainer}
                         >
                             <Box size={14} className="mr-0" />
-                            Seal Container
+                            Seal
                         </Button>
                     </div>
 

@@ -3,61 +3,115 @@
 // lib/excelHelper.ts
 import ExcelJS from "exceljs";
 
-export const createStyledSheet = (
+// export const createStyledSheet = (
+//   workbook: ExcelJS.Workbook,
+//   sheetName: string,
+//   data: any[]
+// ) => {
+//   const sheet = workbook.addWorksheet(sheetName);
+//   const headers = Object.keys(data[0]);
+//   sheet.addRow(headers);
+
+//   // Style header
+//   const headerRow = sheet.getRow(1);
+//   headerRow.height = 25;
+//   headerRow.eachCell((cell) => {
+//     cell.fill = {
+//       type: "pattern",
+//       pattern: "solid",
+//       fgColor: { argb: "4472C4" }, // biru
+//     };
+//     cell.font = { bold: true, color: { argb: "FFFFFF" } };
+//     cell.alignment = { vertical: "middle", horizontal: "center" };
+//     cell.border = {
+//       top: { style: "thin" },
+//       left: { style: "thin" },
+//       bottom: { style: "thin" },
+//       right: { style: "thin" },
+//     };
+//   });
+
+//   // Isi data
+//   data.forEach((obj) => {
+//     const row = sheet.addRow(Object.values(obj));
+//     row.height = 20;
+//     row.eachCell((cell) => {
+//       cell.alignment = { vertical: "middle", horizontal: "left" };
+//       cell.border = {
+//         top: { style: "thin" },
+//         left: { style: "thin" },
+//         bottom: { style: "thin" },
+//         right: { style: "thin" },
+//       };
+//     });
+//   });
+
+//   // Auto width
+//   sheet.columns.forEach((col) => {
+//     let maxLength = 0;
+//     col.eachCell({ includeEmpty: true }, (cell) => {
+//       const val = cell.value ? cell.value.toString() : "";
+//       maxLength = Math.max(maxLength, val.length);
+//     });
+//     col.width = maxLength < 15 ? 15 : maxLength + 2;
+//   });
+
+//   return sheet;
+// };
+
+
+const THIN_BORDER: Partial<ExcelJS.Borders> = {
+  top: { style: "thin" },
+  left: { style: "thin" },
+  bottom: { style: "thin" },
+  right: { style: "thin" },
+}
+
+export const createStyledSheet = <T extends Record<string, unknown>>(
   workbook: ExcelJS.Workbook,
   sheetName: string,
-  data: any[]
+  data: T[]
 ) => {
-  const sheet = workbook.addWorksheet(sheetName);
-  const headers = Object.keys(data[0]);
-  sheet.addRow(headers);
+  const sheet = workbook.addWorksheet(sheetName)
 
-  // Style header
-  const headerRow = sheet.getRow(1);
-  headerRow.height = 25;
+  if (data.length === 0) return sheet
+
+  const headers = Object.keys(data[0])
+  sheet.addRow(headers)
+
+  const headerRow = sheet.getRow(1)
+  headerRow.height = 25
   headerRow.eachCell((cell) => {
     cell.fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: "4472C4" }, // biru
-    };
-    cell.font = { bold: true, color: { argb: "FFFFFF" } };
-    cell.alignment = { vertical: "middle", horizontal: "center" };
-    cell.border = {
-      top: { style: "thin" },
-      left: { style: "thin" },
-      bottom: { style: "thin" },
-      right: { style: "thin" },
-    };
-  });
+      fgColor: { argb: "4472C4" },
+    }
+    cell.font = { bold: true, color: { argb: "FFFFFF" } }
+    cell.alignment = { vertical: "middle", horizontal: "center" }
+    cell.border = THIN_BORDER
+  })
 
-  // Isi data
   data.forEach((obj) => {
-    const row = sheet.addRow(Object.values(obj));
-    row.height = 20;
+    const row = sheet.addRow(Object.values(obj))
+    row.height = 20
     row.eachCell((cell) => {
-      cell.alignment = { vertical: "middle", horizontal: "left" };
-      cell.border = {
-        top: { style: "thin" },
-        left: { style: "thin" },
-        bottom: { style: "thin" },
-        right: { style: "thin" },
-      };
-    });
-  });
+      cell.alignment = { vertical: "middle", horizontal: "left" }
+      cell.border = THIN_BORDER
+    })
+  })
 
-  // Auto width
   sheet.columns.forEach((col) => {
-    let maxLength = 0;
+    let maxLength = 0
     col.eachCell({ includeEmpty: true }, (cell) => {
-      const val = cell.value ? cell.value.toString() : "";
-      maxLength = Math.max(maxLength, val.length);
-    });
-    col.width = maxLength < 15 ? 15 : maxLength + 2;
-  });
+      const val = cell.value?.toString() ?? ""
+      maxLength = Math.max(maxLength, val.length)
+    })
+    col.width = Math.max(maxLength + 2, 15)
+  })
 
-  return sheet;
-};
+  return sheet
+}
 
 export const createStyledHandlingSheet = (workbook: ExcelJS.Workbook, dataLeft: any[], dataRight: any[]) => {
   const ws = workbook.addWorksheet("report-handling");
@@ -311,7 +365,6 @@ export const stockSheet = (
   return sheet;
 };
 
-
 export const createCyleCountSheet = (
   workbook: ExcelJS.Workbook,
   dataLeft: any[],
@@ -479,8 +532,6 @@ export const createCyleCountSheet = (
 
   return ws;
 };
-
-
 
 export const createStockSheet = (
   workbook: ExcelJS.Workbook,
