@@ -582,6 +582,9 @@ export default function ManualForm() {
   const [truckTypeOptions, setTruckTypeOptions] = useState<ItemOptions[]>([
     { value: "CDD", label: "CDD" },
     { value: "CDE", label: "CDE" },
+    { value: "WINGBOX", label: "WINGBOX" },
+    { value: "MOTOCYCLE", label: "MOTOCYCLE" },
+    { value: "NON-SIZE", label: "NON-SIZE" },
   ]);
 
   const fetchData = async () => {
@@ -686,7 +689,7 @@ export default function ManualForm() {
             <ArrowBigLeftIcon className="mr-0" />
             Back
           </Button>
-          {formData.status !== "complete" && (
+          {formData.status !== "loaded" && (
             <Button
               variant="outline"
               className="bg-blue-500 text-white hover:bg-blue-600 h-8"

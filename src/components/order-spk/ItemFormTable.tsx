@@ -188,7 +188,7 @@ export default function ItemFormTable({
     <>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          {headerForm.status !== "complete" && (
+          {headerForm.status !== "loaded" && (
             <div className="space-x-2">
               <Button
                 className="h-8"
@@ -385,15 +385,17 @@ export default function ItemFormTable({
                       >
                         <Eye size={14} />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          handleCancel(item);
-                        }}
-                      >
-                        <X size={14} />
-                      </Button>
+                      {headerForm.status !== "loaded" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            handleCancel(item);
+                          }}
+                        >
+                          <X size={14} />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -481,7 +483,7 @@ function OrderDetailModal({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((item, idx) => (
+              {data?.map((item, idx) => (
                 <TableRow key={idx}>
                   <TableCell>{item.item_code}</TableCell>
                   <TableCell>{item.barcode}</TableCell>
