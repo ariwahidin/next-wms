@@ -35,6 +35,7 @@ export async function getOutbound(startDate: string, endDate: string) {
 
   const sql = `SELECT 
       ROW_NUMBER() OVER (ORDER BY oh.outbound_date DESC) AS [NO],
+      oh.order_type AS [ORDER TYPE],
       od.whs_code AS [WH CODE],
       oht.truck_no AS [TRUCK NO],
       oh.rcv_do_date AS [PRINT DO DATE],
