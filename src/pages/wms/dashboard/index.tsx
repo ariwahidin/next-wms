@@ -1,144 +1,3 @@
-// /* eslint-disable @typescript-eslint/no-unused-vars */
-// import { AppSidebar } from "@/components/app-sidebar";
-// import {
-//   Breadcrumb,
-//   BreadcrumbItem,
-//   BreadcrumbLink,
-//   BreadcrumbList,
-//   BreadcrumbPage,
-//   BreadcrumbSeparator,
-// } from "@/components/ui/breadcrumb";
-// import { Separator } from "@/components/ui/separator";
-// import {
-//   SidebarInset,
-//   SidebarProvider,
-//   SidebarTrigger,
-// } from "@/components/ui/sidebar";
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import {
-//   Table,
-//   TableBody,
-//   TableCell,
-//   TableHead,
-//   TableHeader,
-//   TableRow,
-// } from "@/components/ui/table";
-// import { Button } from "@/components/ui/button";
-// import Layout from "@/components/layout";
-// import { use, useEffect, useState } from "react";
-// import api from "@/lib/api";
-// import { Transactions } from "@/types/dashboard";
-// import dayjs from "dayjs";
-
-// export default function Page() {
-//   const [transactions, setTransactions] = useState<Transactions[]>([]);
-
-//   useEffect(() => {
-//     const fetchData = async () => {
-//       try {
-//         const response = await api.get("/dashboard", {
-//           withCredentials: true,
-//         });
-//         const data = await response.data;
-//         if (data.success === false) {
-//           return;
-//         }
-//         setTransactions(data.data?.transactions);
-//       } catch (error) {
-//         console.error("Error fetching orders:", error);
-//       } finally {
-//         // setIsLoading(false);
-//       }
-//     };
-
-//     fetchData();
-//   }, []);
-
-//   return (
-//     <Layout title="WMS" subTitle="Dashboard">
-//       <div className="p-4 grid grid-cols-1 gap-4 md:grid-cols-3"></div>
-//       {/* Content */}
-//       <div className="flex flex-1 flex-col gap-6 p-6 pt-4">
-//         {/* Stats */}
-//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-//           <Card key={"inbound"}>
-//             <CardHeader>
-//               <CardTitle>{"Inbound Pending"}</CardTitle>
-//             </CardHeader>
-//             <CardContent>
-//               <p className="text-2xl font-bold">
-//                 {transactions?.reduce((total, order) => {
-//                   if (order.trans_type === "inbound") {
-//                     return total + 1;
-//                   }
-//                   return total;
-//                 }, 0)}
-//               </p>
-//             </CardContent>
-//           </Card>
-//           <Card key={"outbound"}>
-//             <CardHeader>
-//               <CardTitle>{"Outbound Pending"}</CardTitle>
-//             </CardHeader>
-//             <CardContent>
-//               <p className="text-2xl font-bold">
-//                 {transactions?.reduce((total, order) => {
-//                   if (order.trans_type === "outbound") {
-//                     return total + 1;
-//                   }
-//                   return total;
-//                 }, 0)}
-//               </p>
-//             </CardContent>
-//           </Card>
-//         </div>
-
-//         {/* Recent Orders */}
-//         <Card>
-//           <CardHeader className="flex flex-row items-center justify-between">
-//             <CardTitle>Recent Orders</CardTitle>
-//             {/* <Button variant="outline" size="sm">
-//               View All
-//             </Button> */}
-//           </CardHeader>
-//           <CardContent>
-//             <Table>
-//               <TableHeader>
-//                 <TableRow>
-//                   <TableHead>No.</TableHead>
-//                   <TableHead>Date</TableHead>
-//                   <TableHead>Trans Type</TableHead>
-//                   <TableHead>Order ID</TableHead>
-//                   <TableHead>Status</TableHead>
-//                   <TableHead>Total Item</TableHead>
-//                   <TableHead>Total Qty</TableHead>
-//                 </TableRow>
-//               </TableHeader>
-//               <TableBody>
-//                 {transactions?.map((order, index) => (
-//                   <TableRow key={order.id}>
-//                     <TableCell>{index + 1}</TableCell>
-//                     <TableCell>
-//                       {dayjs(order.trans_date).format("D MMMM YYYY")}
-//                     </TableCell>
-//                     <TableCell>
-//                       <span className="text-sm">{order.trans_type}</span>
-//                     </TableCell>
-//                     <TableCell>{order.no_ref}</TableCell>
-//                     <TableCell>{order.status}</TableCell>
-//                     <TableCell>{order.tot_item}</TableCell>
-//                     <TableCell>{order.tot_qty}</TableCell>
-//                   </TableRow>
-//                 ))}
-//               </TableBody>
-//             </Table>
-//           </CardContent>
-//         </Card>
-//       </div>
-//     </Layout>
-//   );
-// }
-
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -185,10 +44,100 @@ import {
   XCircle,
   Loader2,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+
+// ── TYPE ─────────────────────────────────────────────────────
+// Tambahkan ke @/types/dashboard.ts atau langsung di page.tsx:
+
+type TrendItem = {
+  date: string;    // "2025-03-03"
+  inbound: number;
+  outbound: number;
+};
+
+type TypeMixItem = {
+  name: string;   // "B2B Normal", "B2B Consignment", dst
+  value: number;
+};
+
+type ChartData = {
+  trend: TrendItem[];
+  type_mix: TypeMixItem[];
+  total: {
+    total_order: number;
+    total_qty: number;
+  };
+};
 
 export default function Page() {
   const [transactions, setTransactions] = useState<Transactions[]>([]);
   const [loading, setLoading] = useState(true);
+  // dan update initial state:
+  const [chartData, setChartData] = useState<ChartData>({
+    trend: [],
+    type_mix: [],
+    total: { total_order: 0, total_qty: 0 },
+  });
+  const [chartLoading, setChartLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchChartData = async () => {
+      try {
+        const res = await api.get("/dashboard/chart", { withCredentials: true });
+        if (res.data.success) {
+          setChartData(res.data.data);
+        }
+      } catch (err) {
+        console.error("Error fetching chart data:", err);
+      } finally {
+        setChartLoading(false);
+      }
+    };
+    fetchChartData();
+  }, []);
+
+  // ── CONSTANTS ─────────────────────────────────────────────────
+  // Warna untuk donut chart — tambah sesuai jumlah order_type
+  const TYPE_MIX_COLORS = ["#3b82f6", "#f97316", "#eab308", "#10b981", "#8b5cf6"];
+  const totalTypeMix = chartData.type_mix.reduce((s, d) => s + d.value, 0);
+
+  // ── CUSTOM TOOLTIP ────────────────────────────────────────────
+  const ChartTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: { color: string; name: string; value: number }[];
+    label?: string;
+  }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white border border-slate-200 rounded-lg shadow-lg p-3 text-xs">
+          <p className="font-semibold text-slate-700 mb-2">{label}</p>
+          {payload.map((p) => (
+            <div key={p.name} className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+              <span className="text-slate-600 capitalize">{p.name}:</span>
+              <span className="font-bold text-slate-900">{p.value}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -222,6 +171,11 @@ export default function Page() {
       if (order.trans_type === "outbound") return total + 1;
       return total;
     }, 0) || 0;
+
+  const totalOutboundCount = transactions?.reduce((total, order) => {
+    if (order.trans_type === "outbound") return total + 1;
+    return total;
+  }, 0) || 0;
 
   const completedCount =
     transactions?.reduce((total, order) => {
@@ -354,29 +308,45 @@ export default function Page() {
               </CardContent>
             </Card>
 
-            {/* <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow group">
+            <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow group">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600 mb-1">
-                      Completed Orders
-                    </p>
+                    <p className="text-sm font-medium text-slate-600 mb-1">Total Outbound Orders</p>
                     <p className="text-2xl font-bold text-slate-900">
-                      {completedCount}
+                      {chartLoading ? <Loader2 className="animate-spin w-5 h-5 text-slate-400" /> : chartData.total.total_order.toLocaleString()}
                     </p>
                     <div className="flex items-center gap-1 mt-2">
-                      <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
-                      <span className="text-xs text-slate-500">
-                        Successfully processed
-                      </span>
+                      <div className="w-1 h-1 bg-emerald-500 rounded-full" />
+                      <span className="text-xs text-slate-500">All time</span>
                     </div>
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
-                    <CheckCircle className="w-6 h-6 text-emerald-600" />
+                    <ShoppingCart className="w-6 h-6 text-emerald-600" />
                   </div>
                 </div>
               </CardContent>
-            </Card> */}
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow group">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 mb-1">Total Outbound Qty</p>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {chartLoading ? <Loader2 className="animate-spin w-5 h-5 text-slate-400" /> : chartData.total.total_qty.toLocaleString()}
+                    </p>
+                    <div className="flex items-center gap-1 mt-2">
+                      <div className="w-1 h-1 bg-purple-500 rounded-full" />
+                      <span className="text-xs text-slate-500">Total items shipped</span>
+                    </div>
+                  </div>
+                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                    <Package className="w-6 h-6 text-purple-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow group">
               <CardContent className="p-6">
@@ -402,6 +372,149 @@ export default function Page() {
               </CardContent>
             </Card> */}
           </div>
+
+
+
+          {/* Chart Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+            {/* Line Chart — Transaction Trend */}
+            <div className="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm p-6">
+              <div className="mb-4">
+                <h3 className="text-base font-semibold text-slate-900">Transaction Trend</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Transactions by date (last 7 days)</p>
+              </div>
+
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-6 h-0.5 bg-blue-500 rounded-full" />
+                  <span className="text-xs text-slate-600">Inbound</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-6 h-0.5 bg-orange-500 rounded-full" />
+                  <span className="text-xs text-slate-600">Outbound</span>
+                </div>
+              </div>
+
+              {chartLoading ? (
+                <div className="h-[220px] flex items-center justify-center">
+                  <Loader2 className="animate-spin w-5 h-5 text-slate-400" />
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart
+                    data={chartData.trend}
+                    margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 11, fill: "#94a3b8" }}
+                      axisLine={false}
+                      tickLine={false}
+                      // Format tanggal dari "2025-03-03" jadi "03 Mar"
+                      tickFormatter={(v) => dayjs(v).format("DD MMM")}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: "#94a3b8" }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                    />
+                    <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#e2e8f0", strokeWidth: 1 }} />
+                    <Line
+                      type="monotone"
+                      dataKey="inbound"
+                      stroke="#3b82f6"
+                      strokeWidth={2.5}
+                      dot={{ r: 3, fill: "#3b82f6", strokeWidth: 0 }}
+                      activeDot={{ r: 5, strokeWidth: 0 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="outbound"
+                      stroke="#f97316"
+                      strokeWidth={2.5}
+                      dot={{ r: 3, fill: "#f97316", strokeWidth: 0 }}
+                      activeDot={{ r: 5, strokeWidth: 0 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* Donut Chart — Transaction Type Mix */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm p-6">
+              <div className="mb-4">
+                <h3 className="text-base font-semibold text-slate-900">Transaction Type Mix</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Share of total outbound orders</p>
+              </div>
+
+              {chartLoading ? (
+                <div className="h-[200px] flex items-center justify-center">
+                  <Loader2 className="animate-spin w-5 h-5 text-slate-400" />
+                </div>
+              ) : chartData.type_mix.length === 0 ? (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-xs text-slate-400">No data available</p>
+                </div>
+              ) : (
+                <div className="relative">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={chartData.type_mix}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={58}
+                        outerRadius={82}
+                        paddingAngle={3}
+                        dataKey="value"
+                        nameKey="name"
+                      >
+                        {chartData.type_mix.map((_, index) => (
+                          <Cell
+                            key={index}
+                            fill={TYPE_MIX_COLORS[index % TYPE_MIX_COLORS.length]}
+                            stroke="none"
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  {/* Center label */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-2xl font-bold text-slate-900">{totalTypeMix}</span>
+                    <span className="text-xs text-slate-500">Orders</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Legend */}
+              <div className="space-y-2.5 mt-3">
+                {chartData.type_mix.map((item, index) => (
+                  <div key={item.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ background: TYPE_MIX_COLORS[index % TYPE_MIX_COLORS.length] }}
+                      />
+                      <span className="text-xs text-slate-600">{item.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-900">{item.value}</span>
+                      <span className="text-xs text-slate-400">
+                        ({totalTypeMix > 0 ? Math.round((item.value / totalTypeMix) * 100) : 0}%)
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
 
           {/* Recent Orders */}
           <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
@@ -542,3 +655,4 @@ export default function Page() {
     </Layout>
   );
 }
+

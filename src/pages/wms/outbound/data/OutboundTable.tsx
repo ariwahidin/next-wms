@@ -75,11 +75,7 @@ const fetcher = (url: string) =>
     return [];
   });
 
-const HandleEdit = (item: any) => {
-  console.log("Edit ID:", item.outbound_no);
-  router.push(`/wms/outbound/edit/${item.outbound_no}`);
-  // window.location.href = `/wms/outbound/edit/${item.outbound_no}`;
-};
+
 const HandleCopy = (item: any) => {
   console.log("Copy ID:", item.outbound_no);
   router.push(`/wms/outbound/copy/${item.outbound_no}`);
@@ -90,7 +86,6 @@ const HandleDelete = (id: number) => {
   try {
     api.delete(`/outbound/${id}`, { withCredentials: true }).then((res) => {
       if (res.data.success === true) {
-        // mutate("/inbound/detail/draft"); // 🔥 Auto-refresh tabel tanpa reload halaman
       }
     });
   } catch (error) {
@@ -172,6 +167,45 @@ const OutboundTable = () => {
   const [openImportModal, setOpenImportModal] = useState(false);
 
   const isSubmittingRef = useRef(false);
+  const gridRef = useRef<AgGridReact>(null);
+  const currentPageRef = useRef<number>(0);
+  const isRestoringRef = useRef<boolean>(false);
+  const gridApiRef = useRef<any>(null);
+
+  const HandleEdit = (item: any) => {
+    console.log("Edit ID:", item.outbound_no);
+    router.push(`/wms/outbound/edit/${item.outbound_no}`);
+    localStorage.setItem("outbound_page", currentPageRef.current.toString());
+  };
+
+  // useEffect(() => {
+  //   console.log("useEffect", rowData);
+  //   console.log("gridApiRef.current", gridApiRef.current);
+  //   if (rowData) {
+  //     const savedPage = parseInt(localStorage.getItem("outbound_page") || "0");
+  //     gridApiRef.current.paginationGoToPage(savedPage);
+  //     localStorage.removeItem("outbound_page"); // hapus setelah dipakai
+  //   }
+  // }, [rowData]);
+
+  useEffect(() => {
+    if (!rowData) return;
+
+    const savedPage = parseInt(localStorage.getItem("outbound_page") || "0");
+    if (savedPage === 0) return; // tidak perlu restore kalau halaman 1
+
+    const tryRestore = () => {
+      if (gridApiRef.current) {
+        gridApiRef.current.paginationGoToPage(savedPage);
+        localStorage.removeItem("outbound_page");
+      } else {
+        setTimeout(tryRestore, 100); // coba lagi setelah 100ms
+      }
+    };
+
+    setTimeout(tryRestore, 200);
+  }, [rowData]);
+
   const HandlePicking = (id: number) => {
     if (isSubmittingRef.current) return; // 🔒 HARD LOCK
     // isSubmittingRef.current = true; // 🔒 LOCK DI SINI
@@ -209,8 +243,6 @@ const OutboundTable = () => {
       }
     );
   };
-
-
 
   const HandlePickingComplete = (id: number) => {
     showAlert(
@@ -701,6 +733,17 @@ const OutboundTable = () => {
           </div>
         </div>
         <AgGridReact
+          ref={gridRef}
+          onGridReady={(params) => {
+            console.log("grid ready, api:", params.api);
+            gridApiRef.current = params.api;
+          }}
+          onPaginationChanged={(e) => {
+            if (e.newPage && !isRestoringRef.current) {
+              currentPageRef.current = e.api.paginationGetCurrentPage();
+              console.log("saved page:", currentPageRef.current);
+            }
+          }}
           rowData={rowData}
           columnDefs={columnDefs}
           quickFilterText={quickFilterText}
