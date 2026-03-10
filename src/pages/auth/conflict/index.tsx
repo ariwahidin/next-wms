@@ -134,7 +134,8 @@ const AuthConflictPage = () => {
                             token: res.data.x_token,
                             menus: res.data.menus,
                             unit: res.data.user.unit,
-                            roles: res.data.user.roles
+                            roles: res.data.user.roles,
+                            permissions: res.data.permissions || []
                         })
                     );
 

@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { InventoryPolicy } from "@/types/inventory";
+import { usePermission } from "@/hooks/usePermission";
 
 type OrderDetail = {
   item_code: string;
@@ -74,6 +75,7 @@ export default function ItemFormTable({
   const [viewData, setViewData] = useState<OrderDetail[]>([]);
   const [loading, setLoading] = useState(false);
   const [useVas, setUseVas] = useState<boolean>(false);
+  const { can } = usePermission()
 
   const fetchData = async () => {
     try {
@@ -188,7 +190,7 @@ export default function ItemFormTable({
     <>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          {headerForm.status !== "loaded" && (
+          {headerForm.status !== "loaded" && can("shipment", "create") && (
             <div className="space-x-2">
               <Button
                 className="h-8"
@@ -263,42 +265,21 @@ export default function ItemFormTable({
                     </td>
 
                     <td className="p-2 border sticky left-[48px] bg-white z-10">
-                      <Input
-                        style={{ fontSize: "12px" }}
-                        type="text"
-                        value={item.outbound_no}
-                        readOnly
-                        className="flex-1"
-                      />
+                      <span>{item.outbound_no}</span>
                     </td>
 
                     <td className="p-2 border">
+                      <span>{item.shipment_id}</span>
+                    </td>
+                    <td className="p-2 border">
+                      <span>{item.deliv_to_name}</span>
+                    </td>
+                    <td className="p-2 border">
+                      <span>{item.deliv_city}</span>
+                    </td>
+                    <td className="p-2 border">
                       <Input
-                        style={{ fontSize: "12px" }}
                         readOnly
-                        type="text"
-                        value={item.shipment_id}
-                      />
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        style={{ fontSize: "12px" }}
-                        readOnly
-                        type="text"
-                        value={item.deliv_to_name}
-                      />
-                    </td>
-                    <td className="p-2 border">
-                      <div>
-                        <Input
-                          readOnly
-                          style={{ fontSize: "12px", textAlign: "center" }}
-                          value={item.deliv_city}
-                        />
-                      </div>
-                    </td>
-                    <td className="p-2 border">
-                      <Input
                         style={{ fontSize: "12px", textAlign: "center" }}
                         type="number"
                         value={item.qty_koli}

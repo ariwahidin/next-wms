@@ -33,7 +33,6 @@ export default function OrderListPage() {
         return params.node.rowIndex + 1;
       },
     },
-
     { field: "order_no", headerName: "SPK No.", width: 200 },
     { field: "status", headerName: "Status", width: 120 },
     { field: "transporter", headerName: "Transporter", width: 200 },

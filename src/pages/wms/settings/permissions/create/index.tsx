@@ -7,12 +7,14 @@ import api from "@/lib/api";
 import Layout from "@/components/layout";
 
 const CreatePermissionPage = () => {
-  const handleSubmit = async (data: { name: string; description: string }) => {
+  const handleSubmit = async (data: { name: string; description: string, resource: string, action: string }) => {
     const res = await api.post(
       "/permissions",
       {
         name: data.name,
         description: data.description,
+        resource: data.resource,
+        action: data.action,
       },
       {
         withCredentials: true,

@@ -59,7 +59,8 @@ export function LoginForm({
               token: res.data.x_token,
               menus: res.data.menus,
               roles: res.data.user.roles,
-              unit: res.data.user.unit
+              unit: res.data.user.unit,
+              permissions: res.data.permissions,
             })
           );
 

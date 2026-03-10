@@ -50,6 +50,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MuatanOrderSPK } from "@/types/order-spk";
 import { useAppSelector } from "@/hooks/useAppSelector";
+import { usePermission } from "@/hooks/usePermission";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -115,6 +116,7 @@ const OrderTable = () => {
   const [tempLocationName, setTempLocationName] = useState("");
   const [showTempLocationInput, setShowTempLocationInput] = useState(false);
   const userRedux = useAppSelector((state) => state.user);
+  const { can } = usePermission()
 
   // ─── Update Status ──────────────────────────────────────────────────────────
 
@@ -464,7 +466,7 @@ const OrderTable = () => {
                 )}
 
                 {/* Reopen - hanya tampil jika status loaded */}
-                {status === "loaded"  && userRedux.roles.some((role) => role.name === "SUPERADMIN") && (
+                {status === "loaded" && userRedux.roles.some((role) => role.name === "SUPERADMIN") && (
                   <DropdownMenuItem
                     className="cursor-pointer text-blue-600 focus:text-blue-700"
                     onClick={(e) => {
@@ -553,15 +555,17 @@ const OrderTable = () => {
         <div className="flex items-center justify-between pb-4">
           {/* Left: Add + Bulk Actions */}
           <div className="flex items-center gap-2">
-            <Button
-              className="h-8 bg-green-500 text-slate-950 outline-green-600"
-              onClick={() => {
-                router.push("/wms/outbound/order-spk/add");
-              }}
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Add
-            </Button>
+            {can("shipment", "create") && (
+              <Button
+                className="h-8 bg-green-500 text-slate-950 outline-green-600"
+                onClick={() => {
+                  router.push("/wms/outbound/order-spk/add");
+                }}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Add
+              </Button>
+            )}
 
             {/* Bulk action buttons - muncul jika ada baris terpilih */}
             {hasSelected && (

@@ -11,6 +11,7 @@ interface UserState {
     unit: string;
     menus: any[];
     roles : any[];
+    permissions: string[]
 }
 
 const initialState: UserState = {
@@ -22,13 +23,14 @@ const initialState: UserState = {
     unit : '',
     menus: [],
     roles : [],
+    permissions: [],
 };
 
 const userSlice = createSlice({
     name: 'user',
     initialState,
     reducers: {
-        setUser(state, action: PayloadAction<{ name: string; email: string; base_url: string; token: string; unit: string; menus: any[], roles: any[] }>) {
+        setUser(state, action: PayloadAction<{ name: string; email: string; base_url: string; token: string; unit: string; menus: any[], roles: any[], permissions: string[] }>) {
             state.name = action.payload.name;
             state.email = action.payload.email;
             state.base_url = action.payload.base_url;
@@ -37,6 +39,7 @@ const userSlice = createSlice({
             state.menus = action.payload.menus;
             state.roles = action.payload.roles;
             state.isLoggedIn = true;
+            state.permissions = action.payload.permissions || [];
         },
         logout(state) {
             state.name = '';
@@ -47,6 +50,7 @@ const userSlice = createSlice({
             state.menus = [];
             state.roles = [];
             state.isLoggedIn = false;
+            state.permissions = [];
         },
     },
 });

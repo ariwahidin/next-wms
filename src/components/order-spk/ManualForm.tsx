@@ -557,6 +557,7 @@ import { Transporter } from "@/types/transporter";
 import { HeaderSPK, MuatanOrderSPK } from "@/types/order-spk";
 import { Textarea } from "../ui/textarea";
 import { Truck } from "@/types/truck";
+import { usePermission } from "@/hooks/usePermission";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -586,6 +587,8 @@ export default function ManualForm() {
     { value: "MOTOCYCLE", label: "MOTOCYCLE" },
     { value: "NON-SIZE", label: "NON-SIZE" },
   ]);
+
+  const { can } = usePermission()
 
   const fetchData = async () => {
     try {
@@ -689,7 +692,10 @@ export default function ManualForm() {
             <ArrowBigLeftIcon className="mr-0" />
             Back
           </Button>
-          {formData.status !== "loaded" && (
+
+          
+
+          {formData.status !== "loaded" && can("shipment", "create") && (
             <Button
               variant="outline"
               className="bg-blue-500 text-white hover:bg-blue-600 h-8"
