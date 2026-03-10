@@ -582,7 +582,7 @@ export async function getStockReport(viewBy: string) {
   (SUM(iv.qty_available)) * p.cbm AS [TOTAL CBM]
   FROM inventories iv
   left join products p ON iv.item_code = p.item_code
-  where iv.qty_onhand <> 0
+  where iv.qty_onhand > 0
   group by
   iv.item_code,
   iv.barcode,
@@ -610,7 +610,7 @@ export async function getStockReport(viewBy: string) {
     -- (SUM(iv.qty_available)) * p.cbm AS [TOTAL CBM]
     FROM inventories iv
     left join products p ON iv.item_code = p.item_code
-    where iv.qty_onhand <> 0
+    where iv.qty_onhand > 0
     group by
     iv.item_code,
     iv.barcode,

@@ -1,7 +1,7 @@
 // import { authMiddleware } from './middleware/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
 
     const allCookies = req.cookies.getAll();
     console.log("✅ All cookies received in middleware:", allCookies);
