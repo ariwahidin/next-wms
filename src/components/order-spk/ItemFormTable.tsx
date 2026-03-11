@@ -389,7 +389,7 @@ export default function ItemFormTable({
             </tbody>
             <tfoot>
               <tr className="bg-gray-100 font-semibold">
-                <td className="p-2 border sticky left-0 bg-gray-100 z-20" colSpan={5}>
+                <td className="p-2 border sticky left-0 bg-gray-100 z-20" colSpan={6}>
                   Total
                 </td>
                 <td className="p-2 border text-center">
