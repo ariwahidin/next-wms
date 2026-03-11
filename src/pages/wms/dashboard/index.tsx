@@ -239,7 +239,7 @@ export default function Page() {
             <div>
               <h1 className="text-2xl font-bold text-slate-900 mb-1">Dashboard 📊</h1>
               {/* <h1 className="text-2xl font-bold text-slate-900 mb-1">WMS Dashboard 📊</h1> */}
-              {/* <p className="text-slate-600 text-sm">Monitor your warehouse operations and transactions</p> */}
+              <p className="text-slate-600 text-sm">Monitor your warehouse operations and transactions</p>
             </div>
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <Calendar className="w-4 h-4" />
@@ -352,10 +352,10 @@ export default function Page() {
                   <div>
                     <p className="text-sm font-medium text-slate-600 mb-1">Inbound Pending</p>
                     <p className="text-2xl font-bold text-slate-900">{loadingTx ? "—" : inboundCount}</p>
-                    <div className="flex items-center gap-1 mt-2">
+                    {/* <div className="flex items-center gap-1 mt-2">
                       <div className="w-1 h-1 bg-blue-500 rounded-full" />
                       <span className="text-xs text-slate-500">Active transactions</span>
-                    </div>
+                    </div> */}
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                     <ArrowDownRight className="w-6 h-6 text-blue-600" />
@@ -370,10 +370,10 @@ export default function Page() {
                   <div>
                     <p className="text-sm font-medium text-slate-600 mb-1">Outbound Pending</p>
                     <p className="text-2xl font-bold text-slate-900">{loadingTx ? "—" : outboundCount}</p>
-                    <div className="flex items-center gap-1 mt-2">
+                    {/* <div className="flex items-center gap-1 mt-2">
                       <div className="w-1 h-1 bg-orange-500 rounded-full" />
                       <span className="text-xs text-slate-500">Active transactions</span>
-                    </div>
+                    </div> */}
                   </div>
                   <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                     <ArrowUpRight className="w-6 h-6 text-orange-600" />
@@ -390,10 +390,10 @@ export default function Page() {
                     <p className="text-2xl font-bold text-slate-900">
                       {loadingChart ? <Loader2 className="animate-spin w-5 h-5 text-slate-400" /> : safeTotal.total_order.toLocaleString()}
                     </p>
-                    <div className="flex items-center gap-1 mt-2">
+                    {/* <div className="flex items-center gap-1 mt-2">
                       <div className="w-1 h-1 bg-emerald-500 rounded-full" />
                       <span className="text-xs text-slate-500">All time</span>
-                    </div>
+                    </div> */}
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
                     <ShoppingCart className="w-6 h-6 text-emerald-600" />
@@ -410,10 +410,10 @@ export default function Page() {
                     <p className="text-2xl font-bold text-slate-900">
                       {loadingChart ? <Loader2 className="animate-spin w-5 h-5 text-slate-400" /> : safeTotal.total_qty.toLocaleString()}
                     </p>
-                    <div className="flex items-center gap-1 mt-2">
+                    {/* <div className="flex items-center gap-1 mt-2">
                       <div className="w-1 h-1 bg-purple-500 rounded-full" />
                       <span className="text-xs text-slate-500">Total items shipped</span>
-                    </div>
+                    </div> */}
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-200 transition-colors">
                     <Package className="w-6 h-6 text-purple-600" />

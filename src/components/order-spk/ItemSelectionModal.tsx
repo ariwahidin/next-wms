@@ -69,7 +69,8 @@ const ItemSelectionModal = ({
           (item.deliv_to?.toLowerCase() || "").includes(searchLower) ||
           (item.deliv_to_name?.toLowerCase() || "").includes(searchLower) ||
           (item.deliv_address?.toLowerCase() || "").includes(searchLower) ||
-          (item.deliv_city?.toLowerCase() || "").includes(searchLower)
+          (item.deliv_city?.toLowerCase() || "").includes(searchLower) || 
+          (item.order_type?.toLowerCase() || "").includes(searchLower)
       );
       setFilteredItems(filtered);
     }
@@ -186,6 +187,7 @@ const ItemSelectionModal = ({
                   <th className="p-2 border w-12">#</th>
                   <th className="p-2 border w-12">Picking No</th>
                   <th className="p-2 border">DO No</th>
+                  <th className="p-2 border">Order Type</th>
                   <th className="p-2 border">Delivery To</th>
                   <th className="p-2 border">Delivery City</th>
                   {/* <th className="p-2 border">Total Koli</th> */}
@@ -221,6 +223,7 @@ const ItemSelectionModal = ({
                         {item.outbound_no}
                       </td>
                       <td className="p-2 border">{item.shipment_id}</td>
+                      <td className="p-2 border">{item.order_type}</td>
                       <td className="p-2 border">{item.deliv_to_name}</td>
                       <td className="p-2 border text-center">
                         {item.deliv_city}

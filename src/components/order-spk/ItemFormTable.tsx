@@ -155,6 +155,7 @@ export default function ItemFormTable({
         vas_koli: 0,
         total_cbm: p.total_cbm,
         mode: "create",
+        order_type : p.order_type,
       }));
 
       setMuatan((prev) => [...prev, ...newPicking]);
@@ -215,9 +216,11 @@ export default function ItemFormTable({
                 <th className="p-2 border sticky left-[48px] bg-gray-100 z-20" style={{ width: "120px" }}>
                   Picking No
                 </th>
-
                 <th className="p-2 border" style={{ width: "120px" }}>
                   DO No
+                </th>
+                <th className="p-2 border" style={{ width: "120px" }}>
+                  Order Type
                 </th>
                 <th className="p-2 border" style={{ width: "200px" }}>
                   Delivery To
@@ -267,9 +270,11 @@ export default function ItemFormTable({
                     <td className="p-2 border sticky left-[48px] bg-white z-10">
                       <span>{item.outbound_no}</span>
                     </td>
-
                     <td className="p-2 border">
                       <span>{item.shipment_id}</span>
+                    </td>
+                    <td className="p-2 border">
+                      <span>{item.order_type}</span>
                     </td>
                     <td className="p-2 border">
                       <span>{item.deliv_to_name}</span>

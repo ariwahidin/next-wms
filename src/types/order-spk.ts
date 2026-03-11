@@ -39,6 +39,7 @@ export interface MuatanOrderSPK {
   mode?: "create" | "edit";
   remarks?: string;
   use_vas?: boolean;
+  order_type?: string;
 }
 
 export interface DetailItemFormPropsSPK {
