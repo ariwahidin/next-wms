@@ -24,6 +24,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
+import OutboundPipeline from "./OutboundPipeline";
 
 // ── Types ─────────────────────────────────────────────────────
 type TrendItem = { date: string; inbound: number; outbound: number };
@@ -421,6 +422,8 @@ export default function Page() {
               </CardContent>
             </Card>
           </div>
+
+          <OutboundPipeline filter={filter} />
 
           {/* ── Charts ─────────────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
