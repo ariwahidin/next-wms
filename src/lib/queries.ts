@@ -425,15 +425,26 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
   if (viewBy === "item") {
     sql = ` WITH v AS
             (SELECT
-                oh.[status] AS [STATUS],
-                  oh.whs_code AS [WH CODE],
-                  oht.truck_no AS [TRUCK NO],
+				oh.owner_code AS [OWNER],
                   oht.order_no AS [SPK NO],
+				  UPPER(oht.[status]) AS [SHIP STATUS],
+				  oht.order_date AS [SHIP ORDER DATE],
+				  oht.load_date AS [LOAD DATE],
+				  oht.load_start_time AS [START LOAD],
+				  oht.load_end_time AS [END LOAD],
+				  oht.order_type AS [SHIP ORDER TYPE],	
+                  tr.transporter_name AS [TRANSPORTER],
+                  oht.truck_no AS [TRUCK NO],
+				  oht.truck_size AS [TRUCK SIZE],
+				  oht.driver AS [DRIVER],
+				  oht.remarks AS [SHP REMARKS],
+                  oh.shipment_id AS [DO NO],
+                  oh.outbound_date AS [OUT DATE],
+                  oh.whs_code AS [WH CODE],
                   oh.rcv_do_date AS [PRINT DO DATE],
                   oh.rcv_do_time AS [PRINT DO TIME],
-                  oh.outbound_date AS [OUT DATE],
-                  oh.shipment_id AS [DO NO],
-                  tr.transporter_name AS [TRUCKER],
+				  oh.order_type AS [DO ORDER TYPE],
+                UPPER(oh.[status]) AS [PICKING STATUS],
                   c.customer_name AS [CUSTOMER],
                   c.cust_addr1 AS [ADDRESS],
                   c.cust_city AS CITY,
@@ -450,7 +461,7 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
               LEFT JOIN customers c ON oh.customer_code = c.customer_code
               LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
               LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
-                WHERE 
+              WHERE 
               oh.outbound_date >= '${startDate}' 
               AND oh.outbound_date <= '${endDate}'
             )
