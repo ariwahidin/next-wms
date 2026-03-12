@@ -569,14 +569,14 @@ export default function ItemFormTable({
               </th> */}
               <th className="p-2 border w-12 text-center">No.</th>
               <th className="p-2 border" style={{ width: "200px" }}>
-                Item Code
+                Item
               </th>
-              <th className="p-2 border" style={{ width: "400px" }}>
+              {/* <th className="p-2 border" style={{ width: "400px" }}>
                 Description
-              </th>
-              <th className="p-2 border" style={{ width: "50px" }}>
+              </th> */}
+              {/* <th className="p-2 border" style={{ width: "50px" }}>
                 UoM
-              </th>
+              </th> */}
               <th className="p-2 border" style={{ width: "100px" }}>
                 Qty
               </th>
@@ -651,15 +651,21 @@ export default function ItemFormTable({
                       <>
                         <td className="p-2 border">
                           <div className="flex items-center gap-2">
-                            <Input
+                            {/* <Input
                               style={{ fontSize: "12px" }}
                               type="text"
                               value={item.item_code}
                               readOnly
                               className="flex-1"
                               placeholder="Click edit to select item..."
-                            />
-                            {['open', 'draft'].includes(headerForm.status) && (
+                            /> */}
+                            <span className="text-xs">SKU : {item.item_code} <br /> {products.find(
+                              (p) => p.item_code === item.item_code
+                            )?.item_name || ""}</span> <br />
+                            {/* <span>{products.find(
+                              (p) => p.item_code === item.item_code
+                            )?.item_name || ""}</span> */}
+                            {/* {['open', 'draft'].includes(headerForm.status) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -668,7 +674,7 @@ export default function ItemFormTable({
                               >
                                 <RefreshCcw size={12} />
                               </Button>
-                            )}
+                            )} */}
                           </div>
                           {errors[item.ID]?.item_code && (
                             <small className="text-red-500">
@@ -676,7 +682,7 @@ export default function ItemFormTable({
                             </small>
                           )}
                         </td>
-                        <td className="p-2 border">
+                        {/* <td className="p-2 border">
                           <Input
                             style={{ fontSize: "12px" }}
                             readOnly
@@ -687,8 +693,8 @@ export default function ItemFormTable({
                               )?.item_name || ""
                             }
                           />
-                        </td>
-                        <td className="p-2 border">
+                        </td> */}
+                        {/* <td className="p-2 border">
                           <Select
                             key={item.ID}
                             className="w-24"
@@ -704,7 +710,7 @@ export default function ItemFormTable({
                               handleChange(item.ID, "uom", value?.value)
                             }
                           />
-                        </td>
+                        </td> */}
                         <td className="p-2 border">
                           <div>
                             <Input
@@ -934,15 +940,17 @@ export default function ItemFormTable({
                       </>
                     ) : (
                       <>
-                        <td className="p-2 border">{item.item_code}</td>
+                        <td className="p-2 border"><span className="text-xs">SKU : {item.item_code} <br /> {products.find(
+                          (p) => p.item_code === item.item_code
+                        )?.item_name || ""}</span> <br /></td>
 
-                        <td className="p-2 border text-center">
+                        {/* <td className="p-2 border text-center">
                           {
                             products.find((p) => p.item_code === item.item_code)
                               ?.item_name
                           }
-                        </td>
-                        <td className="p-2 border text-center">{item.uom}</td>
+                        </td> */}
+                        {/* <td className="p-2 border text-center">{item.uom}</td> */}
                         <td className="p-2 border text-center">
                           {item.quantity}
                         </td>
@@ -996,7 +1004,7 @@ export default function ItemFormTable({
           </tbody>
           <tfoot>
             <tr className="bg-gray-100 font-semibold">
-              <td className="p-2 border" colSpan={4}>
+              <td className="p-2 border" colSpan={2}>
                 Total
               </td>
               <td className="p-2 border text-center">

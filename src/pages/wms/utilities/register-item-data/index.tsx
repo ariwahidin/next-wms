@@ -15,6 +15,7 @@ interface Product {
     owner_code: string;
     sku: string;
     unit_model: string;
+    description: string;
     ean: string;
     uom: string;
     CreatedAt: string;
@@ -71,7 +72,8 @@ export default function ProductTablePage() {
                 product.ean.toLowerCase().includes(query) ||
                 product.owner_code.toLowerCase().includes(query) ||
                 product.uom.toLowerCase().includes(query) ||
-                product.created_by_name.toLowerCase().includes(query)
+                product.created_by_name.toLowerCase().includes(query) ||
+                product.description.toLowerCase().includes(query)
         );
         setFilteredProducts(filtered);
     };
@@ -86,6 +88,7 @@ export default function ProductTablePage() {
                 "Owner Code": product.owner_code,
                 SKU: product.sku,
                 Model: product.unit_model,
+                Description: product.description,
                 EAN: product.ean,
                 UOM: product.uom,
                 "Created At": new Date(product.CreatedAt).toLocaleString("id-ID"),
@@ -103,6 +106,7 @@ export default function ProductTablePage() {
                 { wch: 15 }, // Owner Code
                 { wch: 20 }, // SKU
                 { wch: 20 }, // Model
+                { wch: 30 }, // Description
                 { wch: 18 }, // EAN
                 { wch: 10 }, // UOM
                 { wch: 20 }, // Created At
@@ -239,7 +243,7 @@ export default function ProductTablePage() {
                             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                                 {/* Desktop Table */}
                                 <div className="hidden md:block overflow-x-auto">
-                                    <table className="w-full">
+                                    <table className="w-full text-xs">
                                         <thead className="bg-gray-50 border-b border-gray-200">
                                             <tr>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -253,6 +257,9 @@ export default function ProductTablePage() {
                                                 </th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Model
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Description
                                                 </th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     EAN
@@ -285,6 +292,9 @@ export default function ProductTablePage() {
                                                     </td>
                                                     <td className="px-4 py-3 text-sm text-gray-900">
                                                         {product.unit_model}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-900">
+                                                        {product.description}
                                                     </td>
                                                     <td className="px-4 py-3 text-sm text-gray-900">
                                                         {product.ean}

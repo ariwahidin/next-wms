@@ -147,8 +147,8 @@ const PutawaySheetPrint = () => {
             <th style={th}>NO</th>
             <th style={th}>ITEM</th>
             <th style={th}>EAN</th>
-            {inventoryPolicy.use_lot_no && <th style={th}>LOT NO</th>}
-            {inventoryPolicy.require_expiry_date && <th style={th}>EXP DATE</th>}
+            {/* {inventoryPolicy.use_lot_no && <th style={th}>LOT NO</th>} */}
+            {/* {inventoryPolicy.require_expiry_date && <th style={th}>EXP DATE</th>} */}
             {/* <th style={th}>Whs Code</th> */}
             <th style={th}>QTY</th>
             {/* <th style={th}>CBM</th> */}
@@ -170,20 +170,20 @@ const PutawaySheetPrint = () => {
                   }}
                 ></canvas>
               </td>
-              {inventoryPolicy.use_lot_no && (
+              {/* {inventoryPolicy.use_lot_no && (
                 <td style={{ ...td, textAlign: "center" }}>{item.lot_number}</td>
               )}
               {inventoryPolicy.require_expiry_date && (
                 <td style={{ ...td, textAlign: "center" }}>
                   {item.exp_date || "-"}
                 </td>
-              )}
+              )} */}
               {/* <td style={{ ...td, textAlign: "center" }}>{item.whs_code}</td> */}
               <td style={{ ...td, textAlign: "center" }}>{item.quantity} {item.uom}</td>
             </tr>
           ))}
           <tr>
-            <td colSpan={3} style={{ ...td, textAlign: "center" }}>
+            <td colSpan={1} style={{ ...td, textAlign: "center" }}>
               Total
             </td>
             {inventoryPolicy.use_lot_no && <td style={{ ...td }}></td>}

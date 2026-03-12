@@ -143,7 +143,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
 
   // Handler untuk tombol Picking
   const handlePickingClick = async (outbound_no: string) => {
-    setTargetPage("picking");
+    setTargetPage("pick-pack");
     const cartons = await fetchCartonData(outbound_no);
     setCartonList(cartons);
     setShowMasterCartonSelect(false);

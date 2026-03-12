@@ -457,10 +457,10 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
                 FROM outbound_headers oh
                 LEFT JOIN outbound_details od ON od.outbound_no = oh.outbound_no
               LEFT JOIN products p ON od.item_id = p.id
-              LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
               LEFT JOIN customers c ON oh.customer_code = c.customer_code
               LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
               LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
+              LEFT JOIN transporters tr ON oht.transporter_code = tr.transporter_code
               WHERE 
               oh.outbound_date >= '${startDate}' 
               AND oh.outbound_date <= '${endDate}'
