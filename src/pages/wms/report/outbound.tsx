@@ -81,6 +81,7 @@ export default function DownloadActivityReport() {
               onChange={(e) => setViewBy(e.target.value)}
             >
               <option value="item">By Item</option>
+              <option value="koli">By Koli</option>
               <option value="barcode">By Serial</option>
             </select>
           </div>

@@ -477,6 +477,66 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
     sql += ` ORDER BY [OUT DATE] DESC`;
   }
 
+  if (viewBy === "koli") {
+    sql = `WITH koli AS (
+    SELECT
+        a.outbound_id,
+        a.item_id,
+        a.packing_id,
+        a.pack_ctn_no,
+        b.item_name,
+        a.ctn_length,
+        a.ctn_width,
+        a.ctn_height,
+        d.customer_name,
+        d.cust_addr1,
+        f.order_date,
+        e.order_no,
+        g.transporter_name,
+        c.shipment_id,
+        a.quantity
+    FROM outbound_barcodes a
+    INNER JOIN products b          ON a.item_id = b.id
+    INNER JOIN outbound_headers c  ON a.outbound_id = c.id
+    INNER JOIN customers d         ON c.customer_code = d.customer_code
+    INNER JOIN order_details e     ON e.outbound_no = c.outbound_no
+    INNER JOIN order_headers f     ON e.order_id = f.id
+    INNER JOIN transporters g      ON f.transporter_code = g.transporter_code
+    WHERE a.ctn_length IS NOT NULL
+      AND f.order_date >= '${startDate}'
+      AND f.order_date <= '${endDate}'
+)
+SELECT
+    a.order_no          AS [SPK NO],
+    a.shipment_id       AS [DO NO],
+    a.order_date        AS [OUT DATE],
+    a.customer_name     AS [CUSTOMER],
+    a.cust_addr1        AS [ADDRESS],
+    a.item_name         AS [ITEM NAME],
+    a.ctn_length        AS [P],
+    a.ctn_width         AS [L],
+    a.ctn_height        AS [T],
+    a.transporter_name  AS [TRANSPORTER],
+    SUM(a.quantity)     AS [QTY PCS],
+    COUNT(a.pack_ctn_no) AS [QTY KOLI]
+FROM koli a
+GROUP BY
+    a.order_no,
+    a.shipment_id,
+    a.order_date,
+    a.customer_name,
+    a.cust_addr1,
+    a.item_name,
+    a.ctn_length,
+    a.ctn_width,
+    a.ctn_height,
+    a.transporter_name
+ORDER BY
+    a.order_date DESC,
+    a.order_no,
+    a.item_name`
+  }
+
   // const sql = `
   //   SELECT 
   //     ROW_NUMBER() OVER (ORDER BY oh.outbound_date DESC) AS [NO],
