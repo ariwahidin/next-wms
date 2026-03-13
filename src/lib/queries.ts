@@ -512,7 +512,6 @@ SELECT
     a.order_date        AS [OUT DATE],
     a.customer_name     AS [CUSTOMER],
     a.cust_addr1        AS [ADDRESS],
-    a.item_name         AS [ITEM NAME],
     a.ctn_length        AS [P],
     a.ctn_width         AS [L],
     a.ctn_height        AS [T],
@@ -526,15 +525,13 @@ GROUP BY
     a.order_date,
     a.customer_name,
     a.cust_addr1,
-    a.item_name,
     a.ctn_length,
     a.ctn_width,
     a.ctn_height,
     a.transporter_name
 ORDER BY
     a.order_date DESC,
-    a.order_no,
-    a.item_name`
+    a.order_no`
   }
 
   // const sql = `
