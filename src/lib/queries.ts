@@ -518,7 +518,7 @@ SELECT
     a.ctn_height        AS [T],
     a.transporter_name  AS [TRANSPORTER],
     SUM(a.quantity)     AS [QTY PCS],
-    COUNT(a.pack_ctn_no) AS [QTY KOLI]
+    COUNT(DISTINCT a.pack_ctn_no) AS [QTY KOLI]
 FROM koli a
 GROUP BY
     a.order_no,
