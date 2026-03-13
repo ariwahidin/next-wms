@@ -382,14 +382,14 @@ export default function ItemFormTable({
             <tr>
               <th className="p-2 border w-12 text-center">No.</th>
               <th className="p-2 border" style={{ width: "300px" }}>
-                Item Code
+                Item
               </th>
-              <th className="p-2 border" style={{ width: "300px" }}>
-                Item Name
-              </th>
-              <th className="p-2 border" style={{ width: "150px" }}>
+              {/* <th className="p-2 border" style={{ width: "300px" }}>
+                  Item Name
+                </th> */}
+              {/* <th className="p-2 border" style={{ width: "150px" }}>
                 Barcode
-              </th>
+              </th> */}
               <th className="p-2 border" style={{ width: "100px" }}>
                 Qty
               </th>
@@ -449,7 +449,7 @@ export default function ItemFormTable({
                     </small>
                   )}
                 </td> */}
-                  <td className="p-2 border">
+                  {/* <td className="p-2 border">
                     <div className="flex items-center gap-2">
                       <Input
                         style={{ fontSize: "12px" }}
@@ -481,25 +481,23 @@ export default function ItemFormTable({
                       style={{ fontSize: "12px" }}
                       readOnly
                       type="text"
-                      // value={item.item_name}
                       value={
                         products.find((p) => p.item_code === item.item_code)
                           ?.item_name || ""
                       }
                     />
-                  </td>
-                  <td className="p-2 border">
+                  </td> */}
+                  <td className="p-2 border"><span className="text-xs">SKU : {item.item_code} <br /> {products.find(
+                    (p) => p.item_code === item.item_code
+                  )?.item_name || ""}</span> <br /></td>
+                  {/* <td className="p-2 border">
                     <Input
                       style={{ fontSize: "12px" }}
                       readOnly
                       type="text"
                       value={item.barcode}
-                    // value={
-                    //   products.find((p) => p.item_code === item.item_code)
-                    //     ?.barcode || ""
-                    // }
                     />
-                  </td>
+                  </td> */}
                   <td className="p-2 border">
                     <div>
                       <Input
@@ -648,7 +646,7 @@ export default function ItemFormTable({
           </tbody>
           <tfoot>
             <tr className="bg-gray-100 font-semibold">
-              <td className="p-2 border" colSpan={4}>
+              <td className="p-2 border" colSpan={2}>
                 Total
               </td>
               <td className="p-2 border text-center">

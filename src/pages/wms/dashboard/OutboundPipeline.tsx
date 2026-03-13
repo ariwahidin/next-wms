@@ -11,35 +11,39 @@ import api from "@/lib/api";
 type FilterState = {
   preset: "all" | "today" | "this_week" | "this_month" | "custom";
   dateFrom: string;
-  dateTo:   string;
+  dateTo: string;
   ownerCode: string;
   trendPeriod: number;
 };
 
 type PipelineRow = {
-  stage_key:    string;
+  stage_key: string;
   total_orders: number;
-  total_qty:    number;
+  total_qty: number;
 };
 
 type PipelineData = {
   outbound: PipelineRow[];
-  inbound:  PipelineRow[];
+  inbound: PipelineRow[];
 };
 
 // ── Stage config ──────────────────────────────────────────────────────────────
 
 const STAGE_CONFIG: Record<string, { label: string; color: string; bg: string; ring: string }> = {
-  open:          { label: "Open",          color: "#3b82f6", bg: "#eff6ff", ring: "#bfdbfe" },
-  confirmed:     { label: "Confirmed",     color: "#3b82f6", bg: "#eff6ff", ring: "#bfdbfe" },
-  allocated:     { label: "Allocated",     color: "#8b5cf6", bg: "#f5f3ff", ring: "#ddd6fe" },
-  on_picking:    { label: "On Picking",    color: "#f59e0b", bg: "#fffbeb", ring: "#fde68a" },
-  on_packing:    { label: "On Packing",    color: "#f97316", bg: "#fff7ed", ring: "#fed7aa" },
+  open: { label: "Open", color: "#3b82f6", bg: "#eff6ff", ring: "#bfdbfe" },
+  checking: { label: "Checking", color: "#3b82f6", bg: "#eff6ff", ring: "#bfdbfe" },
+  confirmed: { label: "Confirmed", color: "#3b82f6", bg: "#eff6ff", ring: "#bfdbfe" },
+  partially_received: { label: "Partially Received", color: "#8b5cf6", bg: "#f5f3ff", ring: "#ddd6fe" },
+  allocated: { label: "Allocated", color: "#8b5cf6", bg: "#f5f3ff", ring: "#ddd6fe" },
+  on_picking: { label: "On Picking", color: "#f59e0b", bg: "#fffbeb", ring: "#fde68a" },
+  on_packing: { label: "On Packing", color: "#f97316", bg: "#fff7ed", ring: "#fed7aa" },
+  fully_received: { label: "Fully Received", color: "#06b6d4", bg: "#ecfeff", ring: "#a5f3fc" },
   ready_to_ship: { label: "Ready to Ship", color: "#06b6d4", bg: "#ecfeff", ring: "#a5f3fc" },
-  shipped:       { label: "Shipped",       color: "#10b981", bg: "#f0fdf4", ring: "#a7f3d0" },
-  received:      { label: "Received",      color: "#3b82f6", bg: "#eff6ff", ring: "#bfdbfe" },
-  inspection:    { label: "Inspection",    color: "#f59e0b", bg: "#fffbeb", ring: "#fde68a" },
-  putaway:       { label: "Putaway",       color: "#8b5cf6", bg: "#f5f3ff", ring: "#ddd6fe" },
+  shipped: { label: "Shipped", color: "#10b981", bg: "#f0fdf4", ring: "#a7f3d0" },
+  received: { label: "Received", color: "#3b82f6", bg: "#eff6ff", ring: "#bfdbfe" },
+  inspection: { label: "Inspection", color: "#f59e0b", bg: "#fffbeb", ring: "#fde68a" },
+  putaway: { label: "Putaway", color: "#8b5cf6", bg: "#f5f3ff", ring: "#ddd6fe" },
+  complete: { label: "Complete", color: "#8b5cf6", bg: "#f5f3ff", ring: "#ddd6fe" },
 };
 
 const fallbackConfig = { label: "Unknown", color: "#94a3b8", bg: "#f8fafc", ring: "#e2e8f0" };
@@ -49,7 +53,7 @@ const fallbackConfig = { label: "Unknown", color: "#94a3b8", bg: "#f8fafc", ring
 function buildPipelineParams(f: FilterState): Record<string, string> {
   const params: Record<string, string> = {};
   let dateFrom = f.dateFrom;
-  let dateTo   = f.dateTo;
+  let dateTo = f.dateTo;
 
   if (f.preset !== "custom" && f.preset !== "all") {
     const today = new Date();
@@ -60,15 +64,15 @@ function buildPipelineParams(f: FilterState): Record<string, string> {
       const d = new Date(today);
       d.setDate(today.getDate() - today.getDay());
       dateFrom = fmt(d);
-      dateTo   = fmt(today);
+      dateTo = fmt(today);
     } else if (f.preset === "this_month") {
       dateFrom = fmt(new Date(today.getFullYear(), today.getMonth(), 1));
-      dateTo   = fmt(today);
+      dateTo = fmt(today);
     }
   }
 
   if (dateFrom) params.date_from = dateFrom;
-  if (dateTo)   params.date_to   = dateTo;
+  if (dateTo) params.date_to = dateTo;
   if (f.ownerCode && f.ownerCode !== "all") params.owner_code = f.ownerCode;
   if (!dateFrom && !dateTo) params.period = String(f.trendPeriod);
 
@@ -84,16 +88,16 @@ function CircleNode({
   onClick,
   isLast,
 }: {
-  row:       PipelineRow;
+  row: PipelineRow;
   maxOrders: number;
-  isActive:  boolean;
-  onClick:   () => void;
-  isLast:    boolean;
+  isActive: boolean;
+  onClick: () => void;
+  isLast: boolean;
 }) {
-  const cfg  = STAGE_CONFIG[row.stage_key] ?? fallbackConfig;
-  const R    = 32;
-  const C    = 2 * Math.PI * R;
-  const pct  = maxOrders > 0 ? row.total_orders / maxOrders : 0;
+  const cfg = STAGE_CONFIG[row.stage_key] ?? fallbackConfig;
+  const R = 32;
+  const C = 2 * Math.PI * R;
+  const pct = maxOrders > 0 ? row.total_orders / maxOrders : 0;
   const dash = pct * C;
 
   return (
@@ -103,12 +107,12 @@ function CircleNode({
       <div
         onClick={onClick}
         style={{
-          flex:           1,
-          display:        "flex",
-          flexDirection:  "column",
-          alignItems:     "center",
-          gap:            8,
-          cursor:         "pointer",
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 8,
+          cursor: "pointer",
         }}
       >
         {/* Ring + inner */}
@@ -131,25 +135,25 @@ function CircleNode({
           </svg>
 
           <div style={{
-            position:       "absolute",
-            inset:          8,
-            borderRadius:   "50%",
-            background:     isActive ? cfg.bg : "#fafafa",
-            border:         `1.5px solid ${isActive ? cfg.color + "44" : "#f1f5f9"}`,
-            display:        "flex",
-            flexDirection:  "column",
-            alignItems:     "center",
+            position: "absolute",
+            inset: 8,
+            borderRadius: "50%",
+            background: isActive ? cfg.bg : "#fafafa",
+            border: `1.5px solid ${isActive ? cfg.color + "44" : "#f1f5f9"}`,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             justifyContent: "center",
-            transition:     "all .15s ease",
-            boxShadow:      isActive ? `0 0 0 4px ${cfg.ring}` : "none",
+            transition: "all .15s ease",
+            boxShadow: isActive ? `0 0 0 4px ${cfg.ring}` : "none",
           }}>
             <span style={{
-              fontSize:           17,
-              fontWeight:         800,
-              lineHeight:         1,
-              color:              isActive ? cfg.color : "#1e293b",
+              fontSize: 17,
+              fontWeight: 800,
+              lineHeight: 1,
+              color: isActive ? cfg.color : "#1e293b",
               fontVariantNumeric: "tabular-nums",
-              transition:         "color .15s",
+              transition: "color .15s",
             }}>
               {row.total_orders}
             </span>
@@ -162,13 +166,13 @@ function CircleNode({
         {/* Label + qty */}
         <div style={{ textAlign: "center" }}>
           <div style={{
-            fontSize:      10,
-            fontWeight:    600,
+            fontSize: 10,
+            fontWeight: 600,
             letterSpacing: 0.3,
-            color:         isActive ? cfg.color : "#64748b",
+            color: isActive ? cfg.color : "#64748b",
             textTransform: "uppercase",
-            whiteSpace:    "nowrap",
-            transition:    "color .15s",
+            whiteSpace: "nowrap",
+            transition: "color .15s",
           }}>
             {cfg.label}
           </div>
@@ -181,10 +185,10 @@ function CircleNode({
       {/* Connector */}
       {!isLast && (
         <div style={{
-          display:       "flex",
-          alignItems:    "center",
-          flexShrink:    0,
-          width:         20,
+          display: "flex",
+          alignItems: "center",
+          flexShrink: 0,
+          width: 20,
           paddingBottom: 36,
         }}>
           <div style={{ flex: 1, height: 1.5, background: "#e2e8f0", borderRadius: 99 }} />
@@ -200,34 +204,34 @@ function CircleNode({
 // ── Detail Panel ──────────────────────────────────────────────────────────────
 
 function DetailPanel({ row }: { row: PipelineRow }) {
-  const cfg    = STAGE_CONFIG[row.stage_key] ?? fallbackConfig;
+  const cfg = STAGE_CONFIG[row.stage_key] ?? fallbackConfig;
   const avgQty = row.total_orders > 0 ? Math.round(row.total_qty / row.total_orders) : 0;
 
   return (
     <div style={{
-      marginTop:    16,
-      background:   cfg.bg,
-      border:       `1px solid ${cfg.color}33`,
+      marginTop: 16,
+      background: cfg.bg,
+      border: `1px solid ${cfg.color}33`,
       borderRadius: 12,
-      padding:      "14px 16px",
-      display:      "flex",
-      gap:          28,
-      flexWrap:     "wrap",
-      animation:    "pipelineFadeIn .15s ease",
+      padding: "14px 16px",
+      display: "flex",
+      gap: 28,
+      flexWrap: "wrap",
+      animation: "pipelineFadeIn .15s ease",
     }}>
       {[
-        { label: "Orders",    value: row.total_orders.toLocaleString(), unit: "orders"    },
-        { label: "Total Qty", value: row.total_qty.toLocaleString(),    unit: "pcs"       },
-        { label: "Avg/Order", value: avgQty.toLocaleString(),           unit: "pcs/order" },
+        { label: "Orders", value: row.total_orders.toLocaleString(), unit: "orders" },
+        { label: "Total Qty", value: row.total_qty.toLocaleString(), unit: "pcs" },
+        { label: "Avg/Order", value: avgQty.toLocaleString(), unit: "pcs/order" },
       ].map((m) => (
         <div key={m.label}>
           <div style={{
-            fontSize:      10,
-            color:         cfg.color,
-            fontWeight:    600,
+            fontSize: 10,
+            color: cfg.color,
+            fontWeight: 600,
             textTransform: "uppercase",
             letterSpacing: 0.5,
-            marginBottom:  2,
+            marginBottom: 2,
           }}>
             {m.label}
           </div>
@@ -244,10 +248,10 @@ function DetailPanel({ row }: { row: PipelineRow }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function OutboundPipeline({ filter }: { filter: FilterState }) {
-  const [data,    setData]    = useState<PipelineData>({ outbound: [], inbound: [] });
+  const [data, setData] = useState<PipelineData>({ outbound: [], inbound: [] });
   const [loading, setLoading] = useState(true);
-  const [tab,     setTab]     = useState<"outbound" | "inbound">("outbound");
-  const [active,  setActive]  = useState<string | null>(null);
+  const [tab, setTab] = useState<"outbound" | "inbound">("outbound");
+  const [active, setActive] = useState<string | null>(null);
 
   useEffect(() => { setActive(null); }, [filter, tab]);
 
@@ -255,13 +259,13 @@ export default function OutboundPipeline({ filter }: { filter: FilterState }) {
     setLoading(true);
     try {
       const res = await api.get("/dashboard/pipeline", {
-        params:          buildPipelineParams(f),
+        params: buildPipelineParams(f),
         withCredentials: true,
       });
       if (res.data.success) {
         setData({
           outbound: res.data.data?.outbound ?? [],
-          inbound:  res.data.data?.inbound  ?? [],
+          inbound: res.data.data?.inbound ?? [],
         });
       }
     } catch (err) {
@@ -273,19 +277,19 @@ export default function OutboundPipeline({ filter }: { filter: FilterState }) {
 
   useEffect(() => { fetchPipeline(filter); }, [filter, fetchPipeline]);
 
-  const steps     = tab === "outbound" ? data.outbound : data.inbound;
+  const steps = tab === "outbound" ? data.outbound : data.inbound;
   const maxOrders = steps.length > 0 ? Math.max(...steps.map((s) => s.total_orders)) : 0;
   const activeRow = active ? steps.find((s) => s.stage_key === active) : null;
 
   return (
     <div style={{
-      background:     "rgba(255,255,255,0.8)",
+      background: "rgba(255,255,255,0.8)",
       backdropFilter: "blur(8px)",
-      borderRadius:   16,
-      border:         "1px solid #f1f5f9",
-      boxShadow:      "0 1px 4px rgba(0,0,0,.06)",
-      padding:        "20px 24px",
-      marginBottom:   24,
+      borderRadius: 16,
+      border: "1px solid #f1f5f9",
+      boxShadow: "0 1px 4px rgba(0,0,0,.06)",
+      padding: "20px 24px",
+      marginBottom: 24,
     }}>
       <style>{`
         @keyframes pipelineFadeIn {
@@ -306,28 +310,28 @@ export default function OutboundPipeline({ filter }: { filter: FilterState }) {
         </div>
 
         <div style={{
-          display:      "flex",
-          gap:          2,
-          background:   "#f8fafc",
-          border:       "1px solid #e2e8f0",
+          display: "flex",
+          gap: 2,
+          background: "#f8fafc",
+          border: "1px solid #e2e8f0",
           borderRadius: 10,
-          padding:      3,
+          padding: 3,
         }}>
           {(["outbound", "inbound"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               style={{
-                padding:       "4px 12px",
-                borderRadius:  8,
-                fontSize:      11,
-                fontWeight:    600,
-                cursor:        "pointer",
-                border:        "none",
-                background:    tab === t ? "#fff" : "transparent",
-                color:         tab === t ? "#0f172a" : "#94a3b8",
-                boxShadow:     tab === t ? "0 1px 3px rgba(0,0,0,.08)" : "none",
-                transition:    "all .15s",
+                padding: "4px 12px",
+                borderRadius: 8,
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: "pointer",
+                border: "none",
+                background: tab === t ? "#fff" : "transparent",
+                color: tab === t ? "#0f172a" : "#94a3b8",
+                boxShadow: tab === t ? "0 1px 3px rgba(0,0,0,.08)" : "none",
+                transition: "all .15s",
                 textTransform: "capitalize",
               }}
             >

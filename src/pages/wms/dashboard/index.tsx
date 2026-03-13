@@ -81,6 +81,14 @@ export default function Page() {
 
   const [owners, setOwners] = useState<Owner[]>([]);
 
+  // const [filter, setFilter] = useState<FilterState>({
+  //   preset: "all",
+  //   dateFrom: "",
+  //   dateTo: "",
+  //   ownerCode: "all",
+  //   trendPeriod: 7,
+  // });
+
   const [filter, setFilter] = useState<FilterState>({
     preset: "all",
     dateFrom: "",
