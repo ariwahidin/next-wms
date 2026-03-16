@@ -24,6 +24,7 @@ import { OutboundItem } from "@/types/outbound";
 import { Box, Package, RefreshCcw, ScanBarcode, Ruler, Plus } from "lucide-react";
 import router from "next/router";
 import { useState, useEffect } from "react";
+import { se } from "date-fns/locale";
 
 interface CartonData {
   pack_ctn_no: string;
@@ -280,7 +281,7 @@ const customFilterOption = (option, inputValue) => {
 
       {/* Dialog untuk pilih karton */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-white">
+        <DialogContent className="sm:max-w-lg bg-white overflow-visible">
           <DialogHeader>
             <DialogTitle>
               {showMasterCartonSelect ? "Select Container Type" : "Choose Container"}
@@ -300,33 +301,39 @@ const customFilterOption = (option, inputValue) => {
               <>
                 <div className="space-y-3">
 
-                    <div className="flex">
-                  <Select
-                    options={cartonOptions}
-                    value={cartonOptions.find(
-                      (option) => option.value.toString() === selectedMasterCarton
-                    )}
-                    onChange={(selectedOption) => {
-                      setSelectedMasterCarton(selectedOption ? selectedOption.value.toString() : "");
-                    }}
-                    filterOption={customFilterOption}
-                    placeholder="Search carton by code..."
-                    isClearable
-                    isSearchable
-                    className="react-select-container"
-                    classNamePrefix="react-select"
-                  />
-                  <Button
-                    className="ml-2 bg-blue-400 hover:bg-blue-500 text-white"                   
-                    variant="outline"
-                    size="default"
-                    onClick={() => {
-                      router.push("/mobile/utility/add-container");
-                    }}
-                  ><Plus size={16} />
-                    
-                  </Button>
-                </div>
+                  <div className="flex">
+                    <Select
+                      options={cartonOptions}
+                      value={cartonOptions.find(
+                        (option) => option.value.toString() === selectedMasterCarton
+                      )}
+                      onChange={(selectedOption) => {
+                        setSelectedMasterCarton(selectedOption ? selectedOption.value.toString() : "");
+                      }}
+                      filterOption={customFilterOption}
+                      placeholder="Search carton by code..."
+                      isClearable
+                      isSearchable
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      // menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                      menuPosition={selectedMasterCarton ? "absolute" : "fixed"}
+                      styles={{
+                        container: (base) => ({ ...base, width: "320px" }),
+                        menu: (base) => ({ ...base, zIndex: 9999 }),
+                      }}
+                    />
+                    <Button
+                      className="ml-2 bg-blue-400 hover:bg-blue-500 text-white"                   
+                      variant="outline"
+                      size="default"
+                      onClick={() => {
+                        router.push("/mobile/utility/add-container");
+                      }}
+                    ><Plus size={16} />
+                      
+                    </Button>
+                  </div>
 
                   {/* Show selected carton details */}
                   {getSelectedMasterCartonDetails() && (
@@ -404,6 +411,7 @@ const customFilterOption = (option, inputValue) => {
                     <div className="text-sm font-medium text-gray-500 mt-4 mb-2">
                       Or continue existing container:
                     </div>
+                    <div className="max-h-64 overflow-y-auto space-y-2">
                     {cartonList.map((carton) => (
                       <Button
                         key={carton.pack_ctn_no}
@@ -418,6 +426,7 @@ const customFilterOption = (option, inputValue) => {
                         </div>
                       </Button>
                     ))}
+                    </div>
                   </>
                 ) : (
                   <div className="text-center text-sm text-gray-500 py-4">

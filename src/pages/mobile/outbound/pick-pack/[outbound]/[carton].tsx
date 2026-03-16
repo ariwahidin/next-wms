@@ -904,7 +904,7 @@ const CheckingPage = () => {
 
             <form onSubmit={handleBarcodeSubmit} className="space-y-2">
               {/* Location */}
-              {invPolicy?.require_scan_pick_location && (
+              {/* {invPolicy?.require_scan_pick_location && (
                 <div className="flex items-center space-x-2">
                   <label htmlFor="location" className="text-sm text-gray-600 whitespace-nowrap">
                     Location :
@@ -926,7 +926,7 @@ const CheckingPage = () => {
                     )}
                   </div>
                 </div>
-              )}
+              )} */}
 
               {/* Packing No (hidden) */}
               {invPolicy?.require_packing_scan && (
