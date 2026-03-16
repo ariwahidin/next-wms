@@ -106,14 +106,14 @@ const ProductTable = () => {
             >
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button
+            {/* <Button
               onClick={() => HandleDelete(params.data.ID)}
               variant="ghost"
               size="icon"
               className="h-8 w-8"
             >
               <Trash2 className="h-4 w-4" />
-            </Button>
+            </Button> */}
           </div>
         );
       },

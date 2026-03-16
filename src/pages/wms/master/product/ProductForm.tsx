@@ -1,444 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// /* eslint-disable @typescript-eslint/no-explicit-any */
-// /* eslint-disable react-hooks/exhaustive-deps */
-// /* eslint-disable @typescript-eslint/no-unused-vars */
-// import * as React from "react";
-// import { Button } from "@/components/ui/button";
-// import {
-//   Card,
-//   CardContent,
-//   CardDescription,
-//   CardFooter,
-//   CardHeader,
-//   CardTitle,
-// } from "@/components/ui/card";
-// import { Input } from "@/components/ui/input";
-// import { Label } from "@/components/ui/label";
-// import api from "@/lib/api";
-// import { mutate } from "swr";
-// import { useEffect, useState } from "react";
-// import { AlertCircle } from "lucide-react";
-// import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-// import { getEnabledCategories } from "trace_events";
-// import Select from "react-select";
-// import { ItemOptions } from "@/types/inbound";
-// import { Category } from "@/types/category";
-// import { set } from "date-fns";
-// import { ca } from "date-fns/locale";
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogHeader,
-//   DialogTitle,
-// } from "@/components/ui/dialog";
-
-// export default function ProductForm({ editData, setEditData, open, setOpen }: any) {
-//   // const [open, setOpen] = useState(false);
-//   const [itemCode, setItemCode] = useState("");
-//   const [itemName, setItemName] = useState("");
-//   const [gmc, setGmc] = useState("");
-//   const [error, setError] = useState<string | null>(null);
-//   const [categoryOptions, setCategoryOptions] = useState<ItemOptions[]>([]);
-//   const [group, setGroup] = useState(null);
-//   const [category, setCategory] = useState("");
-//   const [serialOptions, setSerialOptions] = useState([
-//     { value: "Y", label: "YES" },
-//     { value: "N", label: "NO" },
-//   ]);
-//   const [warantyOptions, setWarantyOptions] = useState([
-//     { value: "Y", label: "YES" },
-//     { value: "N", label: "NO" },
-//   ]);
-//   const [adaptorOptions, setAdaptorOptions] = useState([
-//     { value: "Y", label: "YES" },
-//     { value: "N", label: "NO" },
-//   ]);
-//   const [manualBookOptions, setManualBookOptions] = useState([
-//     { value: "Y", label: "YES" },
-//     { value: "N", label: "NO" },
-//   ]);
-//   const [selectedSerial, setSelectedSerial] = useState(serialOptions[1]);
-//   const [selectedWaranty, setSelectedWaranty] = useState(warantyOptions[1]);
-//   const [selectedAdaptor, setSelectedAdaptor] = useState(adaptorOptions[1]);
-//   const [selectedManualBook, setSelectedManualBook] = useState(
-//     manualBookOptions[1]
-//   );
-
-//   useEffect(() => {
-//     if (editData) {
-//       setItemCode(editData.item_code);
-//       setItemName(editData.item_name);
-//       setGmc(editData.barcode);
-//       setCategory(editData.category);
-//       setCbm(editData.cbm);
-//       // categoryOptions.find((option) => {
-//       //   if (option.value === editData.category) {
-//       //     setCategory(option);
-//       //   }
-//       // });
-//       serialOptions.find((option) => {
-//         if (option.value === editData.has_serial) {
-//           setSelectedSerial(option);
-//         }
-//       });
-
-//       warantyOptions.find((option) => {
-//         if (option.value === editData.has_waranty) {
-//           setSelectedWaranty(option);
-//         }
-//       });
-
-//       adaptorOptions.find((option) => {
-//         if (option.value === editData.has_adaptor) {
-//           setSelectedAdaptor(option);
-//         }
-//       });
-
-//       manualBookOptions.find((option) => {
-//         if (option.value === editData.has_manual_book) {
-//           setSelectedManualBook(option);
-//         }
-//       });
-
-//       uomOptions.find((option) => {
-//         if (option.value === editData.uom) {
-//           setSelectedUom(option);
-//         }
-//       });
-//     }
-//   }, [editData]);
-
-//   const AllUOM = async () => {
-//     try {
-//       const response = await api.get("/uoms", { withCredentials: true });
-//       return response.data;
-//     } catch (error) {
-//       console.log(error);
-//     }
-//   };
-//   const [uoms, setUoms] = useState([]);
-//   const [uomOptions, setUomOptions] = useState([]);
-//   const [selectedUom, setSelectedUom] = useState(null);
-//   const [cbm, setCbm] = useState(0);
-//   useEffect(() => {
-//     async function fetchData() {
-//       const data = await AllUOM();
-//       if (data.success) {
-//         setUoms(data.data);
-//         setUomOptions(
-//           data.data.map((uom) => ({ value: uom.code, label: uom.code }))
-//         );
-//       }
-//     }
-//     fetchData();
-//   }, []);
-
-//   useEffect(() => {
-//     const fetchCategories = async () => {
-//       try {
-//         const response = await api.get("/categories", {
-//           withCredentials: true,
-//         });
-//         return response.data;
-//       } catch (error) {
-//         console.log(error);
-//       }
-//     };
-
-//     fetchCategories().then((categories) => {
-//       if (categories.success) {
-//         setCategoryOptions(
-//           categories.data.map((category: Category) => ({
-//             value: category.code,
-//             label: category.name,
-//           }))
-//         );
-//       }
-//     });
-//   }, []);
-
-//   useEffect(() => {
-//     if (uoms.length > 0) {
-//       setSelectedUom(uomOptions[0]);
-//     }
-//   }, [uoms]);
-
-//   async function handleSubmit(e) {
-//     e.preventDefault();
-
-//     // Validasi form
-//     if (!itemCode || !itemName || !gmc || !selectedSerial || !selectedUom) {
-//       setError("Harap isi semua field.");
-//       if (!itemCode) {
-//         document.getElementById("itemCode")?.focus();
-//       } else if (!itemName) {
-//         document.getElementById("itemName")?.focus();
-//       } else if (!gmc) {
-//         console.log("Focus set to itemCode");
-//         document.getElementById("gmc")?.focus();
-//       } else if (!selectedSerial) {
-//         console.log("Focus set to itemName");
-//         document.getElementById("serial")?.focus();
-//       } else if (!selectedUom) {
-//         console.log("Focus set to gmc");
-//         document.getElementById("uom")?.focus();
-//       }
-//       console.log("Focus set to serial");
-//       return;
-//     }
-//     console.log("Focus set to uom");
-
-//     try {
-//       setError(null); // Reset error message jika form valid;
-
-//       if (editData) {
-//         await api.put(
-//           `/products/${editData.ID}`, // ID produk dari editData
-//           {
-//             item_code: itemCode,
-//             item_name: itemName,
-//             gmc: gmc,
-//             cbm: cbm,
-//             category: category,
-//             group: "Book",
-//             serial: selectedSerial.value,
-//             waranty: selectedWaranty.value,
-//             adaptor: selectedAdaptor.value,
-//             manual_book: selectedManualBook.value,
-//             uom: selectedUom.value,
-//           },
-//           { withCredentials: true }
-//         );
-//       } else {
-//         // 🔥 Tambah produk baru jika tidak sedang edit
-//         await api.post(
-//           "/products",
-//           {
-//             item_code: itemCode,
-//             item_name: itemName,
-//             gmc: gmc,
-//             cbm: cbm,
-//             category: category,
-//             group: "Book",
-//             serial: selectedSerial.value,
-//             waranty: selectedWaranty.value,
-//             adaptor: selectedAdaptor.value,
-//             manual_book: selectedManualBook.value,
-//             uom: selectedUom.value,
-//           },
-//           { withCredentials: true }
-//         );
-//       }
-
-//       mutate("/products");
-//     } catch (err: any) {
-//       if (err.response) {
-//         if (err.response.status === 400) {
-//           setError("Data yang dimasukkan tidak valid.");
-//         } else {
-//           setError("Terjadi kesalahan, coba lagi nanti.");
-//         }
-//       } else {
-//         setError("Tidak ada respon dari server.");
-//       }
-//     }
-//   }
-
-//   const handleKeyDown = (e) => {
-//     if (e.key === "Enter") {
-//       handleSubmit(e);
-//     }
-//   };
-
-//   const handleCancel = () => {
-//     setError(null);
-//     setEditData(null);
-//     setItemCode("");
-//     setItemName("");
-//     setGmc("");
-//   };
-
-//   return (
-//     <Dialog open={open} onOpenChange={setOpen}>
-//       <DialogContent className="max-w-3xl bg-white p-6">
-//         <DialogHeader>
-//           <DialogTitle>{editData ? "Edit item" : "Add new item"}</DialogTitle>
-//         </DialogHeader>
-//         <Card>
-//           <CardHeader style={{ paddingBottom: "0" }}>
-//             <CardDescription style={{ display: "none" }}></CardDescription>
-//           </CardHeader>
-//           <CardContent>
-//             {error && (
-//               <Alert variant="destructive" className="mb-4">
-//                 <AlertCircle className="h-4 w-4" />
-//                 <AlertTitle>Error</AlertTitle>
-//                 <AlertDescription>{error}</AlertDescription>
-//               </Alert>
-//             )}
-//             <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
-//               <div className="grid w-full items-center gap-4">
-//                 <div className="flex items-center gap-4">
-//                   <Label
-//                     className="w-24 text-left shrink-0"
-//                     htmlFor="item_code"
-//                   >
-//                     Item Code
-//                   </Label>
-//                   <span className="shrink-0">:</span>
-//                   <Input
-//                     id="itemCode"
-//                     onChange={(e) => setItemCode(e.target.value)}
-//                     value={itemCode}
-//                     placeholder=""
-//                   />
-//                 </div>
-//                 <div className="flex items-center gap-4">
-//                   <Label
-//                     className="w-24 text-left shrink-0"
-//                     htmlFor="item_name"
-//                   >
-//                     Item Name
-//                   </Label>
-//                   <span className="shrink-0">:</span>
-//                   <Input
-//                     id="itemName"
-//                     onChange={(e) => setItemName(e.target.value)}
-//                     value={itemName}
-//                     placeholder=""
-//                   />
-//                 </div>
-//                 <div className="flex items-center gap-4">
-//                   <Label className="w-24 text-left shrink-0" htmlFor="gmc">
-//                     Barcode
-//                   </Label>
-//                   <span className="shrink-0">:</span>
-//                   <Input
-//                     id="gmc"
-//                     onChange={(e) => setGmc(e.target.value)}
-//                     value={gmc}
-//                     placeholder=""
-//                   />
-//                 </div>
-//                 <div className="flex items-center gap-4">
-//                   <Label className="w-24 text-left shrink-0">Group</Label>
-//                   <span className="shrink-0">:</span>
-//                   <Select
-//                     // options={categoryOptions}
-//                     // defaultValue={category}
-//                     // onChange={(selectedOption) => {
-//                     //   setCategory(selectedOption);
-//                     // }}
-//                     // value={category}
-//                     placeholder="Select category"
-//                   />
-//                 </div>
-//                 <div className="flex items-center gap-4">
-//                   <Label className="w-24 text-left shrink-0" htmlFor="category">
-//                     Category
-//                   </Label>
-//                   <span className="shrink-0">:</span>
-//                   <Input
-//                     id="category"
-//                     onChange={(e) => setCategory(e.target.value.toUpperCase())}
-//                     value={category}
-//                     placeholder=""
-//                   />
-//                 </div>
-//                 <div className="flex items-center gap-4">
-//                   <Label className="w-24 text-left shrink-0">Base UOM</Label>
-//                   <span className="shrink-0">:</span>
-//                   <Select
-//                     options={uomOptions}
-//                     defaultValue={selectedUom}
-//                     onChange={(selectedOption) =>
-//                       setSelectedUom(selectedOption)
-//                     }
-//                     placeholder="Select base UOM"
-//                     value={selectedUom}
-//                   />
-//                 </div>
-//                 <div className="flex items-center gap-4">
-//                   <Label className="w-24 text-left shrink-0">SN</Label>
-//                   <span className="shrink-0">:</span>
-//                   <Select
-//                     options={serialOptions}
-//                     defaultValue={selectedSerial}
-//                     onChange={(selectedOption) =>
-//                       setSelectedSerial(selectedOption)
-//                     }
-//                     value={selectedSerial}
-//                     placeholder="Choose..."
-//                   />
-//                 </div>
-//                 <div className="flex items-center gap-4">
-//                   <Label className="w-24 text-left shrink-0">Waranty</Label>
-//                   <span className="shrink-0">:</span>
-//                   <Select
-//                     options={warantyOptions}
-//                     defaultValue={selectedWaranty}
-//                     onChange={(selectedOption) =>
-//                       setSelectedWaranty(selectedOption)
-//                     }
-//                     value={selectedWaranty}
-//                     placeholder="Choose..."
-//                   />
-//                 </div>
-//                 <div className="flex items-center gap-4">
-//                   <Label className="w-24 text-left shrink-0">Adaptor</Label>
-//                   <span className="shrink-0">:</span>
-//                   <Select
-//                     options={adaptorOptions}
-//                     defaultValue={selectedAdaptor}
-//                     onChange={(selectedOption) =>
-//                       setSelectedAdaptor(selectedOption)
-//                     }
-//                     value={selectedAdaptor}
-//                     placeholder="Choose..."
-//                   />
-//                 </div>
-//                 <div className="flex items-center gap-4">
-//                   <Label className="w-24 text-left shrink-0">Manual Book</Label>
-//                   <span className="shrink-0">:</span>
-//                   <Select
-//                     options={manualBookOptions}
-//                     defaultValue={selectedManualBook}
-//                     onChange={(selectedOption) =>
-//                       setSelectedManualBook(selectedOption)
-//                     }
-//                     value={selectedManualBook}
-//                     placeholder="Choose..."
-//                   />
-//                 </div>
-//                 <div className="flex items-center gap-4">
-//                   <Label className="w-24 text-left shrink-0">CBM</Label>
-//                   <span className="shrink-0">:</span>
-//                   <Input
-//                     id="cbm"
-//                     onChange={(e) => setCbm(Number(e.target.value))}
-//                     value={cbm}
-//                     type="number"
-//                     placeholder=""
-//                   />
-//                 </div>
-//               </div>
-//             </form>
-//           </CardContent>
-//           <CardFooter className="flex justify-between">
-//             <Button variant="outline" onClick={handleCancel}>
-//               Cancel
-//             </Button>
-//             <Button onClick={handleSubmit} type="submit">
-//               {" "}
-//               {editData ? "Update" : "Add"}
-//             </Button>
-//           </CardFooter>
-//         </Card>
-//       </DialogContent>
-//     </Dialog>
-//   );
-// }
-
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -462,6 +21,7 @@ import {
 import api from "@/lib/api";
 import Select from "react-select";
 import type { ItemOptions } from "@/types/inbound";
+import { Loader2 } from "lucide-react";
 
 type Option = { value: string; label: string };
 
@@ -513,6 +73,7 @@ export default function ProductForm({
 
   // Error
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch UOMs
   const fetchUoms = async () => {
@@ -624,36 +185,96 @@ export default function ProductForm({
     setOpen?.(false);
   };
 
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   // Validasi minimal
+  //   if (!itemCode || !itemName || !gmc || !selectedSerial || !selectedUom) {
+  //     setError(
+  //       "Harap isi field wajib: Item Code, Item Name, Barcode, Serial, dan UOM."
+  //     );
+  //     // Fokus ke field pertama yang kosong
+  //     if (!itemCode) {
+  //       document.getElementById("item-code")?.focus();
+  //     } else if (!itemName) {
+  //       document.getElementById("item-name")?.focus();
+  //     } else if (!gmc) {
+  //       document.getElementById("barcode")?.focus();
+  //     } else if (!selectedSerial) {
+  //       document.getElementById("serial")?.focus();
+  //     } else if (!selectedUom) {
+  //       document.getElementById("uom")?.focus();
+  //     }
+  //     return;
+  //   }
+
+  //   try {
+  //     setError(null);
+
+  //     const payload = {
+  //       item_code: itemCode,
+  //       item_name: itemName,
+  //       gmc, // backend sebelumnya menggunakan key gmc
+  //       cbm: cbm === "" ? 0 : Number(cbm),
+  //       width: width === "" ? 0 : Number(width),
+  //       length: length === "" ? 0 : Number(length),
+  //       height: height === "" ? 0 : Number(height),
+  //       category: categoryCode,
+  //       group: groupCode,
+  //       serial: selectedSerial.value,
+  //       waranty: selectedWaranty.value,
+  //       adaptor: selectedAdaptor.value,
+  //       manual_book: selectedManualBook.value,
+  //       uom: selectedUom.value,
+  //       owner_code : "YMID"
+  //     };
+
+  //     if (editData) {
+  //       await api.put(`/products/${editData.ID}`, payload, {
+  //         withCredentials: true,
+  //       });
+  //     } else {
+  //       await api.post("/products", payload, { withCredentials: true });
+  //     }
+
+  //     mutate("/products");
+  //     resetForm();
+  //     setOpen?.(false);
+  //   } catch (err: any) {
+  //     if (err?.response?.status === 400) {
+  //       setError("Data yang dimasukkan tidak valid.");
+  //     } else if (err?.response) {
+  //       setError("Terjadi kesalahan, coba lagi nanti.");
+  //     } else {
+  //       setError("Tidak ada respon dari server.");
+  //     }
+  //   }
+  // };
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validasi minimal
+    // Guard: jangan proses kalau sedang submit
+    if (isSubmitting) return;
+
     if (!itemCode || !itemName || !gmc || !selectedSerial || !selectedUom) {
-      setError(
-        "Harap isi field wajib: Item Code, Item Name, Barcode, Serial, dan UOM."
-      );
-      // Fokus ke field pertama yang kosong
-      if (!itemCode) {
-        document.getElementById("item-code")?.focus();
-      } else if (!itemName) {
-        document.getElementById("item-name")?.focus();
-      } else if (!gmc) {
-        document.getElementById("barcode")?.focus();
-      } else if (!selectedSerial) {
-        document.getElementById("serial")?.focus();
-      } else if (!selectedUom) {
-        document.getElementById("uom")?.focus();
-      }
+      setError("Harap isi field wajib: Item Code, Item Name, Barcode, Serial, dan UOM.");
+      if (!itemCode) document.getElementById("item-code")?.focus();
+      else if (!itemName) document.getElementById("item-name")?.focus();
+      else if (!gmc) document.getElementById("barcode")?.focus();
+      else if (!selectedUom) document.getElementById("uom")?.focus();
       return;
     }
 
     try {
       setError(null);
+      setIsSubmitting(true); // 🔒 Lock semua interaksi
 
       const payload = {
         item_code: itemCode,
         item_name: itemName,
-        gmc, // backend sebelumnya menggunakan key gmc
+        gmc,
         cbm: cbm === "" ? 0 : Number(cbm),
         width: width === "" ? 0 : Number(width),
         length: length === "" ? 0 : Number(length),
@@ -665,13 +286,11 @@ export default function ProductForm({
         adaptor: selectedAdaptor.value,
         manual_book: selectedManualBook.value,
         uom: selectedUom.value,
-        owner_code : "YMID"
+        owner_code: "YMID",
       };
 
       if (editData) {
-        await api.put(`/products/${editData.ID}`, payload, {
-          withCredentials: true,
-        });
+        await api.put(`/products/${editData.ID}`, payload, { withCredentials: true });
       } else {
         await api.post("/products", payload, { withCredentials: true });
       }
@@ -687,6 +306,8 @@ export default function ProductForm({
       } else {
         setError("Tidak ada respon dari server.");
       }
+    } finally {
+      setIsSubmitting(false); // 🔓 Unlock setelah selesai (sukses maupun error)
     }
   };
 
@@ -710,11 +331,24 @@ export default function ProductForm({
     <Dialog
       open={open}
       onOpenChange={(next) => {
+        if (isSubmitting) return; // ⛔ Jangan tutup saat proses
         setOpen?.(next);
         if (!next) resetForm();
       }}
     >
       <DialogContent className="max-w-3xl p-0 bg-white">
+
+        {isSubmitting && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center rounded-lg bg-white/70 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="text-sm font-medium">
+                {editData ? "Menyimpan perubahan..." : "Menambahkan item..."}
+              </span>
+            </div>
+          </div>
+        )}
+
         <DialogHeader className="px-6 pt-6">
           <DialogTitle className="text-balance">
             {editData ? "Edit Item" : "Add New Item"}
@@ -945,11 +579,26 @@ export default function ProductForm({
           </CardContent>
 
           <CardFooter className="px-6 py-6 flex flex-col-reverse gap-2 md:flex-row md:justify-end">
-            <Button variant="outline" onClick={handleCancel}>
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              disabled={isSubmitting} // ⛔
+            >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} type="submit">
-              {editData ? "Update" : "Add"}
+            <Button
+              onClick={handleSubmit}
+              type="submit"
+              disabled={isSubmitting} // ⛔
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {editData ? "Updating..." : "Adding..."}
+                </>
+              ) : (
+                editData ? "Update" : "Add"
+              )}
             </Button>
           </CardFooter>
         </Card>
