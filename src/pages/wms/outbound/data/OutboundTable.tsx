@@ -150,7 +150,7 @@ const OutboundTable = () => {
   // Build URL with filter params
   const buildFilterUrl = useCallback(() => {
     const params = new URLSearchParams();
-    
+
     if (filterValues.dateFrom) {
       params.append("date_from", filterValues.dateFrom.toISOString().split('T')[0]);
     }
@@ -160,7 +160,7 @@ const OutboundTable = () => {
     if (filterValues.status && filterValues.status !== "all") {
       params.append("status", filterValues.status);
     }
-    
+
     return `/outbound?${params.toString()}`;
   }, [filterValues]);
 
@@ -174,6 +174,39 @@ const OutboundTable = () => {
   const [tempLocationName, setTempLocationName] = useState("");
   const [showTempLocationInput, setShowTempLocationInput] = useState(false);
   const [changeStatus, setChangeStatus] = useState("open");
+  const isSubmitting = useRef(false);
+
+  // const HandlePicking = (id: number) => {
+  //   showAlert(
+  //     "Picking Confirmation",
+  //     "The picking process is carried out by the system, are you sure to continue?",
+  //     "error",
+  //     () => {
+  //       eventBus.emit("loading", true);
+  //       api
+  //         .post(
+  //           `/outbound/picking/${id}`,
+  //           { inbound_id: id },
+  //           { withCredentials: true }
+  //         )
+  //         .then((res) => {
+  //           eventBus.emit("loading", false);
+  //           if (res.data.success) {
+  //             eventBus.emit("showAlert", {
+  //               title: "Success!",
+  //               description: res.data.message,
+  //               type: "success",
+  //             });
+  //             mutate();
+  //           }
+  //         })
+  //         .catch((error) => {
+  //           eventBus.emit("loading", false);
+  //           console.error("Error saving inbound:", error);
+  //         });
+  //     }
+  //   );
+  // };
 
   const HandlePicking = (id: number) => {
     showAlert(
@@ -181,15 +214,12 @@ const OutboundTable = () => {
       "The picking process is carried out by the system, are you sure to continue?",
       "error",
       () => {
+        if (isSubmitting.current) return;
+        isSubmitting.current = true;
         eventBus.emit("loading", true);
         api
-          .post(
-            `/outbound/picking/${id}`,
-            { inbound_id: id },
-            { withCredentials: true }
-          )
+          .post(`/outbound/picking/${id}`, { inbound_id: id }, { withCredentials: true })
           .then((res) => {
-            eventBus.emit("loading", false);
             if (res.data.success) {
               eventBus.emit("showAlert", {
                 title: "Success!",
@@ -200,13 +230,49 @@ const OutboundTable = () => {
             }
           })
           .catch((error) => {
-            eventBus.emit("loading", false);
             console.error("Error saving inbound:", error);
-            // alert("Gagal menyimpan inbound");
+          })
+          .finally(() => {
+            eventBus.emit("loading", false);
+            isSubmitting.current = false;
           });
       }
     );
   };
+
+  // const HandlePickingComplete = (id: number) => {
+  //   showAlert(
+  //     "Picking Complete Confirmation",
+  //     "Are you sure you want to save this data?",
+  //     "error",
+  //     () => {
+  //       eventBus.emit("loading", true);
+  //       api
+  //         .post(
+  //           `/outbound/picking/complete/${id}`,
+  //           { outbound_id: id },
+  //           { withCredentials: true }
+  //         )
+  //         .then((res) => {
+  //           eventBus.emit("loading", false);
+  //           if (res.data.success) {
+  //             eventBus.emit("showAlert", {
+  //               title: "Success!",
+  //               description: res.data.message,
+  //               type: "success",
+  //             });
+  //             mutate();
+  //           }
+  //         })
+  //         .catch((error) => {
+  //           eventBus.emit("loading", false);
+  //           console.error("Error saving inbound:", error);
+  //         });
+  //     }
+  //   );
+  // };
+
+  // Handle open untuk single row dari dropdown action
 
   const HandlePickingComplete = (id: number) => {
     showAlert(
@@ -214,15 +280,12 @@ const OutboundTable = () => {
       "Are you sure you want to save this data?",
       "error",
       () => {
+        if (isSubmitting.current) return;
+        isSubmitting.current = true;
         eventBus.emit("loading", true);
         api
-          .post(
-            `/outbound/picking/complete/${id}`,
-            { outbound_id: id },
-            { withCredentials: true }
-          )
+          .post(`/outbound/picking/complete/${id}`, { outbound_id: id }, { withCredentials: true })
           .then((res) => {
-            eventBus.emit("loading", false);
             if (res.data.success) {
               eventBus.emit("showAlert", {
                 title: "Success!",
@@ -233,15 +296,16 @@ const OutboundTable = () => {
             }
           })
           .catch((error) => {
-            eventBus.emit("loading", false);
             console.error("Error saving inbound:", error);
-            // alert("Gagal menyimpan inbound");
+          })
+          .finally(() => {
+            eventBus.emit("loading", false);
+            isSubmitting.current = false;
           });
       }
     );
   };
 
-  // Handle open untuk single row dari dropdown action
   const handleOpenSingle = (rowData: any, status: string) => {
     console.log("handleOpenSingle", rowData);
     setChangeStatus(status);
@@ -249,7 +313,7 @@ const OutboundTable = () => {
     try {
       eventBus.emit("loading", true);
       api
-        .post("/outbound/open", { outbound_no: rowData.outbound_no, status : status })
+        .post("/outbound/open", { outbound_no: rowData.outbound_no, status: status })
         .then((response) => {
           eventBus.emit("loading", false);
           if (response.data.success) {
@@ -283,35 +347,66 @@ const OutboundTable = () => {
   };
 
   // Process pilihan user
+  // const processScannedItems = useCallback(
+  //   (action: string, locationName: string | null = null) => {
+  //     const payload = {
+  //       outbound_no: scannedItemData?.outbound_no,
+  //       action: action,
+  //       temp_location_name: locationName,
+  //       status: changeStatus
+  //     };
+
+  //     eventBus.emit("loading", true);
+  //     api
+  //       .post("/outbound/open/process", payload, { withCredentials: true })
+  //       .then((response) => {
+  //         eventBus.emit("loading", false);
+  //         if (response.data.success) {
+  //           notify("Success", response.data.message, "success");
+  //           mutate();
+  //           closeScannedItemDialog();
+  //         } else {
+  //         }
+  //       })
+  //       .catch((error) => {
+  //         eventBus.emit("loading", false);
+  //         console.error("Error handling scanned items:", error);
+  //       });
+  //   },
+  //   [scannedItemData?.outbound_no, notify, mutate]
+  // );
+
   const processScannedItems = useCallback(
     (action: string, locationName: string | null = null) => {
+      if (isSubmitting.current) return;
+      isSubmitting.current = true;
+
       const payload = {
         outbound_no: scannedItemData?.outbound_no,
         action: action,
         temp_location_name: locationName,
-        status : changeStatus
+        status: changeStatus,
       };
 
       eventBus.emit("loading", true);
       api
         .post("/outbound/open/process", payload, { withCredentials: true })
         .then((response) => {
-          eventBus.emit("loading", false);
           if (response.data.success) {
             notify("Success", response.data.message, "success");
             mutate();
             closeScannedItemDialog();
-          } else {
-            // notify("Error", response.data.message, "error");
           }
         })
         .catch((error) => {
-          eventBus.emit("loading", false);
           console.error("Error handling scanned items:", error);
-          // notify("Error", "Terjadi kesalahan saat memproses item", "error");
+        })
+        .finally(() => {
+          eventBus.emit("loading", false);
+          isSubmitting.current = false;
         });
     },
-    [scannedItemData?.outbound_no, notify, mutate]
+    [scannedItemData?.outbound_no, notify, mutate, changeStatus]
   );
 
   // Handle input change dengan ref untuk menghindari re-render
