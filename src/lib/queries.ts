@@ -8,6 +8,7 @@ export async function getInbound(startDate: string, endDate: string) {
       ih.inbound_date AS [REC DATE],
       id.whs_code AS [WH CODE],
       ih.bl_no AS [BL NO],
+	  t.transporter_name AS [TRANSPORTER],
       ih.no_truck AS [TRUCK NO],
       ih.container AS [CONTAINER NO],
       ih.receipt_id AS [INVOICE NO],
@@ -23,6 +24,7 @@ export async function getInbound(startDate: string, endDate: string) {
     INNER JOIN inbound_headers ih ON id.inbound_no = ih.inbound_no
     LEFT JOIN products p ON p.item_code = id.item_code
     LEFT JOIN suppliers s ON s.supplier_code = ih.supplier
+	LEFT JOIN transporters t ON ih.transporter = t.transporter_code
     WHERE ih.inbound_date >= '${startDate}' AND ih.inbound_date <= '${endDate}'
     ORDER BY ih.inbound_date DESC
   `;
