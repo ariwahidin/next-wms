@@ -21,7 +21,7 @@ import Select from "react-select";
 import api from "@/lib/api";
 import { OutboundItem } from "@/types/outbound";
 // import { Select } from "@radix-ui/react-select";
-import { Box, Package, RefreshCcw, ScanBarcode, Ruler, Plus } from "lucide-react";
+import { Box, Package, RefreshCcw, ScanBarcode, Ruler, Plus, Pickaxe, Forklift, Boxes, ForkliftIcon } from "lucide-react";
 import router from "next/router";
 import { useState, useEffect } from "react";
 import { se } from "date-fns/locale";
@@ -77,6 +77,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
     qty_scan,
     qty_pack,
     shipment_id,
+    picking_with_scanner = false,
   } = data;
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -103,7 +104,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
       if (response.data.success) {
         const result: MasterCartonResponse = response.data;
         setMasterCartons(result.data);
-        
+
         // Set default carton jika ada
         const defaultCarton = result.data.find((c) => c.is_default);
         if (defaultCarton) {
@@ -144,11 +145,12 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
 
   // Handler untuk tombol Picking
   const handlePickingClick = async (outbound_no: string) => {
-    setTargetPage("pick-pack");
-    const cartons = await fetchCartonData(outbound_no);
-    setCartonList(cartons);
-    setShowMasterCartonSelect(false);
-    setIsDialogOpen(true);
+    // setTargetPage("pick-pack");
+    // const cartons = await fetchCartonData(outbound_no);
+    // setCartonList(cartons);
+    // setShowMasterCartonSelect(false);
+    // setIsDialogOpen(true);
+    router.push(`/mobile/outbound/picking/${outbound_no}`);
   };
 
   // Handler untuk tombol Override
@@ -185,7 +187,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
       alert("Please select a carton type");
       return;
     }
-    
+
     const newCartonNo = cartonList.length + 1;
     router.push(
       `/mobile/outbound/${targetPage}/${outbound_no}/${newCartonNo}?master_carton_id=${selectedMasterCarton}`
@@ -204,37 +206,41 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
   };
 
   // Prepare options for react-select
-const cartonOptions = masterCartons.map((carton) => ({
-  value: carton.id,
-  label: `${carton.carton_name}${carton.is_default ? ' (Default)' : ''} - ${carton.dimensions} - Max: ${carton.max_weight}kg`,
-  carton_name: carton.carton_name,
-  searchLabel: [
-    carton.carton_code,
-    carton.carton_name,
-    carton.length.toString(),
-    carton.width.toString(),
-    carton.height.toString(),
-    carton.dimensions
-  ].join(' ').toLowerCase(), // Gabungkan semua field untuk pencarian
-  ...carton
-}));
+  const cartonOptions = masterCartons.map((carton) => ({
+    value: carton.id,
+    label: `${carton.carton_name}${carton.is_default ? ' (Default)' : ''} - ${carton.dimensions} - Max: ${carton.max_weight}kg`,
+    carton_name: carton.carton_name,
+    searchLabel: [
+      carton.carton_code,
+      carton.carton_name,
+      carton.length.toString(),
+      carton.width.toString(),
+      carton.height.toString(),
+      carton.dimensions
+    ].join(' ').toLowerCase(), // Gabungkan semua field untuk pencarian
+    ...carton
+  }));
 
-// Custom filter function for searching by carton code/name
-const customFilterOption = (option, inputValue) => {
-  const searchValue = inputValue.toLowerCase();
-  return option.data.searchLabel.includes(searchValue);
-};
+  // Custom filter function for searching by carton code/name
+  const customFilterOption = (option, inputValue) => {
+    const searchValue = inputValue.toLowerCase();
+    return option.data.searchLabel.includes(searchValue);
+  };
 
   return (
     <>
       <Card className="p-3 relative">
         <div className="absolute top-2 right-2 flex gap-3">
           <div className="flex items-center space-x-1 text-gray-500 text-xs">
-            <Package size={16} />
+            <Box size={16} />
             <span>{qty_req}</span>
           </div>
           <div className="flex items-center space-x-1 text-gray-500 text-xs">
-            <ScanBarcode size={16} />
+            <ForkliftIcon size={16} />
+            <span>{qty_scan}</span>
+          </div>
+          <div className="flex items-center space-x-1 text-gray-500 text-xs">
+            <Boxes size={16} />
             <span>{qty_pack}</span>
           </div>
         </div>
@@ -249,23 +255,35 @@ const customFilterOption = (option, inputValue) => {
           <div className="text-sm text-gray-500">{shipment_id}</div>
 
           <div className="mt-3 flex gap-2">
+            {picking_with_scanner && (
+              <Button
+                style={{ display: "" }}
+                className="w-full"
+                onClick={() => handlePickingClick(outbound_no)}
+                disabled={isLoading}
+              >
+                <Forklift size={16} />
+                Picking
+              </Button>
+            )}
+
             <Button
               style={{ display: "" }}
               className="w-full"
-              onClick={() => handlePickingClick(outbound_no)}
+              onClick={() => handlePackingClick(outbound_no)}
               disabled={isLoading}
             >
-              <ScanBarcode size={16} />
-              Process
+              <Box size={16} />
+              Packing
             </Button>
-            <Button
+            {/* <Button
               className="w-full"
               onClick={() => handleOverrideClick(outbound_no)}
               disabled={isLoading}
             >
               <RefreshCcw size={16} />
               Override
-            </Button>
+            </Button> */}
             <Button
               style={{ display: "none" }}
               className="w-full"
@@ -324,14 +342,14 @@ const customFilterOption = (option, inputValue) => {
                       }}
                     />
                     <Button
-                      className="ml-2 bg-blue-400 hover:bg-blue-500 text-white"                   
+                      className="ml-2 bg-blue-400 hover:bg-blue-500 text-white"
                       variant="outline"
                       size="default"
                       onClick={() => {
                         router.push("/mobile/utility/add-container");
                       }}
                     ><Plus size={16} />
-                      
+
                     </Button>
                   </div>
 
@@ -412,20 +430,20 @@ const customFilterOption = (option, inputValue) => {
                       Or continue existing container:
                     </div>
                     <div className="max-h-64 overflow-y-auto space-y-2">
-                    {cartonList.map((carton) => (
-                      <Button
-                        key={carton.pack_ctn_no}
-                        className="w-full justify-between"
-                        variant="outline"
-                        onClick={() => handleSelectCarton(carton.pack_ctn_no, carton.carton_id || 0)}
-                      >
-                        <span>Container #{carton.pack_ctn_no} <span className="text-xs text-gray-500">({carton.ctn_status})</span></span>
-                        <div className="flex gap-2 text-xs text-gray-500">
-                          <span>Qty: {carton.qty}</span>
-                          {/* <span>Items: {carton.count}</span> */}
-                        </div>
-                      </Button>
-                    ))}
+                      {cartonList.map((carton) => (
+                        <Button
+                          key={carton.pack_ctn_no}
+                          className="w-full justify-between"
+                          variant="outline"
+                          onClick={() => handleSelectCarton(carton.pack_ctn_no, carton.carton_id || 0)}
+                        >
+                          <span>Container #{carton.pack_ctn_no} <span className="text-xs text-gray-500">({carton.ctn_status})</span></span>
+                          <div className="flex gap-2 text-xs text-gray-500">
+                            <span>Qty: {carton.qty}</span>
+                            {/* <span>Items: {carton.count}</span> */}
+                          </div>
+                        </Button>
+                      ))}
                     </div>
                   </>
                 ) : (
@@ -441,230 +459,3 @@ const customFilterOption = (option, inputValue) => {
     </>
   );
 }
-
-// /* eslint-disable @typescript-eslint/no-unused-vars */
-// "use client";
-
-// import { Button } from "@/components/ui/button";
-// import { Card, CardContent } from "@/components/ui/card";
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogDescription,
-//   DialogHeader,
-//   DialogTitle,
-// } from "@/components/ui/dialog";
-// import api from "@/lib/api";
-// import { OutboundItem } from "@/types/outbound";
-// import { Box, Package, RefreshCcw, ScanBarcode } from "lucide-react";
-// import router from "next/router";
-// import { useState } from "react";
-
-// interface CartonData {
-//   pack_ctn_no: string;
-//   qty: number;
-//   count: number;
-// }
-
-// interface ApiResponse {
-//   success: boolean;
-//   message: string;
-//   data: {
-//     outbound_no: string;
-//     cartons: CartonData[];
-//     total: number;
-//   };
-// }
-
-// export default function OutboundCard({ data }: { data: OutboundItem }) {
-//   const {
-//     outbound_no,
-//     customer_name,
-//     status,
-//     qty_req,
-//     qty_scan,
-//     qty_pack,
-//     shipment_id,
-//   } = data;
-
-//   const [isDialogOpen, setIsDialogOpen] = useState(false);
-//   const [cartonList, setCartonList] = useState<CartonData[]>([]);
-//   const [isLoading, setIsLoading] = useState(false);
-//   const [targetPage, setTargetPage] = useState<string>("");
-
-//   // Fungsi untuk fetch data karton dari API
-//   const fetchCartonData = async (outbound_no: string) => {
-//     try {
-//       setIsLoading(true);
-//       // Sesuaikan dengan route API yang benar
-//       const response = await api.get(`/mobile/outbound/${outbound_no}/cartons`, {
-//         withCredentials: true,
-//       });
-
-//       if (!response.data.success) {
-//         throw new Error("Failed to fetch carton data");
-//       }
-
-//       const result: ApiResponse = response.data;
-//       if (result.success) {
-//         return result.data.cartons || [];
-//       } else {
-//         console.error("API Error:", result.message);
-//         return [];
-//       }
-//     } catch (error) {
-//       console.error("Error fetching carton data:", error);
-//       return [];
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   // Handler untuk tombol Picking
-//   const handlePickingClick = async (outbound_no: string) => {
-//     setTargetPage("picking");
-//     const cartons = await fetchCartonData(outbound_no);
-//     setCartonList(cartons);
-//     setIsDialogOpen(true);
-//   };
-
-//   // Handler untuk tombol Override
-//   const handleOverrideClick = async (outbound_no: string) => {
-//     setTargetPage("override");
-//     const cartons = await fetchCartonData(outbound_no);
-//     setCartonList(cartons);
-//     setIsDialogOpen(true);
-//   };
-
-//   // Handler untuk tombol Packing
-//   const handlePackingClick = async (outbound_no: string) => {
-//     setTargetPage("packing");
-//     const cartons = await fetchCartonData(outbound_no);
-//     setCartonList(cartons);
-//     setIsDialogOpen(true);
-//   };
-
-//   // Handler untuk memilih karton existing
-//   const handleSelectCarton = (pack_ctn_no: string) => {
-//     router.push(`/mobile/outbound/${targetPage}/${outbound_no}/${pack_ctn_no}`);
-//   };
-
-//   // Handler untuk membuat karton baru
-//   const handleNewCarton = () => {
-//     const newCartonNo = cartonList.length + 1;
-//     router.push(`/mobile/outbound/${targetPage}/${outbound_no}/${newCartonNo}`);
-//   };
-
-//   return (
-//     <>
-//       <Card className="p-3 relative">
-//         <div className="absolute top-2 right-2 flex gap-3">
-//           <div className="flex items-center space-x-1 text-gray-500 text-xs">
-//             <Package size={16} />
-//             <span>{qty_req}</span>
-//           </div>
-//           <div className="flex items-center space-x-1 text-gray-500 text-xs">
-//             <ScanBarcode size={16} />
-//             <span>{qty_pack}</span>
-//           </div>
-//         </div>
-//         <CardContent className="p-0 space-y-1">
-//           <div className="text-sm font-semibold">
-//             {outbound_no}
-//             <span className="ml-2 text-xs text-gray-500 rounded px-2 py-1 w-max mt-1 bg-green-100">
-//               {status}
-//             </span>
-//           </div>
-//           <div className="text-sm text-gray-500">{customer_name}</div>
-//           <div className="text-sm text-gray-500">{shipment_id}</div>
-
-//           <div className="mt-3 flex gap-2">
-//             <Button
-//               style={{ display: "" }}
-//               className="w-full"
-//               onClick={() => handlePickingClick(outbound_no)}
-//               disabled={isLoading}
-//             >
-//               <ScanBarcode size={16} />
-//               Process
-//             </Button>
-//             <Button
-//               className="w-full"
-//               onClick={() => handleOverrideClick(outbound_no)}
-//               disabled={isLoading}
-//             >
-//               <RefreshCcw size={16} />
-//               Override
-//             </Button>
-//             <Button
-//               style={{ display: "none" }}
-//               className="w-full"
-//               onClick={() => handlePackingClick(outbound_no)}
-//               disabled={isLoading}
-//             >
-//               <Box size={16} />
-//               Packing
-//             </Button>
-//           </div>
-//         </CardContent>
-//       </Card>
-
-//       {/* Dialog untuk pilih karton */}
-//       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-//         <DialogContent className="sm:max-w-md bg-white">
-//           <DialogHeader>
-//             <DialogTitle>Choose Carton</DialogTitle>
-//             <DialogDescription>
-              
-//             </DialogDescription>
-//           </DialogHeader>
-
-//           <div className="space-y-2 max-h-96 overflow-y-auto">
-//             {isLoading ? (
-//               <div className="text-center py-4">Loading...</div>
-//             ) : (
-//               <>
-//                 {/* Tombol New Karton di atas */}
-//                 <Button
-//                   className="w-full"
-//                   variant="default"
-//                   onClick={handleNewCarton}
-//                 >
-//                   <Package size={16} className="mr-2" />
-//                   New Carton
-//                 </Button>
-
-//                 {/* Daftar karton existing */}
-//                 {cartonList.length > 0 ? (
-//                   <>
-//                     <div className="text-sm font-medium text-gray-500 mt-4 mb-2">
-//                       Or continue existing carton:
-//                     </div>
-//                     {cartonList.map((carton) => (
-//                       <Button
-//                         key={carton.pack_ctn_no}
-//                         className="w-full justify-between"
-//                         variant="outline"
-//                         onClick={() => handleSelectCarton(carton.pack_ctn_no)}
-//                       >
-//                         <span>Carton {carton.pack_ctn_no}</span>
-//                         <div className="flex gap-2 text-xs text-gray-500">
-//                           <span>Qty: {carton.qty}</span>
-//                           <span>Items: {carton.count}</span>
-//                         </div>
-//                       </Button>
-//                     ))}
-//                   </>
-//                 ) : (
-//                   <div className="text-center text-sm text-gray-500 py-4">
-//                     No carton found
-//                   </div>
-//                 )}
-//               </>
-//             )}
-//           </div>
-//         </DialogContent>
-//       </Dialog>
-//     </>
-//   );
-// }

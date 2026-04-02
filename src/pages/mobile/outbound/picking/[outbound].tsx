@@ -335,8 +335,8 @@ const OutboundPickingPage = () => {
 
     if (requireLocation && !scanLocation.trim()) {
       eventBus.emit("showAlert", {
-        title: "Lokasi Wajib",
-        description: "Scan lokasi terlebih dahulu sebelum scan barcode",
+        title: "Location Required",
+        description: "Please scan location before scanning barcode",
         type: "error",
       });
       document.getElementById("location-pick")?.focus();
@@ -354,10 +354,10 @@ const OutboundPickingPage = () => {
     if (!matched) {
       const anyMatch = pickingSheet.find((item) => item.barcode === barcode);
       eventBus.emit("showAlert", {
-        title: anyMatch?.is_complete ? "Sudah Selesai" : "Tidak Ditemukan",
+        title: anyMatch?.is_complete ? "Item has been picked" : "Item not found",
         description: anyMatch?.is_complete
-          ? `Item ${barcode} sudah selesai dipick (${anyMatch.qty_picked}/${anyMatch.qty_required} ${anyMatch.uom})`
-          : `Barcode ${barcode} tidak ada di picking list order ini`,
+          ? `Item ${barcode} has already been picked (${anyMatch.qty_picked}/${anyMatch.qty_required} ${anyMatch.uom})`
+          : `Barcode ${barcode} is not in the picking list for this order`,
         type: "error",
       });
       resetScanInput();
@@ -384,7 +384,7 @@ const OutboundPickingPage = () => {
     if (qty > remaining) {
       eventBus.emit("showAlert", {
         title: "Over-pick!",
-        description: `Qty tersisa: ${remaining} ${item.uom}. Tidak bisa scan ${qty}.`,
+        description: `Remaining qty: ${remaining} ${item.uom}. Cannot scan ${qty}.`,
         type: "error",
       });
       return;
@@ -415,7 +415,7 @@ const OutboundPickingPage = () => {
       });
       if (res.data.success) {
         eventBus.emit("showAlert", {
-          title: "Scan Berhasil!",
+          title: "Scan Successful!",
           description: res.data.message,
           type: "success",
         });
@@ -423,7 +423,7 @@ const OutboundPickingPage = () => {
         fetchPickingSheet();
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Gagal submit scan";
+      const msg = err?.response?.data?.message ?? "Failed to submit scan";
       eventBus.emit("showAlert", { title: "Error", description: msg, type: "error" });
     } finally {
       setIsSubmit(false);
@@ -546,14 +546,14 @@ const OutboundPickingPage = () => {
               {requireLocation && (
                 <div className="flex items-center space-x-2">
                   <label htmlFor="location-pick" className="text-sm text-gray-600 whitespace-nowrap">
-                    Lokasi :
+                    Location :
                   </label>
                   <div className="relative w-full">
                     <Input
                       className="text-sm h-8"
                       autoComplete="off"
                       id="location-pick"
-                      placeholder="Scan lokasi..."
+                      placeholder="Scan location..."
                       value={scanLocation}
                       onChange={(e) => setScanLocation(e.target.value)}
                     />
@@ -649,7 +649,7 @@ const OutboundPickingPage = () => {
                     </div>
                   )}
                   {qrRawInput && !parsedQR && (
-                    <p className="text-xs text-red-500">Format QR tidak dikenali.</p>
+                    <p className="text-xs text-red-500">Invalid QR code.</p>
                   )}
                 </div>
               )}
@@ -699,14 +699,14 @@ const OutboundPickingPage = () => {
 
             <Input
               className="w-full text-sm"
-              placeholder="Search item / barcode / lokasi..."
+              placeholder="Search item / barcode / location..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
 
             {filteredSheet.length === 0 ? (
               <div className="text-sm text-gray-400 text-center py-4">
-                {showPendingOnly ? "Semua item sudah selesai dipick 🎉" : "Tidak ada item ditemukan"}
+                {showPendingOnly ? "All items have been picked 🎉" : "No items found"}
               </div>
             ) : (
               <ul className="space-y-2">
@@ -727,8 +727,8 @@ const OutboundPickingPage = () => {
                         </div>
                         <div className="text-gray-500">{item.item_code}</div>
                         <div><span className="text-gray-400">EAN:</span> {item.barcode}</div>
-                        {item.location && <div><span className="text-gray-400">Lokasi:</span> {item.location}</div>}
-                        {item.lot_number && <div><span className="text-gray-400">Batch:</span> {item.lot_number}</div>}
+                        {item.location && <div><span className="text-gray-400">Location:</span> {item.location}</div>}
+                        {item.lot_number && <div><span className="text-gray-400">Lot/Batch:</span> {item.lot_number}</div>}
                       </div>
                       <div className="flex-shrink-0 pt-0.5">
                         {item.is_complete
@@ -747,7 +747,7 @@ const OutboundPickingPage = () => {
                       <ProgressBar picked={item.qty_picked} required={item.qty_required} />
                     </div>
 
-                    <div className="text-gray-300 text-right pt-0.5">tap untuk lihat scan →</div>
+                    <div className="text-gray-300 text-right pt-0.5">tap for details →</div>
                   </li>
                 ))}
               </ul>
@@ -767,7 +767,7 @@ const OutboundPickingPage = () => {
         >
           {allComplete
             ? "✓ Confirm Picking"
-            : `Picking Belum Selesai (${summary?.total_picked ?? 0}/${summary?.total_required ?? 0})`}
+            : `Picking is not complete (${summary?.total_picked ?? 0}/${summary?.total_required ?? 0})`}
         </Button>
       </div>
 
@@ -776,7 +776,7 @@ const OutboundPickingPage = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-2 flex justify-between items-center">
-              <h2 className="text-base font-semibold text-gray-800">Konfirmasi Scan</h2>
+              <h2 className="text-base font-semibold text-gray-800">Confirm Scan</h2>
               <button
                 onClick={closeScanDialog}
                 className="text-gray-400 hover:text-gray-600 text-2xl p-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -790,7 +790,7 @@ const OutboundPickingPage = () => {
                 <p><span className="text-gray-400">Item:</span> {selectedItem.item_name || selectedItem.item_code}</p>
                 <p><span className="text-gray-400">EAN:</span> {selectedItem.barcode}</p>
                 {requireLocation && scanLocation && (
-                  <p><span className="text-gray-400">Lokasi:</span> {scanLocation}</p>
+                  <p><span className="text-gray-400">Location:</span> {scanLocation}</p>
                 )}
                 <p>
                   <span className="text-gray-400">Sisa:</span>{" "}
@@ -800,7 +800,7 @@ const OutboundPickingPage = () => {
                 </p>
                 {parsedQR?.serial && <p><span className="text-gray-400">Serial:</span> {parsedQR.serial}</p>}
                 {parsedQR?.cartonSerial && <p><span className="text-gray-400">Carton Serial:</span> {parsedQR.cartonSerial}</p>}
-                {parsedQR?.batch && <p><span className="text-gray-400">Batch:</span> {parsedQR.batch}</p>}
+                {parsedQR?.batch && <p><span className="text-gray-400">Lot/Batch:</span> {parsedQR.batch}</p>}
                 {parsedQR?.mfgDate && <p><span className="text-gray-400">MFG Date:</span> {parsedQR.mfgDate}</p>}
               </div>
 
@@ -867,7 +867,7 @@ const OutboundPickingPage = () => {
                 <Loader2 className="animate-spin text-gray-400" size={20} />
               </div>
             ) : scanHistory.length === 0 ? (
-              <div className="text-sm text-gray-400 text-center py-6">Belum ada scan untuk item ini</div>
+              <div className="text-sm text-gray-400 text-center py-6">No scan history</div>
             ) : (
               scanHistory.map((scan) => (
                 <div key={scan.ID} className="border rounded-md p-2.5 bg-white text-xs font-mono">
@@ -903,7 +903,7 @@ const OutboundPickingPage = () => {
 
           <DialogFooter>
             <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => setShowHistoryDialog(false)}>
-              Tutup
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -913,13 +913,13 @@ const OutboundPickingPage = () => {
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="bg-white sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Konfirmasi Picking</DialogTitle>
+            <DialogTitle>Confirm Picking</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="bg-green-50 border border-green-200 rounded-md p-3">
-              <p className="text-sm font-semibold text-gray-800 mb-1">✓ Semua item sudah dipick</p>
+              <p className="text-sm font-semibold text-gray-800 mb-1">✓ All item has been picked</p>
               <p className="text-sm text-gray-600">
-                Konfirmasi picking akan mengubah status outbound menjadi <strong>Packing</strong>.
+                Confirm picking and move to <strong>Packing</strong>.
               </p>
             </div>
             <div className="border rounded-md p-3 space-y-1 text-sm">

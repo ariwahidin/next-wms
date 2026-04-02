@@ -77,6 +77,7 @@ export interface OutboundItem {
   qty_req: number;
   qty_scan: number;
   qty_pack: number;
+  picking_with_scanner?: boolean;
   status: "fully received" | "partial" | "open";
 }
 

@@ -32,6 +32,7 @@ interface InventoryPolicy {
   require_putaway_scan?: boolean;
   validate_receive_scan?: boolean;
   allocation_lot_by_order?: boolean;
+  picking_with_scanner?: boolean;
 }
 
 export default function InventoryPolicyPage() {
@@ -65,7 +66,8 @@ export default function InventoryPolicyPage() {
     require_receive_scan: false,
     require_putaway_scan: false,
     validate_receive_scan: false,
-    allocation_lot_by_order: false
+    allocation_lot_by_order: false,
+    picking_with_scanner: false
   });
 
   useEffect(() => {
@@ -122,7 +124,8 @@ export default function InventoryPolicyPage() {
       require_receive_scan: false,
       require_putaway_scan: false,
       validate_receive_scan: false,
-      allocation_lot_by_order: false
+      allocation_lot_by_order: false,
+      picking_with_scanner: false
     });
     setShowModal(true);
   };
@@ -152,7 +155,8 @@ export default function InventoryPolicyPage() {
       require_receive_scan: (policy as any).require_receive_scan || false,
       require_putaway_scan: (policy as any).require_putaway_scan || false,
       validate_receive_scan: (policy as any).validate_receive_scan || false,
-      allocation_lot_by_order: (policy as any).allocation_lot_by_order || false
+      allocation_lot_by_order: (policy as any).allocation_lot_by_order || false,
+      picking_with_scanner: (policy as any).picking_with_scanner || false
     });
     setShowModal(true);
   };
@@ -540,6 +544,17 @@ export default function InventoryPolicyPage() {
                         <label className="flex items-center gap-2.5 cursor-pointer group">
                           <input
                             type="checkbox"
+                            checked={formData.picking_with_scanner}
+                            onChange={(e) => handleCheckboxChange('picking_with_scanner', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">Picking With Scanner</span>
+                          <span className="text-xs text-gray-500">(Require picking using scanner device)</span>
+                        </label>
+
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
                             checked={formData.require_packing_scan}
                             onChange={(e) => handleCheckboxChange('require_packing_scan', e.target.checked)}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
@@ -554,8 +569,8 @@ export default function InventoryPolicyPage() {
                             onChange={(e) => handleCheckboxChange('require_picking_scan', e.target.checked)}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-700 group-hover:text-gray-900">Picking Scan</span>
-                          <span className="text-xs text-gray-500">(Require picking using scanner device)</span>
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">Picking Required</span>
+                          <span className="text-xs text-gray-500">(Cannot complete picking without scanning)</span>
                         </label>
                         <label className="flex items-center gap-2.5 cursor-pointer group">
                           <input

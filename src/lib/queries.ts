@@ -352,19 +352,21 @@ export async function getInboundReport(startDate: string, endDate: string) {
       ih.inbound_date AS [REC DATE],
       ib.whs_code AS [WH CODE],
       ih.bl_no AS [BL NO],
+	  t.transporter_name AS [TRANSPORTER],
       ih.no_truck AS [TRUCK NO],
       ih.container AS [CONTAINER NO],
       ih.receipt_id AS [INVOICE NO],
       s.supplier_name AS SUPPLIER,
       ib.item_code AS [ITEM CODE],
-	  ib.barcode AS [GMC CODE],
+	  ib.barcode AS [EAN],
 	  p.item_name AS [ITEM NAME],
-      ib.quantity AS [QTY],
-	  CASE WHEN p.has_serial = 'Y' then ib.serial_number else ib.barcode end AS [SERIAL NUMBER]
+      ib.quantity AS [QTY]
+	  -- CASE WHEN p.has_serial = 'Y' then ib.serial_number else ib.barcode end AS [SERIAL NUMBER]
     FROM inbound_barcodes ib
     INNER JOIN inbound_headers ih ON ib.inbound_id = ih.id
     LEFT JOIN products p ON p.item_code = ib.item_code
     LEFT JOIN suppliers s ON s.supplier_code = ih.supplier
+	LEFT JOIN transporters t ON ih.transporter = t.transporter_code
     WHERE ih.inbound_date >= '${startDate}' AND ih.inbound_date <= '${endDate}'
     ORDER BY ih.inbound_date DESC
   `;
