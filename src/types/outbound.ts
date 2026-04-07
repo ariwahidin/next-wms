@@ -50,6 +50,7 @@ export interface ItemFormProps {
   vas_name?: string;
   exp_date?: string;
   lot_number?: string;
+  division_code?: string;
 }
 
 export interface ItemFormTableProps {

@@ -420,17 +420,26 @@ export default function ManualForm() {
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
                 >
-                  WhsCode
+                  Whs Code
                 </Label>
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
                   <Select
+
                     isDisabled={
-                      formData.status == "picking" ||
+                      muatan.length > 0 ||
+                        formData.status == "picking" ||
                         formData.status == "complete"
                         ? true
                         : false
                     }
+                    
+                    // isDisabled={
+                    //   formData.status == "picking" ||
+                    //     formData.status == "complete"
+                    //     ? true
+                    //     : false
+                    // }
                     value={whsOptions.find(
                       (option) => option.value === formData.whs_code
                     )}
@@ -457,6 +466,13 @@ export default function ManualForm() {
                   {/* ── Opsi diperluas: TRIP, MULTI DROP, B2B - Consignment, B2B - Normal, B2C - Marketplace ── */}
                   <Select
                     // className="w-56"
+                    isDisabled={
+                      muatan.length > 0 ||
+                        formData.status == "picking" ||
+                        formData.status == "complete"
+                        ? true
+                        : false
+                    }
                     value={ordertypeOptions.find((o) => o.value === formData.order_type)}
                     options={ordertypeOptions}
                     onChange={(opt) => {

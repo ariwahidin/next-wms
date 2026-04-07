@@ -37,6 +37,7 @@ export default function ItemFormTable({
   }>({});
   const [defaultUoms, setDefaultUoms] = useState([]);
   const [defaultOptions, setDefaultOptions] = useState([]);
+  const [divisionOptions, setDivisionOptions] = useState([]);
   const [selectStates, setSelectStates] = useState({});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -107,17 +108,19 @@ export default function ItemFormTable({
 
   const fetchData = async () => {
     try {
-      const [products, uoms, vasPages, policies] = await Promise.all([
+      const [products, uoms, vasPages, policies, divisions] = await Promise.all([
         api.get("/products?owner=" + headerForm.owner_code),
         api.get("/uoms"),
         api.get("/vas/page"),
         api.get("/inventory/policy?owner=" + headerForm.owner_code),
+        api.get("/divisions"),
       ]);
 
       if (products.data.success
         && uoms.data.success
         && vasPages.data.success
         && policies.data.success
+        && divisions.data.success
       ) {
         setProducts(products.data.data);
         setItemCodeOptions(
@@ -148,6 +151,12 @@ export default function ItemFormTable({
 
         setDefaultOptions(defaultUoms);
         setInvPolicy(policies.data.data.inventory_policy);
+
+        const divisionOptions = divisions.data.data.map((item: any) => ({
+          value: item.code,
+          label: item.code,
+        }));
+        setDivisionOptions(divisionOptions);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -205,25 +214,6 @@ export default function ItemFormTable({
                 : m
             )
           );
-
-          // const selectedProduct = await products.find(
-          //   (product) => product.item_code === value
-          // );
-          // console.log("Produk yang dipilih:", selectedProduct);
-          // if (selectedProduct) {
-          //   setMuatan((prev) =>
-          //     prev.map((m) =>
-          //       m.ID === id
-          //         ? {
-          //           ...m,
-          //           barcode: res.data.data.ean,
-          //           uom : res.data.data.from_uom
-          //           // uom: value,
-          //         }
-          //         : m
-          //     )
-          //   );
-          // }
         }
       } catch (error) {
         console.error("Error:", error);
@@ -333,6 +323,7 @@ export default function ItemFormTable({
         vas_id: vasOptions.find((item) => item.label === "NO")?.value,
         exp_date: "",
         lot_number: "",
+        division_code: headerForm.order_type === "B2C - Marketplace" ? "E-COMMERCE" : "REGULAR",
       }));
 
       setMuatan((prev) => [...prev, ...newItems]);
@@ -404,6 +395,9 @@ export default function ItemFormTable({
             </th> */}
               {/* <th className="p-2 border">Inv. Location</th> */}
 
+              <th className="p-2 border" style={{ width: "30px" }}>
+                Division
+              </th>
               <th className="p-2 border" style={{ width: "30px" }}>
                 UoM
               </th>
@@ -530,6 +524,21 @@ export default function ItemFormTable({
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       />
                     </div>
+                  </td>
+                  <td className="p-2 border">
+                    <Select
+                      className="w-40"
+                      key={item.ID}
+                    options={
+                      divisionOptions
+                    }
+                    // onFocus={() => handleFocus(item.item_code, item.ID)}
+                    // isLoading={selectStates[item.ID]?.loading ?? false}
+                    value={divisionOptions.find((option) => option.value === item.division_code)}
+                    onChange={(value) =>
+                      handleChange(item.ID, "division_code", value?.value)
+                    }
+                    />
                   </td>
                   <td className="p-2 border">
                     <Select

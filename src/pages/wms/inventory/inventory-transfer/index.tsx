@@ -7,6 +7,7 @@ import Select from "react-select";
 import { mutate } from "swr";
 import api from "@/lib/api";
 import Layout from "@/components/layout";
+import { Division } from "@/types/division";
 
 interface Inventory {
     ID: number;
@@ -71,6 +72,7 @@ interface TransferFormData {
     pallet: string;
     qty_to_transfer: number;
     reason: string;
+    from_division_code: string;
     division_code: string;
 }
 
@@ -79,6 +81,7 @@ export default function InventoryTransferForm() {
     const [qaStatuses, setQaStatuses] = useState<QaStatus[]>([]);
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
     const [locations, setLocations] = useState<Location[]>([]);
+    const [divisions, setDivisions] = useState<Division[]>([]);
     const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
     const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(null);
     const [loading, setLoading] = useState(false);
@@ -102,6 +105,7 @@ export default function InventoryTransferForm() {
         pallet: "",
         qty_to_transfer: 0,
         reason: "",
+        from_division_code: "",
         division_code: "",
     });
 
@@ -111,14 +115,15 @@ export default function InventoryTransferForm() {
         fetchWarehouses();
         fetchLocations();
         fetchQaStatus();
+        fetchDivisions();
     }, []);
 
     // Filter locations when warehouse changes
     useEffect(() => {
         if (formData.to_whs_code) {
-              const filtered = locations.filter(
+            const filtered = locations.filter(
                 (loc) => loc.whs_code === formData.to_whs_code
-              );
+            );
             // const filtered = locations
             setFilteredLocations(filtered);
         } else {
@@ -146,6 +151,20 @@ export default function InventoryTransferForm() {
             const response = await api.get("/qa-status", { withCredentials: true });
             if (response.data.success) {
                 setQaStatuses(response.data.data || []);
+            }
+        } catch (err: any) {
+            setError("Failed to fetch inventories");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchDivisions = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get("/divisions", { withCredentials: true });
+            if (response.data.success) {
+                setDivisions(response.data.data || []);
             }
         } catch (err: any) {
             setError("Failed to fetch inventories");
@@ -191,6 +210,7 @@ export default function InventoryTransferForm() {
             exp_date: inventory.exp_date || "",
             lot_number: inventory.lot_number || "",
             pallet: inventory.pallet || "",
+            from_division_code: inventory.division_code || "",
             division_code: inventory.division_code || "",
             qty_to_transfer: 0,
             // to_whs_code: "",
@@ -249,10 +269,11 @@ export default function InventoryTransferForm() {
 
         if (
             formData.from_whs_code === formData.to_whs_code &&
-            formData.from_location === formData.to_location && 
-            formData.old_qa_status === formData.new_qa_status
+            formData.from_location === formData.to_location &&
+            formData.old_qa_status === formData.new_qa_status &&
+            formData.from_division_code === formData.division_code
         ) {
-            setError("Source and destination are the same. Please select different locations.");
+            setError("Source and destination are the same. Please select a new different attributes.");
             return false;
         }
 
@@ -263,6 +284,9 @@ export default function InventoryTransferForm() {
         e.preventDefault();
         setError("");
         setSuccess("");
+
+        console.log("Submitting transfer with data:", formData);
+        // return; // Remove this line after debugging
 
         if (!validateForm()) return;
 
@@ -294,6 +318,7 @@ export default function InventoryTransferForm() {
                         pallet: "",
                         qty_to_transfer: 0,
                         reason: "",
+                        from_division_code: "",
                         division_code: "",
                     });
                     fetchInventories();
@@ -326,6 +351,7 @@ export default function InventoryTransferForm() {
             pallet: "",
             qty_to_transfer: 0,
             reason: "",
+            from_division_code: "",
             division_code: "",
         });
         setError("");
@@ -337,7 +363,9 @@ export default function InventoryTransferForm() {
             inv.item_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
             inv.barcode.toLowerCase().includes(searchQuery.toLowerCase()) ||
             inv.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.whs_code.toLowerCase().includes(searchQuery.toLowerCase())
+            inv.whs_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            inv.division_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            inv.qa_status.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     // Prepare options for react-select
@@ -349,6 +377,11 @@ export default function InventoryTransferForm() {
     const locationOptions: SelectOption[] = filteredLocations.map((loc) => ({
         value: loc.location_code,
         label: loc.location_code,
+    }));
+
+    const divisionCodes: SelectOption[] = divisions.map((div) => ({
+        value: div.code,
+        label: div.code,
     }));
 
     // Custom styles for react-select
@@ -393,7 +426,7 @@ export default function InventoryTransferForm() {
                                 <div className="mb-4">
                                     <input
                                         type="text"
-                                        placeholder="Search by item code, barcode, location..."
+                                        placeholder="Search by item code, barcode, location, warehouse, or division..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -438,10 +471,10 @@ export default function InventoryTransferForm() {
                                                     📦 {inv.product.item_name}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    📍 {inv.whs_code} - {inv.location}
+                                                    📍 {inv.whs_code} | {inv.location} | {inv.division_code}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    ✓ {inv.qa_status}
+                                                    ✓ {inv.qa_status} - {qaStatuses.find((q) => q.qa_status === inv.qa_status)?.description || "Unknown QA Status"}
                                                 </p>
                                             </button>
                                         ))
@@ -470,7 +503,7 @@ export default function InventoryTransferForm() {
                                         <h3 className="text-sm font-semibold text-blue-900 mb-2">
                                             Selected Inventory
                                         </h3>
-                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
                                             <div>
                                                 <span className="text-blue-700 font-medium">Item:</span>
                                                 <span className="text-blue-900 ml-2">
@@ -487,10 +520,10 @@ export default function InventoryTransferForm() {
                                             </div>
                                             <div>
                                                 <span className="text-blue-700 font-medium">
-                                                    Location:
+                                                    Whs Code | Location | Division:
                                                 </span>
                                                 <span className="text-blue-900 ml-2">
-                                                    {selectedInventory.whs_code} - {selectedInventory.location}
+                                                    {selectedInventory.whs_code} | {selectedInventory.location} | {selectedInventory.division_code}
                                                 </span>
                                             </div>
                                             <div>
@@ -498,7 +531,7 @@ export default function InventoryTransferForm() {
                                                     QA Status:
                                                 </span>
                                                 <span className="text-blue-900 ml-2">
-                                                    {selectedInventory.qa_status}
+                                                    {selectedInventory.qa_status} - {qaStatuses.find((q) => q.qa_status === selectedInventory.qa_status)?.description || "Unknown QA Status"}
                                                 </span>
                                             </div>
                                         </div>
@@ -506,7 +539,7 @@ export default function InventoryTransferForm() {
                                 )}
 
                                 {/* Source Information (Read-only) */}
-                                <div className="mb-6">
+                                {/* <div className="mb-6">
                                     <h3 className="text-sm font-semibold text-gray-700 mb-3">
                                         Source Information
                                     </h3>
@@ -534,7 +567,20 @@ export default function InventoryTransferForm() {
                                             />
                                         </div>
                                     </div>
-                                </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                                From Division
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={formData.from_division_code}
+                                                readOnly
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                </div> */}
 
                                 {/* Destination Information */}
                                 <div className="mb-6">
@@ -604,17 +650,27 @@ export default function InventoryTransferForm() {
                                                         {opt.description} ({opt.qa_status})
                                                     </option>
                                                 ))}
-                                                {/* <option value="PASS">PASS</option>
-                                                <option value="HOLD">HOLD</option>
-                                                <option value="REJECT">REJECT</option>
-                                                <option value="PENDING">PENDING</option> */}
                                             </select>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Division Code <span className="text-red-500">*</span>
+                                                To Division <span className="text-red-500">*</span>
                                             </label>
-                                            <input
+                                            <select
+                                                name="division_code"
+                                                value={formData.division_code}
+                                                onChange={handleInputChange}
+                                                disabled={!selectedInventory}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                            >
+                                                <option value="">Keep Current Division</option>
+                                                {divisionCodes.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {/* <input
                                                 readOnly
                                                 type="text"
                                                 name="division_code"
@@ -623,7 +679,7 @@ export default function InventoryTransferForm() {
                                                 required
                                                 disabled={!selectedInventory}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-                                            />
+                                            /> */}
                                         </div>
                                     </div>
                                 </div>
