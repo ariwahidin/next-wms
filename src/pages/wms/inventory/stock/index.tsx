@@ -13,6 +13,7 @@ interface InventoryGrouped {
     category: string;
     group: string;
     qa_status: string;
+    division_code: string;
     uom: string;
     rec_date: string;
     prod_date: string;
@@ -226,7 +227,7 @@ const InventoryAvailablePage: React.FC = () => {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
                                 type="text"
-                                placeholder="Search by item code, name, or barcode..."
+                                placeholder="Search by item code, name, barcode, location or division..."
                                 value={filters.search}
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
                                 className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -354,6 +355,7 @@ const InventoryAvailablePage: React.FC = () => {
                                         <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Category</th>
                                         <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Group</th>
                                         <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">QA Status</th>
+                                        <th className="px-3 py-2.5 text-right text-xs font-semibold text-slate-700">Division</th>
                                         <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Rcv Date</th>
                                         <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Prod Date</th>
                                         <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Exp Date</th>
@@ -364,7 +366,7 @@ const InventoryAvailablePage: React.FC = () => {
                                         <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Records</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-200">
+                                <tbody className="divide-y divide-slate-200" style={{fontSize : "x-small"}}>
                                     {loading ? (
                                         <tr>
                                             <td colSpan={10} className="px-3 py-8 text-center text-sm text-slate-500">
@@ -409,6 +411,9 @@ const InventoryAvailablePage: React.FC = () => {
                                                             {inv.qa_status}
                                                         </span>
                                                     </div>
+                                                </td>
+                                                <td className="px-3 py-2.5 text-right">
+                                                    <span className="text-slate-900 font-medium">{inv.division_code}</span>
                                                 </td>
                                                 <td className="px-3 py-2.5 whitespace-nowrap">
                                                     <div className="flex items-center gap-1.5">

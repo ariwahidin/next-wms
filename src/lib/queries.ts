@@ -271,6 +271,7 @@ export async function getStockSummary() {
     a.barcode AS [EAN],
     b.item_name AS [ITEM NAME],
     a.qa_status as [QA STATUS],
+    a.division_code as [DIVISION],
     a.whs_code AS [WHS CODE],
     a.rec_date AS [REC DATE],
     a.prod_date AS [PROD DATE],
@@ -288,6 +289,7 @@ export async function getStockSummary() {
     a.barcode,
     b.item_name,
     a.qa_status,
+    a.division_code,
     a.whs_code,
     a.rec_date,
     a.prod_date,
@@ -590,6 +592,7 @@ export async function getStockReport(viewBy: string) {
     iv.whs_code AS [WH CODE],
     -- iv.qa_status AS [QA],
 	qa.[description] AS [QA],
+	iv.division_code AS [DIVISION],
     SUM(iv.qty_onhand) AS [ON HAND],
     SUM(iv.qty_allocated) AS [ALLOCATED],
     SUM(iv.qty_available) AS [AVAILABLE],
@@ -611,6 +614,7 @@ export async function getStockReport(viewBy: string) {
     iv.[location],
     iv.whs_code,
     iv.qa_status,
+	iv.division_code,
     p.cbm,
     iv.uom,
 	qa.[description]
@@ -638,7 +642,7 @@ export async function getStockReport(viewBy: string) {
     inv.[EAN],inv.[RCV DATE], inv.[PROD DATE], inv.[EXP DATE], inv.[LOT NO],
     inv.[ITEM CODE], inv.[ITEM NAME], 
     inv.LOCATION, inv.[WH CODE], 
-    inv.QA, inv.[ON HAND], inv.[ALLOCATED],
+    inv.QA, inv.[DIVISION], inv.[ON HAND], inv.[ALLOCATED],
     inv.[CBM], inv.[TOTAL CBM],
     inv.AVAILABLE, inv.[BASE UNIT]
     ORDER BY [ITEM CODE] ASC;
