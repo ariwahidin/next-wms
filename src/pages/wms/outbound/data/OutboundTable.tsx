@@ -23,6 +23,7 @@ import {
   RefreshCcw,
   Upload,
   ShoppingCart,
+  Truck,
 } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import {
@@ -60,6 +61,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { stat } from "fs";
+import SyncEcommerceModal from "@/components/outbound/SyncEcommerceModal";
+import ArrangeShipmentModal from "@/components/outbound/ArrangeShipmentModal.patch";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -171,6 +174,11 @@ const OutboundTable = () => {
   const currentPageRef = useRef<number>(0);
   const isRestoringRef = useRef<boolean>(false);
   const gridApiRef = useRef<any>(null);
+
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [arrangeModalOpen, setArrangeModalOpen] = useState(false);
+  const [arrangeOrderSN, setArrangeOrderSN] = useState("");
+  const [arrangeOutboundNo, setArrangeOutboundNo] = useState("");
 
   const HandleEdit = (item: any) => {
     console.log("Edit ID:", item.outbound_no);
@@ -381,6 +389,59 @@ const OutboundTable = () => {
   const handleBackToChoice = useCallback(() => {
     setShowTempLocationInput(false);
   }, []);
+
+  const HandlePrintShopeeLabel = async (orderSN: string, outboundNo: string) => {
+    if (!orderSN) {
+      notify("Error", "Order SN tidak ditemukan untuk outbound ini", "error");
+      return;
+    }
+
+    try {
+      eventBus.emit("loading", true);
+
+      const res = await api.get(`/outbound/shopee/label/${orderSN}`, {
+        withCredentials: true,
+        responseType: "blob",
+      });
+
+      // Cek apakah response adalah JSON error (bukan PDF)
+      const contentType = res.headers["content-type"] || "";
+      if (contentType.includes("application/json")) {
+        // Convert blob ke text untuk baca error message
+        const text = await res.data.text();
+        const json = JSON.parse(text);
+        notify("Error", json.message || "Gagal mendapat label", "error");
+        return;
+      }
+
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+
+    } catch (err: any) {
+      // Kalau error response juga blob, convert dulu
+      if (err.response?.data instanceof Blob) {
+        const text = await err.response.data.text();
+        try {
+          const json = JSON.parse(text);
+          notify("Error", json.message || "Gagal membuka label Shopee", "error");
+        } catch {
+          notify("Error", "Gagal membuka label Shopee", "error");
+        }
+      } else {
+        notify("Error", "Gagal membuka label Shopee", "error");
+      }
+      console.error(err);
+    } finally {
+      eventBus.emit("loading", false);
+    }
+  };
+
+  const HandleArrangeShipment = (orderSN: string, outboundNo: string) => {
+    setArrangeOrderSN(orderSN);
+    setArrangeOutboundNo(outboundNo);
+    setArrangeModalOpen(true);
+  };
 
   useEffect(() => {
     if (!isScannedItemDialog) {
@@ -606,6 +667,37 @@ const OutboundTable = () => {
                     <DropdownMenuSeparator />
                   </>
                 )}
+
+
+
+                {params.data.source === "SHOPEE" && params.data.status !== "cancel" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="cursor-pointer text-orange-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        HandleArrangeShipment(
+                          params.data.shipment_id, // order_sn
+                          params.data.outbound_no
+                        );
+                      }}
+                    >
+                      <Truck className="mr-2 h-4 w-4" />
+                      Arrange Shipment
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer text-orange-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        HandlePrintShopeeLabel(params.data.shipment_id, params.data.outbound_no);
+                      }}
+                    >
+                      <Printer className="mr-2 h-4 w-4" />
+                      Print Shopee Label
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -702,6 +794,23 @@ const OutboundTable = () => {
                 <Upload className="mr-2 w-4" />
                 Import Excel
               </Button>
+
+              {/* Refresh Button */}
+              <Button
+                className="ml-2 left-6 h-8 bg-green-500 text-slate-950 outline-green-600"
+                variant="outline"
+                onClick={() => mutate("/outbound") /* refetch data */}
+              >
+                🔄 Refresh
+              </Button>
+
+              <Button
+                className="ml-2 left-6 h-8 bg-green-500 text-slate-950 outline-green-600"
+                variant="outline"
+                onClick={() => setSyncModalOpen(true)}
+              >
+                🔄 Sync E-Commerce
+              </Button>
             </div>
           </div>
 
@@ -789,6 +898,24 @@ const OutboundTable = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Modal */}
+      <SyncEcommerceModal
+        open={syncModalOpen}
+        onClose={() => setSyncModalOpen(false)}
+        onSyncSuccess={(result) => {
+          // Refresh list outbound setelah sync berhasil
+          // refetch() atau router.refresh()
+          console.log("Sync success:", result);
+        }}
+      />
+
+      <ArrangeShipmentModal
+        open={arrangeModalOpen}
+        orderSN={arrangeOrderSN}
+        outboundNo={arrangeOutboundNo}
+        onClose={() => setArrangeModalOpen(false)}
+        onSuccess={() => mutate("/outbound")}
+      />
     </>
   );
 };
