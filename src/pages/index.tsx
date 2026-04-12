@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Yutrack WMS",
     description: "Integrated Warehouse Management System",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "https://wms.logspeedy.com/og-image.png", width: 1200, height: 630 }],
   },
 };
 

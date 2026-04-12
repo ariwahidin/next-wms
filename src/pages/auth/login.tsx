@@ -12,6 +12,16 @@ import router from 'next/router';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { LoadingProvider } from '@/contexts/LoadingContext';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Yutrack WMS",
+  openGraph: {
+    title: "Yutrack WMS",
+    description: "Integrated Warehouse Management System",
+    images: [{ url: "https://wms.logspeedy.com/og-image.png", width: 1200, height: 630 }],
+  },
+};
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
