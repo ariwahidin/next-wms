@@ -1,19 +1,9 @@
-"use client"
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// pages/index.tsx
 import Head from "next/head"
-import { useEffect } from "react"
-import { useRouter } from "next/router"  // bukan next/navigation!
 import { LoadingScreen } from "@/components/LoadingScreen"
 
-export default function LoadingPage() {
-  const router = useRouter()
-
-  useEffect(() => {
-    setTimeout(() => {
-      router.replace("/auth/login")
-    }, 2000)
-  }, [router])
-
+export default function IndexPage() {
   return (
     <>
       <Head>
@@ -31,6 +21,24 @@ export default function LoadingPage() {
   )
 }
 
+// Redirect via server — tapi hanya untuk user, bukan crawler
+// Crawler tidak punya cookie → kita biarkan dia baca OG tag dulu
+export async function getServerSideProps({ req }: any) {
+  const token = req.cookies["wms-auth-token"]
+
+  // Kalau ada token (user sungguhan) → redirect ke dashboard
+  if (token) {
+    return {
+      redirect: {
+        destination: "/wms/dashboard",
+        permanent: false,
+      },
+    }
+  }
+
+  // Kalau tidak ada token (crawler atau user baru) → render halaman dengan OG tag
+  return { props: {} }
+}
 // export default function IndexPage() {
 //   return <OGImagePreview />
 // }
