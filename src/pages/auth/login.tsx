@@ -13,15 +13,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { LoadingProvider } from '@/contexts/LoadingContext';
 import { Metadata } from 'next';
+import Head from 'next/head';
 
-export const metadata: Metadata = {
-  title: "Yutrack WMS",
-  openGraph: {
-    title: "Yutrack WMS",
-    description: "Integrated Warehouse Management System",
-    images: [{ url: "https://wms.logspeedy.com/og-image.png", width: 1200, height: 630 }],
-  },
-};
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -188,44 +181,55 @@ export default function LoginPage() {
 
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-      {/* Animated Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-64 h-64 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-20 left-1/2 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-      </div>
+    <>
+      <Head>
+        <title>Yutrack WMS</title>
+        <meta property="og:title" content="Yutrack WMS" />
+        <meta property="og:description" content="Integrated Warehouse Management System" />
+        <meta property="og:image" content="https://wms.logspeedy.com/og-image.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://wms.logspeedy.com" />
+      </Head>
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+        {/* Animated Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-64 h-64 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-20 left-1/2 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        </div>
 
-      {/* Logistics Icons Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        {[...Array(20)].map((_, i) => {
-          const icons = [Package, Truck, Ship, Warehouse];
-          const Icon = icons[i % icons.length];
-          return (
-            <Icon
-              key={i}
-              className="absolute text-white"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                width: `${20 + Math.random() * 30}px`,
-                height: `${20 + Math.random() * 30}px`,
-                transform: `rotate(${Math.random() * 360}deg)`,
-              }}
-            />
-          );
-        })}
-      </div>
+        {/* Logistics Icons Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          {[...Array(20)].map((_, i) => {
+            const icons = [Package, Truck, Ship, Warehouse];
+            const Icon = icons[i % icons.length];
+            return (
+              <Icon
+                key={i}
+                className="absolute text-white"
+                style={{
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  width: `${20 + Math.random() * 30}px`,
+                  height: `${20 + Math.random() * 30}px`,
+                  transform: `rotate(${Math.random() * 360}deg)`,
+                }}
+              />
+            );
+          })}
+        </div>
 
-      {/* Grid Pattern Overlay */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMC41Ii8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-10"></div>
+        {/* Grid Pattern Overlay */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMC41Ii8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-10"></div>
 
-      <div className="relative z-10 flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-6xl">
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
-            {/* Left Side - Branding & Carousel */}
-            <div className="hidden lg:block space-y-8">
-              {/* <div className="space-y-4">
+        <div className="relative z-10 flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
+          <div className="w-full max-w-6xl">
+            <div className="grid lg:grid-cols-2 gap-8 items-center">
+              {/* Left Side - Branding & Carousel */}
+              <div className="hidden lg:block space-y-8">
+                {/* <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg">
                     <Package className="w-8 h-8 text-white" />
@@ -240,81 +244,81 @@ export default function LoginPage() {
                 </p>
               </div> */}
 
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <div className="p-2 ">
-                    <img
-                      src="/images/wms.png"
-                      alt="WMS Logo"
-                      className="w-16 h-16 object-contain"
-                    />
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <div className="p-2 ">
+                      <img
+                        src="/images/wms.png"
+                        alt="WMS Logo"
+                        className="w-16 h-16 object-contain"
+                      />
+                    </div>
+                    <div className="flex flex-col" style={{ marginLeft: '-12px' }}>
+                      <h1 className="text-3xl font-bold text-white">YuTrackWMS</h1>
+                      <p className="text-sm" style={{ marginTop: '-5px', color: '#FF6D10', fontWeight: 'bold' }}>Track Everything in Warehouse</p>
+                    </div>
                   </div>
-                  <div className="flex flex-col" style={{ marginLeft: '-12px' }}>
-                    <h1 className="text-3xl font-bold text-white">YuTrackWMS</h1>
-                    <p className="text-sm" style={{ marginTop: '-5px', color: '#FF6D10', fontWeight: 'bold' }}>Track Everything in Warehouse</p>
+                  <p className="text-gray-300 text-lg leading-relaxed">
+                    Streamline your logistics operations with our comprehensive warehouse and transport management solution
+                  </p>
+                </div>
+
+                {/* Carousel */}
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-slate-700/50">
+                  <div className="aspect-video relative overflow-hidden">
+                    {slides.map((slide, idx) => (
+                      <div
+                        key={idx}
+                        className={`absolute inset-0 transition-all duration-700 ${idx === activeSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                          }`}
+                      >
+                        <img
+                          src={slide.image}
+                          alt={slide.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 right-0 p-8">
+                          <h3 className="text-2xl font-bold text-white mb-2">{slide.title}</h3>
+                          <p className="text-blue-200">{slide.subtitle}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Carousel Indicators */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {slides.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveSlide(idx)}
+                        className={`h-1.5 rounded-full transition-all ${idx === activeSlide ? 'w-8 bg-blue-400' : 'w-1.5 bg-white/30'
+                          }`}
+                      />
+                    ))}
                   </div>
                 </div>
-                <p className="text-gray-300 text-lg leading-relaxed">
-                  Streamline your logistics operations with our comprehensive warehouse and transport management solution
-                </p>
-              </div>
 
-              {/* Carousel */}
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-slate-700/50">
-                <div className="aspect-video relative overflow-hidden">
-                  {slides.map((slide, idx) => (
-                    <div
-                      key={idx}
-                      className={`absolute inset-0 transition-all duration-700 ${idx === activeSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-                        }`}
-                    >
-                      <img
-                        src={slide.image}
-                        alt={slide.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
-                      <div className="absolute bottom-0 left-0 right-0 p-8">
-                        <h3 className="text-2xl font-bold text-white mb-2">{slide.title}</h3>
-                        <p className="text-blue-200">{slide.subtitle}</p>
-                      </div>
+                {/* Features */}
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { icon: Warehouse, label: 'Warehouse' },
+                    { icon: Truck, label: 'Transport' },
+                    { icon: Ship, label: 'Shipping' }
+                  ].map((item, idx) => (
+                    <div key={idx} className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 text-center hover:bg-slate-800/60 transition-all hover:scale-105 cursor-pointer">
+                      <item.icon className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-300">{item.label}</p>
                     </div>
                   ))}
                 </div>
-
-                {/* Carousel Indicators */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                  {slides.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setActiveSlide(idx)}
-                      className={`h-1.5 rounded-full transition-all ${idx === activeSlide ? 'w-8 bg-blue-400' : 'w-1.5 bg-white/30'
-                        }`}
-                    />
-                  ))}
-                </div>
               </div>
 
-              {/* Features */}
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { icon: Warehouse, label: 'Warehouse' },
-                  { icon: Truck, label: 'Transport' },
-                  { icon: Ship, label: 'Shipping' }
-                ].map((item, idx) => (
-                  <div key={idx} className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 text-center hover:bg-slate-800/60 transition-all hover:scale-105 cursor-pointer">
-                    <item.icon className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-300">{item.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right Side - Login Form */}
-            <div className="w-full">
-              <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-8 sm:p-10 border border-gray-200/50">
-                {/* Mobile Logo */}
-                {/* <div className="lg:hidden mb-4 text-center">
+              {/* Right Side - Login Form */}
+              <div className="w-full">
+                <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-8 sm:p-10 border border-gray-200/50">
+                  {/* Mobile Logo */}
+                  {/* <div className="lg:hidden mb-4 text-center">
                   <div className="inline-flex items-center gap-3 mb-4">
                     <div className="p-2.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
                       <Package className="w-6 h-6 text-white" />
@@ -326,84 +330,85 @@ export default function LoginPage() {
                   </div>
                 </div> */}
 
-                <div className="lg:hidden flex items-center mb-5">
-                  <div className="p-2 ">
-                    <img
-                      src="/images/wms.png"
-                      alt="WMS Logo"
-                      className="w-14 h-14 object-contain"
-                    />
-                  </div>
-                  <div style={{ marginLeft: '-8px' }}>
-                    <h1 className="text-2xl font-bold text-black">YuTrackWMS</h1>
-                    <p className="text-sm" style={{ marginTop: '-5px', color: '#FF6D10', fontWeight: 'bold' }}>Track Everything in Warehouse</p>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="hidden lg:flex flex-col text-center lg:text-left">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-                    <p className="text-gray-600" style={{ marginTop: '-10px' }}>Sign in to your account to continue</p>
-                  </div>
-
-                  <div className="space-y-5">
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700">
-                        Email or Username
-                      </label>
-                      <input
-                        style={{ marginTop: '2px' }}
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                        placeholder="Enter your email or username"
+                  <div className="lg:hidden flex items-center mb-5">
+                    <div className="p-2 ">
+                      <img
+                        src="/images/wms.png"
+                        alt="WMS Logo"
+                        className="w-14 h-14 object-contain"
                       />
                     </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700">
-                        Password
-                      </label>
-                      <div className="relative">
-                        <input
-                          style={{ marginTop: '-5px' }}
-                          type={showPassword ? 'text' : 'password'}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all pr-12"
-                          placeholder="Enter your password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors p-1"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
-                        </button>
-                      </div>
+                    <div style={{ marginLeft: '-8px' }}>
+                      <h1 className="text-2xl font-bold text-black">YuTrackWMS</h1>
+                      <p className="text-sm" style={{ marginTop: '-5px', color: '#FF6D10', fontWeight: 'bold' }}>Track Everything in Warehouse</p>
                     </div>
-
-                    <button
-                      onClick={handleSubmit}
-                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3.5 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
-                    >
-                      Sign In
-                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </button>
                   </div>
 
-                  <div className="pt-6 border-t border-gray-200">
-                    <p className="text-center text-sm text-gray-600">
-                      PT Yusen Logistics Interlink Indonesia
-                    </p>
-                    <p className="text-center text-xs text-gray-500 mt-1">
-                      &copy; {new Date().getFullYear()} All rights reserved
-                    </p>
+                  <div className="space-y-6">
+                    <div className="hidden lg:flex flex-col text-center lg:text-left">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+                      <p className="text-gray-600" style={{ marginTop: '-10px' }}>Sign in to your account to continue</p>
+                    </div>
+
+                    <div className="space-y-5">
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700">
+                          Email or Username
+                        </label>
+                        <input
+                          style={{ marginTop: '2px' }}
+                          type="text"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                          placeholder="Enter your email or username"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700">
+                          Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            style={{ marginTop: '-5px' }}
+                            type={showPassword ? 'text' : 'password'}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all pr-12"
+                            placeholder="Enter your password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors p-1"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="w-5 h-5" />
+                            ) : (
+                              <Eye className="w-5 h-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleSubmit}
+                        className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3.5 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
+                      >
+                        Sign In
+                        <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+
+                    <div className="pt-6 border-t border-gray-200">
+                      <p className="text-center text-sm text-gray-600">
+                        PT Yusen Logistics Interlink Indonesia
+                      </p>
+                      <p className="text-center text-xs text-gray-500 mt-1">
+                        &copy; {new Date().getFullYear()} All rights reserved
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -411,6 +416,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

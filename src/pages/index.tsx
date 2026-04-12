@@ -1,22 +1,9 @@
 "use client"
 
+import Head from "next/head"
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/router"  // bukan next/navigation!
 import { LoadingScreen } from "@/components/LoadingScreen"
-import { Metadata } from "next"
-
-export const metadata: Metadata = {
-  title: "Yutrack WMS",
-  openGraph: {
-    title: "Yutrack WMS",
-    description: "Integrated Warehouse Management System",
-    images: [{ url: "https://wms.logspeedy.com/og-image.png", width: 1200, height: 630 }],
-  },
-};
-
-// export default function IndexPage() {
-//   return <OGImagePreview />
-// }
 
 export default function LoadingPage() {
   const router = useRouter()
@@ -24,8 +11,28 @@ export default function LoadingPage() {
   useEffect(() => {
     setTimeout(() => {
       router.replace("/auth/login")
-    }, 2000); // Simulate loading delay
+    }, 2000)
   }, [router])
 
-  return <LoadingScreen />
+  return (
+    <>
+      <Head>
+        <title>Yutrack WMS</title>
+        <meta property="og:title" content="Yutrack WMS" />
+        <meta property="og:description" content="Integrated Warehouse Management System" />
+        <meta property="og:image" content="https://wms.logspeedy.com/og-image.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://wms.logspeedy.com" />
+      </Head>
+      <LoadingScreen />
+    </>
+  )
 }
+
+// export default function IndexPage() {
+//   return <OGImagePreview />
+// }
+
+
