@@ -39,6 +39,13 @@ export default function ShopeeSettingsPage() {
     const [refreshing, setRefreshing] = useState(false);
     const [authorizing, setAuthorizing] = useState(false);
     const isSubmittingRef = useRef(false);
+    const [showManualModal, setShowManualModal] = useState(false);
+    const [manualForm, setManualForm] = useState({
+        shop_id: "",
+        access_token: "",
+        refresh_token: "",
+    });
+    const [savingManual, setSavingManual] = useState(false);
 
     const [form, setForm] = useState({
         partner_id: "",
@@ -190,10 +197,67 @@ export default function ShopeeSettingsPage() {
         }
     };
 
+    const handleManualUpdate = async () => {
+        if (isSubmittingRef.current) return;
+
+        if (!manualForm.shop_id && !manualForm.access_token && !manualForm.refresh_token) {
+            eventBus.emit("showAlert", { title: "Error", description: "Isi minimal satu field", type: "error" });
+            return;
+        }
+
+        isSubmittingRef.current = true;
+        setSavingManual(true);
+        eventBus.emit("loading", true);
+
+        try {
+            const body: Record<string, any> = {};
+            if (manualForm.shop_id) body.shop_id = parseInt(manualForm.shop_id);
+            if (manualForm.access_token) body.access_token = manualForm.access_token;
+            if (manualForm.refresh_token) body.refresh_token = manualForm.refresh_token;
+
+            const res = await api.post("/outbound/shopee/manual-update-token", body, { withCredentials: true });
+            if (res.data.success) {
+                eventBus.emit("showAlert", {
+                    title: "Berhasil!",
+                    description: "Token berhasil diupdate secara manual",
+                    type: "success",
+                });
+                setShowManualModal(false);
+                setManualForm({ shop_id: "", access_token: "", refresh_token: "" });
+                fetchConfig();
+            }
+        } catch (err: any) {
+            eventBus.emit("showAlert", {
+                title: "Error",
+                description: err?.response?.data?.message || "Gagal update token",
+                type: "error",
+            });
+        } finally {
+            isSubmittingRef.current = false;
+            setSavingManual(false);
+            eventBus.emit("loading", false);
+        }
+    };
+
     const envOptions = [
         { value: "sandbox", label: "Sandbox (Testing)", url: "https://openplatform.sandbox.test-stable.shopee.sg" },
         { value: "production", label: "Production", url: "https://openplatform.shopee.sg" },
     ];
+
+    const fetchConfigRaw = async () => {
+        try {
+            const res = await api.get("/outbound/shopee/config-raw", { withCredentials: true });
+            if (res.data.success && res.data.data) {
+                setManualForm({
+                    shop_id: res.data.data.shop_id?.toString() || "",
+                    access_token: res.data.data.access_token || "",
+                    refresh_token: res.data.data.refresh_token || "",
+                });
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     if (loading) return <div className="p-8 text-sm text-muted-foreground">Memuat konfigurasi...</div>;
 
@@ -262,6 +326,16 @@ export default function ShopeeSettingsPage() {
                                 disabled={refreshing || !config.has_refresh}
                             >
                                 {refreshing ? "Memproses..." : "🔄 Refresh Token"}
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                    await fetchConfigRaw();
+                                    setShowManualModal(true);
+                                }}
+                            >
+                                ✏️ Update Manual
                             </Button>
                         </div>
                         {!config.has_refresh && (
@@ -359,6 +433,73 @@ export default function ShopeeSettingsPage() {
                     </ol>
                 </div>
             </div>
+            {showManualModal && (
+                <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+                    <div className="bg-background bg-white border rounded-lg p-6 w-full max-w-md space-y-4 shadow-lg">
+                        <div>
+                            <h2 className="text-base font-medium">Update Token Manual</h2>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Isi field yang ingin diupdate. Field kosong tidak akan diubah.
+                            </p>
+                        </div>
+
+                        <div className="bg-orange-50 border border-orange-200 rounded p-3 text-xs text-orange-700">
+                            ⚠ Pastikan token yang dimasukkan valid. Token salah akan menyebabkan semua sinkronisasi gagal.
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Shop ID</Label>
+                                <Input
+                                    type="number"
+                                    placeholder="Contoh: 123456789"
+                                    value={manualForm.shop_id}
+                                    onChange={(e) => setManualForm((prev) => ({ ...prev, shop_id: e.target.value }))}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Access Token</Label>
+                                <Input
+                                    type="text"
+                                    placeholder="Token akses dari Shopee"
+                                    value={manualForm.access_token}
+                                    onChange={(e) => setManualForm((prev) => ({ ...prev, access_token: e.target.value }))}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Refresh Token</Label>
+                                <Input
+                                    type="text"
+                                    placeholder="Token untuk refresh otomatis"
+                                    value={manualForm.refresh_token}
+                                    onChange={(e) => setManualForm((prev) => ({ ...prev, refresh_token: e.target.value }))}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 pt-2">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => {
+                                    setShowManualModal(false);
+                                    setManualForm({ shop_id: "", access_token: "", refresh_token: "" });
+                                }}
+                                disabled={savingManual}
+                            >
+                                Batal
+                            </Button>
+                            <Button
+                                className="flex-1"
+                                onClick={handleManualUpdate}
+                                disabled={savingManual}
+                            >
+                                {savingManual ? "Menyimpan..." : "Simpan"}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Layout>
     );
 }
