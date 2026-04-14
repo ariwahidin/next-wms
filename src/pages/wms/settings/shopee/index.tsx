@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // ============================================================
 // FILE BARU: app/wms/settings/shopee/page.tsx
@@ -22,6 +23,7 @@ type ShopeeConfigData = {
     shop_id: number;
     access_token: string;
     base_url: string;
+    push_url: string;
     is_active: boolean;
     environment: string;
     updated_at: string;
@@ -42,6 +44,7 @@ export default function ShopeeSettingsPage() {
         partner_id: "",
         partner_key: "",
         base_url: "https://openplatform.sandbox.test-stable.shopee.sg",
+        push_url: "",
         environment: "sandbox",
     });
 
@@ -54,6 +57,7 @@ export default function ShopeeSettingsPage() {
                     ...prev,
                     partner_id: res.data.data.partner_id?.toString() || "",
                     base_url: res.data.data.base_url || prev.base_url,
+                    push_url: res.data.data.push_url || prev.push_url,
                     environment: res.data.data.environment || prev.environment,
                 }));
             }
@@ -79,6 +83,9 @@ export default function ShopeeSettingsPage() {
 
     const handleSaveConfig = async () => {
         if (isSubmittingRef.current) return;
+
+        console.log("Saving config with values:", form);
+
         if (!form.partner_id || !form.partner_key) {
             eventBus.emit("showAlert", { title: "Error", description: "Partner ID dan Partner Key wajib diisi", type: "error" });
             return;
@@ -93,6 +100,7 @@ export default function ShopeeSettingsPage() {
                 partner_id: parseInt(form.partner_id),
                 partner_key: form.partner_key,
                 base_url: form.base_url,
+                push_url: form.push_url,
                 environment: form.environment,
             }, { withCredentials: true });
 
@@ -206,8 +214,8 @@ export default function ShopeeSettingsPage() {
                         <div className="flex items-center justify-between">
                             <h2 className="text-sm font-medium">Status Koneksi</h2>
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${config.environment === "production"
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-yellow-100 text-yellow-700"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-yellow-100 text-yellow-700"
                                 }`}>
                                 {config.environment === "production" ? "Production" : "Sandbox"}
                             </span>
@@ -317,6 +325,14 @@ export default function ShopeeSettingsPage() {
                         <Input
                             value={form.base_url}
                             onChange={(e) => setForm((prev) => ({ ...prev, base_url: e.target.value }))}
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label className="text-xs">Push URL</Label>
+                        <Input
+                            value={form.push_url}
+                            onChange={(e) => setForm((prev) => ({ ...prev, push_url: e.target.value }))}
                         />
                     </div>
 

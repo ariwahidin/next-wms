@@ -805,6 +805,7 @@ const OutboundTable = () => {
               </Button>
 
               <Button
+                style={{ display: "none" }}
                 className="ml-2 left-6 h-8 bg-green-500 text-slate-950 outline-green-600"
                 variant="outline"
                 onClick={() => setSyncModalOpen(true)}

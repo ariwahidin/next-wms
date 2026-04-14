@@ -21,10 +21,10 @@ import { useEffect } from "react";
 
 import { Inter } from "next/font/google";
 import { useRouter } from "next/navigation";
-// import { Badge } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { Server } from "lucide-react";
+import { ConnectionStatus } from "./connection-status";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -53,26 +53,14 @@ export default function Layout({
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                {/* <BreadcrumbItem className="hidden md:block">
-                  <span className="mr-2 absolute top-5 right-2">
-                    <Badge className="bg-gray-500 text-white capitalize">{userRedux.unit}</Badge>
-                  </span>
-                  <span
-                    className="cursor-pointer text-sm font-medium text-muted-foreground hover:underline"
-                    onClick={() => router.push(props.titleLink || "#")}
-                  >
-                    {props.title || "Page Menu"}
-                  </span>
-                </BreadcrumbItem> */}
                 <BreadcrumbItem className="hidden md:block">
                   <div className="flex items-center gap-3">
                     <span
-                      className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      className="right-6 cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                       onClick={() => router.push(props.titleLink || "#")}
                     >
                       {props.title || "Page Menu"}
                     </span>
-
                     <div className="
                     absolute top-5 right-6
                     flex items-center 
@@ -81,6 +69,9 @@ export default function Layout({
                       <span className="text-xs font-semibold tracking-wide">
                         {userRedux.unit?.replace(/_/g, ' ').toUpperCase() || 'SYSTEM'}
                       </span>
+                    </div>
+                    <div className="absolute top-5 right-36 me-2">
+                    <ConnectionStatus />
                     </div>
                   </div>
                 </BreadcrumbItem>
