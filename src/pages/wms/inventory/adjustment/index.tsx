@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import Layout from "@/components/layout";
+import { usePermission } from "@/hooks/usePermission";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -131,6 +132,8 @@ export default function InventoryAdjustmentPage() {
             if (res.data.success) setReasonCodes(res.data.data || []);
         } catch (e) { console.error(e); }
     }, []);
+
+    const { can } = usePermission()
 
     const fetchAdjustments = useCallback(async () => {
         setListLoading(true);
@@ -564,7 +567,7 @@ export default function InventoryAdjustmentPage() {
                                                     {new Date(adj.requested_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    {adj.status === "pending" && (
+                                                    {can("outbound_sync_ecom", "create") && adj.status === "pending" && (
                                                         <div className="flex gap-2">
                                                             <button onClick={() => handleApprove(adj.ID)} disabled={actionLoading}
                                                                 className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50">
@@ -576,6 +579,7 @@ export default function InventoryAdjustmentPage() {
                                                             </button>
                                                         </div>
                                                     )}
+
                                                 </td>
                                             </tr>
                                         );

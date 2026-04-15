@@ -76,6 +76,9 @@ export default function ShopeeSettingsPage() {
     const [testError, setTestError] = useState<string | null>(null);
     const [selectedEndpoint, setSelectedEndpoint] = useState(SHOPEE_TEST_ENDPOINTS[0].value);
 
+    const [schedulerRunning, setSchedulerRunning] = useState(false);
+    const [schedulerLoading, setSchedulerLoading] = useState(false);
+
     const fetchConfig = async () => {
         try {
             const res = await api.get("/outbound/shopee/config", { withCredentials: true });
@@ -98,7 +101,7 @@ export default function ShopeeSettingsPage() {
 
     useEffect(() => {
         fetchConfig();
-
+        fetchSchedulerStatus();
         // Cek jika redirect dari OAuth callback dengan status=success
         if (searchParams.get("status") === "success") {
             eventBus.emit("showAlert", {
@@ -305,6 +308,34 @@ export default function ShopeeSettingsPage() {
         }
     };
 
+    // Tambah setelah fetchConfig
+    const fetchSchedulerStatus = async () => {
+        try {
+            const res = await api.get("/config/shopee/scheduler/status");
+            setSchedulerRunning(res.data.running);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleToggleScheduler = async () => {
+        setSchedulerLoading(true);
+        try {
+            if (schedulerRunning) {
+                await api.post("/config/shopee/scheduler/stop");
+                eventBus.emit("showAlert", { title: "Scheduler Dihentikan", description: "Sync otomatis dinonaktifkan", type: "info" });
+            } else {
+                await api.post("/config/shopee/scheduler/start");
+                eventBus.emit("showAlert", { title: "Scheduler Berjalan", description: "Sync otomatis aktif", type: "success" });
+            }
+            fetchSchedulerStatus();
+        } catch (err: any) {
+            eventBus.emit("showAlert", { title: "Error", description: err?.response?.data?.message || "Gagal", type: "error" });
+        } finally {
+            setSchedulerLoading(false);
+        }
+    };
+
     if (loading) return <div className="p-8 text-sm text-muted-foreground">Memuat konfigurasi...</div>;
 
     return (
@@ -356,7 +387,7 @@ export default function ShopeeSettingsPage() {
                         </div>
 
                         {/* Action buttons */}
-                        <div className="flex gap-2 pt-2 border-t">
+                        <div className="grid grid-cols-4 gap-2 pt-2 border-t">
                             <Button
                                 size="sm"
                                 variant="outline"
@@ -389,6 +420,14 @@ export default function ShopeeSettingsPage() {
                                 onClick={handleOpenTestModal}
                             >
                                 🧪 Test API
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant={schedulerRunning ? "destructive" : "default"}
+                                onClick={handleToggleScheduler}
+                                disabled={schedulerLoading || !config?.has_token}
+                            >
+                                {schedulerLoading ? "..." : schedulerRunning ? "⏹ Stop Scheduler" : "▶ Start Scheduler"}
                             </Button>
                         </div>
                         {!config.has_refresh && (
@@ -660,8 +699,8 @@ export default function ShopeeSettingsPage() {
                                     <div className="bg-muted px-4 py-2 flex items-center justify-between">
                                         <span className="font-medium text-muted-foreground">Response</span>
                                         <span className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-full ${!testResult.data?.error
-                                                ? "bg-green-100 text-green-700"
-                                                : "bg-red-100 text-red-700"
+                                            ? "bg-green-100 text-green-700"
+                                            : "bg-red-100 text-red-700"
                                             }`}>
                                             {!testResult.data?.error ? "✓ OK" : `✗ ${testResult.data.error}`}
                                         </span>
