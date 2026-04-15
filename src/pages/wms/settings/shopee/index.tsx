@@ -55,6 +55,27 @@ export default function ShopeeSettingsPage() {
         environment: "sandbox",
     });
 
+    // const [showTestModal, setShowTestModal] = useState(false);
+    // const [testLoading, setTestLoading] = useState(false);
+    // const [testResult, setTestResult] = useState<any>(null);
+    // const [testError, setTestError] = useState<string | null>(null);
+
+    const SHOPEE_TEST_ENDPOINTS = [
+        {
+            label: "Get Order List",
+            value: "get_order_list",
+            method: "GET",
+            path: "/api/v2/order/get_order_list",
+            description: "Fetch order list READY_TO_SHIP · 15 hari terakhir",
+        },
+    ];
+
+    const [showTestModal, setShowTestModal] = useState(false);
+    const [testLoading, setTestLoading] = useState(false);
+    const [testResult, setTestResult] = useState<any>(null);
+    const [testError, setTestError] = useState<string | null>(null);
+    const [selectedEndpoint, setSelectedEndpoint] = useState(SHOPEE_TEST_ENDPOINTS[0].value);
+
     const fetchConfig = async () => {
         try {
             const res = await api.get("/outbound/shopee/config", { withCredentials: true });
@@ -259,6 +280,31 @@ export default function ShopeeSettingsPage() {
         }
     };
 
+    const handleOpenTestModal = () => {
+        setTestResult(null);
+        setTestError(null);
+        setSelectedEndpoint(SHOPEE_TEST_ENDPOINTS[0].value);
+        setShowTestModal(true);
+    };
+
+    const handleRunTest = async () => {
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
+        setTestResult(null);
+        setTestError(null);
+        setTestLoading(true);
+
+        try {
+            const res = await api.get("/outbound/shopee/test-api", { withCredentials: true });
+            setTestResult(res.data);
+        } catch (err: any) {
+            setTestError(err?.response?.data?.message || "Gagal menghubungi server");
+        } finally {
+            isSubmittingRef.current = false;
+            setTestLoading(false);
+        }
+    };
+
     if (loading) return <div className="p-8 text-sm text-muted-foreground">Memuat konfigurasi...</div>;
 
     return (
@@ -336,6 +382,13 @@ export default function ShopeeSettingsPage() {
                                 }}
                             >
                                 ✏️ Update Manual
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleOpenTestModal}
+                            >
+                                🧪 Test API
                             </Button>
                         </div>
                         {!config.has_refresh && (
@@ -496,6 +549,158 @@ export default function ShopeeSettingsPage() {
                             >
                                 {savingManual ? "Menyimpan..." : "Simpan"}
                             </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+            {showTestModal && (
+                <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+                    <div className="bg-background bg-white border rounded-lg w-full max-w-2xl shadow-lg flex flex-col max-h-[80vh]">
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b">
+                            <div>
+                                <h2 className="text-base font-medium">Test API Shopee</h2>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Pilih endpoint lalu klik Run Test
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowTestModal(false)}
+                                className="text-muted-foreground hover:text-foreground text-lg leading-none px-1"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+
+                            {/* Pilih endpoint */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs text-muted-foreground">Endpoint</label>
+                                <select
+                                    className="w-full border rounded px-3 py-2 text-sm bg-background"
+                                    value={selectedEndpoint}
+                                    onChange={(e) => {
+                                        setSelectedEndpoint(e.target.value);
+                                        setTestResult(null);
+                                        setTestError(null);
+                                    }}
+                                >
+                                    {SHOPEE_TEST_ENDPOINTS.map((ep) => (
+                                        <option key={ep.value} value={ep.value}>
+                                            {ep.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Request info */}
+                            {(() => {
+                                const ep = SHOPEE_TEST_ENDPOINTS.find((e) => e.value === selectedEndpoint)!;
+                                return (
+                                    <div className="border rounded-lg overflow-hidden text-xs">
+                                        <div className="bg-muted px-4 py-2 font-medium text-muted-foreground">
+                                            Request
+                                        </div>
+                                        <div className="divide-y">
+                                            <div className="flex gap-3 px-4 py-2.5">
+                                                <span className="text-muted-foreground w-20 shrink-0">Method</span>
+                                                <span className={`font-medium font-mono ${ep.method === "GET" ? "text-green-600" : "text-blue-600"}`}>
+                                                    {ep.method}
+                                                </span>
+                                            </div>
+                                            <div className="flex gap-3 px-4 py-2.5">
+                                                <span className="text-muted-foreground w-20 shrink-0">Path</span>
+                                                <span className="font-mono">{ep.path}</span>
+                                            </div>
+                                            <div className="flex gap-3 px-4 py-2.5">
+                                                <span className="text-muted-foreground w-20 shrink-0">Headers</span>
+                                                <span className="font-mono">Content-Type: application/json</span>
+                                            </div>
+                                            {testResult?.url && (
+                                                <div className="flex gap-3 px-4 py-2.5">
+                                                    <span className="text-muted-foreground w-20 shrink-0">Full URL</span>
+                                                    <span className="font-mono break-all text-muted-foreground">{testResult.url}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex gap-3 px-4 py-2.5">
+                                                <span className="text-muted-foreground w-20 shrink-0">Info</span>
+                                                <span className="text-muted-foreground">{ep.description}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Loading */}
+                            {testLoading && (
+                                <div className="flex flex-col items-center justify-center py-10 gap-3 text-muted-foreground">
+                                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    <span className="text-sm">Menghubungi Shopee API...</span>
+                                </div>
+                            )}
+
+                            {/* Error */}
+                            {testError && !testLoading && (
+                                <div className="border rounded-lg overflow-hidden text-xs">
+                                    <div className="bg-red-50 border-b border-red-200 px-4 py-2 font-medium text-red-700">
+                                        Response — Gagal
+                                    </div>
+                                    <div className="px-4 py-3 text-red-600">{testError}</div>
+                                </div>
+                            )}
+
+                            {/* Result */}
+                            {testResult && !testLoading && (
+                                <div className="border rounded-lg overflow-hidden text-xs">
+                                    <div className="bg-muted px-4 py-2 flex items-center justify-between">
+                                        <span className="font-medium text-muted-foreground">Response</span>
+                                        <span className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-full ${!testResult.data?.error
+                                                ? "bg-green-100 text-green-700"
+                                                : "bg-red-100 text-red-700"
+                                            }`}>
+                                            {!testResult.data?.error ? "✓ OK" : `✗ ${testResult.data.error}`}
+                                        </span>
+                                    </div>
+                                    {testResult.data?.response?.order_list !== undefined && (
+                                        <div className="px-4 py-2.5 border-b flex gap-3">
+                                            <span className="text-muted-foreground w-20 shrink-0">Orders</span>
+                                            <span className="font-medium">
+                                                {testResult.data.response.order_list?.length ?? 0} order ditemukan
+                                                {testResult.data.response.more && " · ada halaman berikutnya"}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="p-4">
+                                        <pre className="bg-muted rounded p-3 overflow-x-auto leading-relaxed">
+                                            {JSON.stringify(testResult.data, null, 2)}
+                                        </pre>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-5 py-3 border-t flex justify-between items-center">
+                            <button
+                                onClick={handleRunTest}
+                                disabled={testLoading}
+                                className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                            >
+                                {testResult ? "🔄 Ulangi Test" : ""}
+                            </button>
+                            <div className="flex gap-2">
+                                <Button size="sm" variant="outline" onClick={() => setShowTestModal(false)}>
+                                    Tutup
+                                </Button>
+                                <Button size="sm" onClick={handleRunTest} disabled={testLoading}>
+                                    {testLoading ? "Running..." : "▶ Run Test"}
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

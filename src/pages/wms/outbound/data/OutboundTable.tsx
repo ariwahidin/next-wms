@@ -63,6 +63,7 @@ import { Label } from "@/components/ui/label";
 import { stat } from "fs";
 import SyncEcommerceModal from "@/components/outbound/SyncEcommerceModal";
 import ArrangeShipmentModal from "@/components/outbound/ArrangeShipmentModal.patch";
+import { usePermission } from "@/hooks/usePermission";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -179,6 +180,7 @@ const OutboundTable = () => {
   const [arrangeModalOpen, setArrangeModalOpen] = useState(false);
   const [arrangeOrderSN, setArrangeOrderSN] = useState("");
   const [arrangeOutboundNo, setArrangeOutboundNo] = useState("");
+  const { can } = usePermission()
 
   const HandleEdit = (item: any) => {
     console.log("Edit ID:", item.outbound_no);
@@ -804,14 +806,15 @@ const OutboundTable = () => {
                 🔄 Refresh
               </Button>
 
-              <Button
-                style={{ display: "none" }}
-                className="ml-2 left-6 h-8 bg-green-500 text-slate-950 outline-green-600"
-                variant="outline"
-                onClick={() => setSyncModalOpen(true)}
-              >
-                🔄 Sync E-Commerce
-              </Button>
+              {can("outbound_sync_ecom", "create") && (
+                <Button
+                  className="ml-2 left-6 h-8 bg-green-500 text-slate-950 outline-green-600"
+                  variant="outline"
+                  onClick={() => setSyncModalOpen(true)}
+                >
+                  🔄 Sync E-Commerce
+                </Button>
+              )}
             </div>
           </div>
 
@@ -906,6 +909,7 @@ const OutboundTable = () => {
         onSyncSuccess={(result) => {
           // Refresh list outbound setelah sync berhasil
           // refetch() atau router.refresh()
+          mutate("/outbound");
           console.log("Sync success:", result);
         }}
       />
