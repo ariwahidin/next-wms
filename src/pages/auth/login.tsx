@@ -232,21 +232,26 @@ export default function LoginPage() {
 
               <div className="space-y-4">
                 <div className="flex items-center">
-                  <div className="p-2 ">
+                  {/* <div className="p-2 ">
                     <img
                       src="/images/wms.png"
                       alt="WMS Logo"
                       className="w-16 h-16 object-contain"
                     />
-                  </div>
-                  <div className="flex flex-col" style={{ marginLeft: '-12px' }}>
+                  </div> */}
+                  {/* <div className="flex flex-col" style={{ marginLeft: '-12px' }}>
                     <h1 className="text-3xl font-bold text-white">YuTrackWMS</h1>
                     <p className="text-sm" style={{ marginTop: '-5px', color: '#FF6D10', fontWeight: 'bold' }}>Track Everything in Warehouse</p>
+                  </div> */}
+
+                  <div className="flex flex-col" style={{ marginLeft: '0px' }}>
+                    <h1 className="text-3xl font-bold text-white">Sync Tools</h1>
+                    <p className="text-sm" style={{ marginTop: '5px', color: '#FF6D10', fontWeight: 'bold' }}>By Yusen Logistics Interlink Indonesia</p>
                   </div>
                 </div>
-                <p className="text-gray-300 text-lg leading-relaxed">
+                {/* <p className="text-gray-300 text-lg leading-relaxed">
                   Streamline your logistics operations with our comprehensive warehouse and transport management solution
-                </p>
+                </p> */}
               </div>
 
               {/* Carousel */}
