@@ -178,7 +178,6 @@ export default function ManualForm() {
       } catch (error) {
         eventBus.emit("loading", false);
         console.error("Error saving outbound:", error);
-        // alert("Error saving outbound");
       }
     } else {
       try {

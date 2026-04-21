@@ -1004,17 +1004,6 @@ const CheckingPage = () => {
                       {parsedQR.qtyPerCarton && <div><span className="text-gray-500">Qty/Carton:</span> {parsedQR.qtyPerCarton}</div>}
                     </div>
                   )}
-                  {/* {parsedQR && (
-                    <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs font-mono space-y-0.5">
-                      {parsedQR.sku && <div><span className="text-gray-500">SKU:</span> {parsedQR.sku}</div>}
-                      {parsedQR.ean && <div><span className="text-gray-500">EAN:</span> {parsedQR.ean}</div>}
-                      {parsedQR.product && <div><span className="text-gray-500">Product:</span> {parsedQR.product}</div>}
-                      {parsedQR.mfgDate && <div><span className="text-gray-500">MFG Date:</span> {parsedQR.mfgDate}</div>}
-                      {parsedQR.batch && <div><span className="text-gray-500">Batch:</span> {parsedQR.batch}</div>}
-                      {parsedQR.cartonSerial && <div><span className="text-gray-500">Carton Serial:</span> {parsedQR.cartonSerial}</div>}
-                      {parsedQR.qtyPerCarton && <div><span className="text-gray-500">Qty/Carton:</span> {parsedQR.qtyPerCarton}</div>}
-                    </div>
-                  )} */}
                   {qrRawInput && !parsedQR && (
                     <p className="text-xs text-red-500">Format QR tidak dikenali. Pastikan format: (1)SKU=...</p>
                   )}
@@ -1022,7 +1011,6 @@ const CheckingPage = () => {
               )}
 
               <Button disabled={isSubmit || (!scanSku.trim() && !scanBarcode.trim())} type="submit" className="w-full" size="sm">
-              {/* <Button disabled={isSubmit} type="submit" className="w-full" size="sm"> */}
                 {isSubmit ? (
                   <><Loader2 className="mr-2 w-4 h-4 animate-spin" />Scanning...</>
                 ) : "Scan"}

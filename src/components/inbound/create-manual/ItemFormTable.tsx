@@ -82,17 +82,19 @@ export default function ItemFormTable({
 
   const [searchTermMuatan, setSearchTermMuatan] = useState<string>("");
   const [filteredMuatan, setFilteredMuatan] = useState<ItemFormProps[]>([]);
+  const [divisionOptions, setDivisionOptions] = useState([]);
 
   console.log("INBOUND DETAILS ", inboundDetails);
 
   const fetchData = async () => {
     try {
-      const [products, warehouses, uoms, policies, qa_status] = await Promise.all([
+      const [products, warehouses, uoms, policies, qa_status, divisions] = await Promise.all([
         api.get("/products?owner=" + headerForm.owner_code),
         api.get("/warehouses"),
         api.get("/uoms"),
         api.get("/inventory/policy?owner=" + headerForm.owner_code),
         api.get("/qa-status"),
+        api.get("/divisions"),
       ]);
 
       if (
@@ -100,7 +102,8 @@ export default function ItemFormTable({
         warehouses.data.success &&
         uoms.data.success &&
         policies.data.success &&
-        qa_status.data.success
+        qa_status.data.success &&
+        divisions.data.success
       ) {
         setProducts(products.data.data);
         setItemCodeOptions(
@@ -131,6 +134,12 @@ export default function ItemFormTable({
             label: item.qa_status,
           }))
         );
+
+        const divisionOptions = divisions.data.data.map((item: any) => ({
+          value: item.code,
+          label: item.code,
+        }));
+        setDivisionOptions(divisionOptions);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -165,7 +174,6 @@ export default function ItemFormTable({
     if (modalMode === "create") {
       // Add mode - tambah items baru
       const newItems = selectedItems.map((product) => ({
-        // ID: Date.now() + Math.random(), // Unique ID
         ID: Date.now() * 1000 + Math.floor(Math.random() * 1000),
         item_id: product.ID,
         inbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
@@ -184,6 +192,7 @@ export default function ItemFormTable({
         remarks: "",
         mode: "create",
         is_serial: product.has_serial,
+        division_code: "REGULAR",
       }));
 
       setMuatan((prev) => [...prev, ...newItems]);
@@ -581,11 +590,18 @@ export default function ItemFormTable({
                 Qty
               </th>
 
+
+
+
               {!["open", "draft"].includes(headerForm.status) && (
                 <th className="p-2 border" style={{ width: "100px" }}>
                   Qty Scan
                 </th>
               )}
+
+              <th className="p-2 border" style={{ width: "30px" }}>
+                Division
+              </th>
 
               <th className="p-2 border" style={{ width: "100px" }}>
                 Status
@@ -733,6 +749,20 @@ export default function ItemFormTable({
                               {errors[item.ID].quantity}
                             </small>
                           )}
+                        </td>
+
+                        <td className="p-2 border">
+                          <Select
+                            className="w-40"
+                            key={item.ID}
+                            options={
+                              divisionOptions
+                            }
+                            value={divisionOptions.find((option) => option.value === item.division_code)}
+                            onChange={(value) =>
+                              handleChange(item.ID, "division_code", value?.value)
+                            }
+                          />
                         </td>
 
                         <td className="p-2 border">
@@ -954,11 +984,19 @@ export default function ItemFormTable({
                         <td className="p-2 border text-center">
                           {item.quantity}
                         </td>
+
+
                         <td className="p-2 border text-center">
                           {inboundDetails.find(
                             (d) => d.id === item.ID
                           ).qty_scan}
                         </td>
+
+                        <td className="p-2 border text-center">
+                          {item.division_code}
+                        </td>
+
+
                         <td className="p-2 border text-center">{item.qa_status}</td>
 
                         {invPolicy?.use_receive_location && (

@@ -49,6 +49,7 @@ export interface ItemFormProps {
   group?: string;
   category?: string;
   qa_status?: string;
+  division_code?: string;
 }
 
 export interface InboundReference {

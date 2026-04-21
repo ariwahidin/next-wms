@@ -161,8 +161,6 @@ export default function ManualForm() {
           );
         }
 
-        console.log("owners", owners);
-
         if (owners.data.success) {
           setOwnerOptions(
             owners.data.data.map((item: any) => ({
@@ -838,19 +836,6 @@ export default function ManualForm() {
             className="flex justify-between items-center mb-4 mt-2"
           >
             <div className="flex items-center gap-2 display-none">
-              {/* <Label
-                className="w-24 text-left shrink-0"
-                style={{ fontSize: "12px" }}
-              >
-                Invoice
-              </Label>
-              <span className="shrink-0">:</span>
-              <Input
-                style={{ fontSize: "12px" }}
-                value={references[index].ref_no}
-                onChange={(e) => handleInvoiceChange(index, e.target.value)}
-              /> */}
-
               {references?.length > 1 && (
                 <div className="flex-1">
                   <Button
