@@ -46,6 +46,10 @@ interface ScanItem {
   qr_raw?: string; // raw QR string untuk ScanData
   lot_no?: string; // untuk menyimpan batch/lot number dari QR jika ada
   prod_date?: string; // untuk menyimpan prod date dari QR jika ada
+  inner_serials?: string[]      // ← tambah
+  inner_serial_end?: string     // ← tambah untuk validasi backend
+  case_number?: string
+  item_model?: string
 }
 
 interface MasterCarton {
@@ -101,6 +105,7 @@ interface ScannedItem {
   is_serial?: boolean;
   packing_no?: string;
   pack_ctn_no?: string;
+  item_model?: string;
 }
 
 // ─── QR Parser ────────────────────────────────────────────────────────────────
@@ -117,6 +122,10 @@ interface ParsedQRData {
   mfgDate?: string;      // prod_date (yyyyMMdd → yyyy-MM-dd)
   qtyPerCarton?: number; // qty suggestion
   labelType?: "UNIT" | "CARTON" | "UNKNOWN";
+  innerSerialStart?: string;
+  innerSerialEnd?: string;
+  innerSerials?: string[];
+  innerSerialRangeError?: string;
 }
 
 // function parseQRCode(raw: string): ParsedQRData | null {
@@ -192,8 +201,72 @@ interface ParsedQRData {
 //   }
 // }
 
+// function parseQRCode(raw: string): ParsedQRData | null {
+//   // ── Format 2: 12 segment dash-separated ──────────────────
+//   if (!raw.startsWith("(") && raw.split("-").length === 12) {
+//     const segments = raw.split("-")
+
+//     const rawDate = segments[9]
+//     let mfgDate: string | undefined
+//     if (rawDate?.length === 8) {
+//       mfgDate = `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
+//     }
+
+//     // const qty = Number(segments[4])
+//     const qtyMatch = segments[4].match(/^(\d+)/)
+//     const qty = qtyMatch ? Number(qtyMatch[1]) : undefined
+
+//     return {
+//       sku: segments[1] || undefined,
+//       qtyPerCarton: !isNaN(qty) && qty > 0 ? qty : undefined,
+//       mfgDate,
+//       labelType: "CARTON", // format ini selalu carton
+//     }
+//   }
+
+//   // ── Format 1: (1)KEY=VALUE ────────────────────────────────
+//   const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g
+//   const map: Record<string, string> = {}
+//   let match: RegExpExecArray | null
+//   let found = false
+
+//   while ((match = pattern.exec(raw)) !== null) {
+//     found = true
+//     map[match[2].trim()] = match[3].trim()
+//   }
+
+//   if (!found) return null
+
+//   let mfgDate: string | undefined
+//   if (map["MFG_DATE"]?.length === 8) {
+//     const d = map["MFG_DATE"]
+//     mfgDate = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
+//   }
+
+//   const labelType: LabelType = map["SERIAL"]
+//     ? "UNIT"
+//     : map["CARTON_SERIAL"]
+//       ? "CARTON"
+//       : "UNKNOWN"
+
+//   return {
+//     sku: map["SKU"],
+//     ean: map["EAN"],
+//     product: map["PRODUCT"],
+//     brand: map["BRAND"],
+//     model: map["MODEL"],
+//     serial: map["SERIAL"],
+//     cartonSerial: map["CARTON_SERIAL"],
+//     batch: map["BATCH"],
+//     mfgDate,
+//     qtyPerCarton: map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined,
+//     labelType,
+//   }
+// }
+
 function parseQRCode(raw: string): ParsedQRData | null {
-  // ── Format 2: 12 segment dash-separated ──────────────────
+
+  // ── Format v2: 12 segment dash-separated ──────────────────
   if (!raw.startsWith("(") && raw.split("-").length === 12) {
     const segments = raw.split("-")
 
@@ -203,19 +276,62 @@ function parseQRCode(raw: string): ParsedQRData | null {
       mfgDate = `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
     }
 
-    // const qty = Number(segments[4])
     const qtyMatch = segments[4].match(/^(\d+)/)
     const qty = qtyMatch ? Number(qtyMatch[1]) : undefined
+
+    // ← tambah inner serial untuk format v2
+    const start = segments[10] || undefined  // sesuaikan index segment
+    const end = segments[11] || undefined
+
+    let innerSerials: string[] | undefined
+    let innerSerialRangeError: string | undefined
+
+    if (start) {
+      const numMatch = start.match(/^(.*?)(\d+)$/)
+      if (numMatch) {
+        const prefix = numMatch[1]
+        const startNum = parseInt(numMatch[2], 10)
+        const padLen = numMatch[2].length
+        let endNum: number | undefined
+
+        if (end) {
+          endNum = parseInt(end.replace(prefix, ""), 10)
+        } else if (qty && qty > 0) {
+          endNum = startNum + qty - 1
+        }
+
+        if (endNum !== undefined && !isNaN(startNum) && !isNaN(endNum) && endNum >= startNum) {
+          innerSerials = []
+          for (let i = startNum; i <= endNum; i++) {
+            innerSerials.push(prefix + String(i).padStart(padLen, "0"))
+          }
+
+          const lastGenerated = innerSerials[innerSerials.length - 1]
+          if (end && lastGenerated !== end) {
+            innerSerialRangeError = `Range invalid: "${lastGenerated}" ≠ "${end}"`
+            innerSerials = undefined
+          }
+          if (!innerSerialRangeError && qty && innerSerials && innerSerials.length !== qty) {
+            innerSerialRangeError = `Total inner serial ${innerSerials.length} ≠ QTY_PER_CARTON ${qty}`
+            innerSerials = undefined
+          }
+        }
+      }
+    }
 
     return {
       sku: segments[1] || undefined,
       qtyPerCarton: !isNaN(qty) && qty > 0 ? qty : undefined,
       mfgDate,
-      labelType: "CARTON", // format ini selalu carton
+      labelType: "CARTON",
+      innerSerialStart: start,
+      innerSerialEnd: end,
+      innerSerials,
+      innerSerialRangeError,
     }
   }
 
-  // ── Format 1: (1)KEY=VALUE ────────────────────────────────
+  // ── Format v1: (1)KEY=VALUE ────────────────────────────────
   const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g
   const map: Record<string, string> = {}
   let match: RegExpExecArray | null
@@ -240,6 +356,50 @@ function parseQRCode(raw: string): ParsedQRData | null {
       ? "CARTON"
       : "UNKNOWN"
 
+  // ← generate inner serials (sama persis dengan inbound)
+  let innerSerials: string[] | undefined
+  let innerSerialRangeError: string | undefined
+  const start = map["INNER_SERIAL_START"]
+  const end = map["INNER_SERIAL_END"]
+  const qty = map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined
+
+  if (start) {
+    const numMatch = start.match(/^(.*?)(\d+)$/)
+    if (numMatch) {
+      const prefix = numMatch[1]
+      const startNum = parseInt(numMatch[2], 10)
+      const padLen = numMatch[2].length
+      let endNum: number | undefined
+
+      if (end) {
+        endNum = parseInt(end.replace(prefix, ""), 10)
+      } else if (qty && qty > 0) {
+        endNum = startNum + qty - 1
+      }
+
+      if (endNum !== undefined && !isNaN(startNum) && !isNaN(endNum) && endNum >= startNum) {
+        innerSerials = []
+        for (let i = startNum; i <= endNum; i++) {
+          innerSerials.push(prefix + String(i).padStart(padLen, "0"))
+        }
+
+        const lastGenerated = innerSerials[innerSerials.length - 1]
+        if (end && lastGenerated !== end) {
+          innerSerialRangeError = `Range tidak valid: "${lastGenerated}" ≠ "${end}"`
+          innerSerials = undefined
+        }
+        if (!innerSerialRangeError && qty && innerSerials && innerSerials.length !== qty) {
+          innerSerialRangeError = `Total inner serial ${innerSerials.length} ≠ QTY_PER_CARTON ${qty}`
+          innerSerials = undefined
+        }
+      } else if (start) {
+        innerSerialRangeError = "Cannot parse INNER_SERIAL_END / Invalid number format"
+      }
+    } else {
+      innerSerialRangeError = "Cannot parse INNER_SERIAL_START format"
+    }
+  }
+
   return {
     sku: map["SKU"],
     ean: map["EAN"],
@@ -250,8 +410,12 @@ function parseQRCode(raw: string): ParsedQRData | null {
     cartonSerial: map["CARTON_SERIAL"],
     batch: map["BATCH"],
     mfgDate,
-    qtyPerCarton: map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined,
+    qtyPerCarton: qty,
     labelType,
+    innerSerialStart: start,
+    innerSerialEnd: end,
+    innerSerials,
+    innerSerialRangeError,
   }
 }
 
@@ -340,6 +504,9 @@ const CheckingPage = () => {
 
   const outboundNo = Array.isArray(outbound) ? outbound[0] : (outbound ?? "");
 
+  // tambah state
+  const [innerSerialError, setInnerSerialError] = useState(false)
+
   // ── QR Helpers ─────────────────────────────────────────────────────────────
 
   // const handleQrInputChange = (raw: string) => {
@@ -354,37 +521,81 @@ const CheckingPage = () => {
   //   }
   // };
 
+  // const handleQrInputChange = (raw: string) => {
+  //   setQrRawInput(raw)
+  //   const parsed = parseQRCode(raw)
+
+  //   if (parsed) {
+
+  //     console.log("Parsed QR Data:", parsed)
+
+  //     setParsedQR(parsed)
+
+
+  //     // ── field yang sama di kedua tipe ──
+  //     if (parsed.ean) setScanBarcode(parsed.ean)
+  //     if (parsed.sku) setScanSku(parsed.sku)
+  //     // if (parsed.mfgDate) setProdDate(parsed.mfgDate)
+  //     // if (parsed.batch) setLotNo(parsed.batch)
+
+  //     if (parsed.labelType === "UNIT") {
+  //       // label unit satuan → serial auto-fill, qty selalu 1
+  //       if (parsed.serial) setSerialInputs([parsed.serial])
+  //       setScanQty(1)
+  //     }
+
+  //     if (parsed.labelType === "CARTON") {
+  //       // label karton → case number + qty per carton
+  //       // if (parsed.cartonSerial) setCaseNumber(parsed.cartonSerial)
+  //       if (parsed.qtyPerCarton) setScanQty(parsed.qtyPerCarton)
+  //     }
+
+  //   } else {
+  //     setParsedQR(null)
+  //   }
+  // }
+
+
   const handleQrInputChange = (raw: string) => {
     setQrRawInput(raw)
     const parsed = parseQRCode(raw)
 
     if (parsed) {
-
-      console.log("Parsed QR Data:", parsed)
-
       setParsedQR(parsed)
 
+      // ← block jika range error
+      if (parsed.innerSerialRangeError) {
+        setInnerSerialError(true)
+        eventBus.emit("showAlert", {
+          title: "Serial Range Error!",
+          description: parsed.innerSerialRangeError,
+          type: "error",
+        })
+        return
+      }
 
-      // ── field yang sama di kedua tipe ──
+      setInnerSerialError(false)
+
       if (parsed.ean) setScanBarcode(parsed.ean)
       if (parsed.sku) setScanSku(parsed.sku)
-      // if (parsed.mfgDate) setProdDate(parsed.mfgDate)
-      // if (parsed.batch) setLotNo(parsed.batch)
 
       if (parsed.labelType === "UNIT") {
-        // label unit satuan → serial auto-fill, qty selalu 1
         if (parsed.serial) setSerialInputs([parsed.serial])
         setScanQty(1)
       }
 
       if (parsed.labelType === "CARTON") {
-        // label karton → case number + qty per carton
-        // if (parsed.cartonSerial) setCaseNumber(parsed.cartonSerial)
-        if (parsed.qtyPerCarton) setScanQty(parsed.qtyPerCarton)
+        if (parsed.innerSerials && parsed.innerSerials.length > 0) {
+          // ← ada inner serials → set qty
+          setScanQty(parsed.innerSerials.length)
+        } else if (parsed.qtyPerCarton) {
+          setScanQty(parsed.qtyPerCarton)
+        }
       }
 
     } else {
       setParsedQR(null)
+      setInnerSerialError(false)
     }
   }
 
@@ -395,6 +606,7 @@ const CheckingPage = () => {
     setScanSku("");
     setScanBarcode("");
     setScanQty(1);
+    setInnerSerialError(false);
     setTimeout(() => {
       document.getElementById(qr ? "qr-input" : "barcode")?.focus();
     }, 50);
@@ -463,6 +675,7 @@ const CheckingPage = () => {
           is_serial: item.is_serial,
           packing_no: item.packing_no,
           pack_ctn_no: item.pack_ctn_no,
+          item_model: item.item_model,
         }));
         setListOutboundScanned(filtered);
         setSelectedCarton("all");
@@ -599,7 +812,14 @@ const CheckingPage = () => {
       qr_raw: isQrMode ? qrRawInput : undefined,
       lot_no: isQrMode ? parsedQR?.batch : undefined,
       prod_date: isQrMode ? parsedQR?.mfgDate : undefined,
+      inner_serials: parsedQR?.innerSerials ?? [],
+      inner_serial_end: parsedQR?.innerSerialEnd ?? "",
+      case_number: parsedQR?.cartonSerial ?? "",
+      item_model: parsedQR?.model ?? ""
     };
+
+    console.log("Submitting with values:", newItem);
+    // return;
 
     if (isSubmit) return;
     setIsLoading(true);
@@ -659,7 +879,6 @@ const CheckingPage = () => {
           : scanBarcode;
 
         const resolvedUom = res.data?.uom?.from_uom ?? "";
-
         // Set state untuk UI
         setScanBarcode(resolvedBarcode);
         setScanUom(resolvedUom);
@@ -671,7 +890,6 @@ const CheckingPage = () => {
           setIsSerial(false);
           setScanUom(res.data?.uom?.from_uom ?? "");
           if (invPolicy?.picking_single_scan) {
-            // handleScan();
             handleScan(resolvedBarcode, resolvedUom);
           } else {
             setShowDialog(true);
@@ -976,7 +1194,7 @@ const CheckingPage = () => {
                       />
                       {qrRawInput && (
                         <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          onClick={() => { setQrRawInput(""); setParsedQR(null); setScanBarcode(""); setScanSku(""); document.getElementById("qr-input")?.focus(); }}>
+                          onClick={() => { setQrRawInput(""); setParsedQR(null); setScanBarcode(""); setScanSku(""); setInnerSerialError(false); document.getElementById("qr-input")?.focus(); }}>
                           <XCircle size={16} />
                         </button>
                       )}
@@ -1002,6 +1220,25 @@ const CheckingPage = () => {
                       {parsedQR.batch && <div><span className="text-gray-500">Batch:</span> {parsedQR.batch}</div>}
                       {parsedQR.cartonSerial && <div><span className="text-gray-500">Carton Serial:</span> {parsedQR.cartonSerial}</div>}
                       {parsedQR.qtyPerCarton && <div><span className="text-gray-500">Qty/Carton:</span> {parsedQR.qtyPerCarton}</div>}
+                      {parsedQR?.innerSerialStart && (
+                        <div>
+                          <span className="text-gray-500">Serial Range:</span>{" "}
+                          <span className="text-green-700 font-semibold">
+                            {parsedQR.innerSerialStart} → {parsedQR.innerSerialEnd}
+                          </span>
+                        </div>
+                      )}
+                      {parsedQR?.innerSerials && (
+                        <div>
+                          <span className="text-gray-500">Generated:</span>{" "}
+                          <span className="text-green-600">{parsedQR.innerSerials.length} serials</span>
+                        </div>
+                      )}
+                      {parsedQR?.innerSerialRangeError && (
+                        <div className="text-red-600 font-semibold">
+                          ⚠ {parsedQR.innerSerialRangeError}
+                        </div>
+                      )}
                     </div>
                   )}
                   {qrRawInput && !parsedQR && (
@@ -1010,7 +1247,7 @@ const CheckingPage = () => {
                 </div>
               )}
 
-              <Button disabled={isSubmit || (!scanSku.trim() && !scanBarcode.trim())} type="submit" className="w-full" size="sm">
+              <Button disabled={isSubmit || (!scanSku.trim() && !scanBarcode.trim()) || innerSerialError} type="submit" className="w-full" size="sm">
                 {isSubmit ? (
                   <><Loader2 className="mr-2 w-4 h-4 animate-spin" />Scanning...</>
                 ) : "Scan"}
