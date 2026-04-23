@@ -639,10 +639,17 @@ const CheckingPage = () => {
             return;
         }
 
+        const sku = parsedQR?.sku || "";
+
+        console.log("Checking SKU:", sku, "EAN:", scanBarcode, "Inbound:", inbound);
+
+        // return; // <-- untuk testing, comment out saat sudah siap
+
         const newItem = {
             inboundNo: Array.isArray(inbound) ? inbound[0] : (inbound ?? ""),
             id: 0,
             location: scanLocation.trim(),
+            sku : sku,
             barcode: scanBarcode.trim(),
             scanType: "BARCODE",
             qaStatus: scanQa,
