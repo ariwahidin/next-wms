@@ -24,24 +24,6 @@ import { InboundBarcodeTask } from "@/types/inbound";
 import { Label } from "@radix-ui/react-label";
 import { se } from "date-fns/locale";
 
-// ============================================================
-// TYPES & INTERFACES
-// ============================================================
-// interface PutawayTask {
-//   id: number;
-//   task_no: string;
-//   item_code: string;
-//   barcode: string;
-//   quantity: number;
-//   putaway_qty: number;
-//   is_serial: boolean;
-//   owner_code?: string;
-//   uom?: string;
-//   exp_date?: string;
-//   prod_date?: string;
-//   lot_number?: string;
-//   source_location?: string;
-// }
 
 interface PutawayItem {
   id?: number;
@@ -91,28 +73,6 @@ const usePutawayTasks = (inboundNo: string[]) => {
 
     setLoading(true);
     try {
-      // const response = await api.get(`/mobile/putaway/tasks/${taskNo}`);
-      // const { success, data } = response.data;
-
-      // if (success) {
-      //   const formatted = data.map((item: any) => ({
-      //     id: item.ID,
-      //     task_no: item.task_no,
-      //     item_code: item.item_code,
-      //     barcode: item.barcode,
-      //     quantity: item.quantity,
-      //     putaway_qty: item.putaway_qty,
-      //     is_serial: item.is_serial,
-      //     uom: item.uom,
-      //     owner_code: item.owner_code,
-      //     exp_date: item.exp_date,
-      //     prod_date: item.prod_date,
-      //     lot_number: item.lot_number,
-      //     source_location: item.source_location,
-      //   }));
-
-      //   setAllTasks(formatted);
-      // }
 
       const payload = {
         inbound_no: inboundNo[0],
@@ -303,31 +263,6 @@ const ScanForm: React.FC<ScanFormProps> = ({ onSubmit, loading, inbound_no, filt
                   </button>
                 )}
               </div>
-
-              {/* <div className="relative">
-            <label htmlFor="barcode" className="text-sm text-gray-600">
-              Barcode:
-            </label>
-            <Input
-              id="barcode"
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-              className="mt-1"
-              autoComplete="off"
-            />
-            {barcode && (
-              <button
-                type="button"
-                className="absolute right-2 top-9 text-gray-400 hover:text-gray-600"
-                onClick={() => {
-                  setBarcode("");
-                  document.getElementById("barcode")?.focus();
-                }}
-              >
-                <XCircle size={18} />
-              </button>
-            )}
-          </div> */}
 
               <Button type="submit" className="w-full" disabled={loading || filter !== "working"}>
                 {loading ? "Loading..." : "Next"}
@@ -526,25 +461,21 @@ const PutawayPage = () => {
   const router = useRouter();
 
   const [searchTerm, setSearchTerm] = useState("");
-  // const [showPending, setshowPending] = useState(true);
   const [showPending, setShowPending] = useState(false);
 
   const [filter, setFilter] = useState("working");
   const [palletID, setPalletID] = useState("");
   const [showDetailModal, setShowDetailModal] = useState(false);
-  // const [selectedTask, setSelectedTask] = useState<PutawayTask | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { items, loading: itemsLoading, fetchItems, deleteItem } = usePutawayItems();
   const { policy, fetchPolicy } = useInventoryPolicy();
   const [inboundNo, setInboundNo] = useState("");
   const { inbound } = router.query;
 
-  // const [tasks, setTasks] = useState<InboundBarcodeTask[]>([]);
+
   const [showModalTransfer, setShowModalTransfer] = useState(false);
   const [locationPutaway, setLocationPutaway] = useState<string | null>(null);
-  // const [showForm, setShowForm] = useState(true);
   const { tasks, allTasks, loading: tasksLoading, showForm, setShowForm, fetchTasks, setTasks } = usePutawayTasks([inboundNo, filter, palletID]);
-  // if (!inbound) return null;
 
   useEffect(() => {
     if (inbound) {
@@ -565,33 +496,9 @@ const PutawayPage = () => {
       );
     }
 
-    // if (!showPending) {
-    //   // filtered = filtered.filter((task) => task.quantity !== task.putaway_qty);
-    // }
-
     setTasks(filtered);
   }, [allTasks, searchTerm, setTasks]);
 
-  // Fetch tasks on mount
-  // useEffect(() => {
-  //   if (taskNo) {
-  //     fetchTasks();
-  //   }
-  // }, [taskNo, fetchTasks]);
-
-  // Fetch policy when tasks are loaded
-  // useEffect(() => {
-  //   if (allTasks.length > 0 && allTasks[0].owner_code) {
-  //     fetchPolicy(allTasks[0].owner_code);
-  //   }
-  // }, [allTasks, fetchPolicy]);
-
-  // Refresh tasks when modal closes
-  // useEffect(() => {
-  //   if (!showDetailModal && taskNo) {
-  //     fetchTasks();
-  //   }
-  // }, [showDetailModal, taskNo, fetchTasks]);
 
   const handleScanSubmit = async (formData: ScanFormDataPalletID) => {
     setIsSubmitting(true);
@@ -625,24 +532,9 @@ const PutawayPage = () => {
   }, [filter])
 
   const handleTaskClick = async (task: InboundBarcodeTask) => {
-    // setSelectedTask(task);
-    // await fetchItems(task.id);
-    // setShowDetailModal(true);
   };
 
-  // const handleDeleteItem = async (itemId: number) => {
-  //   if (!selectedTask) return;
 
-  //   const success = await deleteItem(itemId, selectedTask.id);
-  //   if (success) {
-  //     await fetchTasks();
-  //     eventBus.emit("showAlert", {
-  //       title: "Success!",
-  //       description: "Item deleted successfully",
-  //       type: "success",
-  //     });
-  //   }
-  // };
 
   const doPutawayAll = async () => {
     const payload = {
@@ -729,7 +621,6 @@ const PutawayPage = () => {
 
         )}
 
-
         {/* Putaway Modal */}
         <Dialog open={showModalTransfer} onOpenChange={setShowModalTransfer}>
           <DialogContent className="bg-white">
@@ -787,70 +678,6 @@ const PutawayPage = () => {
           </DialogContent>
         </Dialog>
 
-
-
-        {/* Detail Modal */}
-        {/* <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-          <DialogContent className="bg-white">
-            <DialogHeader>
-              <DialogTitle>Putaway Items</DialogTitle>
-            </DialogHeader>
-
-            <div className="text-sm mb-2">
-              <span>Total Items: {items.length}</span>
-            </div>
-
-            <div className="max-h-60 overflow-y-auto space-y-2">
-              {items.length > 0 ? (
-                items.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`p-3 border rounded-lg ${item.status === "completed" ? "bg-green-50" : "bg-blue-50"
-                      }`}
-                  >
-                    <div className="text-xs space-y-1">
-                      <div className="flex justify-between">
-                        <span>
-                          <strong>Barcode:</strong> {item.barcode}
-                        </span>
-                        <span className="text-gray-400">{item.status}</span>
-                      </div>
-                      {item.serial_number && (
-                        <div>
-                          <strong>Serial:</strong> {item.serial_number}
-                        </div>
-                      )}
-                      <div>
-                        <strong>From:</strong> {item.source_location} →{" "}
-                        <strong>To:</strong> {item.destination_location}
-                      </div>
-                      <div>
-                        <strong>Qty:</strong> {item.quantity} {item.uom}
-                      </div>
-                    </div>
-
-                    {item.status === "pending" && (
-                      <div className="mt-2">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteItem(item.id!)}
-                          disabled={isSubmitting}
-                        >
-                          {isSubmitting ? "Deleting..." : "Delete"}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="text-gray-500 text-sm text-center py-4">
-                  No items found
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog> */}
       </div>
     </>
   );
