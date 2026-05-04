@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import JsBarcode from "jsbarcode";
 import api from "@/lib/api";
 import React from "react";
+import { Header } from "next/dist/lib/load-custom-routes";
 import { HeaderSPK, MuatanOrderSPK } from "@/types/order-spk";
 
 type OrderDetailItem = {
@@ -31,7 +32,9 @@ const SPKSheetPrint = () => {
   const { order_no } = router.query;
   const [order, setOrder] = useState<HeaderSPK>();
   const [orderItems, setOrderItems] = useState<MuatanOrderSPK[]>([]);
-  const [orderDetailItems, setOrderDetailItems] = useState<OrderDetailItem[]>([]);
+  const [orderDetailItems, setOrderDetailItems] = useState<OrderDetailItem[]>(
+    []
+  );
   const barcodeRef = useRef<HTMLCanvasElement>(null);
   const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
   const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
@@ -39,6 +42,7 @@ const SPKSheetPrint = () => {
   useEffect(() => {
     if (order_no) {
       fetchData(order_no as string);
+      console.log(order_no);
     } else {
       return;
     }
@@ -63,40 +67,67 @@ const SPKSheetPrint = () => {
     }
     acc[item.shipment_id].push(item);
     return acc;
-  }, {} as GroupedData);
+  }, {});
 
-  const grandTotalKoli = Object.values(groupedData).reduce(
+  const grandTotalKoli = Object.values(groupedData as GroupedData).reduce(
     (sum, records) => sum + records[0].total_koli,
     0
   );
 
-  const grandTotalQty = Object.values(groupedData).reduce(
+  const grandTotalQty = Object.values(groupedData as GroupedData).reduce(
     (sum, records) => sum + records.reduce((s, r) => s + r.quantity, 0),
     0
   );
 
-  const grandTotalCbm = Object.values(groupedData)
-    .reduce((sum, records) => sum + records.reduce((s, r) => s + r.total_cbm, 0), 0)
-    .toFixed(4);
+  const grandTotalCbm = Object.values(groupedData as GroupedData).reduce(
+    (sum, records) => sum + records.reduce((s, r) => s + r.total_cbm, 0),
+    0
+  ).toFixed(4);
 
-  // Counter nomor urut per shipment group
-  let rowNumber = 0;
+  useEffect(() => {
+    console.log("groupedData : ", groupedData);
+  }, [groupedData]);
+
 
   return (
+
     <div style={{ padding: "10px", fontFamily: "Arial" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <p style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}>
+        {/* <img src="/images/yusen001.jpeg" alt="Logo" width="100" /> */}
+        {/* <canvas ref={barcodeRef}></canvas> */}
+        <p
+          style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}
+        >
           PT YUSEN LOGISTICS INTERLINK INDONESIA
         </p>
       </div>
-      <hr style={{ border: "1px solid black", marginBottom: "10px", marginTop: "10px" }} />
-      <h2 style={{ textAlign: "center", marginBottom: "20px", marginTop: "10px", textDecoration: "underline" }}>
+      <hr
+        style={{
+          border: "1px solid black",
+          marginBottom: "10px",
+          marginTop: "10px",
+        }}
+      />
+      <h2
+        style={{
+          textAlign: "center",
+          marginBottom: "20px",
+          marginTop: "10px",
+          textDecoration: "underline",
+        }}
+      >
         SURAT PERINTAH KIRIM
       </h2>
 
       <div style={{ fontSize: "12px", marginTop: "10px" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            fontSize: "12px",
+          }}
+        >
           <tbody>
             <tr>
               <td style={headerLabel}>No. SPK/Order</td>
@@ -144,11 +175,16 @@ const SPKSheetPrint = () => {
         </table>
       </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "20px", fontSize: "12px" }}>
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          marginTop: "20px",
+          fontSize: "12px",
+        }}
+      >
         <thead>
           <tr>
-            {/* ── Kolom NO ── */}
-            <th style={{ ...th, width: "4%" }}>NO</th>
             <th style={th}>Delivery To</th>
             <th style={th}>Delivery City</th>
             <th style={th}>DO No</th>
@@ -160,68 +196,89 @@ const SPKSheetPrint = () => {
           </tr>
         </thead>
         <tbody>
-          {Object.entries(groupedData).length > 0 ? (
-            Object.entries(groupedData).map(([shipmentId, records], i) => {
-              const totalQty = (records as any[]).reduce((sum, r) => sum + r.quantity, 0);
-              const totalCbm = (records as any[]).reduce((sum, r) => sum + r.total_cbm, 0).toFixed(4);
-              const totalKoli = records[0].total_koli;
 
-              // Increment nomor per shipment group
-              rowNumber++;
-              const currentNo = rowNumber;
+          {Object.entries(groupedData as GroupedData).length > 0 ? (
+            Object.entries(groupedData as GroupedData).map(
+              ([shipmentId, records], i) => {
+                const totalQty = (records as any[]).reduce(
+                  (sum, r) => sum + r.quantity,
+                  0
+                );
+                const totalCbm = (records as any[]).reduce(
+                  (sum, r) => sum + r.total_cbm,
+                  0
+                ).toFixed(4);
+                const totalKoli = (records as any[]).reduce(
+                  (sum, r) => records[0].total_koli,
+                  0
+                );
 
-              return (
-                <React.Fragment key={shipmentId}>
-                  {records.map((item, j) => (
-                    <tr key={j}>
-                      {/* Nomor hanya di baris pertama tiap group */}
-                      <td style={{ ...td, textAlign: "center", fontWeight: "bold", verticalAlign: "top" }}>
-                        {j === 0 ? currentNo : ""}
+                return (
+                  <React.Fragment key={shipmentId}>
+                    {records.map((item, j) => (
+                      <tr key={j}>
+                        <td style={{ textAlign: "left" }}>
+                          {j === 0 ? item.deliv_to_name : ""}
+                        </td>
+                        <td style={{ textAlign: "left" }}>
+                          {j === 0 ? item.deliv_city : ""}
+                        </td>
+                        <td style={{ textAlign: "left" }}>
+                          {item.shipment_id}
+                        </td>
+                        <td style={{ textAlign: "left" }}>{item.item_code}</td>
+                        <td style={{ textAlign: "center" }}>{item.quantity}</td>
+                        <td style={{ textAlign: "left" }}>
+                          {item.total_cbm}
+                        </td>
+                        <td style={{ textAlign: "center" }}>
+                          {j === 0 ? item.total_koli : ""}
+                        </td>
+                        <td style={{ textAlign: "center" }}>{item.remarks}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
+                      <td colSpan={4} style={{ ...td, textAlign: "right" }}>
+                        TOTAL
                       </td>
-                      <td style={{ ...td, textAlign: "left" }}>
-                        {j === 0 ? item.deliv_to_name : ""}
-                      </td>
-                      <td style={{ ...td, textAlign: "left" }}>
-                        {j === 0 ? item.deliv_city : ""}
-                      </td>
-                      <td style={{ ...td, textAlign: "left" }}>{item.shipment_id}</td>
-                      <td style={{ ...td, textAlign: "left" }}>{item.item_code}</td>
-                      <td style={{ ...td, textAlign: "center" }}>{item.quantity}</td>
-                      <td style={{ ...td, textAlign: "left" }}>{item.total_cbm}</td>
+                      <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
+                      <td style={{ ...td, textAlign: "left" }}>{totalCbm}</td>
                       <td style={{ ...td, textAlign: "center" }}>
-                        {j === 0 ? item.total_koli : ""}
+                        {totalKoli}
                       </td>
-                      <td style={{ ...td, textAlign: "center" }}>{item.remarks}</td>
+                      <td style={{ ...td, textAlign: "center" }}></td>
                     </tr>
-                  ))}
-                  <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
-                    {/* NO + kolom lain = colSpan 5 sekarang */}
-                    <td colSpan={5} style={{ ...td, textAlign: "right" }}>TOTAL</td>
-                    <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
-                    <td style={{ ...td, textAlign: "left" }}>{totalCbm}</td>
-                    <td style={{ ...td, textAlign: "center" }}>{totalKoli}</td>
-                    <td style={{ ...td, textAlign: "center" }}></td>
-                  </tr>
-                </React.Fragment>
-              );
-            })
+                  </React.Fragment>
+                );
+              }
+            )
           ) : (
             <tr>
-              <td colSpan={9} style={{ textAlign: "center" }}>No data</td>
+              <td colSpan={5} style={{ textAlign: "center" }}>
+                No data
+              </td>
             </tr>
           )}
 
           <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
-            <td colSpan={5} style={{ ...td, textAlign: "right" }}>GRAND TOTAL</td>
+            <td colSpan={4} style={{ ...td, textAlign: "right" }}>
+              GRAND TOTAL
+            </td>
             <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
             <td style={{ ...td, textAlign: "left" }}>{grandTotalCbm}</td>
             <td style={{ ...td, textAlign: "center" }}>{grandTotalKoli}</td>
-            <td style={{ ...td, textAlign: "center" }}></td>
+            <td style={{ ...td, textAlign: "center" }}>{}</td>
           </tr>
         </tbody>
       </table>
 
-      <div style={{ marginTop: "50px", display: "flex", justifyContent: "space-around" }}>
+      <div
+        style={{
+          marginTop: "50px",
+          display: "flex",
+          justifyContent: "space-around",
+        }}
+      >
         <div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>Supervisor</p>
           <div style={signatureLine}></div>
@@ -244,9 +301,18 @@ const SPKSheetPrint = () => {
           <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
         </div>
       </div>
-
-      <div style={{ marginTop: "50px", width: "100%", height: "100px", border: "1px solid #000", padding: "10px" }}>
-        <p style={{ textAlign: "left", fontSize: "12px", fontWeight: "bold" }}>Note :</p>
+      <div
+        style={{
+          marginTop: "50px",
+          width: "100%",
+          height: "100px",
+          border: "1px solid #000",
+          padding: "10px",
+        }}
+      >
+        <p style={{ textAlign: "left", fontSize: "12px", fontWeight: "bold" }}>
+          Note :
+        </p>
       </div>
     </div>
   );
@@ -256,7 +322,6 @@ const th = {
   border: "1px solid #000",
   padding: "4px",
   backgroundColor: "#eee",
-  textAlign: "center" as const,
 };
 
 const td = {

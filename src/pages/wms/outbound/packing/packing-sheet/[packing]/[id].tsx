@@ -87,11 +87,12 @@ const PickingSheetPrint = () => {
     (acc, item) => acc + item.quantity,
     0
   );
-  //   const grandTotalCbm = pickingSheet.reduce((acc, item) => acc + item.cbm, 0);
 
   const grandTotalCbm = packingItems
     .reduce((acc, item) => acc + item.cbm, 0)
     .toFixed(3);
+
+  let numbering = 1;
 
   return (
     <div style={{ padding: "10px", fontFamily: "Arial" }}>
@@ -186,10 +187,6 @@ const PickingSheetPrint = () => {
             <tr>
               <td style={headerLabel}>Packing No</td>
               <td style={headerValue}>{data.packing_no}</td>
-              {/* <td style={headerLabel}>Qty Koli</td>
-              <td style={headerValue}>
-                {data.qty_koli}
-              </td> */}
             </tr>
             <tr>
               <td style={headerLabel}>Shipment ID</td>
@@ -216,46 +213,19 @@ const PickingSheetPrint = () => {
               <td style={headerValue}>{data.cust_address}</td>
             </tr>
             <tr>
-              {/* <td style={headerLabel}>Picker</td>
-              <td style={headerValue}>{data.picker_name}</td> */}
               <td style={headerLabel}>Customer City</td>
               <td style={headerValue}>{data.cust_city}</td>
             </tr>
             <tr></tr>
             <tr>
-              {/* <td style={headerLabel}>Plan Pickup</td>
-              <td style={headerValue}>
-                {new Date(
-                  `${data.plan_pickup_date}T${data.plan_pickup_time}`
-                ).toLocaleString("id-ID", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </td> */}
-
               <td style={headerLabel}>Delivery To</td>
               <td style={headerValue}>{data.deliv_to_name}</td>
             </tr>
             <tr>
-              {/* <td style={headerLabel}>Print Date/Time</td>
-              <td style={headerValue}>
-                {new Date().toLocaleString("id-ID", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </td> */}
               <td style={headerLabel}>Delivery Address</td>
               <td style={headerValue}>{data.deliv_address}</td>
             </tr>
             <tr>
-              {/* <td style={headerLabel}>Remarks</td>
-              <td style={headerValue}>{data.remarks}</td> */}
               <td style={headerLabel}>Delivery City</td>
               <td style={headerValue}>{data.deliv_city}</td>
             </tr>
@@ -277,12 +247,12 @@ const PickingSheetPrint = () => {
       >
         <thead>
           <tr>
+            <th style={th}>NO</th>
             <th style={th}>PACKING NO</th>
             <th style={th}>CTN NO</th>
             <th style={th}>ITEM</th>
             <th style={th}>DESCRIPTION</th>
             <th style={th}>EAN</th>
-            {/* <th style={th}>SN</th> */}
             <th style={th}>QTY</th>
             <th style={th}>UoM</th>
           </tr>
@@ -294,8 +264,6 @@ const PickingSheetPrint = () => {
                 (sum, r) => sum + r.quantity,
                 0
               );
-
-              // [packingNo, records] : [string, any]
               const totalCbm = (records as any[]).reduce(
                 (sum, r) => sum + r.cbm,
                 0
@@ -303,59 +271,11 @@ const PickingSheetPrint = () => {
 
               return (
                 <React.Fragment key={itemCode}>
-                  {/* header item */}
 
-                  {/* detail per lokasi */}
-                  {/* {records.map((item, j) => (
+                  {records.map((item, j) => (   
                     <tr key={j}>
-                      <td style={{ ...td, textAlign: "center" }}>
-                        {item.item_code}
-                      </td>
-                      <td
-                        style={{
-                          ...td,
-                          maxWidth: "150px", // atur sesuai kebutuhan
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                        title={records[0].item_name} // biar muncul tooltip full text kalau dihover
-                      >
-                        {records[0].item_name}
-                      </td>
-                      <td style={{ ...td, textAlign: "center" }}>
-                        {item.barcode}
-                      </td>
-                      <td style={{ ...td, textAlign: "center" }}>
-                        {item.whs_code}
-                      </td>
-                      <td
-                        style={{
-                          ...td,
-                          textAlign: "center",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {item.rec_date}
-                      </td>
-                      <td
-                        style={{
-                          ...td,
-                          textAlign: "center",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {item.location}
-                      </td>
-                      <td style={{ ...td, textAlign: "center" }}>
-                        {item.quantity}
-                      </td>
-                      <td style={{ ...td, textAlign: "center" }}>{item.cbm}</td>
-                    </tr>
-                  ))} */}
-
-                  {records.map((item, j) => (
-                    <tr key={j}>
+                      {/* NO */}
+                      <td style={{ textAlign: "center" }}>{numbering++}</td>
 
                       {/* PACKING NO */}
                       <td style={{ textAlign: "center" }}>
@@ -368,7 +288,6 @@ const PickingSheetPrint = () => {
                         {j === 0 ? item.item_code : ""}
                       </td>
                       
-
                       {/* ITEM NAME */}
                       <td
                         style={{
@@ -387,43 +306,15 @@ const PickingSheetPrint = () => {
                         {j === 0 ? item.barcode_scan : ""}
                       </td>
 
-                      {/* WH CODE */}
-                      {/* <td style={{ textAlign: "center" }}>
-                        {j === 0 ? item.whs_code : ""}
-                      </td> */}
-
-                      {/* REC DATE */}
-                      {/* <td
-                        style={{
-                          textAlign: "center",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {item.rec_date}
-                      </td> */}
-
-                      {/* LOCATION */}
-                      {/* <td
-                        style={{
-                          textAlign: "center",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {item.serial_number}
-                      </td> */}
-
                       {/* QTY */}
                       <td style={{ textAlign: "center" }}>{item.qty_scan}</td>
                       <td style={{ textAlign: "center" }}>{item.uom_scan}</td>
-
-                      {/* CBM */}
-                      {/* <td style={{ textAlign: "center" }}>{item.cbm}</td> */}
                     </tr>
                   ))}
 
                   <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
                     <td style={{ ...td, textAlign: "center" }}>{''}</td>
-                    <td colSpan={4} style={{ ...td, textAlign: "right" }}>
+                    <td colSpan={5} style={{ ...td, textAlign: "right" }}>
                       TOTAL
                     </td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
@@ -436,12 +327,11 @@ const PickingSheetPrint = () => {
 
           {/* grand total */}
           <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
-            <td colSpan={5} style={{ ...td, textAlign: "right" }}>
+            <td colSpan={6} style={{ ...td, textAlign: "right" }}>
               GRAND TOTAL
             </td>
             <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
             <td style={{ ...td, textAlign: "center" }}>{''}</td>
-            {/* <td style={{ ...td, textAlign: "center" }}>{grandTotalCbm}</td> */}
           </tr>
         </tbody>
       </table>
