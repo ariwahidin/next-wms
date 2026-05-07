@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -5,10 +7,10 @@ import { useRouter, useParams } from 'next/navigation';
 import api from '@/lib/api';
 import ScheduleTab from '../components/ScheduleTab';
 import HistoryTab from '../components/HistoryTab';
-import QueryPreviewButton from '../components/QueryPreviewButton';
 import QueryTab from '../components/QueryTab';
 import Layout from '@/components/layout';
 import EmailTemplateTab from '../components/EmailTemplateTab';
+import QueryPreviewButton from '../components/QueryPreviewButton';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -333,28 +335,28 @@ export default function ReportFormPage() {
 
                 {/* Tab: Query */}
                 {/* {activeTab === 'query' && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                    <div className="flex items-start justify-between mb-3">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">SQL Query *</label>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                                Query dijalankan langsung ke database. Hasil kolom akan menjadi header Excel.
-                            </p>
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                        <div className="flex items-start justify-between mb-3">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">SQL Query *</label>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    Query dijalankan langsung ke database. Hasil kolom akan menjadi header Excel.
+                                </p>
+                            </div>
+                            <QueryPreviewButton query={form.query} />
                         </div>
-                        <QueryPreviewButton query={form.query} />
+                        <textarea
+                            className="w-full border border-gray-200 rounded-lg px-3 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            rows={16}
+                            placeholder={`-- Contoh query:\nSELECT \n  item_code,\n  item_name,\n  qty,\n  location\nFROM wms_inventory\nWHERE is_active = 1\nORDER BY item_code`}
+                            value={form.query}
+                            onChange={(e) => setForm({ ...form, query: e.target.value })}
+                        />
+                        <p className="text-xs text-gray-400 mt-2">
+                            💡 Tip: nama kolom di SELECT akan otomatis jadi header baris di Excel.
+                        </p>
                     </div>
-                    <textarea
-                        className="w-full border border-gray-200 rounded-lg px-3 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        rows={16}
-                        placeholder={`-- Contoh query:\nSELECT \n  item_code,\n  item_name,\n  qty,\n  location\nFROM wms_inventory\nWHERE is_active = 1\nORDER BY item_code`}
-                        value={form.query}
-                        onChange={(e) => setForm({ ...form, query: e.target.value })}
-                    />
-                    <p className="text-xs text-gray-400 mt-2">
-                        💡 Tip: nama kolom di SELECT akan otomatis jadi header baris di Excel.
-                    </p>
-                </div>
-            )} */}
+                )} */}
 
                 {/* Tab: Recipients */}
                 {activeTab === 'recipients' && (

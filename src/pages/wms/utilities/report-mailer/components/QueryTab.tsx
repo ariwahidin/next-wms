@@ -6,11 +6,20 @@ import QueryPreviewButton from './QueryPreviewButton';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+// interface ReportQuery {
+//   id: number;
+//   name: string;
+//   query: string;
+//   sort_order: number;
+// }
+
 interface ReportQuery {
   id: number;
   name: string;
   query: string;
   sort_order: number;
+  excel_title: string;
+  excel_subtitle: string;
 }
 
 type OutputMode = 'single_file' | 'multi_file';
@@ -21,7 +30,8 @@ interface Props {
   onOutputModeChange: (mode: OutputMode) => void;
 }
 
-const defaultForm = { name: '', query: '' };
+// const defaultForm = { name: '', query: '' };
+const defaultForm = { name: '', query: '', excel_title: '', excel_subtitle: '' };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -64,7 +74,8 @@ export default function QueryTab({ reportId, outputMode, onOutputModeChange }: P
 
   const openEdit = (rq: ReportQuery) => {
     setEditQuery(rq);
-    setForm({ name: rq.name, query: rq.query });
+    // setForm({ name: rq.name, query: rq.query });
+    setForm({ name: rq.name, query: rq.query, excel_title: rq.excel_title, excel_subtitle: rq.excel_subtitle });
     setError('');
     setShowModal(true);
   };
@@ -186,11 +197,10 @@ export default function QueryTab({ reportId, outputMode, onOutputModeChange }: P
         <div className="flex gap-3">
           <button
             onClick={() => handleOutputModeChange('single_file')}
-            className={`flex-1 border rounded-xl p-4 text-left transition-colors ${
-              outputMode === 'single_file'
+            className={`flex-1 border rounded-xl p-4 text-left transition-colors ${outputMode === 'single_file'
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <div className={`text-sm font-medium ${outputMode === 'single_file' ? 'text-blue-700' : 'text-gray-700'}`}>
               📊 1 File, Banyak Sheet
@@ -201,11 +211,10 @@ export default function QueryTab({ reportId, outputMode, onOutputModeChange }: P
           </button>
           <button
             onClick={() => handleOutputModeChange('multi_file')}
-            className={`flex-1 border rounded-xl p-4 text-left transition-colors ${
-              outputMode === 'multi_file'
+            className={`flex-1 border rounded-xl p-4 text-left transition-colors ${outputMode === 'multi_file'
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <div className={`text-sm font-medium ${outputMode === 'multi_file' ? 'text-blue-700' : 'text-gray-700'}`}>
               📎 Banyak File, 1 Email
@@ -261,11 +270,10 @@ export default function QueryTab({ reportId, outputMode, onOutputModeChange }: P
                 </div>
 
                 {/* Badge urutan */}
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
-                  outputMode === 'single_file'
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${outputMode === 'single_file'
                     ? 'bg-blue-100 text-blue-700'
                     : 'bg-purple-100 text-purple-700'
-                }`}>
+                  }`}>
                   {index + 1}
                 </div>
 
@@ -332,6 +340,18 @@ export default function QueryTab({ reportId, outputMode, onOutputModeChange }: P
                 <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded">{error}</div>
               )}
 
+              {/* <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Nama {outputMode === 'single_file' ? 'Sheet' : 'File'} *
+                </label>
+                <input
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={outputMode === 'single_file' ? 'cth: Stock Summary' : 'cth: Stock Report'}
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
+              </div> */}
+
               <div>
                 <label className="block text-xs text-gray-500 mb-1">
                   Nama {outputMode === 'single_file' ? 'Sheet' : 'File'} *
@@ -342,6 +362,31 @@ export default function QueryTab({ reportId, outputMode, onOutputModeChange }: P
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Excel Title <span className="text-gray-400">(opsional, override title report)</span>
+                  </label>
+                  <input
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="cth: LAPORAN STOK HARIAN"
+                    value={form.excel_title}
+                    onChange={(e) => setForm({ ...form, excel_title: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Excel Subtitle <span className="text-gray-400">(opsional)</span>
+                  </label>
+                  <input
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="cth: PT. Maju Bersama Warehouse"
+                    value={form.excel_subtitle}
+                    onChange={(e) => setForm({ ...form, excel_subtitle: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div>
