@@ -29,6 +29,7 @@ interface ScanItem {
     inboundNo: string;
     id?: number;
     location: string;
+    sku: string;
     barcode: string;
     serial: string;
     qaStatus: string;
@@ -122,81 +123,6 @@ interface ParsedQRData {
     innerSerials?: string[];
     innerSerialRangeError?: string;
 }
-
-// function parseQRCode(raw: string): ParsedQRData | null {
-//   // Pola: (N)KEY=VALUE — bisa multiline atau inline
-//   const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g;
-//   const map: Record<string, string> = {};
-//   let match: RegExpExecArray | null;
-//   let found = false;
-
-//   while ((match = pattern.exec(raw)) !== null) {
-//     found = true;
-//     map[match[2].trim()] = match[3].trim();
-//   }
-
-//   if (!found) return null;
-
-//   // Format MFG_DATE dari yyyyMMdd → yyyy-MM-dd
-//   let mfgDate: string | undefined;
-//   if (map["MFG_DATE"] && map["MFG_DATE"].length === 8) {
-//     const d = map["MFG_DATE"];
-//     mfgDate = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
-//   }
-
-//   return {
-//     sku: map["SKU"],
-//     ean: map["EAN"],
-//     product: map["PRODUCT"],
-//     brand: map["BRAND"],
-//     model: map["MODEL"],
-//     cartonSerial: map["CARTON_SERIAL"],
-//     batch: map["BATCH"],
-//     mfgDate,
-//     qtyPerCarton: map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined,
-//   };
-// }
-
-// function parseQRCode(raw: string): ParsedQRData | null {
-//     const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g
-//     const map: Record<string, string> = {}
-//     let match: RegExpExecArray | null
-//     let found = false
-
-//     while ((match = pattern.exec(raw)) !== null) {
-//         found = true
-//         map[match[2].trim()] = match[3].trim()
-//     }
-
-//     if (!found) return null
-
-//     let mfgDate: string | undefined
-//     if (map["MFG_DATE"]?.length === 8) {
-//         const d = map["MFG_DATE"]
-//         mfgDate = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
-//     }
-
-//     // ← deteksi tipe label
-//     const labelType = map["SERIAL"]
-//         ? "UNIT"
-//         : map["CARTON_SERIAL"]
-//             ? "CARTON"
-//             : "UNKNOWN"
-
-//     return {
-//         sku: map["SKU"],
-//         ean: map["EAN"],
-//         product: map["PRODUCT"],
-//         brand: map["BRAND"],
-//         model: map["MODEL"],
-//         serial: map["SERIAL"],          // ← tambah
-//         cartonSerial: map["CARTON_SERIAL"],
-//         batch: map["BATCH"],
-//         mfgDate,
-//         qtyPerCarton: map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined,
-//         labelType,                            // ← tambah
-//     }
-// }
 
 function parseQRCode(raw: string): ParsedQRData | null {
     const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g
@@ -393,7 +319,11 @@ const CheckingPage = () => {
             // Reset error jika QR valid
             setInnerSerialError(false)
 
-            if (parsed.ean) setScanBarcode(parsed.ean)
+            if (parsed.ean) {
+                setScanBarcode(parsed.ean)
+            }else {
+                setScanBarcode(parsed.sku ?? "")
+            }
             if (parsed.mfgDate) setProdDate(parsed.mfgDate)
             if (parsed.batch) setLotNo(parsed.batch)
 
@@ -582,10 +512,11 @@ const CheckingPage = () => {
         const newItem: ScanItem = {
             inboundNo: Array.isArray(inbound) ? inbound[0] : (inbound ?? ""),
             id: 0,
+            sku: parsedQR?.sku ?? "",
             location: scanLocation.trim(),
             barcode: scanBarcode.trim(),
             qaStatus: scanQa,
-            serial: serialNumber,
+            serial: parsedQR?.serial ?? serialNumber,
             qtyScan: scanQty as number,
             prodDate: prodDate,
             expDate: expDate,
