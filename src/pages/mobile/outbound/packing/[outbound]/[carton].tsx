@@ -86,6 +86,7 @@ interface OutboundDetail {
 
 interface ScannedItem {
   id?: number;
+  item_code?: string;
   outbound_detail_id: number;
   barcode: string;
   serial_number: string;
@@ -99,6 +100,7 @@ interface ScannedItem {
   quantity: number;
   location_scan?: string;
   status?: string;
+  case_number?: string;
   barcode_data_scan?: string;
   qty_data_scan?: number;
   uom_scan?: string;
@@ -657,7 +659,9 @@ const CheckingPage = () => {
         const filtered: ScannedItem[] = data.data.map((item: any) => ({
           id: item.ID,
           outbound_detail_id: item.outbound_detail_id,
+          item_code: item.item_code,
           barcode: item.barcode,
+          case_number: item.case_number,
           serial_number: item.serial_number,
           serial_number_2: item.serial_number_2,
           pallet: item.pallet,
@@ -803,6 +807,7 @@ const CheckingPage = () => {
       carton_code: masterCarton?.carton_code ?? null,
       outbound_no: outboundNo,
       location: scanLocation,
+      sku: scanSku,
       barcode: barcode,
       serial_no: serialNumber,
       qty: scanQty as number,
@@ -1299,7 +1304,7 @@ const CheckingPage = () => {
                     className="flex flex-col border p-3 rounded cursor-pointer hover:bg-gray-100 transition-colors"
                   >
                     <div className="text-xs font-mono space-y-0.5">
-                      <div><strong>Item Code :</strong> {item.item_code}</div>
+                      <div><strong>Item Code (SKU) :</strong> {item.item_code}</div>
                       <div><strong>Item Name :</strong> {item.item_name}</div>
                       <div><strong>EAN :</strong> {item.barcode}</div>
                       <div>
@@ -1509,7 +1514,10 @@ const CheckingPage = () => {
                               </>
                             )}
                             <div><strong>EAN:</strong> {item.barcode_data_scan}</div>
-                            {item.is_serial && <div><strong>Serial:</strong> {item.serial_number}</div>}
+                            <div><strong>SKU:</strong> {item.item_code}</div>
+                            {/* {item.is_serial && <div><strong>Serial:</strong> {item.serial_number}</div>} */}
+                            <div><strong>UNIT SERIAL:</strong> {item.serial_number}</div>
+                            <div><strong>CTN SERIAL:</strong> {item.case_number}</div>
                             <div><strong>QTY:</strong> {item.qty_data_scan} {item.uom_scan}</div>
                           </div>
                           <div className="flex justify-between items-center mt-2">
