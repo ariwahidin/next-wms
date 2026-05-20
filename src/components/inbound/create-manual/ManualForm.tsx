@@ -196,6 +196,17 @@ export default function ManualForm() {
     }
 
     console.log("Data yang disimpan:", formData, references, newMuatan);
+    console.log("Data yang disimpan (header):", formData);
+    console.log("Data yang disimpan (muatan):", muatan);
+
+
+    //filter formData -> buang received {}
+    const filteredFormData = Object.fromEntries(
+      Object.entries(formData).filter(([key]) => key !== "received")
+    )
+
+    console.log("Data yang disimpan (filtered):", filteredFormData);
+
     // return;
 
 
@@ -222,12 +233,14 @@ export default function ManualForm() {
         alert("Error saving inbound");
       }
     } else {
+
       try {
         eventBus.emit("loading", true);
         const res = await api.put(
           `/inbound/${formData.inbound_no}`,
           {
-            ...formData,
+            // ...formData,
+            ...filteredFormData,
             items: muatan,
           },
         );
