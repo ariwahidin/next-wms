@@ -1,5 +1,5 @@
-import OutboundTable from "./OutboundTable";
 import Layout from "@/components/layout";
+import OutboundTable from "./OutboundTable";
 
 export default function Page() {
   return (

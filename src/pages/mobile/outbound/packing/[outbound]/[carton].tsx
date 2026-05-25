@@ -1081,7 +1081,7 @@ const CheckingPage = () => {
       item.outbound_detail_id.toString().includes(term) ||
       item.barcode.toLowerCase().includes(term) ||
       item.serial_number.toLowerCase().includes(term) ||
-      item.location.toLowerCase().includes(term);
+      item.location?.toLowerCase().includes(term);
     const matchesCarton = selectedCarton === "all" || item.pack_ctn_no === selectedCarton;
     return matchesSearch && matchesCarton;
   });
