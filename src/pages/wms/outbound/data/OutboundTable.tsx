@@ -429,12 +429,12 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
           })}
           {filters.search && (
             <span className="rounded-full bg-slate-900 px-2.5 py-0.5 text-xs font-medium text-white">
-              "{filters.search}"
+              `{filters.search}`
             </span>
           )}
           {filters.searchItem && (
             <span className="rounded-full bg-slate-700 px-2.5 py-0.5 text-xs font-medium text-white">
-              Item: "{filters.searchItem}"
+              Item: `{filters.searchItem}`
             </span>
           )}
         </div>
