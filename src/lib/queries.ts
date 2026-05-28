@@ -547,9 +547,11 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
                   a.ctn_height,
                   d.customer_name,
                   d.cust_addr1,
+                  d.cust_city,
                   f.order_date,
                   e.order_no,
                   g.transporter_name,
+                  a.carton_code,
               f.driver,
               f.truck_no,
               c.order_type as ob_type,
@@ -588,14 +590,16 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
               a.order_date        AS [OUT DATE],
               a.customer_name     AS [CUSTOMER],
               a.cust_addr1        AS [ADDRESS],
-              a.ctn_length        AS [P],
-              a.ctn_width         AS [L],
-              a.ctn_height        AS [T],
+              a.cust_city         AS [CITY],
               a.transporter_name  AS [TRANSPORTER],
             a.driver			AS [DRIVER],
             a.truck_size		AS [TRUCK SIZE],
             a.ord_type		AS [ORDER TYPE],
             a.truck_no			AS [TRUCK NO],
+              a.carton_code       AS [CARTON CODE],
+              a.ctn_length        AS [P],
+              a.ctn_width         AS [L],
+              a.ctn_height        AS [T],
               SUM(a.quantity)     AS [QTY PCS],
               COUNT(DISTINCT a.pack_ctn_no) AS [QTY KOLI]
           FROM koli a
@@ -608,12 +612,14 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
               a.order_date,
               a.customer_name,
               a.cust_addr1,
+              a.cust_city,
               a.ctn_length,
               a.ctn_width,
               a.ctn_height,
               a.transporter_name,
             a.driver,
             a.truck_no,
+            a.carton_code,
             a.order_type,
             a.truck_size,
             a.ob_type,
@@ -622,61 +628,6 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
           ORDER BY
               a.order_date DESC,
               a.order_no`
-
-    //     sql = `WITH koli AS (
-    //     SELECT
-    //         a.outbound_id,
-    //         a.item_id,
-    //         a.packing_id,
-    //         a.pack_ctn_no,
-    //         b.item_name,
-    //         a.ctn_length,
-    //         a.ctn_width,
-    //         a.ctn_height,
-    //         d.customer_name,
-    //         d.cust_addr1,
-    //         f.order_date,
-    //         e.order_no,
-    //         g.transporter_name,
-    //         c.shipment_id,
-    //         a.quantity
-    //     FROM outbound_barcodes a
-    //     INNER JOIN products b          ON a.item_id = b.id
-    //     INNER JOIN outbound_headers c  ON a.outbound_id = c.id
-    //     INNER JOIN customers d         ON c.customer_code = d.customer_code
-    //     INNER JOIN order_details e     ON e.outbound_no = c.outbound_no
-    //     INNER JOIN order_headers f     ON e.order_id = f.id
-    //     INNER JOIN transporters g      ON f.transporter_code = g.transporter_code
-    //     WHERE a.ctn_length IS NOT NULL
-    //       AND f.order_date >= '${startDate}'
-    //       AND f.order_date <= '${endDate}'
-    // )
-    // SELECT
-    //     a.order_no          AS [SPK NO],
-    //     a.shipment_id       AS [DO NO],
-    //     a.order_date        AS [OUT DATE],
-    //     a.customer_name     AS [CUSTOMER],
-    //     a.cust_addr1        AS [ADDRESS],
-    //     a.ctn_length        AS [P],
-    //     a.ctn_width         AS [L],
-    //     a.ctn_height        AS [T],
-    //     a.transporter_name  AS [TRANSPORTER],
-    //     SUM(a.quantity)     AS [QTY PCS],
-    //     COUNT(DISTINCT a.pack_ctn_no) AS [QTY KOLI]
-    // FROM koli a
-    // GROUP BY
-    //     a.order_no,
-    //     a.shipment_id,
-    //     a.order_date,
-    //     a.customer_name,
-    //     a.cust_addr1,
-    //     a.ctn_length,
-    //     a.ctn_width,
-    //     a.ctn_height,
-    //     a.transporter_name
-    // ORDER BY
-    //     a.order_date DESC,
-    //     a.order_no`
   }
 
   return queryDB(sql);
