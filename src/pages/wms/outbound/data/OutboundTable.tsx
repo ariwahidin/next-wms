@@ -68,7 +68,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type OutboundStatus = "open" | "picking" | "packing" | "complete" | "cancel";
+type OutboundStatus = "open" | "picking" | "packing" | "packed" | "complete" | "cancel";
 
 interface FilterParams {
   startDate: Date;
@@ -81,11 +81,12 @@ interface FilterParams {
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS: { value: OutboundStatus; label: string; color: string; dot: string }[] = [
-  { value: "open",      label: "Open",      color: "bg-blue-50 border-blue-200 text-blue-700",    dot: "bg-blue-500" },
-  { value: "picking",   label: "Picking",   color: "bg-yellow-50 border-yellow-200 text-yellow-700", dot: "bg-yellow-500" },
-  { value: "packing",   label: "Packing",   color: "bg-orange-50 border-orange-200 text-orange-700", dot: "bg-orange-500" },
-  { value: "complete", label: "Completed", color: "bg-green-50 border-green-200 text-green-700",  dot: "bg-green-500" },
-  { value: "cancel",    label: "Cancel",    color: "bg-red-50 border-red-200 text-red-700",        dot: "bg-red-500" },
+  { value: "open", label: "Open", color: "bg-blue-50 border-blue-200 text-blue-700", dot: "bg-blue-500" },
+  { value: "picking", label: "Picking", color: "bg-yellow-50 border-yellow-200 text-yellow-700", dot: "bg-yellow-500" },
+  { value: "packing", label: "Packing", color: "bg-orange-50 border-orange-200 text-orange-700", dot: "bg-orange-500" },
+  { value: "packed", label: "Packed", color: "bg-purple-50 border-purple-200 text-purple-700", dot: "bg-purple-500" },
+  { value: "complete", label: "Completed", color: "bg-green-50 border-green-200 text-green-700", dot: "bg-green-500" },
+  { value: "cancel", label: "Cancel", color: "bg-red-50 border-red-200 text-red-700", dot: "bg-red-500" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -308,15 +309,15 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
                     ? <span className="text-slate-400">All statuses</span>
                     : filters.statuses.length === 1
                       ? <span className="flex items-center gap-1.5">
-                          <span className={`h-1.5 w-1.5 rounded-full ${STATUS_OPTIONS.find(o => o.value === filters.statuses[0])?.dot}`} />
-                          <span className="capitalize">{filters.statuses[0]}</span>
-                        </span>
+                        <span className={`h-1.5 w-1.5 rounded-full ${STATUS_OPTIONS.find(o => o.value === filters.statuses[0])?.dot}`} />
+                        <span className="capitalize">{filters.statuses[0]}</span>
+                      </span>
                       : <span className="flex items-center gap-1">
-                          {filters.statuses.slice(0, 2).map(s => (
-                            <span key={s} className={`h-1.5 w-1.5 rounded-full ${STATUS_OPTIONS.find(o => o.value === s)?.dot}`} />
-                          ))}
-                          <span className="text-slate-600">{filters.statuses.length} selected</span>
-                        </span>
+                        {filters.statuses.slice(0, 2).map(s => (
+                          <span key={s} className={`h-1.5 w-1.5 rounded-full ${STATUS_OPTIONS.find(o => o.value === s)?.dot}`} />
+                        ))}
+                        <span className="text-slate-600">{filters.statuses.length} selected</span>
+                      </span>
                   }
                 </span>
                 <svg className="h-3.5 w-3.5 text-slate-400 shrink-0" viewBox="0 0 16 16" fill="none">
@@ -712,7 +713,7 @@ const OutboundTable = () => {
                 </DropdownMenuItem>
               )}
 
-              {(params.data.status === "picking" || params.data.status === "packing") && (
+              {(params.data.status === "packing" || params.data.status === "packed") && (
                 <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePickingComplete(params.data.ID); }}>
                   <CheckCheck className="mr-2 h-4 w-4" /> Complete
                 </DropdownMenuItem>
@@ -777,16 +778,17 @@ const OutboundTable = () => {
     {
       field: "status",
       headerName: "Status",
-      width: 120,
+      width: 150,
       cellRenderer: (params: any) => {
         if (!params.value) return null;
         let color = "bg-gray-500";
         switch (params.value.toLowerCase()) {
-          case "open":     color = "bg-blue-500 text-white"; break;
-          case "picking":  color = "bg-yellow-500 text-black"; break;
-          case "packing":  color = "bg-orange-500 text-white"; break;
+          case "open": color = "bg-blue-500 text-white"; break;
+          case "picking": color = "bg-yellow-500 text-black"; break;
+          case "packing": color = "bg-orange-500 text-white"; break;
+          case "packed": color = "bg-purple-500 text-white"; break;
           case "complete": color = "bg-green-500"; break;
-          case "cancel":   color = "bg-red-500"; break;
+          case "cancel": color = "bg-red-500"; break;
         }
         return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
       },

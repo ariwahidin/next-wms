@@ -18,7 +18,6 @@ export async function getInbound(startDate: string, endDate: string) {
       id.quantity AS QUANTITY,
       p.cbm AS [M3 PCS],
       p.cbm * id.quantity AS [TOTAL M3],
-      ih.koli AS KOLI,
       id.remarks AS REMARK
     FROM inbound_details id
     INNER JOIN inbound_headers ih ON id.inbound_no = ih.inbound_no
@@ -53,7 +52,6 @@ export async function getOutbound(startDate: string, endDate: string) {
       od.quantity AS QTY,
       p.cbm AS [M3 PCS],
       p.cbm * od.quantity AS [M3 TOTAL],
-      odt.qty_koli AS KOLI,
       tr.transporter_name AS TRUCKER,
       od.vas_name AS [REMARK DETAIL],
       oh.remarks AS [REMARK HEADER],
@@ -299,6 +297,55 @@ export async function getStockSummary() {
     order by a.exp_date asc;`;
   return queryDB(sql);
 }
+export async function getItemOutboundByKoli(startDate: string, endDate: string) {
+  const sql = `WITH itm AS (
+SELECT
+	b.id,
+	d.order_no,
+	b.outbound_no,
+	d.order_date,
+	b.item_code,
+	e.item_name,
+	f.carton_code,
+	f.ctn_length,
+	f.ctn_width,
+	f.ctn_height,
+	SUM(f.quantity) as tot_qty
+	FROM outbound_headers a
+	LEFT JOIN outbound_details b ON a.outbound_no = b.outbound_no
+	LEFT JOIN order_details c ON a.outbound_no = c.outbound_no
+	LEFT JOIN order_headers d ON d.id = c.order_id
+	INNER JOIN products e ON b.item_code = e.item_code
+	LEFT JOIN outbound_barcodes f ON b.id = f.outbound_detail_id
+	WHERE d.order_date >= '${startDate}'
+      AND d.order_date <= '${endDate}'
+	GROUP BY 	
+	b.id,
+	b.outbound_no,
+	b.item_code,
+	d.order_no,
+	d.order_date,
+	e.item_name,
+	f.carton_code,
+	f.ctn_length,
+	f.ctn_width,
+	f.ctn_height
+) 
+SELECT
+order_no AS [SPK NO],
+order_date AS [OUT DATE],
+outbound_no AS [OUTBOUND NO],
+item_code AS [SKU],
+item_name AS [ITEM NAME],
+carton_code AS [CARTON CODE],
+ctn_length AS [LENGTH],
+ctn_width AS [WIDTH],
+ctn_height AS [HEIGHT],
+tot_qty AS [QTY IN CARTON]
+FROM itm
+ORDER BY outbound_no DESC;`;
+  return queryDB(sql);
+}
 
 export async function getCycleCountOutbound(startDate: string, endDate: string) {
   const sql = `With ob AS
@@ -484,97 +531,154 @@ export async function getOutboundReport(startDate: string, endDate: string, stat
   }
 
   if (viewBy === "koli") {
+
     sql = `WITH koli AS (
-    SELECT
-        a.outbound_id,
-        a.item_id,
-        a.packing_id,
-        a.pack_ctn_no,
-        b.item_name,
-        a.ctn_length,
-        a.ctn_width,
-        a.ctn_height,
-        d.customer_name,
-        d.cust_addr1,
-        f.order_date,
-        e.order_no,
-        g.transporter_name,
-        c.shipment_id,
-        a.quantity
-    FROM outbound_barcodes a
-    INNER JOIN products b          ON a.item_id = b.id
-    INNER JOIN outbound_headers c  ON a.outbound_id = c.id
-    INNER JOIN customers d         ON c.customer_code = d.customer_code
-    INNER JOIN order_details e     ON e.outbound_no = c.outbound_no
-    INNER JOIN order_headers f     ON e.order_id = f.id
-    INNER JOIN transporters g      ON f.transporter_code = g.transporter_code
-    WHERE a.ctn_length IS NOT NULL
-      AND f.order_date >= '${startDate}'
-      AND f.order_date <= '${endDate}'
-)
-SELECT
-    a.order_no          AS [SPK NO],
-    a.shipment_id       AS [DO NO],
-    a.order_date        AS [OUT DATE],
-    a.customer_name     AS [CUSTOMER],
-    a.cust_addr1        AS [ADDRESS],
-    a.ctn_length        AS [P],
-    a.ctn_width         AS [L],
-    a.ctn_height        AS [T],
-    a.transporter_name  AS [TRANSPORTER],
-    SUM(a.quantity)     AS [QTY PCS],
-    COUNT(DISTINCT a.pack_ctn_no) AS [QTY KOLI]
-FROM koli a
-GROUP BY
-    a.order_no,
-    a.shipment_id,
-    a.order_date,
-    a.customer_name,
-    a.cust_addr1,
-    a.ctn_length,
-    a.ctn_width,
-    a.ctn_height,
-    a.transporter_name
-ORDER BY
-    a.order_date DESC,
-    a.order_no`
+              SELECT
+              a.outbound_no,
+              c.outbound_date,
+              f.order_type,
+                  a.outbound_id,
+                  a.item_id,
+                  a.packing_id,
+                  a.pack_ctn_no,
+                  b.item_name,
+                  a.ctn_length,
+                  a.ctn_width,
+                  a.ctn_height,
+                  d.customer_name,
+                  d.cust_addr1,
+                  f.order_date,
+                  e.order_no,
+                  g.transporter_name,
+              f.driver,
+              f.truck_no,
+              c.order_type as ob_type,
+              f.order_type as ord_type,
+              f.truck_size,
+                  c.shipment_id,
+                  a.quantity
+              FROM outbound_barcodes a
+              INNER JOIN products b          ON a.item_id = b.id
+              INNER JOIN outbound_headers c  ON a.outbound_id = c.id
+              INNER JOIN customers d         ON c.customer_code = d.customer_code
+              INNER JOIN order_details e     ON e.outbound_no = c.outbound_no
+              INNER JOIN order_headers f     ON e.order_id = f.id
+              INNER JOIN transporters g      ON f.transporter_code = g.transporter_code
+              WHERE a.ctn_length IS NOT NULL
+                AND f.order_date >= '${startDate}'
+                AND f.order_date <= '${endDate}'
+          ),
+          obd AS (
+            SELECT COUNT(b.item_code) AS total_item,
+            b.outbound_no
+            FROM outbound_headers a
+            LEFT JOIN outbound_details b ON a.outbound_no = b.outbound_no
+            LEFT JOIN order_details c ON a.outbound_no = c.outbound_no
+            LEFT JOIN order_headers d ON d.id = c.order_id
+            WHERE d.order_date >= '${startDate}'
+                AND d.order_date <= '${endDate}'
+            GROUP BY b.outbound_no
+          )
+          SELECT
+              a.order_no          AS [SPK NO],
+            a.outbound_no		AS [OUTBOUND NO],
+            a.ob_type			AS [OUTBOUND TYPE],
+            a.outbound_date		AS [PICKING DATE],
+              a.shipment_id       AS [DO NO],
+              a.order_date        AS [OUT DATE],
+              a.customer_name     AS [CUSTOMER],
+              a.cust_addr1        AS [ADDRESS],
+              a.ctn_length        AS [P],
+              a.ctn_width         AS [L],
+              a.ctn_height        AS [T],
+              a.transporter_name  AS [TRANSPORTER],
+            a.driver			AS [DRIVER],
+            a.truck_size		AS [TRUCK SIZE],
+            a.ord_type		AS [ORDER TYPE],
+            a.truck_no			AS [TRUCK NO],
+              SUM(a.quantity)     AS [QTY PCS],
+              COUNT(DISTINCT a.pack_ctn_no) AS [QTY KOLI]
+          FROM koli a
+          LEFT JOIN obd b ON a.[outbound_no] = b.outbound_no
+          GROUP BY
+              a.order_no,
+            a.outbound_no,
+            a.outbound_date,
+              a.shipment_id,
+              a.order_date,
+              a.customer_name,
+              a.cust_addr1,
+              a.ctn_length,
+              a.ctn_width,
+              a.ctn_height,
+              a.transporter_name,
+            a.driver,
+            a.truck_no,
+            a.order_type,
+            a.truck_size,
+            a.ob_type,
+            a.ord_type,
+            b.total_item
+          ORDER BY
+              a.order_date DESC,
+              a.order_no`
+
+    //     sql = `WITH koli AS (
+    //     SELECT
+    //         a.outbound_id,
+    //         a.item_id,
+    //         a.packing_id,
+    //         a.pack_ctn_no,
+    //         b.item_name,
+    //         a.ctn_length,
+    //         a.ctn_width,
+    //         a.ctn_height,
+    //         d.customer_name,
+    //         d.cust_addr1,
+    //         f.order_date,
+    //         e.order_no,
+    //         g.transporter_name,
+    //         c.shipment_id,
+    //         a.quantity
+    //     FROM outbound_barcodes a
+    //     INNER JOIN products b          ON a.item_id = b.id
+    //     INNER JOIN outbound_headers c  ON a.outbound_id = c.id
+    //     INNER JOIN customers d         ON c.customer_code = d.customer_code
+    //     INNER JOIN order_details e     ON e.outbound_no = c.outbound_no
+    //     INNER JOIN order_headers f     ON e.order_id = f.id
+    //     INNER JOIN transporters g      ON f.transporter_code = g.transporter_code
+    //     WHERE a.ctn_length IS NOT NULL
+    //       AND f.order_date >= '${startDate}'
+    //       AND f.order_date <= '${endDate}'
+    // )
+    // SELECT
+    //     a.order_no          AS [SPK NO],
+    //     a.shipment_id       AS [DO NO],
+    //     a.order_date        AS [OUT DATE],
+    //     a.customer_name     AS [CUSTOMER],
+    //     a.cust_addr1        AS [ADDRESS],
+    //     a.ctn_length        AS [P],
+    //     a.ctn_width         AS [L],
+    //     a.ctn_height        AS [T],
+    //     a.transporter_name  AS [TRANSPORTER],
+    //     SUM(a.quantity)     AS [QTY PCS],
+    //     COUNT(DISTINCT a.pack_ctn_no) AS [QTY KOLI]
+    // FROM koli a
+    // GROUP BY
+    //     a.order_no,
+    //     a.shipment_id,
+    //     a.order_date,
+    //     a.customer_name,
+    //     a.cust_addr1,
+    //     a.ctn_length,
+    //     a.ctn_width,
+    //     a.ctn_height,
+    //     a.transporter_name
+    // ORDER BY
+    //     a.order_date DESC,
+    //     a.order_no`
   }
 
-  // const sql = `
-  //   SELECT 
-  //     ROW_NUMBER() OVER (ORDER BY oh.outbound_date DESC) AS [NO],
-  //     oh.whs_code AS [WH CODE],
-  //     oht.truck_no AS [TRUCK NO],
-  //     oh.rcv_do_date AS [PRINT DO DATE],
-  //     oh.rcv_do_time AS [PRINT DO TIME],
-  //     oh.outbound_date AS [OUT DATE],
-  //     oh.shipment_id AS [DO NO],
-  //     tr.transporter_name AS [TRUCKER],
-  //     cd.customer_name AS [DELIVERY NAME],
-  //     cd.cust_city AS CITY,
-  //     cd.cust_addr1 AS [DELIVERY ADD],
-  //     od.item_code AS [ITEM CODE],
-  //   od.barcode AS [GMC CODE],
-  //     od.quantity AS QTY,
-  //   od.serial_number AS [SERIAL NUMBER],
-  //     p.cbm AS [M3 PCS],
-  //     p.cbm * od.quantity AS [M3 TOTAL]
-  //     --odt.qty_koli AS KOLI,
-  //     --tr.transporter_name AS TRUCKER,
-  //     --od.vas_name AS [REMARK DETAIL],
-  //     --oh.remarks AS [REMARK HEADER],
-  //     --odt.order_no AS [SPK NO],
-  //     --oht.remarks AS [REMARK SPK]
-  //   FROM outbound_barcodes od
-  //   INNER JOIN outbound_headers oh ON od.outbound_no = oh.outbound_no
-  //   INNER JOIN customers cd ON oh.deliv_to = cd.customer_code
-  //   INNER JOIN products p ON od.item_id = p.id
-  //   LEFT JOIN order_details odt ON oh.outbound_no = odt.outbound_no
-  //   LEFT JOIN order_headers oht ON odt.order_no = oht.order_no
-  //   LEFT JOIN transporters tr ON oh.transporter_code = tr.transporter_code
-  //   WHERE oh.outbound_date >= '${startDate}' AND oh.outbound_date <= '${endDate}'
-  //   ORDER BY oh.outbound_date DESC
-  // `;
   return queryDB(sql);
 }
 export async function getStockReport(viewBy: string) {

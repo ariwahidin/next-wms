@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import ExcelJS from "exceljs"
 import { createStyledSheet } from "@/lib/excelHelper"
-import { getOutboundReport } from "@/lib/queries";
+import { getItemOutboundByKoli, getOutboundReport } from "@/lib/queries";
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     const outbound = await getOutboundReport(startDate, endDate, status, viewBy);
+    const outboundByKoli = await getItemOutboundByKoli(startDate, endDate);
 
     if (outbound.length === 0) {
         return NextResponse.json({
@@ -25,10 +26,11 @@ export async function GET(request: NextRequest) {
     }
 
     const workbook = new ExcelJS.Workbook()
-    createStyledSheet(workbook, "Outbound", outbound)
+    createStyledSheet(workbook, "outbound_by_" + viewBy, outbound)
+    createStyledSheet(workbook, "item_details", outboundByKoli);
 
     const buffer = await workbook.xlsx.writeBuffer()
-    const filename = `Outbound_Report_${startDate}_to_${endDate}.xlsx`
+    const filename = `Outbound_Report_By_${viewBy}_${startDate}_to_${endDate}.xlsx`
 
     return new NextResponse(buffer, {
         headers: {

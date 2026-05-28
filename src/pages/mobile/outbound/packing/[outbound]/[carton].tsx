@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Box, List, Loader2, Trash2 } from "lucide-react";
+import { Box, CheckCircle2Icon, List, Loader2, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -129,142 +129,6 @@ interface ParsedQRData {
   innerSerials?: string[];
   innerSerialRangeError?: string;
 }
-
-// function parseQRCode(raw: string): ParsedQRData | null {
-//   const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g;
-//   const map: Record<string, string> = {};
-//   let match: RegExpExecArray | null;
-//   let found = false;
-
-//   while ((match = pattern.exec(raw)) !== null) {
-//     found = true;
-//     map[match[2].trim()] = match[3].trim();
-//   }
-
-//   if (!found) return null;
-
-//   let mfgDate: string | undefined;
-//   if (map["MFG_DATE"]?.length === 8) {
-//     const d = map["MFG_DATE"];
-//     mfgDate = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
-//   }
-
-//   return {
-//     sku: map["SKU"],
-//     ean: map["EAN"],
-//     product: map["PRODUCT"],
-//     brand: map["BRAND"],
-//     model: map["MODEL"],
-//     cartonSerial: map["CARTON_SERIAL"],
-//     batch: map["BATCH"],
-//     mfgDate,
-//     qtyPerCarton: map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined,
-//   };
-// }
-
-// function parseQRCode(raw: string): ParsedQRData | null {
-//   const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g
-//   const map: Record<string, string> = {}
-//   let match: RegExpExecArray | null
-//   let found = false
-
-//   while ((match = pattern.exec(raw)) !== null) {
-//     found = true
-//     map[match[2].trim()] = match[3].trim()
-//   }
-
-//   if (!found) return null
-
-//   let mfgDate: string | undefined
-//   if (map["MFG_DATE"]?.length === 8) {
-//     const d = map["MFG_DATE"]
-//     mfgDate = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
-//   }
-
-//   // ← deteksi tipe label
-//   const labelType = map["SERIAL"]
-//     ? "UNIT"
-//     : map["CARTON_SERIAL"]
-//       ? "CARTON"
-//       : "UNKNOWN"
-
-//   return {
-//     sku: map["SKU"],
-//     ean: map["EAN"],
-//     product: map["PRODUCT"],
-//     brand: map["BRAND"],
-//     model: map["MODEL"],
-//     serial: map["SERIAL"],          // ← tambah
-//     cartonSerial: map["CARTON_SERIAL"],
-//     batch: map["BATCH"],
-//     mfgDate,
-//     qtyPerCarton: map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined,
-//     labelType,                            // ← tambah
-//   }
-// }
-
-// function parseQRCode(raw: string): ParsedQRData | null {
-//   // ── Format 2: 12 segment dash-separated ──────────────────
-//   if (!raw.startsWith("(") && raw.split("-").length === 12) {
-//     const segments = raw.split("-")
-
-//     const rawDate = segments[9]
-//     let mfgDate: string | undefined
-//     if (rawDate?.length === 8) {
-//       mfgDate = `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
-//     }
-
-//     // const qty = Number(segments[4])
-//     const qtyMatch = segments[4].match(/^(\d+)/)
-//     const qty = qtyMatch ? Number(qtyMatch[1]) : undefined
-
-//     return {
-//       sku: segments[1] || undefined,
-//       qtyPerCarton: !isNaN(qty) && qty > 0 ? qty : undefined,
-//       mfgDate,
-//       labelType: "CARTON", // format ini selalu carton
-//     }
-//   }
-
-//   // ── Format 1: (1)KEY=VALUE ────────────────────────────────
-//   const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g
-//   const map: Record<string, string> = {}
-//   let match: RegExpExecArray | null
-//   let found = false
-
-//   while ((match = pattern.exec(raw)) !== null) {
-//     found = true
-//     map[match[2].trim()] = match[3].trim()
-//   }
-
-//   if (!found) return null
-
-//   let mfgDate: string | undefined
-//   if (map["MFG_DATE"]?.length === 8) {
-//     const d = map["MFG_DATE"]
-//     mfgDate = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
-//   }
-
-//   const labelType: LabelType = map["SERIAL"]
-//     ? "UNIT"
-//     : map["CARTON_SERIAL"]
-//       ? "CARTON"
-//       : "UNKNOWN"
-
-//   return {
-//     sku: map["SKU"],
-//     ean: map["EAN"],
-//     product: map["PRODUCT"],
-//     brand: map["BRAND"],
-//     model: map["MODEL"],
-//     serial: map["SERIAL"],
-//     cartonSerial: map["CARTON_SERIAL"],
-//     batch: map["BATCH"],
-//     mfgDate,
-//     qtyPerCarton: map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined,
-//     labelType,
-//   }
-// }
 
 function parseQRCode(raw: string): ParsedQRData | null {
 
@@ -509,53 +373,8 @@ const CheckingPage = () => {
   // tambah state
   const [innerSerialError, setInnerSerialError] = useState(false)
 
-  // ── QR Helpers ─────────────────────────────────────────────────────────────
-
-  // const handleQrInputChange = (raw: string) => {
-  //   setQrRawInput(raw);
-  //   const parsed = parseQRCode(raw);
-  //   if (parsed) {
-  //     setParsedQR(parsed);
-  //     if (parsed.ean) setScanBarcode(parsed.ean);
-  //     if (parsed.qtyPerCarton) setScanQty(parsed.qtyPerCarton);
-  //   } else {
-  //     setParsedQR(null);
-  //   }
-  // };
-
-  // const handleQrInputChange = (raw: string) => {
-  //   setQrRawInput(raw)
-  //   const parsed = parseQRCode(raw)
-
-  //   if (parsed) {
-
-  //     console.log("Parsed QR Data:", parsed)
-
-  //     setParsedQR(parsed)
-
-
-  //     // ── field yang sama di kedua tipe ──
-  //     if (parsed.ean) setScanBarcode(parsed.ean)
-  //     if (parsed.sku) setScanSku(parsed.sku)
-  //     // if (parsed.mfgDate) setProdDate(parsed.mfgDate)
-  //     // if (parsed.batch) setLotNo(parsed.batch)
-
-  //     if (parsed.labelType === "UNIT") {
-  //       // label unit satuan → serial auto-fill, qty selalu 1
-  //       if (parsed.serial) setSerialInputs([parsed.serial])
-  //       setScanQty(1)
-  //     }
-
-  //     if (parsed.labelType === "CARTON") {
-  //       // label karton → case number + qty per carton
-  //       // if (parsed.cartonSerial) setCaseNumber(parsed.cartonSerial)
-  //       if (parsed.qtyPerCarton) setScanQty(parsed.qtyPerCarton)
-  //     }
-
-  //   } else {
-  //     setParsedQR(null)
-  //   }
-  // }
+  const [showConfirmPackingDialog, setShowConfirmPackingDialog] = useState(false);
+  const [isConfirmingPacking, setIsConfirmingPacking] = useState(false);
 
 
   const handleQrInputChange = (raw: string) => {
@@ -1062,6 +881,35 @@ const CheckingPage = () => {
     }
   };
 
+  const handleConfirmPacking = async () => {
+    setIsConfirmingPacking(true);
+    try {
+      const response = await api.post(
+        `/mobile/outbound/packing/confirm/${outboundNo}`,
+        { outbound_no: outboundNo },
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        setShowConfirmPackingDialog(false);
+        eventBus.emit("showAlert", {
+          title: "Success!",
+          description: response.data.message || `Outbound ${outboundNo} confirmed successfully`,
+          type: "success",
+        });
+        router.back();
+      }
+    } catch (error: any) {
+      console.error("Error confirming packing:", error);
+      eventBus.emit("showAlert", {
+        title: "Error!",
+        description: error.response?.data?.message || "Failed to confirm packing",
+        type: "error",
+      });
+    } finally {
+      setIsConfirmingPacking(false);
+    }
+  };
+
   // ── Derived ────────────────────────────────────────────────────────────────
 
   const filteredItems = listOutboundDetail.filter(
@@ -1126,30 +974,6 @@ const CheckingPage = () => {
             </div>
 
             <form onSubmit={handleBarcodeSubmit} className="space-y-2">
-              {/* Location */}
-              {/* {invPolicy?.require_scan_pick_location && (
-                <div className="flex items-center space-x-2">
-                  <label htmlFor="location" className="text-sm text-gray-600 whitespace-nowrap">
-                    Location :
-                  </label>
-                  <div className="relative w-full">
-                    <Input
-                      className="text-sm h-8"
-                      autoComplete="off"
-                      id="location"
-                      placeholder="Entry location..."
-                      value={scanLocation}
-                      onChange={(e) => setScanLocation(e.target.value)}
-                    />
-                    {scanLocation && (
-                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        onClick={() => { setScanLocation(""); document.getElementById("location")?.focus(); }}>
-                        <XCircle size={18} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )} */}
 
               {/* Packing No (hidden) */}
               {invPolicy?.require_packing_scan && (
@@ -1648,7 +1472,104 @@ const CheckingPage = () => {
               <Box size={14} />
               Seal
             </Button>
+            <Button type="button" variant="outline" size="sm"
+              className="w-full h-8 bg-yellow-600 hover:bg-yellow-700 text-black font-semibold shadow-md"
+              onClick={() => setShowConfirmPackingDialog(true)}
+              >
+              <CheckCircle2Icon size={14} />
+              Confirm
+            </Button>
           </div>
+
+          <Dialog open={showConfirmPackingDialog} onOpenChange={setShowConfirmPackingDialog}>
+            <DialogContent className="bg-white sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Confirm Packing</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                {/* Summary validasi */}
+                {originalListOutboundDetail.some((item) => (item.scan_qty ?? 0) < item.quantity) ? (
+                  <div className="space-y-2">
+                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                      <p className="text-sm font-semibold text-red-700 mb-1">⚠️ Incomplete Items</p>
+                      <p className="text-sm text-red-600">
+                        Some items have not been fully scanned. Please complete scanning before confirming.
+                      </p>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto space-y-1">
+                      {originalListOutboundDetail
+                        .filter((item) => (item.scan_qty ?? 0) < item.quantity)
+                        .map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center border rounded px-3 py-2 text-xs font-mono bg-gray-50">
+                            <div className="space-y-0.5">
+                              <div className="font-semibold text-gray-800">{item.item_code}</div>
+                              <div className="text-gray-500 truncate max-w-[180px]">{item.item_name}</div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-orange-600 font-bold">{item.scan_qty ?? 0}</span>
+                              <span className="text-gray-400"> / </span>
+                              <span className="text-gray-700 font-semibold">{item.quantity}</span>
+                              <div className="text-gray-400">{item.uom}</div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                      <p className="text-sm font-semibold text-green-700 mb-1">✓ All items complete</p>
+                      <p className="text-sm text-green-600">All items have been fully scanned and ready to confirm.</p>
+                    </div>
+                    <div className="border rounded-md p-3 space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Outbound No:</span>
+                        <span className="font-semibold">{outboundNo}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Items:</span>
+                        <span className="font-semibold">{originalListOutboundDetail.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Qty:</span>
+                        <span className="font-semibold text-green-600">
+                          {originalListOutboundDetail.reduce((t, i) => t + (i.scan_qty ?? 0), 0)}
+                          {" / "}
+                          {originalListOutboundDetail.reduce((t, i) => t + i.quantity, 0)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 italic">
+                      This action will finalize the packing for this outbound. Please verify before confirming.
+                    </p>
+                  </div>
+                )}
+              </div>
+              <DialogFooter className="flex gap-2">
+                <Button
+                  variant="outline"
+                  disabled={isConfirmingPacking}
+                  onClick={() => setShowConfirmPackingDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmPacking}
+                  disabled={
+                    isConfirmingPacking ||
+                    originalListOutboundDetail.some((item) => (item.scan_qty ?? 0) < item.quantity)
+                  }
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  {isConfirmingPacking ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Confirming...</>
+                  ) : (
+                    "Confirm Packing"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 
