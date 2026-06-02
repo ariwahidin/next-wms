@@ -303,6 +303,7 @@ SELECT
 	b.id,
 	d.order_no,
 	b.outbound_no,
+	a.shipment_id,
 	d.order_date,
 	b.item_code,
 	e.item_name,
@@ -318,9 +319,10 @@ SELECT
 	INNER JOIN products e ON b.item_code = e.item_code
 	LEFT JOIN outbound_barcodes f ON b.id = f.outbound_detail_id
 	WHERE d.order_date >= '${startDate}'
-      AND d.order_date <= '${endDate}'
+  AND d.order_date <= '${endDate}'
 	GROUP BY 	
 	b.id,
+	a.shipment_id,
 	b.outbound_no,
 	b.item_code,
 	d.order_no,
@@ -335,6 +337,7 @@ SELECT
 order_no AS [SPK NO],
 order_date AS [OUT DATE],
 outbound_no AS [OUTBOUND NO],
+shipment_id AS [DO NO],
 item_code AS [SKU],
 item_name AS [ITEM NAME],
 carton_code AS [CARTON CODE],
@@ -405,14 +408,16 @@ export async function getInboundReport(startDate: string, endDate: string) {
       ih.bl_no AS [BL NO],
 	  t.transporter_name AS [TRANSPORTER],
       ih.no_truck AS [TRUCK NO],
+	  ih.truck_size AS [TRUCK SIZE],
       ih.container AS [CONTAINER NO],
       ih.receipt_id AS [INVOICE NO],
       s.supplier_name AS SUPPLIER,
-      ib.item_code AS [ITEM CODE],
+      ib.item_code AS [SKU],
 	  ib.barcode AS [EAN],
 	  p.item_name AS [ITEM NAME],
+	  ib.case_number AS [CARTON],
+	  ib.lot_number AS [BATCH],
       ib.quantity AS [QTY]
-	  -- CASE WHEN p.has_serial = 'Y' then ib.serial_number else ib.barcode end AS [SERIAL NUMBER]
     FROM inbound_barcodes ib
     INNER JOIN inbound_headers ih ON ib.inbound_id = ih.id
     LEFT JOIN products p ON p.item_code = ib.item_code
