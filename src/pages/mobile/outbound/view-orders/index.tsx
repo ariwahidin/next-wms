@@ -6,11 +6,13 @@ import PageHeader from "@/components/mobile/PageHeader";
 import api from "@/lib/api";
 import OutboundCard from "@/components/mobile/outbound/order-views/OutboundCard";
 import { OutboundItem } from "@/types/outbound";
+import { MasterCarton } from "@/types/master-carton";
 
 
 export default function InboundListPage() {
   const [search, setSearch] = useState("");
   const [listInbound, setListInbound] = useState<OutboundItem[]>([]);
+  const [masterCartons, setMasterCartons] = useState<MasterCarton[]>([]);
 
   const filtered = listInbound.filter(
     (item) =>
@@ -21,15 +23,13 @@ export default function InboundListPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await api.get("/mobile/outbound/list/open", {
-          withCredentials: true,
-        });
-        const data = await response.data;
+        const [outboundRes, cartonRes] = await Promise.all([
+          api.get("/mobile/outbound/list/open", { withCredentials: true }),
+          api.get("/mobile/outbound/master-cartons", { withCredentials: true }),
+        ]);
 
-        if (data.data === null) {
-          return;
-        }
-        setListInbound(data.data);
+        if (outboundRes.data.data) setListInbound(outboundRes.data.data);
+        if (cartonRes.data.success) setMasterCartons(cartonRes.data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -51,7 +51,9 @@ export default function InboundListPage() {
 
         <div className="space-y-3">
           {filtered.length > 0 ? (
-              filtered.map((item : OutboundItem) => <OutboundCard key={item.id} data={item} />)
+            filtered.map((item) => (
+              <OutboundCard key={item.id} data={item} masterCartons={masterCartons} />
+            ))
           ) : (
             <p className="text-center text-gray-500">Data not found</p>
           )}

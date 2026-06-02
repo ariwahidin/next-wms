@@ -81,6 +81,7 @@ interface ScannedItem {
     id?: number;
     inbound_detail_id: number;
     barcode: string;
+    item_code?: string;
     serial_number: string;
     serial_number_2?: string;
     pallet: string;
@@ -145,7 +146,7 @@ function parseQRCode(raw: string): ParsedQRData | null {
 
     const labelType = map["SERIAL"]
         ? "UNIT"
-        : map["CARTON_SERIAL"]
+        : (map["CARTON_SERIAL"] || map["CARTON"])
             ? "CARTON"
             : "UNKNOWN"
 
@@ -211,7 +212,7 @@ function parseQRCode(raw: string): ParsedQRData | null {
         brand: map["BRAND"],
         model: map["MODEL"],
         serial: map["SERIAL"],
-        cartonSerial: map["CARTON_SERIAL"],
+        cartonSerial: map["CARTON_SERIAL"] ?? map["CARTON"],
         batch: map["BATCH"],
         mfgDate,
         qtyPerCarton: qty,
@@ -321,7 +322,7 @@ const CheckingPage = () => {
 
             if (parsed.ean) {
                 setScanBarcode(parsed.ean)
-            }else {
+            } else {
                 setScanBarcode(parsed.sku ?? "")
             }
             if (parsed.mfgDate) setProdDate(parsed.mfgDate)
@@ -403,6 +404,7 @@ const CheckingPage = () => {
                 const filtered: ScannedItem[] = data.data.map((item: any) => ({
                     id: item.ID,
                     inbound_detail_id: item.inbound_detail_id,
+                    item_code: item.item_code,
                     barcode: item.barcode,
                     serial_number: item.serial_number,
                     serial_number_2: item.serial_number_2,
@@ -580,7 +582,7 @@ const CheckingPage = () => {
             inboundNo: Array.isArray(inbound) ? inbound[0] : (inbound ?? ""),
             id: 0,
             location: scanLocation.trim(),
-            sku : sku,
+            sku: sku,
             barcode: scanBarcode.trim(),
             scanType: "BARCODE",
             qaStatus: scanQa,
@@ -859,7 +861,7 @@ const CheckingPage = () => {
                                             {parsedQR.serial && <div><span className="text-gray-500">Serial:</span> {parsedQR.serial}</div>}        {/* ← tambah */}
                                             {parsedQR.mfgDate && <div><span className="text-gray-500">MFG Date:</span> {parsedQR.mfgDate}</div>}
                                             {parsedQR.batch && <div><span className="text-gray-500">Batch:</span> {parsedQR.batch}</div>}
-                                            {parsedQR.cartonSerial && <div><span className="text-gray-500">Carton Serial:</span> {parsedQR.cartonSerial}</div>}
+                                            {parsedQR.cartonSerial && <div><span className="text-gray-500">Carton:</span> {parsedQR.cartonSerial}</div>}
                                             {parsedQR.qtyPerCarton && <div><span className="text-gray-500">Qty/Carton:</span> {parsedQR.qtyPerCarton}</div>}
                                             {parsedQR?.innerSerialStart && (
                                                 <div>
@@ -879,7 +881,7 @@ const CheckingPage = () => {
                                     )}
                                     {qrRawInput && !parsedQR && (
                                         <div className="text-xs text-red-500">
-                                            Format QR tidak dikenali. Pastikan format: (1)SKU=...
+                                            QR format is not recognized. Please check the format. Format: (1)SKU=...
                                         </div>
                                     )}
                                 </div>
@@ -926,7 +928,7 @@ const CheckingPage = () => {
 
                         <Input
                             className="w-full"
-                            placeholder="Search item code / barcode..."
+                            placeholder="Search item code, sku, ean..."
                             value={searchInboundDetail}
                             onChange={(e) => setSearchInboundDetail(e.target.value)}
                         />
@@ -946,7 +948,7 @@ const CheckingPage = () => {
                                             <div className="flex justify-between">
                                                 <div className="font-mono text-xs space-y-0.5">
                                                     <div><span className="text-gray-500">Item Name:</span> {item.item_name}</div>
-                                                    <div><span className="text-gray-500">Item Code:</span> {item.item_code}</div>
+                                                    <div><span className="text-gray-500">SKU:</span> {item.item_code}</div>
                                                     <div><span className="text-gray-500">EAN:</span> {item.barcode}</div>
                                                     {/* {invPolicy?.use_production_date && item.prod_date && (
                                                         <div><span className="text-gray-500">Prod Date:</span> {item.prod_date}</div>
@@ -1027,16 +1029,18 @@ const CheckingPage = () => {
                                             }`}
                                     >
                                         <div className="text-xs space-y-1">
+                                            <div><strong>SKU:</strong> {item.item_code}</div>
                                             <div className="flex justify-between">
                                                 <span><strong>EAN:</strong> {item.barcode}</span>
                                                 <span className="text-gray-400 text-xs">{item.status}</span>
                                             </div>
                                             {/* {item.product?.has_serial === "Y" && ( */}
+                                            
                                             {"Y" === "Y" && (
-                                                <div><strong>Serial:</strong> {item.serial_number}</div>
+                                                <div><strong>Carton:</strong> {item.case_number}</div>
                                             )}
                                             {"Y" === "Y" && (
-                                                <div><strong>CTN No:</strong> {item.case_number}</div>
+                                                <div><strong>Serial:</strong> {item.serial_number}</div>
                                             )}
                                             {/* {invPolicy?.use_production_date && item.prod_date && ( */}
                                             {"Y" === "Y" && item.prod_date && (
@@ -1093,14 +1097,14 @@ const CheckingPage = () => {
                         <div className="px-4 py-4 pb-6 space-y-4">
                             {/* Item Info */}
                             <div className="p-3 bg-gray-50 rounded-md space-y-1">
+                                {resultCheckItems[0]?.item_code && (
+                                    <p className="text-xs text-gray-600">
+                                        SKU : <span className="font-mono font-semibold">{resultCheckItems[0].item_code}</span>
+                                    </p>
+                                )}
                                 <p className="text-xs text-gray-600">
                                     EAN : <span className="font-mono font-semibold">{scanBarcode}</span>
                                 </p>
-                                {resultCheckItems[0]?.item_code && (
-                                    <p className="text-xs text-gray-600">
-                                        Item Code : <span className="font-mono font-semibold">{resultCheckItems[0].item_code}</span>
-                                    </p>
-                                )}
                                 {parsedQR?.product && (
                                     <p className="text-xs text-gray-600">
                                         Product : <span className="font-mono font-semibold">{parsedQR.product}</span>
@@ -1118,7 +1122,7 @@ const CheckingPage = () => {
                                 )}
                                 {caseNumber && (
                                     <p className="text-xs text-gray-600">
-                                        Carton Serial : <span className="font-mono font-semibold">{caseNumber}</span>
+                                        Carton : <span className="font-mono font-semibold">{caseNumber}</span>
                                     </p>
                                 )}
                                 {parsedQR?.innerSerials && (
@@ -1227,7 +1231,7 @@ const CheckingPage = () => {
                                     {invPolicy?.use_lot_no && (
                                         <div className="flex flex-col">
                                             <label htmlFor="lot_no" className="text-sm font-bold text-gray-700">
-                                                Lot No :
+                                                Lot No. / Batch No. :
                                             </label>
                                             <div className="relative">
                                                 <Input

@@ -25,6 +25,7 @@ import { Box, Package, RefreshCcw, ScanBarcode, Ruler, Plus, Pickaxe, Forklift, 
 import router from "next/router";
 import { useState, useEffect } from "react";
 import { se } from "date-fns/locale";
+import { MasterCarton } from "@/types/master-carton";
 
 interface CartonData {
   pack_ctn_no: string;
@@ -35,22 +36,22 @@ interface CartonData {
   ctn_status?: string | null;
 }
 
-interface MasterCarton {
-  id: number;
-  carton_code: string;
-  carton_name: string;
-  description: string;
-  length: number;
-  width: number;
-  height: number;
-  max_weight: number;
-  tare_weight: number;
-  volume: number;
-  is_default: boolean;
-  material: string;
-  dimensions: string;
-  display_name: string;
-}
+// interface MasterCarton {
+//   id: number;
+//   carton_code: string;
+//   carton_name: string;
+//   description: string;
+//   length: number;
+//   width: number;
+//   height: number;
+//   max_weight: number;
+//   tare_weight: number;
+//   volume: number;
+//   is_default: boolean;
+//   material: string;
+//   dimensions: string;
+//   display_name: string;
+// }
 
 interface ApiResponse {
   success: boolean;
@@ -68,7 +69,13 @@ interface MasterCartonResponse {
   data: MasterCarton[];
 }
 
-export default function OutboundCard({ data }: { data: OutboundItem }) {
+export default function OutboundCard({
+  data,
+  masterCartons = [], // tambah default value
+}: {
+  data: OutboundItem;
+  masterCartons: MasterCarton[];
+}) {
   const {
     outbound_no,
     customer_name,
@@ -82,7 +89,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [cartonList, setCartonList] = useState<CartonData[]>([]);
-  const [masterCartons, setMasterCartons] = useState<MasterCarton[]>([]);
+  // const [masterCartons, setMasterCartons] = useState<MasterCarton[]>([]);
   const [selectedMasterCarton, setSelectedMasterCarton] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [targetPage, setTargetPage] = useState<string>("");
@@ -90,31 +97,38 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
 
 
   // Fetch master cartons saat component mount
-  useEffect(() => {
-    fetchMasterCartons();
-  }, []);
+  // useEffect(() => {
+  //   fetchMasterCartons();
+  // }, []);
 
   // Fungsi untuk fetch master cartons dari API
-  const fetchMasterCartons = async () => {
-    try {
-      const response = await api.get("/mobile/outbound/master-cartons", {
-        withCredentials: true,
-      });
+  // const fetchMasterCartons = async () => {
+  //   try {
+  //     const response = await api.get("/mobile/outbound/master-cartons", {
+  //       withCredentials: true,
+  //     });
 
-      if (response.data.success) {
-        const result: MasterCartonResponse = response.data;
-        setMasterCartons(result.data);
+  //     if (response.data.success) {
+  //       const result: MasterCartonResponse = response.data;
+  //       setMasterCartons(result.data);
 
-        // Set default carton jika ada
-        const defaultCarton = result.data.find((c) => c.is_default);
-        if (defaultCarton) {
-          setSelectedMasterCarton(defaultCarton.id.toString());
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching master cartons:", error);
+  //       // Set default carton jika ada
+  //       const defaultCarton = result.data.find((c) => c.is_default);
+  //       if (defaultCarton) {
+  //         setSelectedMasterCarton(defaultCarton.id.toString());
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching master cartons:", error);
+  //   }
+  // };
+
+  useEffect(() => {
+    const defaultCarton = masterCartons.find((c) => c.is_default);
+    if (defaultCarton) {
+      setSelectedMasterCarton(defaultCarton.id.toString());
     }
-  };
+  }, [masterCartons]);
 
   // Fungsi untuk fetch data karton dari API
   const fetchCartonData = async (outbound_no: string) => {
@@ -142,6 +156,7 @@ export default function OutboundCard({ data }: { data: OutboundItem }) {
       setIsLoading(false);
     }
   };
+
 
   // Handler untuk tombol Picking
   const handlePickingClick = async (outbound_no: string) => {

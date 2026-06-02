@@ -218,7 +218,7 @@ function parseQRCode(raw: string): ParsedQRData | null {
 
   const labelType: LabelType = map["SERIAL"]
     ? "UNIT"
-    : map["CARTON_SERIAL"]
+    : (map["CARTON_SERIAL"] || map["CARTON"])
       ? "CARTON"
       : "UNKNOWN"
 
@@ -273,7 +273,7 @@ function parseQRCode(raw: string): ParsedQRData | null {
     brand: map["BRAND"],
     model: map["MODEL"],
     serial: map["SERIAL"],
-    cartonSerial: map["CARTON_SERIAL"],
+    cartonSerial: map["CARTON_SERIAL"] ?? map["CARTON"],
     batch: map["BATCH"],
     mfgDate,
     qtyPerCarton: qty,
@@ -1047,7 +1047,7 @@ const CheckingPage = () => {
                       {parsedQR.serial && <div><span className="text-gray-500">Serial:</span> {parsedQR.serial}</div>}        {/* ← tambah */}
                       {parsedQR.mfgDate && <div><span className="text-gray-500">MFG Date:</span> {parsedQR.mfgDate}</div>}
                       {parsedQR.batch && <div><span className="text-gray-500">Batch:</span> {parsedQR.batch}</div>}
-                      {parsedQR.cartonSerial && <div><span className="text-gray-500">Carton Serial:</span> {parsedQR.cartonSerial}</div>}
+                      {parsedQR.cartonSerial && <div><span className="text-gray-500">Carton:</span> {parsedQR.cartonSerial}</div>}
                       {parsedQR.qtyPerCarton && <div><span className="text-gray-500">Qty/Carton:</span> {parsedQR.qtyPerCarton}</div>}
                       {parsedQR?.innerSerialStart && (
                         <div>
@@ -1071,7 +1071,7 @@ const CheckingPage = () => {
                     </div>
                   )}
                   {qrRawInput && !parsedQR && (
-                    <p className="text-xs text-red-500">Format QR tidak dikenali. Pastikan format: (1)SKU=...</p>
+                    <p className="text-xs text-red-500">QR format is not recognized. Please check the format. Format: (1)SKU=...</p>
                   )}
                 </div>
               )}
@@ -1475,7 +1475,7 @@ const CheckingPage = () => {
             <Button type="button" variant="outline" size="sm"
               className="w-full h-8 bg-yellow-600 hover:bg-yellow-700 text-black font-semibold shadow-md"
               onClick={() => setShowConfirmPackingDialog(true)}
-              >
+            >
               <CheckCircle2Icon size={14} />
               Confirm
             </Button>
@@ -1590,7 +1590,7 @@ const CheckingPage = () => {
                 {invPolicy?.require_scan_pick_location && <p>Location : <span className="font-medium">{scanLocation}</span></p>}
                 <p>EAN : <span className="font-mono font-medium">{scanBarcode}</span></p>
                 {parsedQR?.product && <p>Product : <span className="font-mono font-medium">{parsedQR.product}</span></p>}
-                {isQrMode && parsedQR?.cartonSerial && <p>Carton Serial : <span className="font-mono font-medium">{parsedQR.cartonSerial}</span></p>}
+                {isQrMode && parsedQR?.cartonSerial && <p>Carton : <span className="font-mono font-medium">{parsedQR.cartonSerial}</span></p>}
               </div>
 
               {/* Serial Form */}
