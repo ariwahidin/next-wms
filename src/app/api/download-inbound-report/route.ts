@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import ExcelJS from "exceljs"
 import { createStyledSheet } from "@/lib/excelHelper"
-import { getInboundReport } from "@/lib/queries";
+import { getInboundReport, getInboundReportByKoli, getItemOutboundByKoli } from "@/lib/queries";
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     const inbound = await getInboundReport(startDate, endDate);
+    const inboundKoli = await getInboundReportByKoli(startDate, endDate);
 
     // console.log("Inbound data:", inbound);
     // return;
@@ -27,6 +28,7 @@ export async function GET(request: NextRequest) {
 
     const workbook = new ExcelJS.Workbook()
     createStyledSheet(workbook, "Inbound", inbound)
+    createStyledSheet(workbook, "Inbound Koli", inboundKoli)
 
     const buffer = await workbook.xlsx.writeBuffer()
     const filename = `Inbound_Report_${startDate}_to_${endDate}.xlsx`

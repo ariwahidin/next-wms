@@ -428,6 +428,48 @@ export async function getInboundReport(startDate: string, endDate: string) {
   `;
   return queryDB(sql);
 }
+export async function getInboundReportByKoli(startDate: string, endDate: string) {
+  const sql = `    
+WITH ob_out AS	
+	(SELECT 
+      ROW_NUMBER() OVER (ORDER BY ih.inbound_date DESC) AS [NO],
+      ih.inbound_no AS [RECEIVED ID],
+      ih.inbound_date AS [REC DATE],
+      ib.whs_code AS [WH CODE],
+      ih.bl_no AS [BL NO],
+	  t.transporter_name AS [TRANSPORTER],
+      ih.no_truck AS [TRUCK NO],
+	  ih.truck_size AS [TRUCK SIZE],
+      ih.container AS [CONTAINER NO],
+      ih.receipt_id AS [INVOICE NO],
+      s.supplier_name AS SUPPLIER,
+      ib.item_code AS [SKU],
+	  ib.barcode AS [EAN],
+	  p.item_name AS [ITEM NAME],
+	  ib.case_number AS [CARTON],
+	  ib.lot_number AS [BATCH],
+      ib.quantity AS [QTY]
+    FROM inbound_barcodes ib
+    INNER JOIN inbound_headers ih ON ib.inbound_id = ih.id
+    LEFT JOIN products p ON p.item_code = ib.item_code
+    LEFT JOIN suppliers s ON s.supplier_code = ih.supplier
+	LEFT JOIN transporters t ON ih.transporter = t.transporter_code
+    WHERE ih.inbound_date >= '${startDate}' AND ih.inbound_date <= '${endDate}'
+)SELECT 
+[RECEIVED ID],
+[REC DATE],
+[INVOICE NO],
+COUNT(*) AS KOLI,
+SUM(QTY) AS QTY
+FROM ob_out
+GROUP BY 
+[RECEIVED ID],
+[REC DATE],
+[INVOICE NO]
+ORDER BY [REC DATE] DESC
+  `;
+  return queryDB(sql);
+}
 
 
 export async function getOutboundReport(startDate: string, endDate: string, status: string, viewBy: string) {
