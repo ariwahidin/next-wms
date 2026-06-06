@@ -1,0 +1,288 @@
+import React, { useEffect, useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { HeaderFormProps, ItemReceived } from "@/types/inbound";
+import dayjs from "dayjs";
+import api from "@/lib/api";
+import eventBus from "@/utils/eventBus";
+import { Loader2, Search } from "lucide-react";
+import InventoryModal from "./inventoryModal";
+import { Input } from "@/components/ui/input";
+
+interface ItemScannedTableProps {
+  headerForm: HeaderFormProps;
+  itemsReceived: ItemReceived[];
+}
+
+const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
+  headerForm,
+  itemsReceived,
+}) => {
+  console.log("Items Received:", itemsReceived);
+
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [clicked, setClicked] = useState(false);
+  const [showInventory, setShowInventory] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredItems, setFilteredItems] = useState(itemsReceived);
+
+  useEffect(() => {
+    const filtered = itemsReceived.filter((item) =>
+      item.item_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.serial_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.location.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredItems(filtered);
+  }, [searchTerm, itemsReceived]);
+
+  useEffect(() => {
+    // Reset selectAll jika hasil filter berubah
+    setSelectAll(false);
+    setSelectedItems([]);
+  }, [searchTerm]);
+
+
+  const handleViewInventory = () => {
+    setShowInventory(true);
+  };
+
+  const toggleSelectAll = () => {
+    const newSelectAll = !selectAll;
+    setSelectAll(newSelectAll);
+    setSelectedItems(
+      newSelectAll
+        ? filteredItems
+          .filter((item) => item.status === "pending")
+          .map((item) => item.ID)
+        : []
+    );
+  };
+
+
+  const toggleSelectItem = (id: number) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
+    );
+  };
+
+  const confirmPutaway = () => {
+    setShowModal(true);
+  };
+
+  const handleConfirm = async () => {
+    console.log("Confirming putaway for items:", selectedItems);
+    if (clicked) return; // blokir klik kedua
+    setClicked(true);
+    setIsLoading(true);
+    try {
+      const res = await api.post(
+        `/inbound/putaway-bulk`,
+        { item_ids: selectedItems },
+        { withCredentials: true }
+      );
+
+      if (res.data.success === true) {
+        eventBus.emit("showAlert", {
+          title: "Success!",
+          description: res.data.message,
+          type: "success",
+        });
+        eventBus.emit("refreshData");
+        setShowModal(false);
+        setSelectedItems([]);
+        setIsLoading(false);
+      }
+
+
+    } catch (err) {
+      console.error("Error:", err.response?.data || err.message);
+      eventBus.emit("showAlert", {
+        title: "Error",
+        description: err.response?.data.message || "An error occurred",
+        type: "error",
+      });
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
+      setClicked(false);
+    }
+  };
+
+  const totalQty = filteredItems.reduce(
+    (acc, item) => acc + Number(item.quantity),
+    0
+  );
+
+  return (
+    <>
+      <div className="space-y-4 mt-4 mb-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold">Received Items</h2>
+          <div className="flex gap-2">
+            {selectedItems.length > 0
+              // && headerForm.intergration == false
+              && (
+                <Button
+                  onClick={confirmPutaway}
+                  disabled={isLoading || selectedItems.length === 0}
+                >
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isLoading ? "Processing..." : "Putaway Confirm"}
+                </Button>
+              )}
+            {itemsReceived.length > 0 && (
+              <div>
+                <Button onClick={handleViewInventory}>View Inventory</Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 text-sm"
+            autoFocus
+          />
+        </div>
+
+        <Table className="border rounded-md text-sm">
+          <TableHeader>
+            <TableRow>
+              <TableHead>
+
+                {selectedItems.length > 0
+                  // && headerForm.intergration == false 
+                  && (
+                    <Checkbox
+                      checked={selectAll}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  )}
+              </TableHead>
+              <TableHead className="text-sm">No</TableHead>
+              <TableHead className="text-sm">Item Code</TableHead>
+              <TableHead>Item Name</TableHead>
+              <TableHead>Barcode/EAN Scan</TableHead>
+              <TableHead>Serial Number</TableHead>
+              <TableHead>Location Scan</TableHead>
+              <TableHead>Whs Code</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Qty Scan</TableHead>
+              <TableHead>UoM Scan</TableHead>
+              <TableHead>Lot Number</TableHead>
+              <TableHead>Exp Date</TableHead>
+              <TableHead>Prod Date</TableHead>
+              <TableHead>Created At</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="text-sm">
+            {filteredItems.map((item, index) => (
+              <TableRow key={item.ID} className="text-sm">
+                <TableCell>
+                  {item.status == "pending"
+                    // && headerForm.intergration == false
+                    && (
+                      <Checkbox
+                        checked={selectedItems.includes(item.ID)}
+                        onCheckedChange={() => toggleSelectItem(item.ID)}
+                      />
+                    )}
+                </TableCell>
+                <TableCell className="text-sm">{index + 1}</TableCell>
+                <TableCell className="text-sm">{item.item_code}</TableCell>
+                <TableCell className="text-sm">{item.product.item_name}</TableCell>
+                <TableCell className="text-sm">{item.barcode}</TableCell>
+                {item.product.has_serial == "Y" ? (
+                  <>
+                    <TableCell className="text-sm">{item.serial_number}</TableCell>
+                  </>
+                ) :
+                  (
+                    <>
+                      <TableCell className="text-sm">-</TableCell>
+                    </>
+                  )}
+                <TableCell className="font-normal text-sm">{item.location}</TableCell>
+                <TableCell className="text-sm">{item.whs_code}</TableCell>
+                <TableCell className="text-sm">{item.status}</TableCell>
+                <TableCell className="text-sm">{item.quantity}</TableCell>
+                <TableCell className="text-sm">{item.uom}</TableCell>
+                <TableCell className="text-sm">{item.lot_number}</TableCell>
+                <TableCell className="text-sm">
+                  {dayjs(item.exp_date).format("DD/MM/YYYY") == "Invalid Date" ? "-" : dayjs(item.exp_date).format("DD/MM/YYYY")}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {dayjs(item.prod_date).format("DD/MM/YYYY") == "Invalid Date" ? "-" : dayjs(item.prod_date).format("DD/MM/YYYY")}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {dayjs(item.created_at).format("DD/MM/YYYY, HH:mm")}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell colSpan={9} className="text-left font-semibold">
+                Total
+              </TableCell>
+              <TableCell className="font-bold">{totalQty}</TableCell>
+              <TableCell />
+            </TableRow>
+          </TableFooter>
+        </Table>
+
+        <Dialog open={showModal} onOpenChange={setShowModal}>
+          <DialogContent className="sm:max-w-md bg-white">
+            <DialogHeader>
+              <DialogTitle>Putaway Confirmation</DialogTitle>
+            </DialogHeader>
+            <div className="text-sm text-muted-foreground">
+              Are you sure you want to putaway {selectedItems.length} item
+              {selectedItems.length === 1 ? "" : "s"}?
+            </div>
+            <DialogFooter className="mt-4">
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirm} disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? "Processing..." : "Confirm"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <InventoryModal
+        onClose={() => setShowInventory(false)}
+        isOpen={showInventory}
+      />
+    </>
+  );
+};
+
+export default ItemScannedTable;

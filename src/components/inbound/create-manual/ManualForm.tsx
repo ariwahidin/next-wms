@@ -22,7 +22,6 @@ import api from "@/lib/api";
 import Select from "react-select";
 import eventBus from "@/utils/eventBus";
 import { useRouter } from "next/router";
-import ItemScannedTable from "./ItemScannedTable";
 import { Transporter } from "@/types/transporter";
 
 import DatePicker from "react-datepicker";
@@ -31,6 +30,7 @@ import { id } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
 import { parse } from "path";
 import { Origin } from "@/types/origin";
+import ItemScannedTable from "./ItemScannedTable";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -881,12 +881,16 @@ export default function ManualForm() {
           </div>
         </>
       ))}
-      {itemsReceived?.length > 0 && (
+
+
+      {formData.status !== "draft" && (
+        <ItemScannedTable headerForm={formData} />
+      )}
+      {/* {itemsReceived?.length > 0 && (
         <ItemScannedTable
           headerForm={formData}
-          itemsReceived={itemsReceived}
         />
-      )}
+      )} */}
     </div>
   );
 }
