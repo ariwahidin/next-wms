@@ -1,13 +1,16 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Select from "react-select";
 import { mutate } from "swr";
 import api from "@/lib/api";
 import Layout from "@/components/layout";
 import { Division } from "@/types/division";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Inventory {
     ID: number;
@@ -50,6 +53,30 @@ interface GroupedInventory {
     pallet: string;
     carton_number: string;
     records: Inventory[];
+}
+
+/** A carton-level group derived from raw inventories */
+interface CartonGroup {
+    carton_number: string;
+    item_code: string;
+    item_name: string;
+    whs_code: string;
+    location: string;
+    division_code: string;
+    qa_status: string;
+    owner_code: string;
+    uom: string;
+    qty_available: number;
+    lot_number: string;
+    rec_date: string;
+    prod_date: string;
+    exp_date: string;
+    pallet: string;
+}
+
+interface Product {
+    item_code: string;
+    item_name: string;
 }
 
 interface Warehouse {
@@ -116,89 +143,285 @@ const emptyForm: TransferFormData = {
     carton_number: "",
 };
 
-export default function InventoryTransferForm() {
-    const [inventories, setInventories] = useState<GroupedInventory[]>([]);
+type Tab = "by-quantity" | "by-carton";
+
+// ─── Shared helpers ───────────────────────────────────────────────────────────
+
+const customSelectStyles = {
+    control: (base: any, state: any) => ({
+        ...base,
+        minHeight: "38px",
+        borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+        boxShadow: state.isFocused ? "0 0 0 2px rgba(59,130,246,0.5)" : "none",
+        "&:hover": { borderColor: state.isFocused ? "#3b82f6" : "#9ca3af" },
+    }),
+    option: (base: any, state: any) => ({
+        ...base,
+        backgroundColor: state.isSelected ? "#3b82f6" : state.isFocused ? "#dbeafe" : "white",
+        color: state.isSelected ? "white" : "#111827",
+        "&:active": { backgroundColor: "#3b82f6" },
+    }),
+};
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export default function InventoryTransferPage() {
+    const [activeTab, setActiveTab] = useState<Tab>("by-quantity");
+
+    // Shared master data (no longer includes inventories — each tab fetches its own)
     const [qaStatuses, setQaStatuses] = useState<QaStatus[]>([]);
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
     const [locations, setLocations] = useState<Location[]>([]);
     const [divisions, setDivisions] = useState<Division[]>([]);
-    const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
+    const [masterLoading, setMasterLoading] = useState(false);
+
+    useEffect(() => {
+        fetchAll();
+    }, []);
+
+    const fetchAll = async () => {
+        setMasterLoading(true);
+        await Promise.all([
+            fetchWarehouses(),
+            fetchLocations(),
+            fetchQaStatus(),
+            fetchDivisions(),
+        ]);
+        setMasterLoading(false);
+    };
+
+    const fetchQaStatus = async () => {
+        try {
+            const res = await api.get("/qa-status", { withCredentials: true });
+            if (res.data.success) setQaStatuses(res.data.data || []);
+        } catch { /* ignore */ }
+    };
+
+    const fetchDivisions = async () => {
+        try {
+            const res = await api.get("/divisions", { withCredentials: true });
+            if (res.data.success) setDivisions(res.data.data || []);
+        } catch { /* ignore */ }
+    };
+
+    const fetchWarehouses = async () => {
+        try {
+            const res = await api.get("/warehouses", { withCredentials: true });
+            if (res.data.success) setWarehouses(res.data.data || []);
+        } catch { /* ignore */ }
+    };
+
+    const fetchLocations = async () => {
+        try {
+            const res = await api.get("/locations", { withCredentials: true });
+            if (res.data.success) setLocations(res.data.data || []);
+        } catch { /* ignore */ }
+    };
+
+    const warehouseOptions: SelectOption[] = warehouses.map((w) => ({ value: w.code, label: w.code }));
+    const divisionOptions: SelectOption[] = divisions.map((d) => ({ value: d.code, label: d.code }));
+
+    const sharedProps = {
+        qaStatuses,
+        warehouses,
+        locations,
+        divisions,
+        warehouseOptions,
+        divisionOptions,
+        customSelectStyles,
+        masterLoading,
+        onRefresh: fetchAll,
+    };
+
+    return (
+        <Layout title="Inventory" subTitle="Inventory Transfer">
+            <div className="max-w-7xl mx-auto p-6">
+                {/* Tab switcher */}
+                <div className="flex border-b border-gray-200 mb-6">
+                    <TabButton active={activeTab === "by-quantity"} onClick={() => setActiveTab("by-quantity")}>
+                        By Quantity
+                    </TabButton>
+                    <TabButton active={activeTab === "by-carton"} onClick={() => setActiveTab("by-carton")}>
+                        By Carton
+                        <span className="ml-2 text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">
+                            multi
+                        </span>
+                    </TabButton>
+                </div>
+
+                {activeTab === "by-quantity" ? (
+                    <ByQuantityTab {...sharedProps} />
+                ) : (
+                    <ByCartonTab {...sharedProps} />
+                )}
+            </div>
+        </Layout>
+    );
+}
+
+// ─── Tab Button ───────────────────────────────────────────────────────────────
+
+function TabButton({
+    active,
+    onClick,
+    children,
+}: {
+    active: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                active
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+        >
+            {children}
+        </button>
+    );
+}
+
+// ─── BY QUANTITY TAB ──────────────────────────────────────────────────────────
+
+function ByQuantityTab({
+    qaStatuses,
+    warehouseOptions,
+    locations,
+    divisionOptions,
+    customSelectStyles,
+    masterLoading,
+    onRefresh,
+}: any) {
+    // ── Item filter ──
+    const [products, setProducts] = useState<Product[]>([]);
+    const [productsLoading, setProductsLoading] = useState(false);
+    const [filterItem, setFilterItem] = useState<SelectOption | null>(null);
+
+    // ── Inventory list ──
+    const [inventories, setInventories] = useState<GroupedInventory[]>([]);
+    const [inventoriesLoading, setInventoriesLoading] = useState(false);
+
+    // ── Optional client-side filters (derived from fetched inventories) ──
+    const [filterDivision, setFilterDivision] = useState<SelectOption | null>(null);
+    const [filterLocation, setFilterLocation] = useState<SelectOption | null>(null);
+    const [filterPallet, setFilterPallet] = useState<SelectOption | null>(null);
+
+    // ── Form / selection ──
     const [selectedGroup, setSelectedGroup] = useState<GroupedInventory | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const [searchQuery, setSearchQuery] = useState("");
     const [formData, setFormData] = useState<TransferFormData>(emptyForm);
 
+    // Load products once on mount
     useEffect(() => {
-        fetchInventories();
-        fetchWarehouses();
-        fetchLocations();
-        fetchQaStatus();
-        fetchDivisions();
+        const load = async () => {
+            setProductsLoading(true);
+            try {
+                const res = await api.get("/products", { withCredentials: true });
+                if (res.data.success) setProducts(res.data.data || []);
+            } catch { /* ignore */ } finally {
+                setProductsLoading(false);
+            }
+        };
+        load();
     }, []);
 
+    // Fetch inventories when item is selected
+    useEffect(() => {
+        if (!filterItem) {
+            setInventories([]);
+            setSelectedGroup(null);
+            setFormData(emptyForm);
+            setFilterDivision(null);
+            setFilterLocation(null);
+            setFilterPallet(null);
+            setError("");
+            setSuccess("");
+            return;
+        }
+        const fetchInventories = async () => {
+            setInventoriesLoading(true);
+            setSelectedGroup(null);
+            setFormData(emptyForm);
+            setFilterDivision(null);
+            setFilterLocation(null);
+            setFilterPallet(null);
+            setError("");
+            setSuccess("");
+            try {
+                const res = await api.get("/inventory/grouped-by-item", {
+                    params: { item_code: filterItem.value },
+                    withCredentials: true,
+                });
+                if (res.data.success) setInventories(res.data.data.inventories || []);
+                else setInventories([]);
+            } catch {
+                setInventories([]);
+            } finally {
+                setInventoriesLoading(false);
+            }
+        };
+        fetchInventories();
+    }, [filterItem]);
+
+    // Filter destination locations by selected warehouse
     useEffect(() => {
         if (formData.to_whs_code) {
-            setFilteredLocations(locations.filter((loc) => loc.whs_code === formData.to_whs_code));
+            setFilteredLocations(locations.filter((loc: Location) => loc.whs_code === formData.to_whs_code));
         } else {
             setFilteredLocations(locations);
         }
     }, [formData.to_whs_code, locations]);
 
-    const fetchInventories = async () => {
-        setLoading(true);
-        try {
-            const response = await api.get("/inventory/grouped", { withCredentials: true });
-            if (response.data.success) {
-                setInventories(response.data.data.inventories || []);
-            }
-        } catch (err: any) {
-            setError("Failed to fetch inventories");
-        } finally {
-            setLoading(false);
-        }
-    };
+    const productOptions: SelectOption[] = products.map((p) => ({
+        value: p.item_code,
+        label: `${p.item_code} — ${p.item_name}`,
+    }));
 
-    const fetchQaStatus = async () => {
-        try {
-            const response = await api.get("/qa-status", { withCredentials: true });
-            if (response.data.success) setQaStatuses(response.data.data || []);
-        } catch (err: any) {
-            console.error("Failed to fetch qa statuses", err);
-        }
-    };
+    const locationOptions: SelectOption[] = filteredLocations.map((loc: Location) => ({
+        value: loc.location_code,
+        label: loc.location_code,
+    }));
 
-    const fetchDivisions = async () => {
-        try {
-            const response = await api.get("/divisions", { withCredentials: true });
-            if (response.data.success) setDivisions(response.data.data || []);
-        } catch (err: any) {
-            console.error("Failed to fetch divisions", err);
-        }
-    };
+    // ── Derived optional filter options (client-side, from fetched inventories) ──
+    const divisionFilterOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(inventories.map((g) => g.division_code).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [inventories]);
 
-    const fetchWarehouses = async () => {
-        try {
-            const response = await api.get("/warehouses", { withCredentials: true });
-            if (response.data.success) setWarehouses(response.data.data || []);
-        } catch (err: any) {
-            console.error("Failed to fetch warehouses", err);
-        }
-    };
+    const locationFilterOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(inventories.map((g) => g.location).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [inventories]);
 
-    const fetchLocations = async () => {
-        try {
-            const response = await api.get("/locations", { withCredentials: true });
-            if (response.data.success) setLocations(response.data.data || []);
-        } catch (err: any) {
-            console.error("Failed to fetch locations", err);
-        }
-    };
+    const palletFilterOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(inventories.map((g) => g.pallet).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [inventories]);
+
+    // ── Client-side filtered list ──
+    const displayedInventories = useMemo<GroupedInventory[]>(() => {
+        return inventories.filter((g) => {
+            if (filterDivision && g.division_code !== filterDivision.value) return false;
+            if (filterLocation && g.location !== filterLocation.value) return false;
+            if (filterPallet && g.pallet !== filterPallet.value) return false;
+            return true;
+        });
+    }, [inventories, filterDivision, filterLocation, filterPallet]);
+
+    // ── Total qty of displayed list ──
+    const totalQtyDisplayed = useMemo(
+        () => displayedInventories.reduce((sum, g) => sum + g.qty_available, 0),
+        [displayedInventories]
+    );
+    const displayedUom = displayedInventories[0]?.uom ?? "";
 
     const handleGroupSelect = (group: GroupedInventory) => {
-        console.log("Selected group:", group);
         setSelectedGroup(group);
         setFormData({
             ...emptyForm,
@@ -233,37 +456,19 @@ export default function InventoryTransferForm() {
     };
 
     const handleWarehouseChange = (option: SelectOption | null) => {
-        setFormData((prev) => ({
-            ...prev,
-            to_whs_code: option?.value || "",
-            to_location: "",
-        }));
+        setFormData((prev) => ({ ...prev, to_whs_code: option?.value || "", to_location: "" }));
     };
 
     const handleLocationChange = (option: SelectOption | null) => {
-        setFormData((prev) => ({
-            ...prev,
-            to_location: option?.value || "",
-        }));
+        setFormData((prev) => ({ ...prev, to_location: option?.value || "" }));
     };
 
     const validateForm = (): boolean => {
-        if (!selectedGroup) {
-            setError("Please select an inventory to transfer");
-            return false;
-        }
-        if (!formData.to_whs_code || !formData.to_location) {
-            setError("Destination warehouse and location are required");
-            return false;
-        }
-        if (formData.qty_to_transfer <= 0) {
-            setError("Quantity to transfer must be greater than 0");
-            return false;
-        }
+        if (!selectedGroup) { setError("Please select an inventory to transfer"); return false; }
+        if (!formData.to_whs_code || !formData.to_location) { setError("Destination warehouse and location are required"); return false; }
+        if (formData.qty_to_transfer <= 0) { setError("Quantity to transfer must be greater than 0"); return false; }
         if (formData.qty_to_transfer > selectedGroup.qty_available) {
-            setError(
-                `Insufficient quantity. Available: ${selectedGroup.qty_available}, Requested: ${formData.qty_to_transfer}`
-            );
+            setError(`Insufficient quantity. Available: ${selectedGroup.qty_available}, Requested: ${formData.qty_to_transfer}`);
             return false;
         }
         if (
@@ -283,21 +488,28 @@ export default function InventoryTransferForm() {
         setError("");
         setSuccess("");
         if (!validateForm()) return;
-
-        console.log("Submitting transfer with data:", formData);
-        // return;
-
         setSubmitting(true);
         try {
-            const response = await api.post("/inventory/transfer", formData, {
-                withCredentials: true,
-            });
-            if (response.data.success) {
-                setSuccess(response.data.message);
-                setTimeout(() => {
-                    setSelectedGroup(null);
-                    setFormData(emptyForm);
-                    fetchInventories();
+            const res = await api.post("/inventory/transfer", formData, { withCredentials: true });
+            if (res.data.success) {
+                setSuccess(res.data.message);
+                setTimeout(async () => {
+                    // Re-fetch inventories for the same item
+                    if (filterItem) {
+                        setInventoriesLoading(true);
+                        setSelectedGroup(null);
+                        setFormData(emptyForm);
+                        try {
+                            const r = await api.get("/inventory/grouped-by-item", {
+                                params: { item_code: filterItem.value },
+                                withCredentials: true,
+                            });
+                            if (r.data.success) setInventories(r.data.data.inventories || []);
+                        } catch { /* ignore */ } finally {
+                            setInventoriesLoading(false);
+                        }
+                    }
+                    onRefresh();
                     mutate("/inventories");
                 }, 2000);
             }
@@ -309,428 +521,1011 @@ export default function InventoryTransferForm() {
     };
 
     const handleReset = () => {
+        setFilterItem(null);
+        setFilterDivision(null);
+        setFilterLocation(null);
+        setFilterPallet(null);
         setSelectedGroup(null);
         setFormData(emptyForm);
         setError("");
         setSuccess("");
     };
 
-    const filteredInventories = inventories.filter(
-        (inv) =>
-            inv.item_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.item_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.whs_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.division_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.qa_status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.owner_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.lot_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.carton_number.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const warehouseOptions: SelectOption[] = warehouses.map((wh) => ({
-        value: wh.code,
-        label: wh.code,
-    }));
-
-    const locationOptions: SelectOption[] = filteredLocations.map((loc) => ({
-        value: loc.location_code,
-        label: loc.location_code,
-    }));
-
-    const divisionOptions: SelectOption[] = divisions.map((div) => ({
-        value: div.code,
-        label: div.code,
-    }));
-
-    const customSelectStyles = {
-        control: (base: any, state: any) => ({
-            ...base,
-            minHeight: "38px",
-            borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
-            boxShadow: state.isFocused ? "0 0 0 2px rgba(59, 130, 246, 0.5)" : "none",
-            "&:hover": { borderColor: state.isFocused ? "#3b82f6" : "#9ca3af" },
-        }),
-        option: (base: any, state: any) => ({
-            ...base,
-            backgroundColor: state.isSelected ? "#3b82f6" : state.isFocused ? "#dbeafe" : "white",
-            color: state.isSelected ? "white" : "#111827",
-            "&:active": { backgroundColor: "#3b82f6" },
-        }),
-    };
+    // Empty state message for the list area
+    const emptyMessage = !filterItem
+        ? "Select an item to view inventory"
+        : inventoriesLoading
+        ? ""
+        : displayedInventories.length === 0 && inventories.length > 0
+        ? "No inventory matches the selected filters"
+        : "No inventory found for this item";
 
     return (
-        <Layout title="Inventory" subTitle="Inventory Transfer">
-            <div className="max-w-7xl mx-auto p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left – Item filter + Inventory list */}
+            <div className="lg:col-span-1">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6">
+                    <div className="border-b border-gray-200 px-4 py-3">
+                        <h3 className="text-sm font-semibold text-gray-900">Select Inventory</h3>
+                    </div>
+                    <div className="p-4 space-y-3">
+                        {/* Required: Item select */}
+                        <div>
+                            <FieldLabel required>Item Code</FieldLabel>
+                            <Select
+                                options={productOptions}
+                                value={filterItem}
+                                onChange={(opt) => setFilterItem(opt)}
+                                placeholder="Search item code or name..."
+                                isClearable
+                                isSearchable
+                                isLoading={productsLoading || masterLoading}
+                                styles={customSelectStyles}
+                                className="text-sm"
+                            />
+                        </div>
 
-                    {/* Left Panel - Grouped Inventory Selection */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6">
-                            <div className="border-b border-gray-200 px-4 py-3">
-                                <h3 className="text-sm font-semibold text-gray-900">Select Inventory</h3>
-                            </div>
-                            <div className="p-4">
-                                <div className="mb-4">
-                                    <input
-                                        type="text"
-                                        placeholder="Search by item code, location, warehouse..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        {/* Optional filters — only shown after inventories loaded */}
+                        {inventories.length > 0 && (
+                            <>
+                                <div className="border-t border-gray-100 pt-3">
+                                    <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Optional filters</p>
+                                </div>
+                                <div>
+                                    <FieldLabel>Division</FieldLabel>
+                                    <Select
+                                        options={divisionFilterOptions}
+                                        value={filterDivision}
+                                        onChange={(opt) => {
+                                            setFilterDivision(opt);
+                                            setSelectedGroup(null);
+                                            setFormData(emptyForm);
+                                        }}
+                                        placeholder="All divisions"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
                                     />
                                 </div>
+                                <div>
+                                    <FieldLabel>Location</FieldLabel>
+                                    <Select
+                                        options={locationFilterOptions}
+                                        value={filterLocation}
+                                        onChange={(opt) => {
+                                            setFilterLocation(opt);
+                                            setSelectedGroup(null);
+                                            setFormData(emptyForm);
+                                        }}
+                                        placeholder="All locations"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <FieldLabel>Pallet</FieldLabel>
+                                    <Select
+                                        options={palletFilterOptions}
+                                        value={filterPallet}
+                                        onChange={(opt) => {
+                                            setFilterPallet(opt);
+                                            setSelectedGroup(null);
+                                            setFormData(emptyForm);
+                                        }}
+                                        placeholder="All pallets"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
+                                    />
+                                </div>
+                            </>
+                        )}
 
-                                <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                                    {loading ? (
-                                        <div className="text-center py-8">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                            <p className="text-sm text-gray-500 mt-2">Loading...</p>
-                                        </div>
-                                    ) : filteredInventories.length === 0 ? (
-                                        <p className="text-sm text-gray-500 text-center py-8">No inventories found</p>
-                                    ) : (
-                                        filteredInventories.map((group, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => handleGroupSelect(group)}
-                                                className={`w-full text-left p-3 rounded-lg border transition-all ${selectedGroup?.item_code === group.item_code &&
-                                                    selectedGroup?.whs_code === group.whs_code &&
-                                                    selectedGroup?.location === group.location &&
-                                                    selectedGroup?.division_code === group.division_code &&
-                                                    selectedGroup?.qa_status === group.qa_status &&
-                                                    selectedGroup?.owner_code === group.owner_code &&
-                                                    selectedGroup?.uom === group.uom &&
-                                                    selectedGroup?.lot_number === group.lot_number &&
-                                                    selectedGroup?.rec_date === group.rec_date &&
-                                                    selectedGroup?.prod_date === group.prod_date &&
-                                                    selectedGroup?.exp_date === group.exp_date &&
-                                                    selectedGroup?.pallet === group.pallet && 
-                                                    selectedGroup?.carton_number === group.carton_number
+                        {/* Total qty summary */}
+                        {!inventoriesLoading && displayedInventories.length > 0 && (
+                            <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
+                                <span className="text-xs text-gray-500">
+                                    {displayedInventories.length} group(s)
+                                </span>
+                                <span className="text-xs font-semibold text-gray-800">
+                                    Total: {totalQtyDisplayed} {displayedUom}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Inventory list */}
+                        <div className="space-y-2 max-h-[480px] overflow-y-auto">
+                            {inventoriesLoading ? (
+                                <LoadingSpinner />
+                            ) : !filterItem || displayedInventories.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-8">{emptyMessage}</p>
+                            ) : (
+                                displayedInventories.map((group: GroupedInventory, idx: number) => {
+                                    const isSelected =
+                                        selectedGroup?.item_code === group.item_code &&
+                                        selectedGroup?.whs_code === group.whs_code &&
+                                        selectedGroup?.location === group.location &&
+                                        selectedGroup?.division_code === group.division_code &&
+                                        selectedGroup?.qa_status === group.qa_status &&
+                                        selectedGroup?.owner_code === group.owner_code &&
+                                        selectedGroup?.uom === group.uom &&
+                                        selectedGroup?.lot_number === group.lot_number &&
+                                        selectedGroup?.rec_date === group.rec_date &&
+                                        selectedGroup?.prod_date === group.prod_date &&
+                                        selectedGroup?.exp_date === group.exp_date &&
+                                        selectedGroup?.pallet === group.pallet &&
+                                        selectedGroup?.carton_number === group.carton_number;
+                                    return (
+                                        <button
+                                            key={idx}
+                                            onClick={() => handleGroupSelect(group)}
+                                            className={`w-full text-left p-3 rounded-lg border transition-all ${
+                                                isSelected
                                                     ? "border-blue-500 bg-blue-50"
                                                     : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                                                    }`}
-                                            >
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <span className="text-xs font-semibold text-gray-900">{group.item_code}</span>
-                                                    <span className={`text-xs px-2 py-0.5 rounded ${group.qty_available > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                                                        {group.qty_available} {group.uom}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-gray-600 mb-1">📦 {group.item_name}</p>
-                                                <p className="text-xs text-gray-500">📍 {group.owner_code} | {group.whs_code} | {group.location} | {group.division_code}</p>
-                                                <p className="text-xs text-gray-500"> 📅 rd : {group.rec_date} | 🕒 pd : {group.prod_date} | 🕒 ed : {group.exp_date}</p>
-                                                <p className="text-xs text-gray-500"> 🏷️ lot : {group.lot_number} | ctn : {group.carton_number} | Pallet : {group.pallet}</p>
-                                                <p className="text-xs text-gray-500">
-                                                    ✓ {group.qa_status} - {qaStatuses.find((q) => q.qa_status === group.qa_status)?.description || "Unknown QA Status"}
-                                                </p>
-                                            </button>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right Panel - Transfer Form */}
-                    <div className="lg:col-span-2">
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <div className="border-b border-gray-200 px-6 py-4">
-                                <h2 className="text-xl font-semibold text-gray-900">Transfer Inventory</h2>
-                                <p className="text-sm text-gray-500 mt-1">Move inventory between warehouses or locations</p>
-                            </div>
-
-                            <form onSubmit={handleSubmit} className="p-6">
-                                {/* Selected Inventory Info */}
-                                {selectedGroup && (
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                                        <h3 className="text-sm font-semibold text-blue-900 mb-2">Selected Inventory</h3>
-                                        <div className="grid grid-cols-2 gap-2 text-sm">
-                                            <div>
-                                                <span className="text-blue-700 font-medium">Item:</span>
-                                                <span className="text-blue-900 ml-2">{selectedGroup.item_code}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-blue-700 font-medium">Available:</span>
-                                                <span className="text-blue-900 ml-2">{selectedGroup.qty_available} {selectedGroup.uom}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-blue-700 font-medium">Whs | Location | Division:</span>
-                                                <span className="text-blue-900 ml-2">{selectedGroup.whs_code} | {selectedGroup.location} | {selectedGroup.division_code}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-blue-700 font-medium">QA Status:</span>
-                                                <span className="text-blue-900 ml-2">
-                                                    {selectedGroup.qa_status} - {qaStatuses.find((q) => q.qa_status === selectedGroup.qa_status)?.description || "Unknown QA Status"}
+                                            }`}
+                                        >
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className="text-xs font-semibold text-gray-900">{group.item_code}</span>
+                                                <span className={`text-xs px-2 py-0.5 rounded ${group.qty_available > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                                                    {group.qty_available} {group.uom}
                                                 </span>
                                             </div>
-                                            <div>
-                                                <span className="text-blue-700 font-medium">Records:</span>
-                                                <span className="text-blue-900 ml-2">{selectedGroup.records.length} lot(s)</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Destination Information */}
-                                <div className="mb-6">
-                                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Destination Information</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                To Warehouse <span className="text-red-500">*</span>
-                                            </label>
-                                            <Select
-                                                options={warehouseOptions}
-                                                value={warehouseOptions.find((opt) => opt.value === formData.to_whs_code) || null}
-                                                onChange={handleWarehouseChange}
-                                                placeholder="Select warehouse..."
-                                                isClearable
-                                                isSearchable
-                                                isDisabled={!selectedGroup}
-                                                styles={customSelectStyles}
-                                                className="text-sm"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                To Location <span className="text-red-500">*</span>
-                                            </label>
-                                            <Select
-                                                options={locationOptions}
-                                                value={locationOptions.find((opt) => opt.value === formData.to_location) || null}
-                                                onChange={handleLocationChange}
-                                                placeholder="Select location..."
-                                                isClearable
-                                                isSearchable
-                                                isDisabled={!selectedGroup || !formData.to_whs_code}
-                                                styles={customSelectStyles}
-                                                className="text-sm"
-                                                noOptionsMessage={() =>
-                                                    formData.to_whs_code ? "No locations found" : "Select warehouse first"
-                                                }
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">New QA Status</label>
-                                            <select
-                                                name="new_qa_status"
-                                                value={formData.new_qa_status}
-                                                onChange={handleInputChange}
-                                                disabled={!selectedGroup}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-                                            >
-                                                <option value="">Keep Current Status</option>
-                                                {qaStatuses.map((opt) => (
-                                                    <option key={opt.qa_status} value={opt.qa_status}>
-                                                        {opt.description} ({opt.qa_status})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                To Division <span className="text-red-500">*</span>
-                                            </label>
-                                            <select
-                                                name="division_code"
-                                                value={formData.division_code}
-                                                onChange={handleInputChange}
-                                                disabled={!selectedGroup}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-                                            >
-                                                <option value="">Keep Current Division</option>
-                                                {divisionOptions.map((opt) => (
-                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Transfer Details */}
-                                <div className="mb-6">
-                                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Transfer Details</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Quantity to Transfer <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="number"
-                                                name="qty_to_transfer"
-                                                value={formData.qty_to_transfer}
-                                                min={0}
-                                                step={1}
-                                                inputMode="numeric"
-                                                onWheel={(e) => e.currentTarget.blur()}
-                                                onChange={(e) => {
-                                                    const value = e.target.value;
-                                                    if (value === "" || /^[0-9]+$/.test(value)) {
-                                                        handleInputChange(e);
-                                                    }
-                                                }}
-                                                required
-                                                disabled={!selectedGroup}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-                                            />
-                                            {selectedGroup && (
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Max: {selectedGroup.qty_available} {selectedGroup.uom}
-                                                    {selectedGroup.records.length > 1 && (
-                                                        <span className="ml-2 text-blue-500">({selectedGroup.records.length} lots, FIFO)</span>
-                                                    )}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Lot Number</label>
-                                            <input
-                                                readOnly
-                                                type="text"
-                                                name="lot_number"
-                                                value={formData.lot_number}
-                                                onChange={handleInputChange}
-                                                disabled={!selectedGroup}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Pallet</label>
-                                            <input
-                                                readOnly
-                                                type="text"
-                                                name="pallet"
-                                                value={formData.pallet}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Carton Number</label>
-                                            <input
-                                                readOnly
-                                                type="text"
-                                                name="carton_number"
-                                                value={formData.carton_number}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Receive Date</label>
-                                            <input
-                                                readOnly
-                                                type="date"
-                                                name="rec_date"
-                                                value={formData.rec_date}
-                                                onChange={handleInputChange}
-                                                disabled={!selectedGroup}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Production Date</label>
-                                            <input
-                                                type="date"
-                                                name="prod_date"
-                                                value={formData.prod_date}
-                                                onChange={handleInputChange}
-                                                disabled={!selectedGroup}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                                            <input
-                                                type="date"
-                                                name="exp_date"
-                                                value={formData.exp_date}
-                                                onChange={handleInputChange}
-                                                disabled={!selectedGroup}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Reason */}
-                                <div className="mb-6">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Transfer</label>
-                                    <textarea
-                                        name="reason"
-                                        value={formData.reason}
-                                        onChange={handleInputChange}
-                                        rows={3}
-                                        disabled={!selectedGroup}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-                                        placeholder="Enter reason for transfer..."
-                                    />
-                                </div>
-
-                                {/* Error Alert */}
-                                {error && (
-                                    <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-                                        <div className="flex">
-                                            <svg className="w-5 h-5 text-red-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                            </svg>
-                                            <div>
-                                                <h3 className="text-sm font-medium text-red-800">Error</h3>
-                                                <p className="text-sm text-red-700 mt-1">{error}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Success Alert */}
-                                {success && (
-                                    <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-                                        <div className="flex">
-                                            <svg className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                            </svg>
-                                            <div>
-                                                <h3 className="text-sm font-medium text-green-800">Success</h3>
-                                                <p className="text-sm text-green-700 mt-1">{success}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Action Buttons */}
-                                <div className="flex space-x-3">
-                                    <button
-                                        type="submit"
-                                        disabled={submitting || !selectedGroup}
-                                        className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {submitting ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                                Processing...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                                </svg>
-                                                Transfer Inventory
-                                            </>
-                                        )}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handleReset}
-                                        disabled={submitting}
-                                        className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Reset
-                                    </button>
-                                </div>
-                            </form>
+                                            <p className="text-xs text-gray-600 mb-1">📦 {group.item_name}</p>
+                                            <p className="text-xs text-gray-500">📍 {group.owner_code} | {group.whs_code} | {group.location} | {group.division_code}</p>
+                                            <p className="text-xs text-gray-500">📅 rd: {group.rec_date} | pd: {group.prod_date} | ed: {group.exp_date}</p>
+                                            <p className="text-xs text-gray-500">🏷️ lot: {group.lot_number} | ctn: {group.carton_number} | pallet: {group.pallet}</p>
+                                            <p className="text-xs text-gray-500">
+                                                ✓ {group.qa_status} -{" "}
+                                                {qaStatuses.find((q: QaStatus) => q.qa_status === group.qa_status)?.description || "Unknown"}
+                                            </p>
+                                        </button>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
-        </Layout>
+
+            {/* Right – Transfer Form */}
+            <div className="lg:col-span-2">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div className="border-b border-gray-200 px-6 py-4">
+                        <h2 className="text-xl font-semibold text-gray-900">Transfer Inventory</h2>
+                        <p className="text-sm text-gray-500 mt-1">Move inventory between warehouses or locations</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="p-6">
+                        {selectedGroup && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                <h3 className="text-sm font-semibold text-blue-900 mb-2">Selected Inventory</h3>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <InfoRow label="Item" value={`${selectedGroup.item_code}`} />
+                                    <InfoRow label="Available" value={`${selectedGroup.qty_available} ${selectedGroup.uom}`} />
+                                    <InfoRow label="Whs | Location | Division" value={`${selectedGroup.whs_code} | ${selectedGroup.location} | ${selectedGroup.division_code}`} />
+                                    <InfoRow label="QA Status" value={`${selectedGroup.qa_status} - ${qaStatuses.find((q: QaStatus) => q.qa_status === selectedGroup.qa_status)?.description || "Unknown"}`} />
+                                    <InfoRow label="Records" value={`${selectedGroup.records?.length ?? 1} lot(s)`} />
+                                </div>
+                            </div>
+                        )}
+
+                        {!selectedGroup && (
+                            <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-6 mb-6 text-center">
+                                <p className="text-sm text-gray-500">
+                                    {!filterItem
+                                        ? "Select an item from the left panel first"
+                                        : "Select an inventory group from the left panel"}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Destination */}
+                        <SectionTitle>Destination Information</SectionTitle>
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <FieldLabel required>To Warehouse</FieldLabel>
+                                <Select
+                                    options={warehouseOptions}
+                                    value={warehouseOptions.find((o: SelectOption) => o.value === formData.to_whs_code) || null}
+                                    onChange={handleWarehouseChange}
+                                    placeholder="Select warehouse..."
+                                    isClearable isSearchable isDisabled={!selectedGroup}
+                                    styles={customSelectStyles} className="text-sm"
+                                />
+                            </div>
+                            <div>
+                                <FieldLabel required>To Location</FieldLabel>
+                                <Select
+                                    options={locationOptions}
+                                    value={locationOptions.find((o: SelectOption) => o.value === formData.to_location) || null}
+                                    onChange={handleLocationChange}
+                                    placeholder="Select location..."
+                                    isClearable isSearchable
+                                    isDisabled={!selectedGroup || !formData.to_whs_code}
+                                    styles={customSelectStyles} className="text-sm"
+                                    noOptionsMessage={() => formData.to_whs_code ? "No locations found" : "Select warehouse first"}
+                                />
+                            </div>
+                            <div>
+                                <FieldLabel>New QA Status</FieldLabel>
+                                <select
+                                    name="new_qa_status"
+                                    value={formData.new_qa_status}
+                                    onChange={handleInputChange}
+                                    disabled={!selectedGroup}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                >
+                                    <option value="">Keep Current Status</option>
+                                    {qaStatuses.map((opt: QaStatus) => (
+                                        <option key={opt.qa_status} value={opt.qa_status}>
+                                            {opt.description} ({opt.qa_status})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <FieldLabel required>To Division</FieldLabel>
+                                <select
+                                    name="division_code"
+                                    value={formData.division_code}
+                                    onChange={handleInputChange}
+                                    disabled={!selectedGroup}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                >
+                                    <option value="">Keep Current Division</option>
+                                    {divisionOptions.map((opt: SelectOption) => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Transfer Details */}
+                        <SectionTitle>Transfer Details</SectionTitle>
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <FieldLabel required>Quantity to Transfer</FieldLabel>
+                                <input
+                                    type="number"
+                                    name="qty_to_transfer"
+                                    value={formData.qty_to_transfer}
+                                    min={0}
+                                    step={1}
+                                    inputMode="numeric"
+                                    onWheel={(e) => e.currentTarget.blur()}
+                                    onChange={(e) => {
+                                        if (e.target.value === "" || /^[0-9]+$/.test(e.target.value)) handleInputChange(e);
+                                    }}
+                                    required
+                                    disabled={!selectedGroup}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                />
+                                {selectedGroup && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Max: {selectedGroup.qty_available} {selectedGroup.uom}
+                                        {selectedGroup.records && selectedGroup.records.length > 1 && (
+                                            <span className="ml-2 text-blue-500">
+                                                ({selectedGroup.records.length} lots, FIFO)
+                                            </span>
+                                        )}
+                                    </p>
+                                )}
+                            </div>
+                            <ReadOnlyField label="Lot Number" value={formData.lot_number} />
+                            <ReadOnlyField label="Pallet" value={formData.pallet} />
+                            <ReadOnlyField label="Carton Number" value={formData.carton_number || ""} />
+                            <div>
+                                <FieldLabel>Production Date</FieldLabel>
+                                <input
+                                    type="date"
+                                    name="prod_date"
+                                    value={formData.prod_date}
+                                    onChange={handleInputChange}
+                                    disabled={!selectedGroup}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                />
+                            </div>
+                            <div>
+                                <FieldLabel>Expiry Date</FieldLabel>
+                                <input
+                                    type="date"
+                                    name="exp_date"
+                                    value={formData.exp_date}
+                                    onChange={handleInputChange}
+                                    disabled={!selectedGroup}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Reason */}
+                        <div className="mb-6">
+                            <FieldLabel>Reason for Transfer</FieldLabel>
+                            <textarea
+                                name="reason"
+                                value={formData.reason}
+                                onChange={handleInputChange}
+                                rows={3}
+                                disabled={!selectedGroup}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                placeholder="Enter reason for transfer..."
+                            />
+                        </div>
+
+                        <AlertBanner type="error" message={error} />
+                        <AlertBanner type="success" message={success} />
+
+                        <div className="flex space-x-3">
+                            <button
+                                type="submit"
+                                disabled={submitting || !selectedGroup}
+                                className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {submitting ? <><SpinIcon />Processing...</> : <><TransferIcon />Transfer Inventory</>}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleReset}
+                                disabled={submitting}
+                                className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none disabled:opacity-50"
+                            >
+                                Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── BY CARTON TAB (unchanged) ────────────────────────────────────────────────
+
+function ByCartonTab({
+    qaStatuses,
+    locations,
+    customSelectStyles,
+    onRefresh,
+}: any) {
+    // ── Master data for required filters ──
+    const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [divisions, setDivisions] = useState<Division[]>([]);
+    const [masterLoading, setMasterLoading] = useState(false);
+
+    // ── Required filters (must all be set before fetch) ──
+    const [filterWhs, setFilterWhs] = useState<SelectOption | null>(null);
+    const [filterProduct, setFilterProduct] = useState<SelectOption | null>(null);
+    const [filterDivision, setFilterDivision] = useState<SelectOption | null>(null);
+
+    // ── Optional filters (derive from fetched cartons) ──
+    const [filterLocation, setFilterLocation] = useState<SelectOption | null>(null);
+    const [filterPallet, setFilterPallet] = useState<SelectOption | null>(null);
+    const [filterRecDate, setFilterRecDate] = useState("");
+    const [filterLot, setFilterLot] = useState<SelectOption | null>(null);
+
+    const [cartons, setCartons] = useState<CartonGroup[]>([]);
+    const [cartonsLoading, setCartonsLoading] = useState(false);
+
+    // ── Selection state ──
+    const [selectedCartons, setSelectedCartons] = useState<Set<string>>(new Set());
+
+    // ── Destination state ──
+    const [toWhsCode, setToWhsCode] = useState("");
+    const [toLocation, setToLocation] = useState("");
+    const [newQaStatus, setNewQaStatus] = useState("");
+    const [divisionCode, setDivisionCode] = useState("");
+    const [reason, setReason] = useState("");
+    const [filteredDestLocations, setFilteredDestLocations] = useState<Location[]>([]);
+
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+
+    // ── Load master data once ──
+    useEffect(() => {
+        const load = async () => {
+            setMasterLoading(true);
+            try {
+                const [whsRes, prodRes, divRes] = await Promise.all([
+                    api.get("/warehouses", { withCredentials: true }),
+                    api.get("/products", { withCredentials: true }),
+                    api.get("/divisions", { withCredentials: true }),
+                ]);
+                if (whsRes.data.success) setWarehouses(whsRes.data.data || []);
+                if (prodRes.data.success) setProducts(prodRes.data.data || []);
+                if (divRes.data.success) setDivisions(divRes.data.data || []);
+            } catch { /* ignore */ } finally {
+                setMasterLoading(false);
+            }
+        };
+        load();
+    }, []);
+
+    // ── Fetch cartons only when whs + item + division are all set ──
+    const canFetch = !!(filterWhs && filterProduct && filterDivision);
+
+    useEffect(() => {
+        if (!canFetch) {
+            setCartons([]);
+            setSelectedCartons(new Set());
+            setFilterLocation(null);
+            setFilterPallet(null);
+            setFilterRecDate("");
+            setFilterLot(null);
+            return;
+        }
+        const fetchCartons = async () => {
+            setCartonsLoading(true);
+            setSelectedCartons(new Set());
+            try {
+                const params: Record<string, string> = {
+                    item_code: filterProduct!.value,
+                    whs_code: filterWhs!.value,
+                    division_code: filterDivision!.value,
+                };
+                if (filterLocation) params.location = filterLocation.value;
+                if (filterPallet) params.pallet = filterPallet.value;
+                if (filterRecDate) params.rec_date = filterRecDate;
+                if (filterLot) params.lot_number = filterLot.value;
+                const res = await api.get("/inventory/cartons", { params, withCredentials: true });
+                if (res.data.success) setCartons(res.data.data.cartons || []);
+            } catch { setCartons([]); } finally {
+                setCartonsLoading(false);
+            }
+        };
+        fetchCartons();
+    }, [filterWhs, filterProduct, filterDivision, filterLocation, filterPallet, filterRecDate, filterLot]);
+
+    // ── Dest location filter by whs ──
+    useEffect(() => {
+        setFilteredDestLocations(
+            toWhsCode ? locations.filter((l: Location) => l.whs_code === toWhsCode) : locations
+        );
+        setToLocation("");
+    }, [toWhsCode, locations]);
+
+    const destLocationOptions: SelectOption[] = filteredDestLocations.map((l: Location) => ({
+        value: l.location_code, label: l.location_code,
+    }));
+
+    // ── Derived optional filter options from fetched cartons ──
+    const locationFilterOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(cartons.map((c) => c.location).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [cartons]);
+
+    const palletOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(cartons.map((c) => c.pallet).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [cartons]);
+
+    const lotOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(cartons.map((c) => c.lot_number).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [cartons]);
+
+    // ── Select options ──
+    const warehouseOptions: SelectOption[] = warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }));
+    const productOptions: SelectOption[] = products.map((p) => ({ value: p.item_code, label: `${p.item_code} — ${p.item_name}` }));
+    const divisionOptions: SelectOption[] = divisions.map((d) => ({ value: d.code, label: `${d.code} — ${d.name}` }));
+
+    // ── Carton selection ──
+    const toggleCarton = (cartonNumber: string) => {
+        setSelectedCartons((prev) => {
+            const next = new Set(prev);
+            next.has(cartonNumber) ? next.delete(cartonNumber) : next.add(cartonNumber);
+            return next;
+        });
+    };
+    const selectAll = () => setSelectedCartons(new Set(cartons.map((c) => c.carton_number)));
+    const clearAll = () => setSelectedCartons(new Set());
+
+    const selectedCartonData = cartons.filter((c) => selectedCartons.has(c.carton_number));
+    const totalQty = selectedCartonData.reduce((sum, c) => sum + c.qty_available, 0);
+    const totalQtyAll = useMemo(
+        () => cartons.reduce((sum, c) => sum + c.qty_available, 0),
+        [cartons]
+    );
+    const cartonsUom = cartons[0]?.uom ?? "";
+
+    const sourceConsistent = useMemo(() => {
+        if (selectedCartonData.length === 0) return true;
+        const first = selectedCartonData[0];
+        return selectedCartonData.every(
+            (c) => c.whs_code === first.whs_code && c.location === first.location
+        );
+    }, [selectedCartonData]);
+
+    // ── Submit ──
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(""); setSuccess("");
+        if (selectedCartonData.length === 0) { setError("Please select at least one carton."); return; }
+        if (!toWhsCode || !toLocation) { setError("Destination warehouse and location are required."); return; }
+        if (!sourceConsistent) { setError("Selected cartons must be from the same source warehouse and location."); return; }
+
+        const first = selectedCartonData[0];
+        if (
+            first.whs_code === toWhsCode &&
+            first.location === toLocation &&
+            (newQaStatus === "" || newQaStatus === first.qa_status) &&
+            (divisionCode === "" || divisionCode === first.division_code)
+        ) { setError("Source and destination are the same for all selected cartons."); return; }
+
+        setSubmitting(true);
+        setProgress({ done: 0, total: selectedCartonData.length });
+        const failedCartons: string[] = [];
+
+        for (let i = 0; i < selectedCartonData.length; i++) {
+            const carton = selectedCartonData[i];
+            const payload: TransferFormData = {
+                item_code: carton.item_code,
+                from_whs_code: carton.whs_code,
+                to_whs_code: toWhsCode,
+                from_location: carton.location,
+                to_location: toLocation,
+                old_qa_status: carton.qa_status,
+                new_qa_status: newQaStatus || carton.qa_status,
+                rec_date: carton.rec_date || "",
+                prod_date: carton.prod_date || "",
+                exp_date: carton.exp_date || "",
+                lot_number: carton.lot_number || "",
+                pallet: carton.pallet || "",
+                qty_to_transfer: carton.qty_available,
+                reason,
+                from_division_code: carton.division_code,
+                division_code: divisionCode || carton.division_code,
+                carton_number: carton.carton_number,
+            };
+            try {
+                await api.post("/inventory/transfer", payload, { withCredentials: true });
+            } catch {
+                failedCartons.push(carton.carton_number);
+            }
+            setProgress({ done: i + 1, total: selectedCartonData.length });
+        }
+
+        setSubmitting(false);
+        setProgress(null);
+
+        if (failedCartons.length === 0) {
+            setSuccess(`Successfully transferred ${selectedCartonData.length} carton(s).`);
+            setSelectedCartons(new Set());
+            setToWhsCode(""); setToLocation(""); setNewQaStatus(""); setDivisionCode(""); setReason("");
+            onRefresh();
+            mutate("/inventories");
+            // re-fetch cartons
+            if (canFetch) {
+                setCartonsLoading(true);
+                try {
+                    const params: Record<string, string> = {
+                        item_code: filterProduct!.value,
+                        whs_code: filterWhs!.value,
+                        division_code: filterDivision!.value,
+                    };
+                    const res = await api.get("/inventory/cartons", { params, withCredentials: true });
+                    if (res.data.success) setCartons(res.data.data.cartons || []);
+                } catch { /* ignore */ } finally { setCartonsLoading(false); }
+            }
+        } else {
+            setError(`Transfer completed with errors. Failed cartons: ${failedCartons.join(", ")}`);
+            onRefresh();
+        }
+    };
+
+    const handleReset = () => {
+        setFilterWhs(null); setFilterProduct(null); setFilterDivision(null);
+        setFilterLocation(null); setFilterPallet(null); setFilterRecDate(""); setFilterLot(null);
+        setSelectedCartons(new Set());
+        setToWhsCode(""); setToLocation(""); setNewQaStatus(""); setDivisionCode(""); setReason("");
+        setCartons([]);
+        setError(""); setSuccess("");
+    };
+
+    const hasSelection = selectedCartonData.length > 0;
+
+    // ── Empty state message ──
+    const emptyMessage = !filterWhs
+        ? "Select a warehouse to start"
+        : !filterProduct
+        ? "Select an item code"
+        : !filterDivision
+        ? "Select a division"
+        : cartonsLoading
+        ? ""
+        : "No cartons found";
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left – filters + carton list */}
+            <div className="lg:col-span-1">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6">
+                    <div className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-gray-900">Select Cartons</h3>
+                        <span className="text-xs text-gray-500">{selectedCartons.size} selected</span>
+                    </div>
+                    <div className="p-4 space-y-3">
+
+                        {/* ── Required filters ── */}
+                        <div>
+                            <FieldLabel required>Warehouse</FieldLabel>
+                            <Select
+                                options={warehouseOptions}
+                                value={filterWhs}
+                                onChange={(opt) => {
+                                    setFilterWhs(opt);
+                                    setFilterProduct(null);
+                                    setFilterDivision(null);
+                                    setFilterLocation(null);
+                                    setFilterPallet(null);
+                                    setFilterRecDate("");
+                                    setFilterLot(null);
+                                }}
+                                placeholder="Select warehouse..."
+                                isClearable isSearchable
+                                isLoading={masterLoading}
+                                styles={customSelectStyles} className="text-sm"
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel required>Item Code</FieldLabel>
+                            <Select
+                                options={productOptions}
+                                value={filterProduct}
+                                onChange={(opt) => {
+                                    setFilterProduct(opt);
+                                    setFilterLocation(null);
+                                    setFilterPallet(null);
+                                    setFilterRecDate("");
+                                    setFilterLot(null);
+                                }}
+                                placeholder="Search item..."
+                                isClearable isSearchable
+                                isDisabled={!filterWhs}
+                                isLoading={masterLoading}
+                                styles={customSelectStyles} className="text-sm"
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel required>Division</FieldLabel>
+                            <Select
+                                options={divisionOptions}
+                                value={filterDivision}
+                                onChange={(opt) => {
+                                    setFilterDivision(opt);
+                                    setFilterLocation(null);
+                                    setFilterPallet(null);
+                                    setFilterRecDate("");
+                                    setFilterLot(null);
+                                }}
+                                placeholder="Select division..."
+                                isClearable isSearchable
+                                isDisabled={!filterProduct}
+                                isLoading={masterLoading}
+                                styles={customSelectStyles} className="text-sm"
+                            />
+                        </div>
+
+                        {/* ── Optional filters — only after cartons loaded ── */}
+                        {cartons.length > 0 && (
+                            <>
+                                <div className="border-t border-gray-100 pt-3">
+                                    <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Optional filters</p>
+                                </div>
+                                <div>
+                                    <FieldLabel>Location</FieldLabel>
+                                    <Select
+                                        options={locationFilterOptions}
+                                        value={filterLocation}
+                                        onChange={(opt) => setFilterLocation(opt)}
+                                        placeholder="All locations"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <FieldLabel>Pallet</FieldLabel>
+                                    <Select
+                                        options={palletOptions}
+                                        value={filterPallet}
+                                        onChange={(opt) => setFilterPallet(opt)}
+                                        placeholder="All pallets"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <FieldLabel>Lot Number</FieldLabel>
+                                    <Select
+                                        options={lotOptions}
+                                        value={filterLot}
+                                        onChange={(opt) => setFilterLot(opt)}
+                                        placeholder="All lots"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* Select all / clear */}
+                        {cartons.length > 0 && (
+                            <div className="flex gap-2 pt-1">
+                                <button onClick={selectAll} type="button"
+                                    className="flex-1 text-xs px-2 py-1.5 rounded border border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors">
+                                    Select all ({cartons.length})
+                                </button>
+                                <button onClick={clearAll} type="button"
+                                    className="flex-1 text-xs px-2 py-1.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors">
+                                    Clear
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Total qty summary */}
+                        {!cartonsLoading && cartons.length > 0 && (
+                            <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
+                                <span className="text-xs text-gray-500">
+                                    {cartons.length} carton(s)
+                                </span>
+                                <span className="text-xs font-semibold text-gray-800">
+                                    Total: {totalQtyAll} {cartonsUom}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Carton list */}
+                        <div className="space-y-2 max-h-[380px] overflow-y-auto">
+                            {cartonsLoading ? (
+                                <LoadingSpinner />
+                            ) : !canFetch || cartons.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-6">{emptyMessage}</p>
+                            ) : (
+                                cartons.map((carton) => {
+                                    const checked = selectedCartons.has(carton.carton_number);
+                                    return (
+                                        <label
+                                            key={carton.carton_number}
+                                            className={`flex gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                                checked
+                                                    ? "border-blue-500 bg-blue-50"
+                                                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            <input
+                                                type="checkbox" checked={checked}
+                                                onChange={() => toggleCarton(carton.carton_number)}
+                                                className="mt-0.5 accent-blue-600 shrink-0"
+                                            />
+                                            <div className="min-w-0">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="text-xs font-semibold text-gray-900">📦 {carton.carton_number}</span>
+                                                    <span className={`text-xs px-2 py-0.5 rounded shrink-0 ml-2 ${carton.qty_available > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                                                        {carton.qty_available} {carton.uom}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-500">📍 {carton.whs_code} | {carton.location}</p>
+                                                <p className="text-xs text-gray-500">🏷️ lot: {carton.lot_number} | pallet: {carton.pallet}</p>
+                                                <p className="text-xs text-gray-500">📅 rec: {carton.rec_date}</p>
+                                            </div>
+                                        </label>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Right – Form */}
+            <div className="lg:col-span-2">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div className="border-b border-gray-200 px-6 py-4">
+                        <h2 className="text-xl font-semibold text-gray-900">Transfer by Carton</h2>
+                        <p className="text-sm text-gray-500 mt-1">Transfer full cartons — no partial qty. Multiple cartons in one action.</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="p-6">
+                        {/* Summary of selected cartons */}
+                        {hasSelection && (
+                            <div className={`rounded-lg p-4 mb-6 border ${sourceConsistent ? "bg-blue-50 border-blue-200" : "bg-amber-50 border-amber-300"}`}>
+                                <div className="flex items-start justify-between mb-2">
+                                    <h3 className={`text-sm font-semibold ${sourceConsistent ? "text-blue-900" : "text-amber-900"}`}>
+                                        {sourceConsistent ? "Selected Cartons" : "⚠ Mixed Sources Detected"}
+                                    </h3>
+                                    <span className="text-xs text-gray-600">{selectedCartonData.length} carton(s) · {totalQty} units total</span>
+                                </div>
+                                {!sourceConsistent && (
+                                    <p className="text-xs text-amber-800 mb-2">All selected cartons must be from the same warehouse and location.</p>
+                                )}
+                                <div className="space-y-1 max-h-40 overflow-y-auto">
+                                    {selectedCartonData.map((c: CartonGroup) => (
+                                        <div key={c.carton_number} className="flex items-center justify-between text-xs text-gray-700 bg-white rounded px-2 py-1 border border-gray-100">
+                                            <span className="font-medium">{c.carton_number}</span>
+                                            <span className="text-gray-500">{c.item_code} | {c.whs_code} → {c.location}</span>
+                                            <span className="font-semibold text-green-700">{c.qty_available} {c.uom}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {!hasSelection && (
+                            <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-6 mb-6 text-center">
+                                <p className="text-sm text-gray-500">Select one or more cartons from the left panel</p>
+                            </div>
+                        )}
+
+                        {/* Destination */}
+                        <SectionTitle>Destination Information</SectionTitle>
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <FieldLabel required>To Warehouse</FieldLabel>
+                                <Select
+                                    options={warehouseOptions}
+                                    value={warehouseOptions.find((o: SelectOption) => o.value === toWhsCode) || null}
+                                    onChange={(opt: SelectOption | null) => setToWhsCode(opt?.value || "")}
+                                    placeholder="Select warehouse..."
+                                    isClearable isSearchable isDisabled={!hasSelection}
+                                    styles={customSelectStyles} className="text-sm"
+                                />
+                            </div>
+                            <div>
+                                <FieldLabel required>To Location</FieldLabel>
+                                <Select
+                                    options={destLocationOptions}
+                                    value={destLocationOptions.find((o: SelectOption) => o.value === toLocation) || null}
+                                    onChange={(opt: SelectOption | null) => setToLocation(opt?.value || "")}
+                                    placeholder="Select location..."
+                                    isClearable isSearchable
+                                    isDisabled={!hasSelection || !toWhsCode}
+                                    styles={customSelectStyles} className="text-sm"
+                                    noOptionsMessage={() => toWhsCode ? "No locations found" : "Select warehouse first"}
+                                />
+                            </div>
+                            <div>
+                                <FieldLabel>New QA Status</FieldLabel>
+                                <select value={newQaStatus} onChange={(e) => setNewQaStatus(e.target.value)} disabled={!hasSelection}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100">
+                                    <option value="">Keep Current Status</option>
+                                    {qaStatuses.map((opt: QaStatus) => (
+                                        <option key={opt.qa_status} value={opt.qa_status}>{opt.description} ({opt.qa_status})</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <FieldLabel>To Division</FieldLabel>
+                                <select value={divisionCode} onChange={(e) => setDivisionCode(e.target.value)} disabled={!hasSelection}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100">
+                                    <option value="">Keep Current Division</option>
+                                    {divisionOptions.map((opt: SelectOption) => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Reason */}
+                        <div className="mb-6">
+                            <FieldLabel>Reason for Transfer</FieldLabel>
+                            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} disabled={!hasSelection}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                placeholder="Enter reason for transfer..." />
+                        </div>
+
+                        {/* Progress bar */}
+                        {progress && (
+                            <div className="mb-4">
+                                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                                    <span>Transferring cartons...</span>
+                                    <span>{progress.done} / {progress.total}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div
+                                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                        style={{ width: `${(progress.done / progress.total) * 100}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <AlertBanner type="error" message={error} />
+                        <AlertBanner type="success" message={success} />
+
+                        <div className="flex space-x-3">
+                            <button type="submit" disabled={submitting || !hasSelection || !sourceConsistent}
+                                className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                                {submitting
+                                    ? <><SpinIcon />Processing {progress?.done ?? 0}/{progress?.total ?? selectedCartonData.length}...</>
+                                    : <><TransferIcon />Transfer {selectedCartons.size > 0 ? `${selectedCartons.size} Carton(s)` : "Cartons"}</>
+                                }
+                            </button>
+                            <button type="button" onClick={handleReset} disabled={submitting}
+                                className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none disabled:opacity-50">
+                                Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Small shared UI primitives ───────────────────────────────────────────────
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+    return <h3 className="text-sm font-semibold text-gray-700 mb-3">{children}</h3>;
+}
+
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
+    return (
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+            {children} {required && <span className="text-red-500">*</span>}
+        </label>
+    );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+    return (
+        <div>
+            <span className="text-blue-700 font-medium">{label}:</span>
+            <span className="text-blue-900 ml-2">{value}</span>
+        </div>
+    );
+}
+
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+    return (
+        <div>
+            <FieldLabel>{label}</FieldLabel>
+            <input readOnly type="text" value={value}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50" />
+        </div>
+    );
+}
+
+function AlertBanner({ type, message }: { type: "error" | "success"; message: string }) {
+    if (!message) return null;
+    const isError = type === "error";
+    return (
+        <div className={`mb-6 rounded-lg p-4 border ${isError ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
+            <div className="flex">
+                <svg className={`w-5 h-5 mr-3 flex-shrink-0 ${isError ? "text-red-400" : "text-green-400"}`} fill="currentColor" viewBox="0 0 20 20">
+                    {isError
+                        ? <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        : <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    }
+                </svg>
+                <div>
+                    <h3 className={`text-sm font-medium ${isError ? "text-red-800" : "text-green-800"}`}>{isError ? "Error" : "Success"}</h3>
+                    <p className={`text-sm mt-1 ${isError ? "text-red-700" : "text-green-700"}`}>{message}</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function LoadingSpinner() {
+    return (
+        <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-sm text-gray-500 mt-2">Loading...</p>
+        </div>
+    );
+}
+
+function SpinIcon() {
+    return <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />;
+}
+
+function TransferIcon() {
+    return (
+        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
     );
 }

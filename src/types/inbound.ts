@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface HeaderFormProps {
   ID: number;
   inbound_no?: string;
@@ -138,6 +139,7 @@ export interface InboundDetailsProps {
 
 
 export interface InboundBarcodeTask {
+  product: any;
   ID : number;
   inbound_id : number;
   item_code : string;
@@ -151,5 +153,6 @@ export interface InboundBarcodeTask {
   location : string;
   putaway_location : string;
   putaway_qty : number;
+  case_number: string;
 }
 

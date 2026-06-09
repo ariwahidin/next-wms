@@ -45,11 +45,12 @@ export default function InboundCard({ data }: { data: InboundItem }) {
         </div>
       </div>
 
-      <CardContent className="p-0 space-y-1 pt-6" style={{ height: "100px" }}>
-        <div className="absolute top-2">
+      <CardContent className="p-3 flex flex-col" style={{ height: "140px" }}>
+        <div className="flex-1">
           <div className="text-sm font-semibold">
             {inbound_no}
-            <span className="ml-2 text-xs text-gray-500 rounded px-2 py-1 w-max mt-1 bg-green-100">
+            <br />
+            <span className="text-xs text-gray-500 rounded px-2 py-1 w-max mt-1 bg-green-100">
               {status}
             </span>
           </div>
@@ -57,7 +58,37 @@ export default function InboundCard({ data }: { data: InboundItem }) {
           <div className="text-sm text-gray-500">{receipt_id}</div>
           <div className="text-sm text-gray-400">{receive_status}</div>
         </div>
-        <div className="pt-9 flex flex-row gap-2">
+
+        <div className="flex flex-row gap-2 pb-2">
+          <Button
+            className="w-full flex items-center justify-center"
+            onClick={() => handleCheckingClick(inbound_no)}
+          >
+            Checking
+          </Button>
+          <Button
+            className="w-full flex items-center justify-center"
+            onClick={() => handlePutawayClick(inbound_no)}
+          >
+            Putaway
+          </Button>
+        </div>
+      </CardContent>
+
+      {/* <CardContent className="p-0 space-y-1 pt-6" style={{ height: "140px" }}>
+        <div className="absolute top-2">
+          <div className="text-sm font-semibold">
+            {inbound_no}
+            <br />
+            <span className="text-xs text-gray-500 rounded px-2 py-1 w-max mt-1 bg-green-100">
+              {status}
+            </span>
+          </div>
+          <div className="text-sm text-gray-500">{supplier_name}</div>
+          <div className="text-sm text-gray-500">{receipt_id}</div>
+          <div className="text-sm text-gray-400">{receive_status}</div>
+        </div>
+        <div className="pt-11 flex flex-row gap-2">
           <Button
             className="w-full flex items-center justify-center"
             onClick={() => handleCheckingClick(inbound_no)}
@@ -72,7 +103,7 @@ export default function InboundCard({ data }: { data: InboundItem }) {
             Putaway
           </Button>
         </div>
-      </CardContent>
+      </CardContent> */}
     </Card>
   );
 }

@@ -19,8 +19,10 @@ import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
 import { InventoryPolicy } from "@/types/inventory";
 import { Product } from "@/types/item";
+import { set } from "date-fns";
 import { InboundBarcodeTask } from "@/types/inbound";
 import { Label } from "@radix-ui/react-label";
+import { se } from "date-fns/locale";
 
 
 interface PutawayItem {
@@ -57,20 +59,6 @@ interface ScanFormDataPalletID {
   pallet: string;
 }
 
-// Grouped carton type for display
-interface CartonGroup {
-  caseNumber: string;
-  itemCode: string;
-  itemName: string;
-  barcode: string;
-  palletId: string;
-  totalQty: number;
-  uom: string;
-  putawayLocation?: string;
-  putawayQty?: number;
-  tasks: InboundBarcodeTask[];
-}
-
 // ============================================================
 // CUSTOM HOOKS
 // ============================================================
@@ -85,6 +73,7 @@ const usePutawayTasks = (inboundNo: string[]) => {
 
     setLoading(true);
     try {
+
       const payload = {
         inbound_no: inboundNo[0],
         filter: inboundNo[1],
@@ -112,6 +101,7 @@ const usePutawayTasks = (inboundNo: string[]) => {
         setAllTasks(data.inbound);
         setTasks(data.inbound);
       }
+
     } catch (error) {
       console.error("Error fetching putaway tasks:", error);
       eventBus.emit("showAlert", {
@@ -222,16 +212,8 @@ interface ScanFormProps {
   setShowForm?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const ScanForm: React.FC<ScanFormProps> = ({
-  onSubmit,
-  loading,
-  inbound_no,
-  filter,
-  palletID,
-  setPalletID,
-  showForm,
-  setShowForm,
-}) => {
+const ScanForm: React.FC<ScanFormProps> = ({ onSubmit, loading, inbound_no, filter, palletID, setPalletID, showForm, setShowForm }) => {
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -282,94 +264,21 @@ const ScanForm: React.FC<ScanFormProps> = ({
                 )}
               </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading || filter !== "working"}
-              >
+              <Button type="submit" className="w-full" disabled={loading || filter !== "working"}>
                 {loading ? "Loading..." : "Next"}
               </Button>
             </form>
           </CardContent>
         </Card>
       )}
+
     </>
   );
 };
 
-// ============================================================
-// CARTON CARD COMPONENT
-// ============================================================
-interface CartonCardProps {
-  group: CartonGroup;
-  filter: string;
-}
-
-const CartonCard: React.FC<CartonCardProps> = ({ group, filter }) => {
-  return (
-    <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-2">
-      {/* Header: carton serial + qty badge */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-gray-400 text-base">📦</span>
-          <span className="font-mono text-xs font-medium text-gray-800 truncate">
-            {group.caseNumber || "—"}
-          </span>
-        </div>
-        <span className="shrink-0 text-xs font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
-          {group.totalQty} {group.uom}
-        </span>
-      </div>
-
-      {/* Divider */}
-      <div className="border-t border-gray-100" />
-
-      {/* Fields grid */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-gray-400">Item code</p>
-          <p className="font-mono text-xs text-gray-800">{group.itemCode}</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-gray-400">Barcode</p>
-          <p className="font-mono text-xs text-gray-800">{group.barcode}</p>
-        </div>
-        {group.itemName && (
-          <div className="col-span-2">
-            <p className="text-[10px] uppercase tracking-wide text-gray-400">Item name</p>
-            <p className="text-xs text-gray-700 leading-snug">{group.itemName}</p>
-          </div>
-        )}
-        <div className="col-span-2">
-          <p className="text-[10px] uppercase tracking-wide text-gray-400">Pallet ID</p>
-          <p className="font-mono text-xs text-blue-600 font-medium">{group.palletId || "—"}</p>
-        </div>
-
-        {/* Completed-only fields */}
-        {filter === "completed" && group.putawayLocation && (
-          <div>
-            <p className="text-[10px] uppercase tracking-wide text-gray-400">Putaway loc</p>
-            <p className="font-mono text-xs text-green-700 font-medium">{group.putawayLocation}</p>
-          </div>
-        )}
-        {filter === "completed" && group.putawayQty !== undefined && (
-          <div>
-            <p className="text-[10px] uppercase tracking-wide text-gray-400">Putaway qty</p>
-            <p className="font-mono text-xs text-gray-800">
-              {group.putawayQty} {group.uom}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ============================================================
-// TASK LIST COMPONENT
-// ============================================================
 interface TaskListProps {
   tasks: InboundBarcodeTask[];
+  invPolicy?: InventoryPolicy;
   onTaskClick: (task: InboundBarcodeTask) => void;
   searchTerm: string;
   onSearchChange: (value: string) => void;
@@ -381,121 +290,74 @@ interface TaskListProps {
 
 const TaskList: React.FC<TaskListProps> = ({
   tasks,
+  invPolicy,
   onTaskClick,
   searchTerm,
   onSearchChange,
   filter,
   setFilter,
+  showForm,
+  setShowForm
 }) => {
-  // Group tasks by case_number (fallback to barcode if empty)
-  const cartonGroups = useMemo<CartonGroup[]>(() => {
-    const map = new Map<string, CartonGroup>();
-
-    tasks.forEach((task) => {
-      const key = task.case_number || task.barcode;
-
-      if (!map.has(key)) {
-        map.set(key, {
-          caseNumber: task.case_number || task.barcode,
-          itemCode: task.item_code,
-          itemName: task.product?.item_name || "",
-          barcode: task.barcode,
-          palletId: task.location,
-          totalQty: 0,
-          uom: task.uom,
-          putawayLocation: task.putaway_location || undefined,
-          putawayQty: task.putaway_qty || undefined,
-          tasks: [],
-        });
-      }
-
-      const group = map.get(key)!;
-      group.totalQty += task.quantity;
-      group.tasks.push(task);
-
-      // Update putaway info from latest task in group
-      if (task.putaway_location) group.putawayLocation = task.putaway_location;
-      if (task.putaway_qty) group.putawayQty = (group.putawayQty ?? 0) + task.putaway_qty;
-    });
-
-    return Array.from(map.values());
-  }, [tasks]);
-
   const totalQty = useMemo(
-    () => tasks.reduce((sum, t) => sum + t.quantity, 0),
+    () => tasks.reduce((sum, task) => sum + task.putaway_qty, 0),
     [tasks]
   );
 
   const totalExpected = useMemo(
-    () => tasks.reduce((sum, t) => sum + t.quantity, 0),
-    [tasks]
-  );
-
-  const totalPutaway = useMemo(
-    () => tasks.reduce((sum, t) => sum + (t.putaway_qty ?? 0), 0),
+    () => tasks.reduce((sum, task) => sum + task.quantity, 0),
     [tasks]
   );
 
   return (
-    <div className="space-y-3">
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-[11px] text-gray-400 mb-0.5">Total carton</p>
-          <p className="text-xl font-medium text-gray-800">{cartonGroups.length}</p>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-[11px] text-gray-400 mb-0.5">Total qty</p>
-          <p className="text-xl font-medium text-gray-800">
-            {filter === "completed" ? totalPutaway : totalQty}
-            {filter === "working" && (
-              <span className="text-sm font-normal text-gray-400"> / {totalExpected}</span>
-            )}
-          </p>
-        </div>
+    <>
+      <div className="flex justify-center gap-4 mb-4">
+        <span className="text-sm">
+          Total Qty: {totalQty} / {totalExpected}
+        </span>
       </div>
 
       <Card>
         <CardContent className="p-4 space-y-3">
-          {/* Filter tabs */}
-          <div className="inline-flex rounded-lg border border-gray-200 p-1 gap-1">
-            <button
-              onClick={() => setFilter("working")}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                filter === "working"
-                  ? "bg-blue-500 text-white"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              Working
-            </button>
-            <button
-              onClick={() => setFilter("completed")}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                filter === "completed"
-                  ? "bg-green-500 text-white"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              Completed
-            </button>
-            <button
-              onClick={() => setFilter("pending")}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                filter === "pending"
-                  ? "bg-gray-500 text-white"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              Pending
-            </button>
-          </div>
 
-          {/* Search */}
+          {/* {showForm && ( */}
+            <div className="inline-flex rounded-lg border border-gray-200 p-1 gap-1">
+              <button
+                onClick={() => setFilter('working')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${filter === 'working'
+                  ? 'bg-blue-500 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+              >
+                Working
+              </button>
+              <button
+                onClick={() => setFilter('completed')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${filter === 'completed'
+                  ? 'bg-green-500 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+              >
+                Completed
+              </button>
+              <button
+                onClick={() => setFilter('pending')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${filter === 'pending'
+                  ? 'bg-gray-500 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+              >
+                Pending
+              </button>
+            </div>
+          {/* )} */}
+
+
+
           <div className="relative">
             <Input
               id="searchTerm"
-              placeholder="Search item / carton / pallet..."
+              placeholder="Search ..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
             />
@@ -513,30 +375,82 @@ const TaskList: React.FC<TaskListProps> = ({
             )}
           </div>
 
-          {/* Carton group count hint */}
-          {cartonGroups.length > 0 && (
-            <p className="text-xs text-gray-400">
-              {cartonGroups.length} carton{cartonGroups.length > 1 ? "s" : ""} · {tasks.length} item{tasks.length > 1 ? "s" : ""}
-            </p>
-          )}
 
-          {/* Carton list */}
-          {cartonGroups.length > 0 ? (
-            <div className="space-y-2">
-              {cartonGroups.map((group) => (
-                <CartonCard
-                  key={group.caseNumber}
-                  group={group}
-                  filter={filter}
-                />
+
+
+          {tasks.length > 0 ? (
+            <ul className="space-y-3">
+              {tasks.map((task) => (
+                <li
+                  key={task.ID}
+                  onClick={() => onTaskClick(task)}
+                  className="border p-3 rounded cursor-pointer hover:bg-gray-100"
+                >
+                  <div className="text-sm space-y-1">
+                    <div className="font-mono text-xs">
+                      <span className="text-gray-600">Item:</span> {task.item_code}
+                      <br />
+                      <span className="text-gray-600">Barcode:</span> {task.barcode}
+                      <br />
+                      {invPolicy?.use_production_date && task.prod_date && (
+                        <>
+                          <span className="text-gray-600">Prod Date:</span> {task.prod_date}
+                          <br />
+                        </>
+                      )}
+                      {invPolicy?.require_expiry_date && task.exp_date && (
+                        <>
+                          <span className="text-gray-600">Exp Date:</span> {task.exp_date}
+                          <br />
+                        </>
+                      )}
+                      {invPolicy?.use_lot_no && task.lot_number && (
+                        <>
+                          <span className="text-gray-600">Lot:</span> {task.lot_number}
+                          <br />
+                        </>
+                      )}
+
+                      {(filter === 'working' || filter === 'pending') && task.quantity && (
+                        <>
+                          <span className="text-gray-600">Quantity:</span> {task.quantity}  {task.uom}
+                          <br />
+                        </>
+                      )}
+                      {task.location && (
+                        <>
+                          <span className="text-gray-600">Pallet ID:</span> {task.location}
+                        </>
+                      )}
+
+                      {filter === 'completed' && task.putaway_location && (
+                        <>
+                          <br />
+                          <span className="text-gray-600">Putaway Loc:</span> {task.putaway_location}
+                        </>
+                      )}
+
+                      {filter === 'completed' && task.putaway_qty && (
+                        <>
+                          <br />
+                          <span className="text-gray-600">Putaway Qty :</span> {task.putaway_qty}  {task.uom}
+                        </>
+                      )}
+
+                    </div>
+                    {/* {task.is_serial && (
+                      <div className="text-right text-xs text-gray-600">SN Required</div>
+                    )} */}
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
-            <div className="text-sm text-gray-400 text-center py-6">No tasks found</div>
+            <div className="text-sm text-gray-400 text-center py-4">No tasks found</div>
           )}
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 };
 
@@ -547,25 +461,21 @@ const PutawayPage = () => {
   const router = useRouter();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [showPending, setShowPending] = useState(false);
+
   const [filter, setFilter] = useState("working");
   const [palletID, setPalletID] = useState("");
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { items, loading: itemsLoading, fetchItems, deleteItem } = usePutawayItems();
   const { policy, fetchPolicy } = useInventoryPolicy();
   const [inboundNo, setInboundNo] = useState("");
   const { inbound } = router.query;
 
+
   const [showModalTransfer, setShowModalTransfer] = useState(false);
   const [locationPutaway, setLocationPutaway] = useState<string | null>(null);
-  const {
-    tasks,
-    allTasks,
-    loading: tasksLoading,
-    showForm,
-    setShowForm,
-    fetchTasks,
-    setTasks,
-  } = usePutawayTasks([inboundNo, filter, palletID]);
+  const { tasks, allTasks, loading: tasksLoading, showForm, setShowForm, fetchTasks, setTasks } = usePutawayTasks([inboundNo, filter, palletID]);
 
   useEffect(() => {
     if (inbound) {
@@ -573,23 +483,22 @@ const PutawayPage = () => {
     }
   }, [inbound]);
 
-  // Filter tasks based on search term
+  // Filter tasks based on search and filter
   useEffect(() => {
     let filtered = allTasks;
 
     if (searchTerm) {
-      filtered = filtered.filter(
-        (task) =>
-          task.item_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.putaway_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (task.case_number ?? "").toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter((task) =>
+        task.item_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.putaway_location.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     setTasks(filtered);
   }, [allTasks, searchTerm, setTasks]);
+
 
   const handleScanSubmit = async (formData: ScanFormDataPalletID) => {
     setIsSubmitting(true);
@@ -606,28 +515,32 @@ const PutawayPage = () => {
     }
   };
 
+
   useEffect(() => {
     setTasks([]);
     if (filter === "completed") {
       fetchTasks();
     }
+
     if (filter === "pending") {
       fetchTasks();
     }
+
     if (filter === "working") {
       setShowForm(true);
     }
-  }, [filter]);
+  }, [filter])
 
   const handleTaskClick = async (task: InboundBarcodeTask) => {
-    // reserved for future detail modal
   };
+
+
 
   const doPutawayAll = async () => {
     const payload = {
       inbound_no: inbound,
       item_ids: tasks.map((task) => parseInt(String(task.ID))),
-      location: locationPutaway,
+      location: locationPutaway
     };
 
     setIsSubmitting(true);
@@ -647,7 +560,7 @@ const PutawayPage = () => {
         setPalletID("");
         setTimeout(() => {
           document.getElementById("palletID")?.focus();
-        }, 1000);
+        }, 1000)
       }
     } catch (error: any) {
       eventBus.emit("showAlert", {
@@ -660,6 +573,7 @@ const PutawayPage = () => {
         setIsSubmitting(false);
       }, 1500);
     }
+
   };
 
   return (
@@ -667,19 +581,11 @@ const PutawayPage = () => {
       <PageHeader title={`Putaway ${inbound}`} showBackButton />
 
       <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
-        <ScanForm
-          onSubmit={handleScanSubmit}
-          loading={isSubmitting}
-          inbound_no={inbound as string}
-          filter={filter}
-          palletID={palletID}
-          setPalletID={setPalletID}
-          showForm={showForm}
-          setShowForm={setShowForm}
-        />
+        <ScanForm onSubmit={handleScanSubmit} loading={isSubmitting} inbound_no={inbound as string} filter={filter} palletID={palletID} setPalletID={setPalletID} showForm={showForm} setShowForm={setShowForm} />
 
         <TaskList
           tasks={tasks}
+          invPolicy={policy}
           onTaskClick={handleTaskClick}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -691,10 +597,14 @@ const PutawayPage = () => {
 
         {tasks.length > 0 && filter === "working" && (
           <div className="fixed bottom-6 left-2 right-2 flex gap-4">
-            <Button onClick={() => setShowModalTransfer(true)} className="flex-1">
+            <Button
+              onClick={() => setShowModalTransfer(true)}
+              className="flex-1"
+            >
               <CheckCheck size={28} />
               Putaway All
             </Button>
+
             <Button
               onClick={() => {
                 setTasks([]);
@@ -708,6 +618,7 @@ const PutawayPage = () => {
               Cancel
             </Button>
           </div>
+
         )}
 
         {/* Putaway Modal */}
@@ -729,6 +640,7 @@ const PutawayPage = () => {
                   value={locationPutaway}
                   onChange={(e) => setLocationPutaway(e.target.value)}
                 />
+
                 {locationPutaway && (
                   <button
                     type="button"
@@ -745,7 +657,10 @@ const PutawayPage = () => {
             </div>
 
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setShowModalTransfer(false)}>
+              <Button
+                variant="ghost"
+                onClick={() => setShowModalTransfer(false)}
+              >
                 Cancel
               </Button>
               <Button
@@ -757,13 +672,12 @@ const PutawayPage = () => {
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Please wait ...
                   </>
-                ) : (
-                  "Submit"
-                )}
+                ) : 'Submit'}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
       </div>
     </>
   );
