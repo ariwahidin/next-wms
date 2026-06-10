@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import PageHeader from "@/components/mobile/PageHeader";
-import { Check, CheckCheck, ChevronsUpDown, Loader2, Search, X, XCircle } from "lucide-react";
+import { Check, CheckCheck, Loader2, Search, X, XCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,19 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
 import { InventoryPolicy } from "@/types/inventory";
@@ -79,26 +66,38 @@ interface ParsedQRData {
 }
 
 function parseQRCode(raw: string): ParsedQRData | null {
+  // ── Format v2: 12 segment dash-separated ─────────────────
   if (!raw.startsWith("(") && raw.split("-").length === 12) {
     const segments = raw.split("-");
+
     const rawDate = segments[9];
     let mfgDate: string | undefined;
     if (rawDate?.length === 8) {
       mfgDate = `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`;
     }
+
     const qtyMatch = segments[4].match(/^(\d+)/);
     const qtyPerCarton = qtyMatch ? Number(qtyMatch[1]) : undefined;
-    return { sku: segments[1] || undefined, qtyPerCarton, mfgDate, labelType: "CARTON" };
+
+    return {
+      sku: segments[1] || undefined,
+      qtyPerCarton,
+      mfgDate,
+      labelType: "CARTON",
+    };
   }
 
+  // ── Format v1: (1)KEY=VALUE ───────────────────────────────
   const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g;
   const map: Record<string, string> = {};
   let match: RegExpExecArray | null;
   let found = false;
+
   while ((match = pattern.exec(raw)) !== null) {
     found = true;
     map[match[2].trim()] = match[3].trim();
   }
+
   if (!found) return null;
 
   let mfgDate: string | undefined;
@@ -164,75 +163,6 @@ const ToggleSwitch = ({
   </div>
 );
 
-// ─── Division Filter Select ───────────────────────────────────────────────────
-
-interface DivisionSelectProps {
-  options: string[];
-  value: string;
-  onChange: (val: string) => void;
-}
-
-const DivisionSelect = ({ options, value, onChange }: DivisionSelectProps) => {
-  const [open, setOpen] = useState(false);
-
-  const displayLabel = value === "all" ? "All Divisions" : value;
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-        >
-          <span className={value === "all" ? "text-gray-400" : "font-semibold text-gray-800"}>
-            {displayLabel}
-          </span>
-          <ChevronsUpDown size={14} className="text-gray-400 shrink-0 ml-2" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-[--radix-popover-trigger-width] p-0 bg-white"
-        align="start"
-        sideOffset={4}
-      >
-        <Command>
-          <CommandInput placeholder="Search division..." className="h-9" />
-          <CommandList>
-            <CommandEmpty>No division found.</CommandEmpty>
-            <CommandGroup>
-              <CommandItem
-                value="all"
-                onSelect={() => {
-                  onChange("all");
-                  setOpen(false);
-                }}
-                className="cursor-pointer"
-              >
-                <span className={value === "all" ? "font-semibold" : ""}>All Divisions</span>
-                {value === "all" && <Check size={14} className="ml-auto text-blue-500" />}
-              </CommandItem>
-              {options.map((div) => (
-                <CommandItem
-                  key={div}
-                  value={div}
-                  onSelect={() => {
-                    onChange(div);
-                    setOpen(false);
-                  }}
-                  className="cursor-pointer"
-                >
-                  <span className={value === div ? "font-semibold" : ""}>{div}</span>
-                  {value === div && <Check size={14} className="ml-auto text-blue-500" />}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-};
-
 // ─── Search Mode Type ─────────────────────────────────────────────────────────
 
 type SearchMode = "barcode" | "pallet";
@@ -261,29 +191,13 @@ const TransferPage = () => {
   const [isSubmit, setIsSubmit] = useState(false);
   const [showForm, setShowForm] = useState(true);
 
-  // ── Division Filter ──────────────────────────────────────────────────────────
-  const [selectedDivision, setSelectedDivision] = useState<string>("all");
-
-  // ── Search Mode toggle ───────────────────────────────────────────────────────
+  // ── Search Mode toggle: "barcode" | "pallet" ────────────────────────────────
   const [searchMode, setSearchMode] = useState<SearchMode>("barcode");
 
   // ── QR state ────────────────────────────────────────────────────────────────
   const [isQrMode, setIsQrMode] = useState(false);
   const [qrRawInput, setQrRawInput] = useState("");
   const [parsedQR, setParsedQR] = useState<ParsedQRData | null>(null);
-
-  // ── Derived: distinct division options from result ───────────────────────────
-  const divisionOptions = useMemo(() => {
-    const codes = listInboundScanned
-      .map((item) => item.division_code ?? "")
-      .filter(Boolean);
-    return Array.from(new Set(codes)).sort();
-  }, [listInboundScanned]);
-
-  // Reset division filter saat hasil baru datang
-  useEffect(() => {
-    setSelectedDivision("all");
-  }, [listInboundScanned]);
 
   // ── QR Helpers ──────────────────────────────────────────────────────────────
 
@@ -324,6 +238,7 @@ const TransferPage = () => {
   const handleSearchModeToggle = (toPallet: boolean) => {
     const newMode: SearchMode = toPallet ? "pallet" : "barcode";
     setSearchMode(newMode);
+    // reset semua input & hasil
     setScanLocation("");
     setScanPalletId("");
     setScanBarcode("");
@@ -360,7 +275,10 @@ const TransferPage = () => {
   const isSearchDisabled = (() => {
     if (loading) return true;
     if (searchMode === "pallet") return !scanPalletId.trim();
+    // hanya pakai location saja
     if (location) return !scanLocation.trim();
+   
+    // barcode mode
     return !scanBarcode.trim() || !scanLocation.trim();
   })();
 
@@ -378,12 +296,15 @@ const TransferPage = () => {
       };
 
       if (searchMode === "pallet") {
+        // Mode pallet: hanya kirim pallet_id
         payload = { pallet: scanPalletId.trim() };
       } else if (parsedQR?.sku && !parsedQR?.ean) {
+        // QR v2 — hanya punya SKU
         payload = { location: scanLocation, sku: parsedQR.sku };
       } else if (location && !scanBarcode.trim()) {
         payload = { location: scanLocation };
-      } else {
+      }else {
+        // EAN mode atau QR v1
         payload = { location: scanLocation, barcode: scanBarcode };
       }
 
@@ -437,37 +358,14 @@ const TransferPage = () => {
     }
   };
 
-  // ── Derived: filtered items (search term + division) ────────────────────────
-
-  const filteredScannedItems = useMemo(() => {
-    return listInboundScanned.filter((item) => {
-      // Filter by division
-      if (selectedDivision !== "all" && item.division_code !== selectedDivision) return false;
-      // Filter by search term
-      if (searchTerm) {
-        const q = searchTerm.toLowerCase();
-        return (
-          item?.id?.toString().includes(q) ||
-          item?.inbound_detail_id.toString().includes(q) ||
-          item?.barcode.toLowerCase().includes(q) ||
-          item?.serial_number.toLowerCase().includes(q) ||
-          item?.location.toLowerCase().includes(q) ||
-          item?.pallet.toLowerCase().includes(q) ||
-          item?.division_code?.toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
-  }, [listInboundScanned, selectedDivision, searchTerm]);
-
-  // ── handleConfirmTransfer (Transfer All — pakai filteredScannedItems) ─────────
+  // ── handleConfirmTransfer (Transfer All) ─────────────────────────────────────
 
   const handleConfirmTransfer = async () => {
     const dataToPost = {
       from_location: searchMode === "pallet" ? undefined : scanLocation,
       from_pallet: searchMode === "pallet" ? scanPalletId : undefined,
       to_location: scanLocation2,
-      list_inventory: filteredScannedItems, // ← hanya yang terfilter
+      list_inventory: listInboundScanned,
     };
     setIsSubmit(true);
     try {
@@ -570,25 +468,26 @@ const TransferPage = () => {
     }
   }, [showConfirmModalMoveTo]);
 
-  // ── Helpers for confirm dialog text ──────────────────────────────────────────
+  // ── Derived ──────────────────────────────────────────────────────────────────
 
-  const divisionSuffix =
-    selectedDivision !== "all" ? ` [Division: ${selectedDivision}]` : "";
+  const filteredScannedItems = listInboundScanned.filter(
+    (item) =>
+      !searchTerm ||
+      item?.id?.toString().includes(searchTerm.toLowerCase()) ||
+      item?.inbound_detail_id.toString().includes(searchTerm.toLowerCase()) ||
+      item?.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item?.serial_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item?.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item?.pallet.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item?.division_code?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // ── Helpers for confirm dialog text ──────────────────────────────────────────
 
   const transferAllLabel =
     searchMode === "pallet"
-      ? `All items in pallet ${scanPalletId}${divisionSuffix}`
-      : `All items of ${scanBarcode} in ${scanLocation}${divisionSuffix}`;
-
-  // ── Stats for result header ───────────────────────────────────────────────────
-
-  const distinctItemCodes = useMemo(() => {
-    return Array.from(new Set(filteredScannedItems.map((i) => i.item_code).filter(Boolean)));
-  }, [filteredScannedItems]);
-
-  const totalQty = useMemo(() => {
-    return filteredScannedItems.reduce((sum, item) => sum + (item.qty_display ?? 0), 0);
-  }, [filteredScannedItems]);
+      ? `All items in pallet ${scanPalletId}`
+      : `All items of ${scanBarcode} in ${scanLocation}`;
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -613,9 +512,12 @@ const TransferPage = () => {
                 />
               </div>
 
-              {/* MODE: BARCODE / QR */}
+              {/* ══════════════════════════════════════════ */}
+              {/* MODE: BARCODE / QR                        */}
+              {/* ══════════════════════════════════════════ */}
               {searchMode === "barcode" && (
                 <>
+                  {/* Origin Location */}
                   <div>
                     <label className="mb-1 block font-semibold text-gray-700 text-sm">
                       Origin Location :
@@ -644,6 +546,7 @@ const TransferPage = () => {
                     </div>
                   </div>
 
+                  {/* Scan Mode Toggle: EAN ↔ QR */}
                   <div className="flex items-center justify-between">
                     <label className="font-semibold text-gray-700 text-sm">Item Barcode :</label>
                     <ToggleSwitch
@@ -654,6 +557,7 @@ const TransferPage = () => {
                     />
                   </div>
 
+                  {/* EAN mode */}
                   {!isQrMode && (
                     <div className="relative">
                       <Input
@@ -679,6 +583,7 @@ const TransferPage = () => {
                     </div>
                   )}
 
+                  {/* QR mode */}
                   {isQrMode && (
                     <div className="space-y-2">
                       <div className="relative">
@@ -702,22 +607,65 @@ const TransferPage = () => {
                         )}
                       </div>
 
+                      {/* QR Preview */}
                       {parsedQR && (
                         <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs font-mono space-y-0.5">
                           <div>
                             <span className="text-gray-500">Type:</span>{" "}
-                            <span className={parsedQR.labelType === "UNIT" ? "text-purple-600 font-semibold" : "text-blue-600 font-semibold"}>
-                              {parsedQR.labelType === "UNIT" ? "Unit / Serial" : "Master Carton"}
+                            <span
+                              className={
+                                parsedQR.labelType === "UNIT"
+                                  ? "text-purple-600 font-semibold"
+                                  : "text-blue-600 font-semibold"
+                              }
+                            >
+                              {parsedQR.labelType === "UNIT"
+                                ? "Unit / Serial"
+                                : "Master Carton"}
                             </span>
                           </div>
-                          {parsedQR.sku && <div><span className="text-gray-500">SKU:</span> {parsedQR.sku}</div>}
-                          {parsedQR.ean && <div><span className="text-gray-500">EAN:</span> {parsedQR.ean}</div>}
-                          {parsedQR.product && <div><span className="text-gray-500">Product:</span> {parsedQR.product}</div>}
-                          {parsedQR.serial && <div><span className="text-gray-500">Serial:</span> {parsedQR.serial}</div>}
-                          {parsedQR.batch && <div><span className="text-gray-500">Batch:</span> {parsedQR.batch}</div>}
-                          {parsedQR.cartonSerial && <div><span className="text-gray-500">Carton:</span> {parsedQR.cartonSerial}</div>}
-                          {parsedQR.mfgDate && <div><span className="text-gray-500">MFG Date:</span> {parsedQR.mfgDate}</div>}
-                          {parsedQR.qtyPerCarton && <div><span className="text-gray-500">Qty/Carton:</span> {parsedQR.qtyPerCarton}</div>}
+                          {parsedQR.sku && (
+                            <div>
+                              <span className="text-gray-500">SKU:</span> {parsedQR.sku}
+                            </div>
+                          )}
+                          {parsedQR.ean && (
+                            <div>
+                              <span className="text-gray-500">EAN:</span> {parsedQR.ean}
+                            </div>
+                          )}
+                          {parsedQR.product && (
+                            <div>
+                              <span className="text-gray-500">Product:</span> {parsedQR.product}
+                            </div>
+                          )}
+                          {parsedQR.serial && (
+                            <div>
+                              <span className="text-gray-500">Serial:</span> {parsedQR.serial}
+                            </div>
+                          )}
+                          {parsedQR.batch && (
+                            <div>
+                              <span className="text-gray-500">Batch:</span> {parsedQR.batch}
+                            </div>
+                          )}
+                          {parsedQR.cartonSerial && (
+                            <div>
+                              <span className="text-gray-500">Carton:</span>{" "}
+                              {parsedQR.cartonSerial}
+                            </div>
+                          )}
+                          {parsedQR.mfgDate && (
+                            <div>
+                              <span className="text-gray-500">MFG Date:</span> {parsedQR.mfgDate}
+                            </div>
+                          )}
+                          {parsedQR.qtyPerCarton && (
+                            <div>
+                              <span className="text-gray-500">Qty/Carton:</span>{" "}
+                              {parsedQR.qtyPerCarton}
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -727,10 +675,13 @@ const TransferPage = () => {
                         </p>
                       )}
 
+                      {/* EAN hasil parse */}
                       {scanBarcode && (
                         <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border rounded px-2 py-1.5">
                           <span className="text-gray-400">EAN parsed:</span>
-                          <span className="font-mono font-semibold text-gray-800">{scanBarcode}</span>
+                          <span className="font-mono font-semibold text-gray-800">
+                            {scanBarcode}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -738,7 +689,9 @@ const TransferPage = () => {
                 </>
               )}
 
-              {/* MODE: PALLET */}
+              {/* ══════════════════════════════════════════ */}
+              {/* MODE: PALLET                              */}
+              {/* ══════════════════════════════════════════ */}
               {searchMode === "pallet" && (
                 <div>
                   <label className="mb-1 block font-semibold text-gray-700 text-sm">
@@ -770,12 +723,22 @@ const TransferPage = () => {
                 </div>
               )}
 
-              {/* Search Button */}
-              <Button onClick={handleSearch} className="w-full" disabled={isSearchDisabled}>
+              {/* ── Search Button ── */}
+              <Button
+                onClick={handleSearch}
+                className="w-full"
+                disabled={isSearchDisabled}
+              >
                 {loading ? (
-                  <><Loader2 className="animate-spin w-4 h-4 mr-2" />Searching...</>
+                  <>
+                    <Loader2 className="animate-spin w-4 h-4 mr-2" />
+                    Searching...
+                  </>
                 ) : (
-                  <><Search size={18} className="mr-2" />Search</>
+                  <>
+                    <Search size={18} className="mr-2" />
+                    Search
+                  </>
                 )}
               </Button>
             </CardContent>
@@ -793,53 +756,27 @@ const TransferPage = () => {
         {/* ── Result List ── */}
         {!loading && (
           <Card>
-            <CardContent className="p-4 space-y-3">
-
-              {/* ── Stats header ── */}
+            <CardContent className="p-4 space-y-4">
               <div className="text-sm text-gray-600">
+
                 Search By :{" "}
                 <span className="font-semibold text-gray-800">
-                  {searchMode === "pallet"
-                    ? `Pallet ID (${scanPalletId})`
-                    : `Location (${scanLocation}) + Barcode (${scanBarcode})`}
+                  {searchMode === "pallet" ? `Pallet ID (${scanPalletId})` : `Location (${scanLocation}) + Barcode (${scanBarcode})`}
                 </span>
                 <br />
+
                 Record : {filteredScannedItems.length}{" "}
-                | Total item : {distinctItemCodes.length}{" "}
-                | Total Qty : {totalQty}{" "}
+                {/* total item itu distinct item_code */}
+                | Total item : {filteredScannedItems.reduce((distinct, item) => {
+                  if (!distinct.includes(item.item_code!)) {
+                    distinct.push(item.item_code!);
+                  }
+                  return distinct;
+                }, []).length}{" "}| Total Qty:{" "}
+                {filteredScannedItems.reduce((sum, item) => sum + (item.qty_display ?? 0), 0)}{" "}
                 {filteredScannedItems[0]?.uom_display}
               </div>
 
-              {/* ── Division Filter — hanya tampil jika ada >1 distinct division ── */}
-              {divisionOptions.length > 1 && (
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                    Filter by Division
-                  </label>
-                  <DivisionSelect
-                    options={divisionOptions}
-                    value={selectedDivision}
-                    onChange={setSelectedDivision}
-                  />
-                  {selectedDivision !== "all" && (
-                    <div className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded px-2 py-1">
-                      <span>
-                        Showing division <strong>{selectedDivision}</strong> only —{" "}
-                        {filteredScannedItems.length} record(s), qty {totalQty}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedDivision("all")}
-                        className="ml-auto text-blue-400 hover:text-blue-600"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ── Item Cards ── */}
               <div className="max-h-60 overflow-y-auto space-y-2">
                 {filteredScannedItems.length > 0 ? (
                   filteredScannedItems.map((item, index) => (
@@ -853,8 +790,13 @@ const TransferPage = () => {
                           <div className="text-xs font-mono">
                             <span className="text-gray-600">Location:</span> {item.location}
                             <br />
-                            <span className="text-gray-600">Pallet:</span> {item.pallet}
-                            <br />
+                            {/* Tampilkan pallet jika mode pallet */}
+                            {searchMode === "pallet" && item.pallet && (
+                              <>
+                                <span className="text-gray-600">Pallet:</span> {item.pallet}
+                                <br />
+                              </>
+                            )}
                             <span className="text-gray-600">SKU:</span> {item.item_code}
                             <br />
                             <span className="text-gray-600">Ean:</span> {item.ean_display}
@@ -925,11 +867,6 @@ const TransferPage = () => {
             <Button onClick={() => setShowConfirmModal(true)} className="flex-1">
               <CheckCheck size={20} className="mr-1" />
               Transfer All
-              {selectedDivision !== "all" && (
-                <span className="ml-1.5 bg-white/20 text-white text-xs rounded px-1.5 py-0.5">
-                  {selectedDivision}
-                </span>
-              )}
             </Button>
             <Button
               onClick={() => {
@@ -939,7 +876,6 @@ const TransferPage = () => {
                 setScanPalletId("");
                 setQrRawInput("");
                 setParsedQR(null);
-                setSelectedDivision("all");
               }}
               className="flex-1"
               variant="destructive"
@@ -965,7 +901,9 @@ const TransferPage = () => {
             </p>
 
             <div className="space-y-1">
-              <label className="font-semibold text-gray-700 text-sm block">Qty Transfer :</label>
+              <label className="font-semibold text-gray-700 text-sm block">
+                Qty Transfer :
+              </label>
               <div className="flex gap-2">
                 <Input
                   id="qtyTransfer"
@@ -975,7 +913,13 @@ const TransferPage = () => {
                   value={qtyTransfer}
                   onChange={(e) => setQtyTransfer(Number(e.target.value))}
                 />
-                <Input readOnly id="uomTransfer" className="w-24" placeholder="UOM..." value={uomTransfer} />
+                <Input
+                  readOnly
+                  id="uomTransfer"
+                  className="w-24"
+                  placeholder="UOM..."
+                  value={uomTransfer}
+                />
               </div>
               <span className="text-xs text-gray-500">
                 Max Qty: {itemSelected?.qty_display} {itemSelected?.uom_display}
@@ -983,7 +927,9 @@ const TransferPage = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="font-semibold text-gray-700 text-sm block">Destination Location :</label>
+              <label className="font-semibold text-gray-700 text-sm block">
+                Destination Location :
+              </label>
               <div className="relative">
                 <Input
                   id="locationTransfer"
@@ -1008,11 +954,18 @@ const TransferPage = () => {
             </div>
 
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setShowConfirmModalMoveTo(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setShowConfirmModalMoveTo(false)}>
+                Cancel
+              </Button>
               <Button disabled={isSubmit} onClick={moveItemToLocation}>
                 {isSubmit ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-1" />Please wait...</>
-                ) : "Transfer"}
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    Please wait...
+                  </>
+                ) : (
+                  "Transfer"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1027,15 +980,11 @@ const TransferPage = () => {
             <p className="text-sm text-gray-700">
               <strong>{transferAllLabel}</strong> will be moved to destination location?
             </p>
-            {selectedDivision !== "all" && (
-              <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded px-2 py-1.5">
-                ⚠ Only item with <strong>{selectedDivision}</strong> divison will be transferred (
-                {filteredScannedItems.length} record, qty {totalQty}).
-              </div>
-            )}
 
             <div className="space-y-1">
-              <label className="font-semibold text-gray-700 text-sm block">Destination Location :</label>
+              <label className="font-semibold text-gray-700 text-sm block">
+                Destination Location :
+              </label>
               <div className="relative">
                 <Input
                   id="location2"
@@ -1060,11 +1009,18 @@ const TransferPage = () => {
             </div>
 
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setShowConfirmModal(false)}>
+                Cancel
+              </Button>
               <Button disabled={isSubmit} onClick={handleConfirmTransfer}>
                 {isSubmit ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-1" />Please wait...</>
-                ) : "Transfer"}
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    Please wait...
+                  </>
+                ) : (
+                  "Transfer"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
