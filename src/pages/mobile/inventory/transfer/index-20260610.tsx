@@ -254,7 +254,6 @@ const TransferPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModalMoveTo, setShowConfirmModalMoveTo] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showConfirmModalSelected, setShowConfirmModalSelected] = useState(false); // ← NEW
   const [loading, setLoading] = useState(false);
   const [invPolicy, setInvPolicy] = useState<InventoryPolicy | undefined>();
   const [itemSelected, setItemSelected] = useState<ScannedItem | null>(null);
@@ -273,15 +272,6 @@ const TransferPage = () => {
   const [qrRawInput, setQrRawInput] = useState("");
   const [parsedQR, setParsedQR] = useState<ParsedQRData | null>(null);
 
-  // ── Multi-select state ───────────────────────────────────────────────────────
-  // Key: item index dalam filteredScannedItems (pakai index karena id bisa undefined)
-  // Tapi lebih robust pakai inbound_detail_id + serial_number sebagai composite key
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-
-  // ── Helper: generate unique key per item ─────────────────────────────────────
-  const itemKey = (item: ScannedItem) =>
-    `${item.id ?? ""}_${item.inbound_detail_id}_${item.serial_number}`;
-
   // ── Derived: distinct division options from result ───────────────────────────
   const divisionOptions = useMemo(() => {
     const codes = listInboundScanned
@@ -290,16 +280,10 @@ const TransferPage = () => {
     return Array.from(new Set(codes)).sort();
   }, [listInboundScanned]);
 
-  // Reset division filter & selection saat hasil baru datang
+  // Reset division filter saat hasil baru datang
   useEffect(() => {
     setSelectedDivision("all");
-    setSelectedKeys(new Set());
   }, [listInboundScanned]);
-
-  // Reset selection saat filter division berubah
-  useEffect(() => {
-    setSelectedKeys(new Set());
-  }, [selectedDivision]);
 
   // ── QR Helpers ──────────────────────────────────────────────────────────────
 
@@ -348,7 +332,6 @@ const TransferPage = () => {
     setListInboundScanned([]);
     setShowForm(true);
     setIsQrMode(false);
-    setSelectedKeys(new Set());
     setTimeout(() => {
       document.getElementById(toPallet ? "pallet-id" : "location")?.focus();
     }, 50);
@@ -458,7 +441,9 @@ const TransferPage = () => {
 
   const filteredScannedItems = useMemo(() => {
     return listInboundScanned.filter((item) => {
+      // Filter by division
       if (selectedDivision !== "all" && item.division_code !== selectedDivision) return false;
+      // Filter by search term
       if (searchTerm) {
         const q = searchTerm.toLowerCase();
         return (
@@ -475,25 +460,6 @@ const TransferPage = () => {
     });
   }, [listInboundScanned, selectedDivision, searchTerm]);
 
-  // ── Multi-select helpers ─────────────────────────────────────────────────────
-
-  const toggleSelectItem = (item: ScannedItem) => {
-    const key = itemKey(item);
-    setSelectedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  // Derived: items yang sedang diselect (dari filteredScannedItems)
-  const selectedItems = useMemo(() => {
-    return filteredScannedItems.filter((item) => selectedKeys.has(itemKey(item)));
-  }, [filteredScannedItems, selectedKeys]);
-
-  const selectedCount = selectedItems.length;
-
   // ── handleConfirmTransfer (Transfer All — pakai filteredScannedItems) ─────────
 
   const handleConfirmTransfer = async () => {
@@ -501,7 +467,7 @@ const TransferPage = () => {
       from_location: searchMode === "pallet" ? undefined : scanLocation,
       from_pallet: searchMode === "pallet" ? scanPalletId : undefined,
       to_location: scanLocation2,
-      list_inventory: filteredScannedItems,
+      list_inventory: filteredScannedItems, // ← hanya yang terfilter
     };
     setIsSubmit(true);
     try {
@@ -516,7 +482,6 @@ const TransferPage = () => {
         setListInboundScanned([]);
         setScanLocation2("");
         setShowForm(true);
-        setSelectedKeys(new Set());
         eventBus.emit("showAlert", {
           title: "Success!",
           description: data.message,
@@ -525,44 +490,6 @@ const TransferPage = () => {
       }
     } catch (error) {
       console.error("Error during transfer all:", error);
-    } finally {
-      setTimeout(() => setIsSubmit(false), 1500);
-    }
-  };
-
-  // ── handleConfirmTransferSelected (Transfer Selected) ────────────────────────
-  // Pakai endpoint yang sama dengan Transfer All, list_inventory = selectedItems only
-
-  const handleConfirmTransferSelected = async () => {
-    if (selectedItems.length === 0) return;
-    const dataToPost = {
-      from_location: searchMode === "pallet" ? undefined : scanLocation,
-      from_pallet: searchMode === "pallet" ? scanPalletId : undefined,
-      to_location: scanLocation2,
-      list_inventory: selectedItems, // ← hanya yang dicentang
-    };
-    setIsSubmit(true);
-    try {
-      const response = await api.post(
-        "/mobile/inventory/transfer/location/barcode",
-        dataToPost,
-        { withCredentials: true }
-      );
-      const data = await response.data;
-      if (data.success) {
-        setShowConfirmModalSelected(false);
-        setListInboundScanned([]);
-        setScanLocation2("");
-        setShowForm(true);
-        setSelectedKeys(new Set());
-        eventBus.emit("showAlert", {
-          title: "Success!",
-          description: data.message,
-          type: "success",
-        });
-      }
-    } catch (error) {
-      console.error("Error during transfer selected:", error);
     } finally {
       setTimeout(() => setIsSubmit(false), 1500);
     }
@@ -625,7 +552,6 @@ const TransferPage = () => {
         setScanLocation2("");
         setListInboundScanned([]);
         setShowForm(true);
-        setSelectedKeys(new Set());
       }
     } catch (error) {
       console.error("Error during transfer:", error);
@@ -637,14 +563,12 @@ const TransferPage = () => {
   // ── Effects ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (showConfirmModalMoveTo || showConfirmModal || showConfirmModalSelected) {
+    if (showConfirmModalMoveTo) {
       setTimeout(() => {
         document.getElementById("locationTransfer")?.focus();
-        document.getElementById("location2")?.focus();
-        document.getElementById("locationSelected")?.focus();
       }, 100);
     }
-  }, [showConfirmModalMoveTo, showConfirmModal, showConfirmModalSelected]);
+  }, [showConfirmModalMoveTo]);
 
   // ── Helpers for confirm dialog text ──────────────────────────────────────────
 
@@ -666,16 +590,12 @@ const TransferPage = () => {
     return filteredScannedItems.reduce((sum, item) => sum + (item.qty_display ?? 0), 0);
   }, [filteredScannedItems]);
 
-  const selectedTotalQty = useMemo(() => {
-    return selectedItems.reduce((sum, item) => sum + (item.qty_display ?? 0), 0);
-  }, [selectedItems]);
-
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <>
       <PageHeader title="Internal Transfer" showBackButton />
-      <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-36 max-w-md mx-auto">
+      <div className="min-h-screen bg-gray-50 p-4 space-y-4 pb-24 max-w-md mx-auto">
 
         {/* ── Search Form ── */}
         {showForm && (
@@ -919,122 +839,76 @@ const TransferPage = () => {
                 </div>
               )}
 
-              {/* ── Selected Summary Banner — tampil kalau ada yang diselect ── */}
-              {selectedCount > 0 && (
-                <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded px-3 py-2 text-xs text-blue-700">
-                  <span>
-                    <strong>{selectedCount}</strong> item selected — qty{" "}
-                    <strong>{selectedTotalQty}</strong>{" "}
-                    {filteredScannedItems[0]?.uom_display}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedKeys(new Set())}
-                    className="text-blue-400 hover:text-blue-600 ml-2"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              )}
-
               {/* ── Item Cards ── */}
               <div className="max-h-60 overflow-y-auto space-y-2">
                 {filteredScannedItems.length > 0 ? (
-                  filteredScannedItems.map((item, index) => {
-                    const key = itemKey(item);
-                    const isChecked = selectedKeys.has(key);
-                    return (
-                      <div
-                        key={index}
-                        className={`p-2 border rounded-md transition-all ${
-                          isChecked
-                            ? "border-blue-400 bg-blue-50 ring-1 ring-blue-300"
-                            : item.qa_status === "A"
-                            ? "bg-green-100"
-                            : "bg-blue-100"
+                  filteredScannedItems.map((item, index) => (
+                    <div
+                      key={index}
+                      className={`p-2 border rounded-md cursor-pointer ${item.qa_status === "A" ? "bg-green-100" : "bg-blue-100"
                         }`}
-                      >
-                        {/* ── Checkbox row ── */}
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <button
-                            type="button"
-                            onClick={() => toggleSelectItem(item)}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                              isChecked
-                                ? "bg-blue-500 border-blue-500"
-                                : "bg-white border-gray-300"
-                            }`}
-                          >
-                            {isChecked && <Check size={12} className="text-white" />}
-                          </button>
-                          <span className="text-xs text-gray-500 font-mono">
-                            #{index + 1}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between items-start text-sm">
-                          <div className="space-y-0.5">
-                            <div className="text-xs font-mono">
-                              <span className="text-gray-600">Location:</span> {item.location}
-                              <br />
-                              <span className="text-gray-600">Pallet:</span> {item.pallet}
-                              <br />
-                              <span className="text-gray-600">SKU:</span> {item.item_code}
-                              <br />
-                              <span className="text-gray-600">Ean:</span> {item.ean_display}
-                              <br />
-                              <span className="text-gray-600">Name:</span> {item.item_name}
-                              <br />
-                              {invPolicy?.require_expiry_date && (
-                                <>
-                                  <span className="text-gray-600">Exp Date:</span> {item.exp_date}
-                                  <br />
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right text-xs font-mono">
-                            {invPolicy?.require_lot_number && (
+                    >
+                      <div className="flex justify-between items-start text-sm">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-mono">
+                            <span className="text-gray-600">Location:</span> {item.location}
+                            <br />
+                            <span className="text-gray-600">Pallet:</span> {item.pallet}
+                            <br />
+                            <span className="text-gray-600">SKU:</span> {item.item_code}
+                            <br />
+                            <span className="text-gray-600">Ean:</span> {item.ean_display}
+                            <br />
+                            <span className="text-gray-600">Name:</span> {item.item_name}
+                            <br />
+                            {invPolicy?.require_expiry_date && (
                               <>
-                                <span className="text-gray-600">Lot:</span> {item.lot_number}
-                                <br />
-                              </>
-                            )}
-                            <span className="text-gray-600">Whs:</span> {item.whs_code}
-                            <br />
-                            <span className="text-gray-600">Division:</span> {item.division_code}
-                            <br />
-                            <span className="text-gray-600">Available:</span>{" "}
-                            <span className="font-semibold">{item.qty_display}</span>{" "}
-                            {item.uom_display}
-                            <br />
-                            {invPolicy?.show_rec_date && (
-                              <>
-                                <span className="text-gray-600">Rcv Date:</span> {item.rec_date}
+                                <span className="text-gray-600">Exp Date:</span> {item.exp_date}
                                 <br />
                               </>
                             )}
                           </div>
                         </div>
-
-                        <Button
-                          className="w-full mt-2"
-                          size="sm"
-                          variant={isChecked ? "outline" : "default"}
-                          onClick={() => {
-                            setShowConfirmModalMoveTo(true);
-                            setItemSelected(item);
-                            setQtyTransfer(item.qty_display ?? 0);
-                            setUomTransfer(item.uom_display ?? "");
-                            setEanTransfer(item.ean_display ?? "");
-                          }}
-                        >
-                          <Check size={16} className="mr-1" />
-                          Transfer
-                        </Button>
+                        <div className="text-right text-xs font-mono">
+                          {invPolicy?.require_lot_number && (
+                            <>
+                              <span className="text-gray-600">Lot:</span> {item.lot_number}
+                              <br />
+                            </>
+                          )}
+                          <span className="text-gray-600">Whs:</span> {item.whs_code}
+                          <br />
+                          <span className="text-gray-600">Division:</span> {item.division_code}
+                          <br />
+                          <span className="text-gray-600">Available:</span>{" "}
+                          <span className="font-semibold">{item.qty_display}</span>{" "}
+                          {item.uom_display}
+                          <br />
+                          {invPolicy?.show_rec_date && (
+                            <>
+                              <span className="text-gray-600">Rcv Date:</span> {item.rec_date}
+                              <br />
+                            </>
+                          )}
+                        </div>
                       </div>
-                    );
-                  })
+
+                      <Button
+                        className="w-full mt-2"
+                        size="sm"
+                        onClick={() => {
+                          setShowConfirmModalMoveTo(true);
+                          setItemSelected(item);
+                          setQtyTransfer(item.qty_display ?? 0);
+                          setUomTransfer(item.uom_display ?? "");
+                          setEanTransfer(item.ean_display ?? "");
+                        }}
+                      >
+                        <Check size={16} className="mr-1" />
+                        Transfer
+                      </Button>
+                    </div>
+                  ))
                 ) : (
                   <div className="text-gray-500 text-sm text-center py-4">
                     No items found.
@@ -1047,60 +921,32 @@ const TransferPage = () => {
 
         {/* ── Floating Buttons ── */}
         {listInboundScanned.length > 0 && !loading && (
-          <div className="fixed bottom-6 left-2 right-2 flex flex-col gap-2">
-
-            {/* Row 1: Transfer Selected (hanya tampil kalau ada selection) */}
-            {selectedCount > 0 && (
-              <Button
-                onClick={() => {
-                  setScanLocation2("");
-                  setShowConfirmModalSelected(true);
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Check size={18} className="mr-1.5" />
-                Transfer Selected
-                <span className="ml-2 bg-white/20 text-white text-xs rounded-full px-2 py-0.5 font-semibold">
-                  {selectedCount}
+          <div className="fixed bottom-6 left-2 right-2 flex gap-4">
+            <Button onClick={() => setShowConfirmModal(true)} className="flex-1">
+              <CheckCheck size={20} className="mr-1" />
+              Transfer All
+              {selectedDivision !== "all" && (
+                <span className="ml-1.5 bg-white/20 text-white text-xs rounded px-1.5 py-0.5">
+                  {selectedDivision}
                 </span>
-              </Button>
-            )}
-
-            {/* Row 2: Transfer All + Cancel */}
-            <div className="flex gap-2">
-              <Button
-                onClick={() => {
-                  setScanLocation2("");
-                  setShowConfirmModal(true);
-                }}
-                className="flex-1"
-              >
-                <CheckCheck size={20} className="mr-1" />
-                Transfer All
-                {selectedDivision !== "all" && (
-                  <span className="ml-1.5 bg-white/20 text-white text-xs rounded px-1.5 py-0.5">
-                    {selectedDivision}
-                  </span>
-                )}
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowForm(true);
-                  setListInboundScanned([]);
-                  setScanBarcode("");
-                  setScanPalletId("");
-                  setQrRawInput("");
-                  setParsedQR(null);
-                  setSelectedDivision("all");
-                  setSelectedKeys(new Set());
-                }}
-                className="flex-1"
-                variant="destructive"
-              >
-                <X size={20} className="mr-1" />
-                Cancel
-              </Button>
-            </div>
+              )}
+            </Button>
+            <Button
+              onClick={() => {
+                setShowForm(true);
+                setListInboundScanned([]);
+                setScanBarcode("");
+                setScanPalletId("");
+                setQrRawInput("");
+                setParsedQR(null);
+                setSelectedDivision("all");
+              }}
+              className="flex-1"
+              variant="destructive"
+            >
+              <X size={20} className="mr-1" />
+              Cancel
+            </Button>
           </div>
         )}
 
@@ -1183,7 +1029,7 @@ const TransferPage = () => {
             </p>
             {selectedDivision !== "all" && (
               <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded px-2 py-1.5">
-                ⚠ Only item with <strong>{selectedDivision}</strong> division will be transferred (
+                ⚠ Only item with <strong>{selectedDivision}</strong> divison will be transferred (
                 {filteredScannedItems.length} record, qty {totalQty}).
               </div>
             )}
@@ -1216,61 +1062,6 @@ const TransferPage = () => {
             <DialogFooter>
               <Button variant="ghost" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
               <Button disabled={isSubmit} onClick={handleConfirmTransfer}>
-                {isSubmit ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-1" />Please wait...</>
-                ) : "Transfer"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* ── Dialog Transfer Selected ── */}
-        <Dialog open={showConfirmModalSelected} onOpenChange={setShowConfirmModalSelected}>
-          <DialogContent className="bg-white">
-            <DialogHeader>
-              <DialogTitle>Confirmation</DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-gray-700">
-              <strong>{selectedCount} selected item(s)</strong> from{" "}
-              <strong>
-                {searchMode === "pallet" ? `pallet ${scanPalletId}` : scanLocation}
-              </strong>{" "}
-              will be moved to destination location?
-            </p>
-            <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded px-2 py-1.5">
-              {selectedCount} record(s) — total qty <strong>{selectedTotalQty}</strong>{" "}
-              {filteredScannedItems[0]?.uom_display}. Backend will generate new pallet ID for split items.
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-semibold text-gray-700 text-sm block">Destination Location :</label>
-              <div className="relative">
-                <Input
-                  id="locationSelected"
-                  autoComplete="off"
-                  placeholder="Entry destination location..."
-                  value={scanLocation2}
-                  onChange={(e) => setScanLocation2(e.target.value)}
-                  autoFocus
-                />
-                {scanLocation2 && (
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    onClick={() => {
-                      setScanLocation2("");
-                      document.getElementById("locationSelected")?.focus();
-                    }}
-                  >
-                    <XCircle size={18} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setShowConfirmModalSelected(false)}>Cancel</Button>
-              <Button disabled={isSubmit || !scanLocation2.trim()} onClick={handleConfirmTransferSelected}>
                 {isSubmit ? (
                   <><Loader2 className="h-4 w-4 animate-spin mr-1" />Please wait...</>
                 ) : "Transfer"}
