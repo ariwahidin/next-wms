@@ -36,6 +36,11 @@ const inventoryMenus = [
     icon: <MoveRight />,
     href: "/mobile/inventory/transfer",
   },
+  {
+    label: "Transfer History",
+    icon: <History />,
+    href: "/mobile/inventory/transfer-history",
+  },
   // {
   //   label: "Location Transfer by Serial",
   //   icon: <Barcode />,

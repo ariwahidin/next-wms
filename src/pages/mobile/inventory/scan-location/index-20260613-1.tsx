@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useMemo, useState, useRef } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useMemo, useState } from "react";
 import PageHeader from "@/components/mobile/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -118,8 +117,8 @@ const FilterSelect = ({
                         type="button"
                         disabled={disabled}
                         className={`flex h-9 w-full items-center justify-between rounded-md border border-input px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${disabled
-                            ? "bg-gray-50 text-gray-300 cursor-not-allowed"
-                            : "bg-white cursor-pointer hover:border-gray-400"
+                                ? "bg-gray-50 text-gray-300 cursor-not-allowed"
+                                : "bg-white cursor-pointer hover:border-gray-400"
                             }`}
                     >
                         <span className={value === "all" ? "text-gray-400" : "font-semibold text-gray-800"}>
@@ -190,128 +189,6 @@ const FilterChip = ({ label, onRemove }: FilterChipProps) => (
     </span>
 );
 
-// ─── Item Card ────────────────────────────────────────────────────────────────
-
-interface ItemCardProps {
-    item: InventoryItem;
-    measureRef: (el: Element | null) => void;
-    virtualStart: number;
-    dataIndex: number;
-}
-
-const ItemCard = ({ item, measureRef, virtualStart, dataIndex }: ItemCardProps) => (
-    <div
-        data-index={dataIndex}
-        ref={measureRef}
-        style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            transform: `translateY(${virtualStart}px)`,
-        }}
-        className="pb-2"
-    >
-        <div
-            className={`p-3 border rounded-lg ${item.qa_status === "A"
-                ? "bg-green-50 border-green-200"
-                : "bg-white border-gray-200"
-                }`}
-        >
-            {/* ── Header row ── */}
-            <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="min-w-0">
-                    <p className="text-xs font-bold text-gray-800 truncate">{item.item_code}</p>
-                    <p className="text-xs text-gray-500 truncate">{item.item_name}</p>
-                </div>
-                <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${item.qa_status === "A"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-yellow-100 text-yellow-700"
-                    }`}>
-                    {item.qa_status === "A" ? "Good" : item.qa_status}
-                </span>
-            </div>
-
-            {/* ── Detail grid ── */}
-            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs font-mono">
-                <div><span className="text-gray-400">EAN:</span> <span className="text-gray-700">{item.ean_display}</span></div>
-                <div><span className="text-gray-400">Division:</span> <span className="text-gray-700">{item.division_code ?? "-"}</span></div>
-                <div><span className="text-gray-400">Pallet:</span> <span className="text-gray-700">{item.pallet}</span></div>
-                <div><span className="text-gray-400">Whs:</span> <span className="text-gray-700">{item.whs_code}</span></div>
-                <div><span className="text-gray-400">Rcv Date:</span> <span className="text-gray-700">{formatRecDate(item.rec_date)}</span></div>
-                <div><span className="text-gray-400">Lot:</span> <span className="text-gray-700">{item.lot_number ?? "-"}</span></div>
-                <div><span className="text-gray-400">Exp Date:</span> <span className="text-gray-700">{item.exp_date ?? "-"}</span></div>
-                <div><span className="text-gray-400">Prod Date:</span> <span className="text-gray-700">{item.prod_date ?? "-"}</span></div>
-            </div>
-
-            {/* ── Qty footer ── */}
-            <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-xs text-gray-400">Available Qty</span>
-                <span className="text-sm font-bold text-gray-800">
-                    {item.qty_display}{" "}
-                    <span className="font-normal text-gray-500">{item.uom_display}</span>
-                </span>
-            </div>
-        </div>
-    </div>
-);
-
-// ─── Virtual Item List ────────────────────────────────────────────────────────
-
-interface VirtualItemListProps {
-    items: InventoryItem[];
-}
-
-const VirtualItemList = ({ items }: VirtualItemListProps) => {
-    const parentRef = useRef<HTMLDivElement>(null);
-
-    const rowVirtualizer = useVirtualizer({
-        count: items.length,
-        getScrollElement: () => parentRef.current,
-        estimateSize: () => 160,
-        overscan: 5,
-        measureElement:
-            typeof window !== "undefined" &&
-                navigator.userAgent.indexOf("Firefox") === -1
-                ? (el) => el?.getBoundingClientRect().height ?? 160
-                : undefined,
-    });
-
-    if (items.length === 0) {
-        return (
-            <div className="text-center text-gray-400 text-sm py-6">
-                No items match the current filter.
-            </div>
-        );
-    }
-
-    return (
-        <div
-            ref={parentRef}
-            className="overflow-y-auto rounded-lg"
-            style={{ height: "65vh" }}
-        >
-            <div
-                style={{
-                    height: `${rowVirtualizer.getTotalSize()}px`,
-                    width: "100%",
-                    position: "relative",
-                }}
-            >
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => (
-                    <ItemCard
-                        key={virtualRow.key}
-                        item={items[virtualRow.index]}
-                        measureRef={rowVirtualizer.measureElement}
-                        virtualStart={virtualRow.start}
-                        dataIndex={virtualRow.index}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-};
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function LocationQueryPage() {
@@ -320,16 +197,16 @@ export default function LocationQueryPage() {
     const [results, setResults] = useState<InventoryItem[]>([]);
     const [queriedLocation, setQueriedLocation] = useState("");
 
-    // ── Filter panel ──────────────────────────────────────────────────────────
+    // ── Filter panel ─────────────────────────────────────────────────────────────
     const [showFilterPanel, setShowFilterPanel] = useState(false);
 
-    // ── Cascade filters ───────────────────────────────────────────────────────
+    // ── Cascade filters ───────────────────────────────────────────────────────────
     const [filterDivision, setFilterDivision] = useState("all");
     const [filterRecDate, setFilterRecDate] = useState("all");
     const [filterItem, setFilterItem] = useState("all");
     const [filterPallet, setFilterPallet] = useState("all");
 
-    // ── Reset helpers ─────────────────────────────────────────────────────────
+    // ── Reset helpers ─────────────────────────────────────────────────────────────
     const resetAllFilters = () => {
         setFilterDivision("all");
         setFilterRecDate("all");
@@ -341,7 +218,7 @@ export default function LocationQueryPage() {
     const handleRecDateChange = (v: string) => { setFilterRecDate(v); setFilterItem("all"); setFilterPallet("all"); };
     const handleItemChange = (v: string) => { setFilterItem(v); setFilterPallet("all"); };
 
-    // ── Fetch ─────────────────────────────────────────────────────────────────
+    // ── Fetch ─────────────────────────────────────────────────────────────────────
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!search.trim()) return;
@@ -390,7 +267,7 @@ export default function LocationQueryPage() {
         }
     };
 
-    // ── Cascade derived lists ─────────────────────────────────────────────────
+    // ── Cascade derived lists ─────────────────────────────────────────────────────
 
     const afterDivision = useMemo(() => {
         if (filterDivision === "all") return results;
@@ -412,7 +289,7 @@ export default function LocationQueryPage() {
         return afterItem.filter((i) => i.pallet === filterPallet);
     }, [afterItem, filterPallet]);
 
-    // ── Cascade options ───────────────────────────────────────────────────────
+    // ── Cascade options ───────────────────────────────────────────────────────────
 
     const divisionOptions = useMemo(() => {
         const map = new Map<string, number>();
@@ -446,13 +323,13 @@ export default function LocationQueryPage() {
         return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([value, qty]) => ({ value, label: value, qty }));
     }, [afterItem]);
 
-    // ── Stats ─────────────────────────────────────────────────────────────────
+    // ── Stats ─────────────────────────────────────────────────────────────────────
 
     const distinctSKUs = useMemo(() => new Set(filteredItems.map((i) => i.item_code).filter(Boolean)).size, [filteredItems]);
     const totalQty = useMemo(() => filteredItems.reduce((s, i) => s + (i.qty_display ?? 0), 0), [filteredItems]);
     const activeFilterCount = [filterDivision, filterRecDate, filterItem, filterPallet].filter((f) => f !== "all").length;
 
-    // ─── Render ───────────────────────────────────────────────────────────────
+    // ─── Render ───────────────────────────────────────────────────────────────────
 
     return (
         <>
@@ -523,8 +400,8 @@ export default function LocationQueryPage() {
                             type="button"
                             onClick={() => setShowFilterPanel((p) => !p)}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${showFilterPanel
-                                ? "bg-blue-50 border-blue-300 text-blue-700"
-                                : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
+                                    ? "bg-blue-50 border-blue-300 text-blue-700"
+                                    : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
                                 }`}
                         >
                             <div className="flex items-center gap-2">
@@ -604,9 +481,58 @@ export default function LocationQueryPage() {
                             </Card>
                         )}
 
-                        {/* ── Virtual Item List ── */}
-                        <VirtualItemList items={filteredItems} />
+                        {/* ── Item Cards ── */}
+                        <div className="space-y-2">
+                            {filteredItems.length > 0 ? (
+                                filteredItems.map((item, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`p-3 border rounded-lg ${item.qa_status === "A"
+                                                ? "bg-green-50 border-green-200"
+                                                : "bg-white border-gray-200"
+                                            }`}
+                                    >
+                                        {/* ── Header row ── */}
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-bold text-gray-800 truncate">{item.item_code}</p>
+                                                <p className="text-xs text-gray-500 truncate">{item.item_name}</p>
+                                            </div>
+                                            <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${item.qa_status === "A"
+                                                    ? "bg-green-100 text-green-700"
+                                                    : "bg-yellow-100 text-yellow-700"
+                                                }`}>
+                                                {item.qa_status === "A" ? "Good" : item.qa_status}
+                                            </span>
+                                        </div>
 
+                                        {/* ── Detail grid ── */}
+                                        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs font-mono">
+                                            <div><span className="text-gray-400">EAN:</span> <span className="text-gray-700">{item.ean_display}</span></div>
+                                            <div><span className="text-gray-400">Division:</span> <span className="text-gray-700">{item.division_code ?? "-"}</span></div>
+                                            <div><span className="text-gray-400">Pallet:</span> <span className="text-gray-700">{item.pallet}</span></div>
+                                            <div><span className="text-gray-400">Whs:</span> <span className="text-gray-700">{item.whs_code}</span></div>
+                                            <div><span className="text-gray-400">Rcv Date:</span> <span className="text-gray-700">{formatRecDate(item.rec_date)}</span></div>
+                                            <div><span className="text-gray-400">Lot:</span> <span className="text-gray-700">{item.lot_number ?? "-"}</span></div>
+                                            <div><span className="text-gray-400">Exp Date:</span> <span className="text-gray-700">{item.exp_date ?? "-"}</span></div>
+                                            <div><span className="text-gray-400">Prod Date:</span> <span className="text-gray-700">{item.prod_date ?? "-"}</span></div>
+                                        </div>
+
+                                        {/* ── Qty footer ── */}
+                                        <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
+                                            <span className="text-xs text-gray-400">Available Qty</span>
+                                            <span className="text-sm font-bold text-gray-800">
+                                                {item.qty_display} <span className="font-normal text-gray-500">{item.uom_display}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center text-gray-400 text-sm py-6">
+                                    No items match the current filter.
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
