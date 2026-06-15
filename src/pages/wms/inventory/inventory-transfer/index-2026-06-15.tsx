@@ -1,5 +1,5 @@
-
 /* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -55,6 +55,7 @@ interface GroupedInventory {
     records: Inventory[];
 }
 
+/** A carton-level group derived from raw inventories */
 interface CartonGroup {
     carton_number: string;
     item_code: string;
@@ -162,39 +163,30 @@ const customSelectStyles = {
     }),
 };
 
-// ─── Helper: build options map with qty ──────────────────────────────────────
-
-function buildOptions<T>(
-    items: T[],
-    keyFn: (item: T) => string,
-    qtyFn: (item: T) => number
-): SelectOption[] {
-    const map = new Map<string, number>();
-    items.forEach((item) => {
-        const key = keyFn(item);
-        if (key) map.set(key, (map.get(key) || 0) + qtyFn(item));
-    });
-    return Array.from(map.entries())
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([v, qty]) => ({ value: v, label: `${v} (${qty})` }));
-}
-
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function InventoryTransferPage() {
     const [activeTab, setActiveTab] = useState<Tab>("by-quantity");
 
+    // Shared master data (no longer includes inventories — each tab fetches its own)
     const [qaStatuses, setQaStatuses] = useState<QaStatus[]>([]);
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
     const [locations, setLocations] = useState<Location[]>([]);
     const [divisions, setDivisions] = useState<Division[]>([]);
     const [masterLoading, setMasterLoading] = useState(false);
 
-    useEffect(() => { fetchAll(); }, []);
+    useEffect(() => {
+        fetchAll();
+    }, []);
 
     const fetchAll = async () => {
         setMasterLoading(true);
-        await Promise.all([fetchWarehouses(), fetchLocations(), fetchQaStatus(), fetchDivisions()]);
+        await Promise.all([
+            fetchWarehouses(),
+            fetchLocations(),
+            fetchQaStatus(),
+            fetchDivisions(),
+        ]);
         setMasterLoading(false);
     };
 
@@ -202,52 +194,66 @@ export default function InventoryTransferPage() {
         try {
             const res = await api.get("/qa-status", { withCredentials: true });
             if (res.data.success) setQaStatuses(res.data.data || []);
-        } catch { }
+        } catch { /* ignore */ }
     };
 
     const fetchDivisions = async () => {
         try {
             const res = await api.get("/divisions", { withCredentials: true });
             if (res.data.success) setDivisions(res.data.data || []);
-        } catch { }
+        } catch { /* ignore */ }
     };
 
     const fetchWarehouses = async () => {
         try {
             const res = await api.get("/warehouses", { withCredentials: true });
             if (res.data.success) setWarehouses(res.data.data || []);
-        } catch { }
+        } catch { /* ignore */ }
     };
 
     const fetchLocations = async () => {
         try {
             const res = await api.get("/locations", { withCredentials: true });
             if (res.data.success) setLocations(res.data.data || []);
-        } catch { }
+        } catch { /* ignore */ }
     };
 
     const warehouseOptions: SelectOption[] = warehouses.map((w) => ({ value: w.code, label: w.code }));
     const divisionOptions: SelectOption[] = divisions.map((d) => ({ value: d.code, label: d.code }));
 
     const sharedProps = {
-        qaStatuses, warehouses, locations, divisions,
-        warehouseOptions, divisionOptions, customSelectStyles,
-        masterLoading, onRefresh: fetchAll,
+        qaStatuses,
+        warehouses,
+        locations,
+        divisions,
+        warehouseOptions,
+        divisionOptions,
+        customSelectStyles,
+        masterLoading,
+        onRefresh: fetchAll,
     };
 
     return (
         <Layout title="Inventory" subTitle="Inventory Transfer">
             <div className="max-w-7xl mx-auto p-6">
+                {/* Tab switcher */}
                 <div className="flex border-b border-gray-200 mb-6">
                     <TabButton active={activeTab === "by-quantity"} onClick={() => setActiveTab("by-quantity")}>
                         By Quantity
                     </TabButton>
                     <TabButton active={activeTab === "by-carton"} onClick={() => setActiveTab("by-carton")}>
                         By Carton
-                        <span className="ml-2 text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">multi</span>
+                        <span className="ml-2 text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">
+                            multi
+                        </span>
                     </TabButton>
                 </div>
-                {activeTab === "by-quantity" ? <ByQuantityTab {...sharedProps} /> : <ByCartonTab {...sharedProps} />}
+
+                {activeTab === "by-quantity" ? (
+                    <ByQuantityTab {...sharedProps} />
+                ) : (
+                    <ByCartonTab {...sharedProps} />
+                )}
             </div>
         </Layout>
     );
@@ -255,10 +261,24 @@ export default function InventoryTransferPage() {
 
 // ─── Tab Button ───────────────────────────────────────────────────────────────
 
-function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function TabButton({
+    active,
+    onClick,
+    children,
+}: {
+    active: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+}) {
     return (
-        <button onClick={onClick}
-            className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${active ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`}>
+        <button
+            onClick={onClick}
+            className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                active
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+        >
             {children}
         </button>
     );
@@ -266,17 +286,30 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 
 // ─── BY QUANTITY TAB ──────────────────────────────────────────────────────────
 
-function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOptions, customSelectStyles, masterLoading, onRefresh }: any) {
+function ByQuantityTab({
+    qaStatuses,
+    warehouseOptions,
+    locations,
+    divisionOptions,
+    customSelectStyles,
+    masterLoading,
+    onRefresh,
+}: any) {
+    // ── Item filter ──
     const [products, setProducts] = useState<Product[]>([]);
     const [productsLoading, setProductsLoading] = useState(false);
     const [filterItem, setFilterItem] = useState<SelectOption | null>(null);
+
+    // ── Inventory list ──
     const [inventories, setInventories] = useState<GroupedInventory[]>([]);
     const [inventoriesLoading, setInventoriesLoading] = useState(false);
 
+    // ── Optional client-side filters (derived from fetched inventories) ──
     const [filterDivision, setFilterDivision] = useState<SelectOption | null>(null);
     const [filterLocation, setFilterLocation] = useState<SelectOption | null>(null);
     const [filterPallet, setFilterPallet] = useState<SelectOption | null>(null);
 
+    // ── Form / selection ──
     const [selectedGroup, setSelectedGroup] = useState<GroupedInventory | null>(null);
     const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
     const [submitting, setSubmitting] = useState(false);
@@ -284,17 +317,21 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
     const [success, setSuccess] = useState("");
     const [formData, setFormData] = useState<TransferFormData>(emptyForm);
 
+    // Load products once on mount
     useEffect(() => {
         const load = async () => {
             setProductsLoading(true);
             try {
                 const res = await api.get("/products", { withCredentials: true });
                 if (res.data.success) setProducts(res.data.data || []);
-            } catch { } finally { setProductsLoading(false); }
+            } catch { /* ignore */ } finally {
+                setProductsLoading(false);
+            }
         };
         load();
     }, []);
 
+    // Fetch inventories when item is selected
     useEffect(() => {
         if (!filterItem) {
             setInventories([]);
@@ -307,7 +344,7 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
             setSuccess("");
             return;
         }
-        const fetch = async () => {
+        const fetchInventories = async () => {
             setInventoriesLoading(true);
             setSelectedGroup(null);
             setFormData(emptyForm);
@@ -323,11 +360,16 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
                 });
                 if (res.data.success) setInventories(res.data.data.inventories || []);
                 else setInventories([]);
-            } catch { setInventories([]); } finally { setInventoriesLoading(false); }
+            } catch {
+                setInventories([]);
+            } finally {
+                setInventoriesLoading(false);
+            }
         };
-        fetch();
+        fetchInventories();
     }, [filterItem]);
 
+    // Filter destination locations by selected warehouse
     useEffect(() => {
         if (formData.to_whs_code) {
             setFilteredLocations(locations.filter((loc: Location) => loc.whs_code === formData.to_whs_code));
@@ -336,71 +378,48 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         }
     }, [formData.to_whs_code, locations]);
 
-    // ── Cross-filter: each option set is built from data filtered by the OTHER two filters ──
+    const productOptions: SelectOption[] = products.map((p) => ({
+        value: p.item_code,
+        label: `${p.item_code} — ${p.item_name}`,
+    }));
 
-    // For division options: filter by location + pallet (exclude division filter)
-    const forDivision = useMemo(() => inventories.filter((g) => {
-        if (filterLocation && g.location !== filterLocation.value) return false;
-        if (filterPallet && g.pallet !== filterPallet.value) return false;
-        return true;
-    }), [inventories, filterLocation, filterPallet]);
+    const locationOptions: SelectOption[] = filteredLocations.map((loc: Location) => ({
+        value: loc.location_code,
+        label: loc.location_code,
+    }));
 
-    // For location options: filter by division + pallet (exclude location filter)
-    const forLocation = useMemo(() => inventories.filter((g) => {
-        if (filterDivision && g.division_code !== filterDivision.value) return false;
-        if (filterPallet && g.pallet !== filterPallet.value) return false;
-        return true;
-    }), [inventories, filterDivision, filterPallet]);
+    // ── Derived optional filter options (client-side, from fetched inventories) ──
+    const divisionFilterOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(inventories.map((g) => g.division_code).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [inventories]);
 
-    // For pallet options: filter by division + location (exclude pallet filter)
-    const forPallet = useMemo(() => inventories.filter((g) => {
-        if (filterDivision && g.division_code !== filterDivision.value) return false;
-        if (filterLocation && g.location !== filterLocation.value) return false;
-        return true;
-    }), [inventories, filterDivision, filterLocation]);
+    const locationFilterOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(inventories.map((g) => g.location).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [inventories]);
 
-    const divisionFilterOptions = useMemo(() => buildOptions(forDivision, (g) => g.division_code, (g) => g.qty_available), [forDivision]);
-    const locationFilterOptions = useMemo(() => buildOptions(forLocation, (g) => g.location, (g) => g.qty_available), [forLocation]);
-    const palletFilterOptions   = useMemo(() => buildOptions(forPallet,   (g) => g.pallet,        (g) => g.qty_available), [forPallet]);
+    const palletFilterOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(inventories.map((g) => g.pallet).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [inventories]);
 
-    // ── Auto-reset invalid selections after cross-filter ──
-    useEffect(() => {
-        if (filterDivision && !divisionFilterOptions.find((o) => o.value === filterDivision.value)) {
-            setFilterDivision(null);
-            setSelectedGroup(null);
-            setFormData(emptyForm);
-        }
-    }, [divisionFilterOptions]);
+    // ── Client-side filtered list ──
+    const displayedInventories = useMemo<GroupedInventory[]>(() => {
+        return inventories.filter((g) => {
+            if (filterDivision && g.division_code !== filterDivision.value) return false;
+            if (filterLocation && g.location !== filterLocation.value) return false;
+            if (filterPallet && g.pallet !== filterPallet.value) return false;
+            return true;
+        });
+    }, [inventories, filterDivision, filterLocation, filterPallet]);
 
-    useEffect(() => {
-        if (filterLocation && !locationFilterOptions.find((o) => o.value === filterLocation.value)) {
-            setFilterLocation(null);
-            setSelectedGroup(null);
-            setFormData(emptyForm);
-        }
-    }, [locationFilterOptions]);
-
-    useEffect(() => {
-        if (filterPallet && !palletFilterOptions.find((o) => o.value === filterPallet.value)) {
-            setFilterPallet(null);
-            setSelectedGroup(null);
-            setFormData(emptyForm);
-        }
-    }, [palletFilterOptions]);
-
-    // ── Final displayed list: apply all active filters ──
-    const displayedInventories = useMemo(() => inventories.filter((g) => {
-        if (filterDivision && g.division_code !== filterDivision.value) return false;
-        if (filterLocation && g.location !== filterLocation.value) return false;
-        if (filterPallet && g.pallet !== filterPallet.value) return false;
-        return true;
-    }), [inventories, filterDivision, filterLocation, filterPallet]);
-
-    const totalQtyDisplayed = useMemo(() => displayedInventories.reduce((sum, g) => sum + g.qty_available, 0), [displayedInventories]);
+    // ── Total qty of displayed list ──
+    const totalQtyDisplayed = useMemo(
+        () => displayedInventories.reduce((sum, g) => sum + g.qty_available, 0),
+        [displayedInventories]
+    );
     const displayedUom = displayedInventories[0]?.uom ?? "";
-
-    const productOptions: SelectOption[] = products.map((p) => ({ value: p.item_code, label: `${p.item_code} — ${p.item_name}` }));
-    const locationOptions: SelectOption[] = filteredLocations.map((loc: Location) => ({ value: loc.location_code, label: loc.location_code }));
 
     const handleGroupSelect = (group: GroupedInventory) => {
         setSelectedGroup(group);
@@ -426,9 +445,14 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         setSuccess("");
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    ) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: name === "qty_to_transfer" ? parseFloat(value) || 0 : value }));
+        setFormData((prev) => ({
+            ...prev,
+            [name]: name === "qty_to_transfer" ? parseFloat(value) || 0 : value,
+        }));
     };
 
     const handleWarehouseChange = (option: SelectOption | null) => {
@@ -447,8 +471,12 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
             setError(`Insufficient quantity. Available: ${selectedGroup.qty_available}, Requested: ${formData.qty_to_transfer}`);
             return false;
         }
-        if (formData.from_whs_code === formData.to_whs_code && formData.from_location === formData.to_location &&
-            formData.old_qa_status === formData.new_qa_status && formData.from_division_code === formData.division_code) {
+        if (
+            formData.from_whs_code === formData.to_whs_code &&
+            formData.from_location === formData.to_location &&
+            formData.old_qa_status === formData.new_qa_status &&
+            formData.from_division_code === formData.division_code
+        ) {
             setError("Source and destination are the same. Please select different attributes.");
             return false;
         }
@@ -457,7 +485,8 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError(""); setSuccess("");
+        setError("");
+        setSuccess("");
         if (!validateForm()) return;
         setSubmitting(true);
         try {
@@ -465,14 +494,20 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
             if (res.data.success) {
                 setSuccess(res.data.message);
                 setTimeout(async () => {
+                    // Re-fetch inventories for the same item
                     if (filterItem) {
                         setInventoriesLoading(true);
                         setSelectedGroup(null);
                         setFormData(emptyForm);
                         try {
-                            const r = await api.get("/inventory/grouped-by-item", { params: { item_code: filterItem.value }, withCredentials: true });
+                            const r = await api.get("/inventory/grouped-by-item", {
+                                params: { item_code: filterItem.value },
+                                withCredentials: true,
+                            });
                             if (r.data.success) setInventories(r.data.data.inventories || []);
-                        } catch { } finally { setInventoriesLoading(false); }
+                        } catch { /* ignore */ } finally {
+                            setInventoriesLoading(false);
+                        }
                     }
                     onRefresh();
                     mutate("/inventories");
@@ -480,7 +515,9 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
             }
         } catch (err: any) {
             setError(err.response?.data?.error || "Failed to transfer inventory. Please try again.");
-        } finally { setSubmitting(false); }
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const handleReset = () => {
@@ -490,29 +527,45 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         setFilterPallet(null);
         setSelectedGroup(null);
         setFormData(emptyForm);
-        setError(""); setSuccess("");
+        setError("");
+        setSuccess("");
     };
 
-    const emptyMessage = !filterItem ? "Select an item to view inventory"
-        : inventoriesLoading ? ""
-        : displayedInventories.length === 0 && inventories.length > 0 ? "No inventory matches the selected filters"
+    // Empty state message for the list area
+    const emptyMessage = !filterItem
+        ? "Select an item to view inventory"
+        : inventoriesLoading
+        ? ""
+        : displayedInventories.length === 0 && inventories.length > 0
+        ? "No inventory matches the selected filters"
         : "No inventory found for this item";
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left – Item filter + Inventory list */}
             <div className="lg:col-span-1">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6">
                     <div className="border-b border-gray-200 px-4 py-3">
                         <h3 className="text-sm font-semibold text-gray-900">Select Inventory</h3>
                     </div>
                     <div className="p-4 space-y-3">
+                        {/* Required: Item select */}
                         <div>
                             <FieldLabel required>Item Code</FieldLabel>
-                            <Select options={productOptions} value={filterItem} onChange={(opt) => setFilterItem(opt)}
-                                placeholder="Search item code or name..." isClearable isSearchable
-                                isLoading={productsLoading || masterLoading} styles={customSelectStyles} className="text-sm" />
+                            <Select
+                                options={productOptions}
+                                value={filterItem}
+                                onChange={(opt) => setFilterItem(opt)}
+                                placeholder="Search item code or name..."
+                                isClearable
+                                isSearchable
+                                isLoading={productsLoading || masterLoading}
+                                styles={customSelectStyles}
+                                className="text-sm"
+                            />
                         </div>
 
+                        {/* Optional filters — only shown after inventories loaded */}
                         {inventories.length > 0 && (
                             <>
                                 <div className="border-t border-gray-100 pt-3">
@@ -520,37 +573,72 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
                                 </div>
                                 <div>
                                     <FieldLabel>Division</FieldLabel>
-                                    <Select options={divisionFilterOptions} value={filterDivision}
-                                        onChange={(opt) => { setFilterDivision(opt); setSelectedGroup(null); setFormData(emptyForm); }}
-                                        placeholder="All divisions" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
+                                    <Select
+                                        options={divisionFilterOptions}
+                                        value={filterDivision}
+                                        onChange={(opt) => {
+                                            setFilterDivision(opt);
+                                            setSelectedGroup(null);
+                                            setFormData(emptyForm);
+                                        }}
+                                        placeholder="All divisions"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
+                                    />
                                 </div>
                                 <div>
                                     <FieldLabel>Location</FieldLabel>
-                                    <Select options={locationFilterOptions} value={filterLocation}
-                                        onChange={(opt) => { setFilterLocation(opt); setSelectedGroup(null); setFormData(emptyForm); }}
-                                        placeholder="All locations" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
+                                    <Select
+                                        options={locationFilterOptions}
+                                        value={filterLocation}
+                                        onChange={(opt) => {
+                                            setFilterLocation(opt);
+                                            setSelectedGroup(null);
+                                            setFormData(emptyForm);
+                                        }}
+                                        placeholder="All locations"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
+                                    />
                                 </div>
                                 <div>
                                     <FieldLabel>Pallet</FieldLabel>
-                                    <Select options={palletFilterOptions} value={filterPallet}
-                                        onChange={(opt) => { setFilterPallet(opt); setSelectedGroup(null); setFormData(emptyForm); }}
-                                        placeholder="All pallets" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
+                                    <Select
+                                        options={palletFilterOptions}
+                                        value={filterPallet}
+                                        onChange={(opt) => {
+                                            setFilterPallet(opt);
+                                            setSelectedGroup(null);
+                                            setFormData(emptyForm);
+                                        }}
+                                        placeholder="All pallets"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
+                                    />
                                 </div>
                             </>
                         )}
 
+                        {/* Total qty summary */}
                         {!inventoriesLoading && displayedInventories.length > 0 && (
                             <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
-                                <span className="text-xs text-gray-500">{displayedInventories.length} group(s)</span>
-                                <span className="text-xs font-semibold text-gray-800">Total: {totalQtyDisplayed} {displayedUom}</span>
+                                <span className="text-xs text-gray-500">
+                                    {displayedInventories.length} group(s)
+                                </span>
+                                <span className="text-xs font-semibold text-gray-800">
+                                    Total: {totalQtyDisplayed} {displayedUom}
+                                </span>
                             </div>
                         )}
 
+                        {/* Inventory list */}
                         <div className="space-y-2 max-h-[480px] overflow-y-auto">
-                            {inventoriesLoading ? <LoadingSpinner />
-                                : !filterItem || displayedInventories.length === 0 ? (
-                                    <p className="text-sm text-gray-400 text-center py-8">{emptyMessage}</p>
-                                ) : displayedInventories.map((group: GroupedInventory, idx: number) => {
+                            {inventoriesLoading ? (
+                                <LoadingSpinner />
+                            ) : !filterItem || displayedInventories.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-8">{emptyMessage}</p>
+                            ) : (
+                                displayedInventories.map((group: GroupedInventory, idx: number) => {
                                     const isSelected =
                                         selectedGroup?.item_code === group.item_code &&
                                         selectedGroup?.whs_code === group.whs_code &&
@@ -566,8 +654,15 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
                                         selectedGroup?.pallet === group.pallet &&
                                         selectedGroup?.carton_number === group.carton_number;
                                     return (
-                                        <button key={idx} onClick={() => handleGroupSelect(group)}
-                                            className={`w-full text-left p-3 rounded-lg border transition-all ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"}`}>
+                                        <button
+                                            key={idx}
+                                            onClick={() => handleGroupSelect(group)}
+                                            className={`w-full text-left p-3 rounded-lg border transition-all ${
+                                                isSelected
+                                                    ? "border-blue-500 bg-blue-50"
+                                                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                            }`}
+                                        >
                                             <div className="flex justify-between items-start mb-1">
                                                 <span className="text-xs font-semibold text-gray-900">{group.item_code}</span>
                                                 <span className={`text-xs px-2 py-0.5 rounded ${group.qty_available > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
@@ -578,21 +673,27 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
                                             <p className="text-xs text-gray-500">📍 {group.owner_code} | {group.whs_code} | {group.location} | {group.division_code}</p>
                                             <p className="text-xs text-gray-500">📅 rd: {group.rec_date} | pd: {group.prod_date} | ed: {group.exp_date}</p>
                                             <p className="text-xs text-gray-500">🏷️ lot: {group.lot_number} | ctn: {group.carton_number} | pallet: {group.pallet}</p>
-                                            <p className="text-xs text-gray-500">✓ {group.qa_status} - {qaStatuses.find((q: QaStatus) => q.qa_status === group.qa_status)?.description || "Unknown"}</p>
+                                            <p className="text-xs text-gray-500">
+                                                ✓ {group.qa_status} -{" "}
+                                                {qaStatuses.find((q: QaStatus) => q.qa_status === group.qa_status)?.description || "Unknown"}
+                                            </p>
                                         </button>
                                     );
-                                })}
+                                })
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
 
+            {/* Right – Transfer Form */}
             <div className="lg:col-span-2">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                     <div className="border-b border-gray-200 px-6 py-4">
                         <h2 className="text-xl font-semibold text-gray-900">Transfer Inventory</h2>
                         <p className="text-sm text-gray-500 mt-1">Move inventory between warehouses or locations</p>
                     </div>
+
                     <form onSubmit={handleSubmit} className="p-6">
                         {selectedGroup && (
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -606,59 +707,105 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
                                 </div>
                             </div>
                         )}
+
                         {!selectedGroup && (
                             <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-6 mb-6 text-center">
-                                <p className="text-sm text-gray-500">{!filterItem ? "Select an item from the left panel first" : "Select an inventory group from the left panel"}</p>
+                                <p className="text-sm text-gray-500">
+                                    {!filterItem
+                                        ? "Select an item from the left panel first"
+                                        : "Select an inventory group from the left panel"}
+                                </p>
                             </div>
                         )}
 
+                        {/* Destination */}
                         <SectionTitle>Destination Information</SectionTitle>
                         <div className="grid grid-cols-2 gap-4 mb-6">
                             <div>
                                 <FieldLabel required>To Warehouse</FieldLabel>
-                                <Select options={warehouseOptions} value={warehouseOptions.find((o: SelectOption) => o.value === formData.to_whs_code) || null}
-                                    onChange={handleWarehouseChange} placeholder="Select warehouse..." isClearable isSearchable isDisabled={!selectedGroup}
-                                    styles={customSelectStyles} className="text-sm" />
+                                <Select
+                                    options={warehouseOptions}
+                                    value={warehouseOptions.find((o: SelectOption) => o.value === formData.to_whs_code) || null}
+                                    onChange={handleWarehouseChange}
+                                    placeholder="Select warehouse..."
+                                    isClearable isSearchable isDisabled={!selectedGroup}
+                                    styles={customSelectStyles} className="text-sm"
+                                />
                             </div>
                             <div>
                                 <FieldLabel required>To Location</FieldLabel>
-                                <Select options={locationOptions} value={locationOptions.find((o: SelectOption) => o.value === formData.to_location) || null}
-                                    onChange={handleLocationChange} placeholder="Select location..." isClearable isSearchable
-                                    isDisabled={!selectedGroup || !formData.to_whs_code} styles={customSelectStyles} className="text-sm"
-                                    noOptionsMessage={() => formData.to_whs_code ? "No locations found" : "Select warehouse first"} />
+                                <Select
+                                    options={locationOptions}
+                                    value={locationOptions.find((o: SelectOption) => o.value === formData.to_location) || null}
+                                    onChange={handleLocationChange}
+                                    placeholder="Select location..."
+                                    isClearable isSearchable
+                                    isDisabled={!selectedGroup || !formData.to_whs_code}
+                                    styles={customSelectStyles} className="text-sm"
+                                    noOptionsMessage={() => formData.to_whs_code ? "No locations found" : "Select warehouse first"}
+                                />
                             </div>
                             <div>
                                 <FieldLabel>New QA Status</FieldLabel>
-                                <select name="new_qa_status" value={formData.new_qa_status} onChange={handleInputChange} disabled={!selectedGroup}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100">
+                                <select
+                                    name="new_qa_status"
+                                    value={formData.new_qa_status}
+                                    onChange={handleInputChange}
+                                    disabled={!selectedGroup}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                >
                                     <option value="">Keep Current Status</option>
-                                    {qaStatuses.map((opt: QaStatus) => <option key={opt.qa_status} value={opt.qa_status}>{opt.description} ({opt.qa_status})</option>)}
+                                    {qaStatuses.map((opt: QaStatus) => (
+                                        <option key={opt.qa_status} value={opt.qa_status}>
+                                            {opt.description} ({opt.qa_status})
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
                                 <FieldLabel required>To Division</FieldLabel>
-                                <select name="division_code" value={formData.division_code} onChange={handleInputChange} disabled={!selectedGroup}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100">
+                                <select
+                                    name="division_code"
+                                    value={formData.division_code}
+                                    onChange={handleInputChange}
+                                    disabled={!selectedGroup}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                >
                                     <option value="">Keep Current Division</option>
-                                    {divisionOptions.map((opt: SelectOption) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                    {divisionOptions.map((opt: SelectOption) => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
 
+                        {/* Transfer Details */}
                         <SectionTitle>Transfer Details</SectionTitle>
                         <div className="grid grid-cols-2 gap-4 mb-6">
                             <div>
                                 <FieldLabel required>Quantity to Transfer</FieldLabel>
-                                <input type="number" name="qty_to_transfer" value={formData.qty_to_transfer} min={0} step={1} inputMode="numeric"
+                                <input
+                                    type="number"
+                                    name="qty_to_transfer"
+                                    value={formData.qty_to_transfer}
+                                    min={0}
+                                    step={1}
+                                    inputMode="numeric"
                                     onWheel={(e) => e.currentTarget.blur()}
-                                    onChange={(e) => { if (e.target.value === "" || /^[0-9]+$/.test(e.target.value)) handleInputChange(e); }}
-                                    required disabled={!selectedGroup}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100" />
+                                    onChange={(e) => {
+                                        if (e.target.value === "" || /^[0-9]+$/.test(e.target.value)) handleInputChange(e);
+                                    }}
+                                    required
+                                    disabled={!selectedGroup}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                />
                                 {selectedGroup && (
                                     <p className="text-xs text-gray-500 mt-1">
                                         Max: {selectedGroup.qty_available} {selectedGroup.uom}
                                         {selectedGroup.records && selectedGroup.records.length > 1 && (
-                                            <span className="ml-2 text-blue-500">({selectedGroup.records.length} lots, FIFO)</span>
+                                            <span className="ml-2 text-blue-500">
+                                                ({selectedGroup.records.length} lots, FIFO)
+                                            </span>
                                         )}
                                     </p>
                                 )}
@@ -668,33 +815,59 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
                             <ReadOnlyField label="Carton Number" value={formData.carton_number || ""} />
                             <div>
                                 <FieldLabel>Production Date</FieldLabel>
-                                <input type="date" name="prod_date" value={formData.prod_date} onChange={handleInputChange} disabled={!selectedGroup}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100" />
+                                <input
+                                    type="date"
+                                    name="prod_date"
+                                    value={formData.prod_date}
+                                    onChange={handleInputChange}
+                                    disabled={!selectedGroup}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                />
                             </div>
                             <div>
                                 <FieldLabel>Expiry Date</FieldLabel>
-                                <input type="date" name="exp_date" value={formData.exp_date} onChange={handleInputChange} disabled={!selectedGroup}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100" />
+                                <input
+                                    type="date"
+                                    name="exp_date"
+                                    value={formData.exp_date}
+                                    onChange={handleInputChange}
+                                    disabled={!selectedGroup}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                />
                             </div>
                         </div>
 
+                        {/* Reason */}
                         <div className="mb-6">
                             <FieldLabel>Reason for Transfer</FieldLabel>
-                            <textarea name="reason" value={formData.reason} onChange={handleInputChange} rows={3} disabled={!selectedGroup}
+                            <textarea
+                                name="reason"
+                                value={formData.reason}
+                                onChange={handleInputChange}
+                                rows={3}
+                                disabled={!selectedGroup}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-                                placeholder="Enter reason for transfer..." />
+                                placeholder="Enter reason for transfer..."
+                            />
                         </div>
 
                         <AlertBanner type="error" message={error} />
                         <AlertBanner type="success" message={success} />
 
                         <div className="flex space-x-3">
-                            <button type="submit" disabled={submitting || !selectedGroup}
-                                className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <button
+                                type="submit"
+                                disabled={submitting || !selectedGroup}
+                                className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
                                 {submitting ? <><SpinIcon />Processing...</> : <><TransferIcon />Transfer Inventory</>}
                             </button>
-                            <button type="button" onClick={handleReset} disabled={submitting}
-                                className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none disabled:opacity-50">
+                            <button
+                                type="button"
+                                onClick={handleReset}
+                                disabled={submitting}
+                                className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none disabled:opacity-50"
+                            >
                                 Reset
                             </button>
                         </div>
@@ -705,18 +878,26 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
     );
 }
 
-// ─── BY CARTON TAB ────────────────────────────────────────────────────────────
+// ─── BY CARTON TAB (unchanged) ────────────────────────────────────────────────
 
-function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: any) {
+function ByCartonTab({
+    qaStatuses,
+    locations,
+    customSelectStyles,
+    onRefresh,
+}: any) {
+    // ── Master data for required filters ──
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [divisions, setDivisions] = useState<Division[]>([]);
     const [masterLoading, setMasterLoading] = useState(false);
 
+    // ── Required filters (must all be set before fetch) ──
     const [filterWhs, setFilterWhs] = useState<SelectOption | null>(null);
     const [filterProduct, setFilterProduct] = useState<SelectOption | null>(null);
     const [filterDivision, setFilterDivision] = useState<SelectOption | null>(null);
 
+    // ── Optional filters (derive from fetched cartons) ──
     const [filterLocation, setFilterLocation] = useState<SelectOption | null>(null);
     const [filterPallet, setFilterPallet] = useState<SelectOption | null>(null);
     const [filterRecDate, setFilterRecDate] = useState("");
@@ -724,8 +905,11 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
 
     const [cartons, setCartons] = useState<CartonGroup[]>([]);
     const [cartonsLoading, setCartonsLoading] = useState(false);
+
+    // ── Selection state ──
     const [selectedCartons, setSelectedCartons] = useState<Set<string>>(new Set());
 
+    // ── Destination state ──
     const [toWhsCode, setToWhsCode] = useState("");
     const [toLocation, setToLocation] = useState("");
     const [newQaStatus, setNewQaStatus] = useState("");
@@ -738,6 +922,7 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
     const [success, setSuccess] = useState("");
     const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
+    // ── Load master data once ──
     useEffect(() => {
         const load = async () => {
             setMasterLoading(true);
@@ -750,11 +935,14 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                 if (whsRes.data.success) setWarehouses(whsRes.data.data || []);
                 if (prodRes.data.success) setProducts(prodRes.data.data || []);
                 if (divRes.data.success) setDivisions(divRes.data.data || []);
-            } catch { } finally { setMasterLoading(false); }
+            } catch { /* ignore */ } finally {
+                setMasterLoading(false);
+            }
         };
         load();
     }, []);
 
+    // ── Fetch cartons only when whs + item + division are all set ──
     const canFetch = !!(filterWhs && filterProduct && filterDivision);
 
     useEffect(() => {
@@ -767,7 +955,7 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
             setFilterLot(null);
             return;
         }
-        const fetch = async () => {
+        const fetchCartons = async () => {
             setCartonsLoading(true);
             setSelectedCartons(new Set());
             try {
@@ -782,61 +970,47 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                 if (filterLot) params.lot_number = filterLot.value;
                 const res = await api.get("/inventory/cartons", { params, withCredentials: true });
                 if (res.data.success) setCartons(res.data.data.cartons || []);
-            } catch { setCartons([]); } finally { setCartonsLoading(false); }
+            } catch { setCartons([]); } finally {
+                setCartonsLoading(false);
+            }
         };
-        fetch();
+        fetchCartons();
     }, [filterWhs, filterProduct, filterDivision, filterLocation, filterPallet, filterRecDate, filterLot]);
 
+    // ── Dest location filter by whs ──
     useEffect(() => {
-        setFilteredDestLocations(toWhsCode ? locations.filter((l: Location) => l.whs_code === toWhsCode) : locations);
+        setFilteredDestLocations(
+            toWhsCode ? locations.filter((l: Location) => l.whs_code === toWhsCode) : locations
+        );
         setToLocation("");
     }, [toWhsCode, locations]);
 
-    // ── Cross-filter for By Carton optional filters ──
+    const destLocationOptions: SelectOption[] = filteredDestLocations.map((l: Location) => ({
+        value: l.location_code, label: l.location_code,
+    }));
 
-    // For location options: filter by pallet + lot (exclude location)
-    const forLocation = useMemo(() => cartons.filter((c) => {
-        if (filterPallet && c.pallet !== filterPallet.value) return false;
-        if (filterLot && c.lot_number !== filterLot.value) return false;
-        return true;
-    }), [cartons, filterPallet, filterLot]);
+    // ── Derived optional filter options from fetched cartons ──
+    const locationFilterOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(cartons.map((c) => c.location).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [cartons]);
 
-    // For pallet options: filter by location + lot (exclude pallet)
-    const forPallet = useMemo(() => cartons.filter((c) => {
-        if (filterLocation && c.location !== filterLocation.value) return false;
-        if (filterLot && c.lot_number !== filterLot.value) return false;
-        return true;
-    }), [cartons, filterLocation, filterLot]);
+    const palletOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(cartons.map((c) => c.pallet).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [cartons]);
 
-    // For lot options: filter by location + pallet (exclude lot)
-    const forLot = useMemo(() => cartons.filter((c) => {
-        if (filterLocation && c.location !== filterLocation.value) return false;
-        if (filterPallet && c.pallet !== filterPallet.value) return false;
-        return true;
-    }), [cartons, filterLocation, filterPallet]);
+    const lotOptions = useMemo<SelectOption[]>(() => {
+        const set = new Set(cartons.map((c) => c.lot_number).filter(Boolean));
+        return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+    }, [cartons]);
 
-    const locationFilterOptions = useMemo(() => buildOptions(forLocation, (c) => c.location,   (c) => c.qty_available), [forLocation]);
-    const palletOptions         = useMemo(() => buildOptions(forPallet,   (c) => c.pallet,      (c) => c.qty_available), [forPallet]);
-    const lotOptions            = useMemo(() => buildOptions(forLot,      (c) => c.lot_number,  (c) => c.qty_available), [forLot]);
-
-    // ── Auto-reset invalid selections after cross-filter ──
-    useEffect(() => {
-        if (filterLocation && !locationFilterOptions.find((o) => o.value === filterLocation.value)) setFilterLocation(null);
-    }, [locationFilterOptions]);
-
-    useEffect(() => {
-        if (filterPallet && !palletOptions.find((o) => o.value === filterPallet.value)) setFilterPallet(null);
-    }, [palletOptions]);
-
-    useEffect(() => {
-        if (filterLot && !lotOptions.find((o) => o.value === filterLot.value)) setFilterLot(null);
-    }, [lotOptions]);
-
-    const destLocationOptions: SelectOption[] = filteredDestLocations.map((l: Location) => ({ value: l.location_code, label: l.location_code }));
+    // ── Select options ──
     const warehouseOptions: SelectOption[] = warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }));
     const productOptions: SelectOption[] = products.map((p) => ({ value: p.item_code, label: `${p.item_code} — ${p.item_name}` }));
     const divisionOptions: SelectOption[] = divisions.map((d) => ({ value: d.code, label: `${d.code} — ${d.name}` }));
 
+    // ── Carton selection ──
     const toggleCarton = (cartonNumber: string) => {
         setSelectedCartons((prev) => {
             const next = new Set(prev);
@@ -849,27 +1023,35 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
 
     const selectedCartonData = cartons.filter((c) => selectedCartons.has(c.carton_number));
     const totalQty = selectedCartonData.reduce((sum, c) => sum + c.qty_available, 0);
-    const totalQtyAll = useMemo(() => cartons.reduce((sum, c) => sum + c.qty_available, 0), [cartons]);
+    const totalQtyAll = useMemo(
+        () => cartons.reduce((sum, c) => sum + c.qty_available, 0),
+        [cartons]
+    );
     const cartonsUom = cartons[0]?.uom ?? "";
 
     const sourceConsistent = useMemo(() => {
         if (selectedCartonData.length === 0) return true;
         const first = selectedCartonData[0];
-        return selectedCartonData.every((c) => c.whs_code === first.whs_code && c.location === first.location);
+        return selectedCartonData.every(
+            (c) => c.whs_code === first.whs_code && c.location === first.location
+        );
     }, [selectedCartonData]);
 
+    // ── Submit ──
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(""); setSuccess("");
         if (selectedCartonData.length === 0) { setError("Please select at least one carton."); return; }
         if (!toWhsCode || !toLocation) { setError("Destination warehouse and location are required."); return; }
         if (!sourceConsistent) { setError("Selected cartons must be from the same source warehouse and location."); return; }
+
         const first = selectedCartonData[0];
-        if (first.whs_code === toWhsCode && first.location === toLocation &&
+        if (
+            first.whs_code === toWhsCode &&
+            first.location === toLocation &&
             (newQaStatus === "" || newQaStatus === first.qa_status) &&
-            (divisionCode === "" || divisionCode === first.division_code)) {
-            setError("Source and destination are the same for all selected cartons."); return;
-        }
+            (divisionCode === "" || divisionCode === first.division_code)
+        ) { setError("Source and destination are the same for all selected cartons."); return; }
 
         setSubmitting(true);
         setProgress({ done: 0, total: selectedCartonData.length });
@@ -898,7 +1080,9 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
             };
             try {
                 await api.post("/inventory/transfer", payload, { withCredentials: true });
-            } catch { failedCartons.push(carton.carton_number); }
+            } catch {
+                failedCartons.push(carton.carton_number);
+            }
             setProgress({ done: i + 1, total: selectedCartonData.length });
         }
 
@@ -911,13 +1095,18 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
             setToWhsCode(""); setToLocation(""); setNewQaStatus(""); setDivisionCode(""); setReason("");
             onRefresh();
             mutate("/inventories");
+            // re-fetch cartons
             if (canFetch) {
                 setCartonsLoading(true);
                 try {
-                    const params: Record<string, string> = { item_code: filterProduct!.value, whs_code: filterWhs!.value, division_code: filterDivision!.value };
+                    const params: Record<string, string> = {
+                        item_code: filterProduct!.value,
+                        whs_code: filterWhs!.value,
+                        division_code: filterDivision!.value,
+                    };
                     const res = await api.get("/inventory/cartons", { params, withCredentials: true });
                     if (res.data.success) setCartons(res.data.data.cartons || []);
-                } catch { } finally { setCartonsLoading(false); }
+                } catch { /* ignore */ } finally { setCartonsLoading(false); }
             }
         } else {
             setError(`Transfer completed with errors. Failed cartons: ${failedCartons.join(", ")}`);
@@ -935,14 +1124,21 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
     };
 
     const hasSelection = selectedCartonData.length > 0;
-    const emptyMessage = !filterWhs ? "Select a warehouse to start"
-        : !filterProduct ? "Select an item code"
-        : !filterDivision ? "Select a division"
-        : cartonsLoading ? ""
+
+    // ── Empty state message ──
+    const emptyMessage = !filterWhs
+        ? "Select a warehouse to start"
+        : !filterProduct
+        ? "Select an item code"
+        : !filterDivision
+        ? "Select a division"
+        : cartonsLoading
+        ? ""
         : "No cartons found";
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left – filters + carton list */}
             <div className="lg:col-span-1">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6">
                     <div className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
@@ -950,25 +1146,70 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                         <span className="text-xs text-gray-500">{selectedCartons.size} selected</span>
                     </div>
                     <div className="p-4 space-y-3">
+
+                        {/* ── Required filters ── */}
                         <div>
                             <FieldLabel required>Warehouse</FieldLabel>
-                            <Select options={warehouseOptions} value={filterWhs}
-                                onChange={(opt) => { setFilterWhs(opt); setFilterProduct(null); setFilterDivision(null); setFilterLocation(null); setFilterPallet(null); setFilterRecDate(""); setFilterLot(null); }}
-                                placeholder="Select warehouse..." isClearable isSearchable isLoading={masterLoading} styles={customSelectStyles} className="text-sm" />
-                        </div>
-                        <div>
-                            <FieldLabel required>Item Code</FieldLabel>
-                            <Select options={productOptions} value={filterProduct}
-                                onChange={(opt) => { setFilterProduct(opt); setFilterLocation(null); setFilterPallet(null); setFilterRecDate(""); setFilterLot(null); }}
-                                placeholder="Search item..." isClearable isSearchable isDisabled={!filterWhs} isLoading={masterLoading} styles={customSelectStyles} className="text-sm" />
-                        </div>
-                        <div>
-                            <FieldLabel required>Division</FieldLabel>
-                            <Select options={divisionOptions} value={filterDivision}
-                                onChange={(opt) => { setFilterDivision(opt); setFilterLocation(null); setFilterPallet(null); setFilterRecDate(""); setFilterLot(null); }}
-                                placeholder="Select division..." isClearable isSearchable isDisabled={!filterProduct} isLoading={masterLoading} styles={customSelectStyles} className="text-sm" />
+                            <Select
+                                options={warehouseOptions}
+                                value={filterWhs}
+                                onChange={(opt) => {
+                                    setFilterWhs(opt);
+                                    setFilterProduct(null);
+                                    setFilterDivision(null);
+                                    setFilterLocation(null);
+                                    setFilterPallet(null);
+                                    setFilterRecDate("");
+                                    setFilterLot(null);
+                                }}
+                                placeholder="Select warehouse..."
+                                isClearable isSearchable
+                                isLoading={masterLoading}
+                                styles={customSelectStyles} className="text-sm"
+                            />
                         </div>
 
+                        <div>
+                            <FieldLabel required>Item Code</FieldLabel>
+                            <Select
+                                options={productOptions}
+                                value={filterProduct}
+                                onChange={(opt) => {
+                                    setFilterProduct(opt);
+                                    setFilterLocation(null);
+                                    setFilterPallet(null);
+                                    setFilterRecDate("");
+                                    setFilterLot(null);
+                                }}
+                                placeholder="Search item..."
+                                isClearable isSearchable
+                                isDisabled={!filterWhs}
+                                isLoading={masterLoading}
+                                styles={customSelectStyles} className="text-sm"
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel required>Division</FieldLabel>
+                            <Select
+                                options={divisionOptions}
+                                value={filterDivision}
+                                onChange={(opt) => {
+                                    setFilterDivision(opt);
+                                    setFilterLocation(null);
+                                    setFilterPallet(null);
+                                    setFilterRecDate("");
+                                    setFilterLot(null);
+                                }}
+                                placeholder="Select division..."
+                                isClearable isSearchable
+                                isDisabled={!filterProduct}
+                                isLoading={masterLoading}
+                                styles={customSelectStyles} className="text-sm"
+                            />
+                        </div>
+
+                        {/* ── Optional filters — only after cartons loaded ── */}
                         {cartons.length > 0 && (
                             <>
                                 <div className="border-t border-gray-100 pt-3">
@@ -976,22 +1217,41 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                                 </div>
                                 <div>
                                     <FieldLabel>Location</FieldLabel>
-                                    <Select options={locationFilterOptions} value={filterLocation} onChange={(opt) => setFilterLocation(opt)}
-                                        placeholder="All locations" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
+                                    <Select
+                                        options={locationFilterOptions}
+                                        value={filterLocation}
+                                        onChange={(opt) => setFilterLocation(opt)}
+                                        placeholder="All locations"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
+                                    />
                                 </div>
                                 <div>
                                     <FieldLabel>Pallet</FieldLabel>
-                                    <Select options={palletOptions} value={filterPallet} onChange={(opt) => setFilterPallet(opt)}
-                                        placeholder="All pallets" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
+                                    <Select
+                                        options={palletOptions}
+                                        value={filterPallet}
+                                        onChange={(opt) => setFilterPallet(opt)}
+                                        placeholder="All pallets"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
+                                    />
                                 </div>
                                 <div>
                                     <FieldLabel>Lot Number</FieldLabel>
-                                    <Select options={lotOptions} value={filterLot} onChange={(opt) => setFilterLot(opt)}
-                                        placeholder="All lots" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
+                                    <Select
+                                        options={lotOptions}
+                                        value={filterLot}
+                                        onChange={(opt) => setFilterLot(opt)}
+                                        placeholder="All lots"
+                                        isClearable isSearchable
+                                        styles={customSelectStyles} className="text-sm"
+                                    />
                                 </div>
                             </>
                         )}
 
+                        {/* Select all / clear */}
                         {cartons.length > 0 && (
                             <div className="flex gap-2 pt-1">
                                 <button onClick={selectAll} type="button"
@@ -1005,23 +1265,41 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                             </div>
                         )}
 
+                        {/* Total qty summary */}
                         {!cartonsLoading && cartons.length > 0 && (
                             <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
-                                <span className="text-xs text-gray-500">{cartons.length} carton(s)</span>
-                                <span className="text-xs font-semibold text-gray-800">Total: {totalQtyAll} {cartonsUom}</span>
+                                <span className="text-xs text-gray-500">
+                                    {cartons.length} carton(s)
+                                </span>
+                                <span className="text-xs font-semibold text-gray-800">
+                                    Total: {totalQtyAll} {cartonsUom}
+                                </span>
                             </div>
                         )}
 
+                        {/* Carton list */}
                         <div className="space-y-2 max-h-[380px] overflow-y-auto">
-                            {cartonsLoading ? <LoadingSpinner />
-                                : !canFetch || cartons.length === 0 ? (
-                                    <p className="text-sm text-gray-400 text-center py-6">{emptyMessage}</p>
-                                ) : cartons.map((carton) => {
+                            {cartonsLoading ? (
+                                <LoadingSpinner />
+                            ) : !canFetch || cartons.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-6">{emptyMessage}</p>
+                            ) : (
+                                cartons.map((carton) => {
                                     const checked = selectedCartons.has(carton.carton_number);
                                     return (
-                                        <label key={carton.carton_number}
-                                            className={`flex gap-3 p-3 rounded-lg border cursor-pointer transition-all ${checked ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"}`}>
-                                            <input type="checkbox" checked={checked} onChange={() => toggleCarton(carton.carton_number)} className="mt-0.5 accent-blue-600 shrink-0" />
+                                        <label
+                                            key={carton.carton_number}
+                                            className={`flex gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                                checked
+                                                    ? "border-blue-500 bg-blue-50"
+                                                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            <input
+                                                type="checkbox" checked={checked}
+                                                onChange={() => toggleCarton(carton.carton_number)}
+                                                className="mt-0.5 accent-blue-600 shrink-0"
+                                            />
                                             <div className="min-w-0">
                                                 <div className="flex justify-between items-start mb-1">
                                                     <span className="text-xs font-semibold text-gray-900">📦 {carton.carton_number}</span>
@@ -1035,19 +1313,23 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                                             </div>
                                         </label>
                                     );
-                                })}
+                                })
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
 
+            {/* Right – Form */}
             <div className="lg:col-span-2">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                     <div className="border-b border-gray-200 px-6 py-4">
                         <h2 className="text-xl font-semibold text-gray-900">Transfer by Carton</h2>
                         <p className="text-sm text-gray-500 mt-1">Transfer full cartons — no partial qty. Multiple cartons in one action.</p>
                     </div>
+
                     <form onSubmit={handleSubmit} className="p-6">
+                        {/* Summary of selected cartons */}
                         {hasSelection && (
                             <div className={`rounded-lg p-4 mb-6 border ${sourceConsistent ? "bg-blue-50 border-blue-200" : "bg-amber-50 border-amber-300"}`}>
                                 <div className="flex items-start justify-between mb-2">
@@ -1056,7 +1338,9 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                                     </h3>
                                     <span className="text-xs text-gray-600">{selectedCartonData.length} carton(s) · {totalQty} units total</span>
                                 </div>
-                                {!sourceConsistent && <p className="text-xs text-amber-800 mb-2">All selected cartons must be from the same warehouse and location.</p>}
+                                {!sourceConsistent && (
+                                    <p className="text-xs text-amber-800 mb-2">All selected cartons must be from the same warehouse and location.</p>
+                                )}
                                 <div className="space-y-1 max-h-40 overflow-y-auto">
                                     {selectedCartonData.map((c: CartonGroup) => (
                                         <div key={c.carton_number} className="flex items-center justify-between text-xs text-gray-700 bg-white rounded px-2 py-1 border border-gray-100">
@@ -1068,34 +1352,48 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                                 </div>
                             </div>
                         )}
+
                         {!hasSelection && (
                             <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-6 mb-6 text-center">
                                 <p className="text-sm text-gray-500">Select one or more cartons from the left panel</p>
                             </div>
                         )}
 
+                        {/* Destination */}
                         <SectionTitle>Destination Information</SectionTitle>
                         <div className="grid grid-cols-2 gap-4 mb-6">
                             <div>
                                 <FieldLabel required>To Warehouse</FieldLabel>
-                                <Select options={warehouseOptions} value={warehouseOptions.find((o: SelectOption) => o.value === toWhsCode) || null}
+                                <Select
+                                    options={warehouseOptions}
+                                    value={warehouseOptions.find((o: SelectOption) => o.value === toWhsCode) || null}
                                     onChange={(opt: SelectOption | null) => setToWhsCode(opt?.value || "")}
-                                    placeholder="Select warehouse..." isClearable isSearchable isDisabled={!hasSelection} styles={customSelectStyles} className="text-sm" />
+                                    placeholder="Select warehouse..."
+                                    isClearable isSearchable isDisabled={!hasSelection}
+                                    styles={customSelectStyles} className="text-sm"
+                                />
                             </div>
                             <div>
                                 <FieldLabel required>To Location</FieldLabel>
-                                <Select options={destLocationOptions} value={destLocationOptions.find((o: SelectOption) => o.value === toLocation) || null}
+                                <Select
+                                    options={destLocationOptions}
+                                    value={destLocationOptions.find((o: SelectOption) => o.value === toLocation) || null}
                                     onChange={(opt: SelectOption | null) => setToLocation(opt?.value || "")}
-                                    placeholder="Select location..." isClearable isSearchable isDisabled={!hasSelection || !toWhsCode}
+                                    placeholder="Select location..."
+                                    isClearable isSearchable
+                                    isDisabled={!hasSelection || !toWhsCode}
                                     styles={customSelectStyles} className="text-sm"
-                                    noOptionsMessage={() => toWhsCode ? "No locations found" : "Select warehouse first"} />
+                                    noOptionsMessage={() => toWhsCode ? "No locations found" : "Select warehouse first"}
+                                />
                             </div>
                             <div>
                                 <FieldLabel>New QA Status</FieldLabel>
                                 <select value={newQaStatus} onChange={(e) => setNewQaStatus(e.target.value)} disabled={!hasSelection}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100">
                                     <option value="">Keep Current Status</option>
-                                    {qaStatuses.map((opt: QaStatus) => <option key={opt.qa_status} value={opt.qa_status}>{opt.description} ({opt.qa_status})</option>)}
+                                    {qaStatuses.map((opt: QaStatus) => (
+                                        <option key={opt.qa_status} value={opt.qa_status}>{opt.description} ({opt.qa_status})</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
@@ -1103,11 +1401,14 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                                 <select value={divisionCode} onChange={(e) => setDivisionCode(e.target.value)} disabled={!hasSelection}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100">
                                     <option value="">Keep Current Division</option>
-                                    {divisionOptions.map((opt: SelectOption) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                    {divisionOptions.map((opt: SelectOption) => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
 
+                        {/* Reason */}
                         <div className="mb-6">
                             <FieldLabel>Reason for Transfer</FieldLabel>
                             <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} disabled={!hasSelection}
@@ -1115,6 +1416,7 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                                 placeholder="Enter reason for transfer..." />
                         </div>
 
+                        {/* Progress bar */}
                         {progress && (
                             <div className="mb-4">
                                 <div className="flex justify-between text-xs text-gray-600 mb-1">
@@ -1122,7 +1424,10 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                                     <span>{progress.done} / {progress.total}</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${(progress.done / progress.total) * 100}%` }} />
+                                    <div
+                                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                        style={{ width: `${(progress.done / progress.total) * 100}%` }}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -1135,7 +1440,8 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                                 className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
                                 {submitting
                                     ? <><SpinIcon />Processing {progress?.done ?? 0}/{progress?.total ?? selectedCartonData.length}...</>
-                                    : <><TransferIcon />Transfer {selectedCartons.size > 0 ? `${selectedCartons.size} Carton(s)` : "Cartons"}</>}
+                                    : <><TransferIcon />Transfer {selectedCartons.size > 0 ? `${selectedCartons.size} Carton(s)` : "Cartons"}</>
+                                }
                             </button>
                             <button type="button" onClick={handleReset} disabled={submitting}
                                 className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none disabled:opacity-50">
@@ -1176,7 +1482,8 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
     return (
         <div>
             <FieldLabel>{label}</FieldLabel>
-            <input readOnly type="text" value={value} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50" />
+            <input readOnly type="text" value={value}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50" />
         </div>
     );
 }
