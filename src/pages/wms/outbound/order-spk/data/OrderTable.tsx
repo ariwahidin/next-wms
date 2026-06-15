@@ -403,7 +403,7 @@ const FilterBar = ({ filters, onChange, loading, doMatchCount }: FilterBarProps)
           {/* Helper text */}
           {localDO && doMatchCount !== null && doMatchCount > 0 && (
             <p className="text-[10px] text-amber-600 font-medium mt-0.5">
-              ✓ DO No ini ditemukan di {doMatchCount} SPK — lihat highlight di tabel
+              ✓ This DO No has {doMatchCount} SPK — highlighted in the table below
             </p>
           )}
         </div>
@@ -473,7 +473,7 @@ const DOMatchBanner = ({
         <FileSearch className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-amber-800">
-            DO No <span className="font-mono bg-amber-200 rounded px-1">{doNo}</span> ditemukan di {matchedRows.length} SPK:
+            DO No <span className="font-mono bg-amber-200 rounded px-1">{doNo}</span> has {matchedRows.length} SPK:
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {matchedRows.map((row) => (
@@ -962,7 +962,7 @@ const OrderTable = () => {
             }
             overlayNoRowsTemplate={
               filters.searchDO
-                ? `<span style="color:#d97706;font-size:13px">DO No "<b>${filters.searchDO}</b>" tidak ditemukan di SPK manapun.</span>`
+                ? `<span style="color:#d97706;font-size:13px">DO No "<b>${filters.searchDO}</b>" not found in order records.</span>`
                 : '<span style="color:#94a3b8;font-size:13px">No order records found for the selected filters.</span>'
             }
           />
