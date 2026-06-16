@@ -23,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { generateBarcodeDataURL } from "@/utils/generate-barcode";
+import { generateBarcodeDataURL } from "@/utils/generateBarcode";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 // ModuleRegistry.registerModules([ MasterDetailModule ]);

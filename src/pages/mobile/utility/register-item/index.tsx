@@ -23,6 +23,7 @@ import {
   AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ParsedQRData, parseQRCode } from "@/utils/qrParser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,51 +51,6 @@ interface Product {
   created_by_name?: string;
 }
 
-// ─── QR Parser ────────────────────────────────────────────────────────────────
-
-interface ParsedQRData {
-  sku?: string;       // SKU      → sku
-  ean?: string;       // EAN      → ean
-  product?: string;   // PRODUCT  → description
-  model?: string;     // MODEL    → unit_model
-  brand?: string;
-  cartonSerial?: string;
-  batch?: string;
-  mfgDate?: string;
-  qtyPerCarton?: number;
-}
-
-function parseQRCode(raw: string): ParsedQRData | null {
-  const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g;
-  const map: Record<string, string> = {};
-  let match: RegExpExecArray | null;
-  let found = false;
-
-  while ((match = pattern.exec(raw)) !== null) {
-    found = true;
-    map[match[2].trim()] = match[3].trim();
-  }
-
-  if (!found) return null;
-
-  let mfgDate: string | undefined;
-  if (map["MFG_DATE"]?.length === 8) {
-    const d = map["MFG_DATE"];
-    mfgDate = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
-  }
-
-  return {
-    sku: map["SKU"],
-    ean: map["EAN"],
-    product: map["PRODUCT"],
-    model: map["MODEL"],
-    brand: map["BRAND"],
-    cartonSerial: map["CARTON_SERIAL"],
-    batch: map["BATCH"],
-    mfgDate,
-    qtyPerCarton: map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined,
-  };
-}
 
 // ─── Toggle Component ─────────────────────────────────────────────────────────
 

@@ -26,6 +26,7 @@ import { XCircle } from "lucide-react";
 import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
 import { InventoryPolicy } from "@/types/inventory";
+import { ParsedQRData, parseQRCode } from "@/utils/qrParser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -112,178 +113,179 @@ interface ScannedItem {
 
 // ─── QR Parser ────────────────────────────────────────────────────────────────
 type LabelType = "UNIT" | "CARTON" | "UNKNOWN"
-interface ParsedQRData {
-  sku?: string;       // item_code
-  ean?: string;       // barcode
-  product?: string;   // item_name
-  brand?: string;
-  model?: string;
-  serial?: string;
-  cartonSerial?: string; // case_number
-  batch?: string;        // lot_number
-  mfgDate?: string;      // prod_date (yyyyMMdd → yyyy-MM-dd)
-  qtyPerCarton?: number; // qty suggestion
-  labelType?: "UNIT" | "CARTON" | "UNKNOWN";
-  innerSerialStart?: string;
-  innerSerialEnd?: string;
-  innerSerials?: string[];
-  innerSerialRangeError?: string;
-}
+// interface ParsedQRData {
+//   sku?: string;       // item_code
+//   ean?: string;       // barcode
+//   product?: string;   // item_name
+//   brand?: string;
+//   model?: string;
+//   serial?: string;
+//   cartonSerial?: string; // case_number
+//   batch?: string;        // lot_number
+//   mfgDate?: string;      // prod_date (yyyyMMdd → yyyy-MM-dd)
+//   qtyPerCarton?: number; // qty suggestion
+//   labelType?: "UNIT" | "CARTON" | "UNKNOWN";
+//   innerSerialStart?: string;
+//   innerSerialEnd?: string;
+//   innerSerials?: string[];
+//   innerSerialRangeError?: string;
+// }
 
-function parseQRCode(raw: string): ParsedQRData | null {
+// function parseQRCode(raw: string): ParsedQRData | null {
 
-  // ── Format v2: 12 segment dash-separated ──────────────────
-  if (!raw.startsWith("(") && raw.split("-").length === 12) {
-    const segments = raw.split("-")
+//   // ── Format v2: 12 segment dash-separated ──────────────────
+//   if (!raw.startsWith("(") && raw.split("-").length === 12) {
+//     const segments = raw.split("-")
 
-    const rawDate = segments[9]
-    let mfgDate: string | undefined
-    if (rawDate?.length === 8) {
-      mfgDate = `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
-    }
+//     const rawDate = segments[9]
+//     let mfgDate: string | undefined
+//     if (rawDate?.length === 8) {
+//       mfgDate = `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
+//     }
 
-    const qtyMatch = segments[4].match(/^(\d+)/)
-    const qty = qtyMatch ? Number(qtyMatch[1]) : undefined
+//     const qtyMatch = segments[4].match(/^(\d+)/)
+//     const qty = qtyMatch ? Number(qtyMatch[1]) : undefined
 
-    // ← tambah inner serial untuk format v2
-    const start = segments[10] || undefined  // sesuaikan index segment
-    const end = segments[11] || undefined
+//     // ← tambah inner serial untuk format v2
+//     const start = segments[10] || undefined  // sesuaikan index segment
+//     const end = segments[11] || undefined
 
-    let innerSerials: string[] | undefined
-    let innerSerialRangeError: string | undefined
+//     let innerSerials: string[] | undefined
+//     let innerSerialRangeError: string | undefined
 
-    if (start) {
-      const numMatch = start.match(/^(.*?)(\d+)$/)
-      if (numMatch) {
-        const prefix = numMatch[1]
-        const startNum = parseInt(numMatch[2], 10)
-        const padLen = numMatch[2].length
-        let endNum: number | undefined
+//     if (start) {
+//       const numMatch = start.match(/^(.*?)(\d+)$/)
+//       if (numMatch) {
+//         const prefix = numMatch[1]
+//         const startNum = parseInt(numMatch[2], 10)
+//         const padLen = numMatch[2].length
+//         let endNum: number | undefined
 
-        if (end) {
-          endNum = parseInt(end.replace(prefix, ""), 10)
-        } else if (qty && qty > 0) {
-          endNum = startNum + qty - 1
-        }
+//         if (end) {
+//           endNum = parseInt(end.replace(prefix, ""), 10)
+//         } else if (qty && qty > 0) {
+//           endNum = startNum + qty - 1
+//         }
 
-        if (endNum !== undefined && !isNaN(startNum) && !isNaN(endNum) && endNum >= startNum) {
-          innerSerials = []
-          for (let i = startNum; i <= endNum; i++) {
-            innerSerials.push(prefix + String(i).padStart(padLen, "0"))
-          }
+//         if (endNum !== undefined && !isNaN(startNum) && !isNaN(endNum) && endNum >= startNum) {
+//           innerSerials = []
+//           for (let i = startNum; i <= endNum; i++) {
+//             innerSerials.push(prefix + String(i).padStart(padLen, "0"))
+//           }
 
-          const lastGenerated = innerSerials[innerSerials.length - 1]
-          if (end && lastGenerated !== end) {
-            innerSerialRangeError = `Range invalid: "${lastGenerated}" ≠ "${end}"`
-            innerSerials = undefined
-          }
-          if (!innerSerialRangeError && qty && innerSerials && innerSerials.length !== qty) {
-            innerSerialRangeError = `Total inner serial ${innerSerials.length} ≠ QTY_PER_CARTON ${qty}`
-            innerSerials = undefined
-          }
-        }
-      }
-    }
+//           const lastGenerated = innerSerials[innerSerials.length - 1]
+//           if (end && lastGenerated !== end) {
+//             innerSerialRangeError = `Range invalid: "${lastGenerated}" ≠ "${end}"`
+//             innerSerials = undefined
+//           }
+//           if (!innerSerialRangeError && qty && innerSerials && innerSerials.length !== qty) {
+//             innerSerialRangeError = `Total inner serial ${innerSerials.length} ≠ QTY_PER_CARTON ${qty}`
+//             innerSerials = undefined
+//           }
+//         }
+//       }
+//     }
 
-    return {
-      sku: segments[1] || undefined,
-      qtyPerCarton: !isNaN(qty) && qty > 0 ? qty : undefined,
-      mfgDate,
-      labelType: "CARTON",
-      innerSerialStart: start,
-      innerSerialEnd: end,
-      innerSerials,
-      innerSerialRangeError,
-    }
-  }
+//     return {
+//       sku: segments[1] || undefined,
+//       qtyPerCarton: !isNaN(qty) && qty > 0 ? qty : undefined,
+//       mfgDate,
+//       labelType: "CARTON",
+//       innerSerialStart: start,
+//       innerSerialEnd: end,
+//       innerSerials,
+//       innerSerialRangeError,
+//     }
+//   }
 
-  // ── Format v1: (1)KEY=VALUE ────────────────────────────────
-  const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g
-  const map: Record<string, string> = {}
-  let match: RegExpExecArray | null
-  let found = false
+//   // ── Format v1: (1)KEY=VALUE ────────────────────────────────
+//   const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g
+//   const map: Record<string, string> = {}
+//   let match: RegExpExecArray | null
+//   let found = false
 
-  while ((match = pattern.exec(raw)) !== null) {
-    found = true
-    map[match[2].trim()] = match[3].trim()
-  }
+//   while ((match = pattern.exec(raw)) !== null) {
+//     found = true
+//     map[match[2].trim()] = match[3].trim()
+//   }
 
-  if (!found) return null
+//   if (!found) return null
 
-  let mfgDate: string | undefined
-  if (map["MFG_DATE"]?.length === 8) {
-    const d = map["MFG_DATE"]
-    mfgDate = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
-  }
+//   let mfgDate: string | undefined
+//   if (map["MFG_DATE"]?.length === 8) {
+//     const d = map["MFG_DATE"]
+//     mfgDate = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
+//   }
 
-  const labelType: LabelType = map["SERIAL"]
-    ? "UNIT"
-    : (map["CARTON_SERIAL"] || map["CARTON"])
-      ? "CARTON"
-      : "UNKNOWN"
+//   const labelType: LabelType = map["SERIAL"]
+//     ? "UNIT"
+//     : (map["CARTON_SERIAL"] || map["CARTON"])
+//       ? "CARTON"
+//       : "UNKNOWN"
 
-  // ← generate inner serials (sama persis dengan inbound)
-  let innerSerials: string[] | undefined
-  let innerSerialRangeError: string | undefined
-  const start = map["INNER_SERIAL_START"]
-  const end = map["INNER_SERIAL_END"]
-  const qty = map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined
+//   // ← generate inner serials (sama persis dengan inbound)
+//   let innerSerials: string[] | undefined
+//   let innerSerialRangeError: string | undefined
+//   const start = map["INNER_SERIAL_START"]
+//   const end = map["INNER_SERIAL_END"]
+//   // const qty = map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined
+//   const qty = map["QTY_PER_CARTON"] ? parseInt(map["QTY_PER_CARTON"], 10) : undefined
 
-  if (start) {
-    const numMatch = start.match(/^(.*?)(\d+)$/)
-    if (numMatch) {
-      const prefix = numMatch[1]
-      const startNum = parseInt(numMatch[2], 10)
-      const padLen = numMatch[2].length
-      let endNum: number | undefined
+//   if (start) {
+//     const numMatch = start.match(/^(.*?)(\d+)$/)
+//     if (numMatch) {
+//       const prefix = numMatch[1]
+//       const startNum = parseInt(numMatch[2], 10)
+//       const padLen = numMatch[2].length
+//       let endNum: number | undefined
 
-      if (end) {
-        endNum = parseInt(end.replace(prefix, ""), 10)
-      } else if (qty && qty > 0) {
-        endNum = startNum + qty - 1
-      }
+//       if (end) {
+//         endNum = parseInt(end.replace(prefix, ""), 10)
+//       } else if (qty && qty > 0) {
+//         endNum = startNum + qty - 1
+//       }
 
-      if (endNum !== undefined && !isNaN(startNum) && !isNaN(endNum) && endNum >= startNum) {
-        innerSerials = []
-        for (let i = startNum; i <= endNum; i++) {
-          innerSerials.push(prefix + String(i).padStart(padLen, "0"))
-        }
+//       if (endNum !== undefined && !isNaN(startNum) && !isNaN(endNum) && endNum >= startNum) {
+//         innerSerials = []
+//         for (let i = startNum; i <= endNum; i++) {
+//           innerSerials.push(prefix + String(i).padStart(padLen, "0"))
+//         }
 
-        const lastGenerated = innerSerials[innerSerials.length - 1]
-        if (end && lastGenerated !== end) {
-          innerSerialRangeError = `Range tidak valid: "${lastGenerated}" ≠ "${end}"`
-          innerSerials = undefined
-        }
-        if (!innerSerialRangeError && qty && innerSerials && innerSerials.length !== qty) {
-          innerSerialRangeError = `Total inner serial ${innerSerials.length} ≠ QTY_PER_CARTON ${qty}`
-          innerSerials = undefined
-        }
-      } else if (start) {
-        innerSerialRangeError = "Cannot parse INNER_SERIAL_END / Invalid number format"
-      }
-    } else {
-      innerSerialRangeError = "Cannot parse INNER_SERIAL_START format"
-    }
-  }
+//         const lastGenerated = innerSerials[innerSerials.length - 1]
+//         if (end && lastGenerated !== end) {
+//           innerSerialRangeError = `Range tidak valid: "${lastGenerated}" ≠ "${end}"`
+//           innerSerials = undefined
+//         }
+//         if (!innerSerialRangeError && qty && innerSerials && innerSerials.length !== qty) {
+//           innerSerialRangeError = `Total inner serial ${innerSerials.length} ≠ QTY_PER_CARTON ${qty}`
+//           innerSerials = undefined
+//         }
+//       } else if (start) {
+//         innerSerialRangeError = "Cannot parse INNER_SERIAL_END / Invalid number format"
+//       }
+//     } else {
+//       innerSerialRangeError = "Cannot parse INNER_SERIAL_START format"
+//     }
+//   }
 
-  return {
-    sku: map["SKU"],
-    ean: map["EAN"],
-    product: map["PRODUCT"],
-    brand: map["BRAND"],
-    model: map["MODEL"],
-    serial: map["SERIAL"],
-    cartonSerial: map["CARTON_SERIAL"] ?? map["CARTON"],
-    batch: map["BATCH"],
-    mfgDate,
-    qtyPerCarton: qty,
-    labelType,
-    innerSerialStart: start,
-    innerSerialEnd: end,
-    innerSerials,
-    innerSerialRangeError,
-  }
-}
+//   return {
+//     sku: map["SKU"],
+//     ean: map["EAN"],
+//     product: map["PRODUCT"],
+//     brand: map["BRAND"],
+//     model: map["MODEL"],
+//     serial: map["SERIAL"],
+//     cartonSerial: map["CARTON_SERIAL"] ?? map["CARTON"],
+//     batch: map["BATCH"],
+//     mfgDate,
+//     qtyPerCarton: qty,
+//     labelType,
+//     innerSerialStart: start,
+//     innerSerialEnd: end,
+//     innerSerials,
+//     innerSerialRangeError,
+//   }
+// }
 
 // ─── Toggle Component ─────────────────────────────────────────────────────────
 

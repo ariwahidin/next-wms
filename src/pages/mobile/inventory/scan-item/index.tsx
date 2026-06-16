@@ -32,6 +32,7 @@ import {
     CommandList,
 } from "@/components/ui/command";
 import api from "@/lib/api";
+import { ParsedQRData, parseQRCode } from "@/utils/qrParser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,17 +58,7 @@ interface InventoryItem {
     item_name?: string;
 }
 
-interface ParsedQRData {
-    sku?: string;
-    ean?: string;
-    product?: string;
-    serial?: string;
-    cartonSerial?: string;
-    batch?: string;
-    mfgDate?: string;
-    qtyPerCarton?: number;
-    labelType: "UNIT" | "CARTON" | "UNKNOWN";
-}
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -80,59 +71,7 @@ function formatRecDate(raw?: string): string {
 
 // ─── QR Parser ────────────────────────────────────────────────────────────────
 
-function parseQRCode(raw: string): ParsedQRData | null {
-    // Format v2: 12-segment dash
-    if (!raw.startsWith("(") && raw.split("-").length === 12) {
-        const segments = raw.split("-");
-        const rawDate = segments[9];
-        let mfgDate: string | undefined;
-        if (rawDate?.length === 8) {
-            mfgDate = `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`;
-        }
-        const qtyMatch = segments[4].match(/^(\d+)/);
-        return {
-            sku: segments[1] || undefined,
-            qtyPerCarton: qtyMatch ? Number(qtyMatch[1]) : undefined,
-            mfgDate,
-            labelType: "CARTON",
-        };
-    }
 
-    // Format v1: (1)KEY=VALUE
-    const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g;
-    const map: Record<string, string> = {};
-    let match: RegExpExecArray | null;
-    let found = false;
-    while ((match = pattern.exec(raw)) !== null) {
-        found = true;
-        map[match[2].trim()] = match[3].trim();
-    }
-    if (!found) return null;
-
-    let mfgDate: string | undefined;
-    if (map["MFG_DATE"]?.length === 8) {
-        const d = map["MFG_DATE"];
-        mfgDate = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
-    }
-
-    const labelType: "UNIT" | "CARTON" | "UNKNOWN" = map["SERIAL"]
-        ? "UNIT"
-        : map["CARTON_SERIAL"]
-            ? "CARTON"
-            : "UNKNOWN";
-
-    return {
-        sku: map["SKU"],
-        ean: map["EAN"],
-        product: map["PRODUCT"],
-        serial: map["SERIAL"],
-        cartonSerial: map["CARTON_SERIAL"],
-        batch: map["BATCH"],
-        mfgDate,
-        qtyPerCarton: map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined,
-        labelType,
-    };
-}
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
