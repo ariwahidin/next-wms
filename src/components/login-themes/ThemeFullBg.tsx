@@ -171,7 +171,7 @@ export default function ThemeFullBg({
                     onChange={(e) => setUsername(e.target.value)}
                     readOnly={isPreview}
                     placeholder="Enter your username"
-                    className="w-full px-4 py-3 rounded-lg text-white placeholder-white/40 outline-none transition-all text-sm"
+                    className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 outline-none transition-all text-sm"
                     style={{
                       background: 'rgba(255,255,255,0.92)',
                       color: '#1e293b',

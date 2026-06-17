@@ -77,7 +77,7 @@ export default function ThemeCard({
       <div className="relative z-10 w-full max-w-[900px] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[540px]">
 
         {/* ── LEFT: image panel ── */}
-        <div className="relative w-full lg:w-[42%] flex-shrink-0 h-56 sm:h-72 lg:h-auto overflow-hidden rounded-t-3xl lg:rounded-t-none lg:rounded-l-3xl m-3 lg:m-3">
+        <div className="relative w-90 lg:w-[42%]  flex-shrink-0 h-56 sm:h-72 lg:h-auto overflow-hidden rounded-t-3xl lg:rounded-t-none lg:rounded-l-3xl m-3 lg:m-3">
           {/* Slide images */}
           {slides.map((slide, idx) => (
             <div
@@ -163,9 +163,13 @@ export default function ThemeCard({
           <div className="w-full max-w-sm mx-auto">
 
             {/* Heading */}
-            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight text-center mb-6 sm:mb-8 uppercase">
-              Sign In Now
+            <h1 className="text-2xl sm:text-2xl font-black text-gray-900 tracking-tight text-center mb-1 sm:mb-1 uppercase">
+              {/* Sign In Now */}
+              {config.app_name}
             </h1>
+            <span className="text-center text-sm text-gray-500 mb-6 sm:mb-8 block">
+              {config.tagline || 'Sign in to continue'}
+            </span>
 
             <div className="space-y-3 sm:space-y-4">
               {/* Email */}

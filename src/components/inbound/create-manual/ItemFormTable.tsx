@@ -29,6 +29,9 @@ import { id } from "date-fns/locale";
 import ItemSelectionModal from "./ItemSelectionModal"; // Import modal yang baru dibuat
 import { Item } from "@radix-ui/react-dropdown-menu";
 import { InventoryPolicy } from "@/types/inventory";
+import { useRouter } from "next/navigation";
+import { QrCode } from "lucide-react";
+
 
 // Skema validasi Yup
 const muatanSchema = yup.object().shape({
@@ -473,6 +476,11 @@ export default function ItemFormTable({
     }
   }, [searchTermMuatan])
 
+  const router = useRouter();
+
+  const handleGenerateQR = (item: ItemFormProps) => {
+    router.push(`/wms/utilities/qr-generator?item_id=${item.item_id}`);
+  };
 
   const handleFocus = async (itemCode: string, itemId: string | number) => {
     if (!itemCode || itemCode.trim() === "") return;
@@ -948,6 +956,14 @@ export default function ItemFormTable({
                               >
                                 <Copy size={14} />
                               </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleGenerateQR(item)}
+                                title="Generate QR"
+                              >
+                                <QrCode size={14} />
+                              </Button>
                             </>
                           ) : (
                             <>
@@ -964,6 +980,14 @@ export default function ItemFormTable({
                                 onClick={() => handleCopy(item.ID)}
                               >
                                 <Copy size={14} />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleGenerateQR(item)}
+                                title="Generate QR"
+                              >
+                                <QrCode size={14} />
                               </Button>
                             </>
                           )}

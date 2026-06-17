@@ -70,7 +70,7 @@ export default function ThemeModern({
           <div className="hidden lg:block space-y-8">
             <div className="space-y-4">
               <div className="flex items-center gap-1">
-                <img src={config.logo_url} alt="Logo" className="w-40 h-40 object-contain" />
+                <img src={config.logo_url} alt="Logo" className="w-20 h-20 object-contain" />
                 <div>
                   <h1 className="text-3xl font-bold text-white">{config.app_name}</h1>
                   <p className="text-sm font-bold" style={{ color: '#FF6D10' }}>{config.tagline}</p>

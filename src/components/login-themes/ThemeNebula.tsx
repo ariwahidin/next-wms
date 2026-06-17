@@ -143,34 +143,8 @@ export default function ThemeNebula({
 
             {/* Logo + heading */}
             <div className="flex flex-col items-center mb-6 sm:mb-8">
-              <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
-                {config.logo_url ? (
-                  <img
-                    src={config.logo_url}
-                    alt={config.app_name}
-                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain"
-                  />
-                ) : (
-                  <div
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full"
-                    style={{
-                      background: `linear-gradient(135deg, ${config.primary_color ?? '#4f46e5'}, ${config.accent_color ?? '#7c3aed'})`,
-                    }}
-                  />
-                )}
-                <div className="flex flex-col leading-none">
-                  <span className="text-base sm:text-lg font-black text-[#0f172a] tracking-tight uppercase">
-                    {config.app_name}
-                  </span>
-                  {config.company_name && (
-                    <span className="text-[9px] sm:text-[10px] tracking-[0.2em] text-gray-400 font-medium mt-0.5">
-                      {config.company_name}
-                    </span>
-                  )}
-                </div>
-              </div>
 
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1e293b] tracking-tight text-center">
+              <h2 className="text-2xl sm:text-2xl font-extrabold text-[#1e293b] tracking-tight text-center">
                 Welcome Back
               </h2>
               <p className="text-xs sm:text-sm text-gray-400 mt-1.5 text-center font-medium">
