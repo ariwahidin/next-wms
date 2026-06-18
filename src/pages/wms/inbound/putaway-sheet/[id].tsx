@@ -183,7 +183,7 @@ const PutawaySheetPrint = () => {
             </tr>
           ))}
           <tr>
-            <td colSpan={1} style={{ ...td, textAlign: "center" }}>
+            <td colSpan={2} style={{ ...td, textAlign: "center" }}>
               Total
             </td>
             {inventoryPolicy.use_lot_no && <td style={{ ...td }}></td>}

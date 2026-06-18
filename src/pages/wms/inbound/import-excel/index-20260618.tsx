@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+    /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef } from 'react';
 import ExcelJS from 'exceljs';
 import api from '@/lib/api'; // Sesuaikan dengan path lib api Anda
@@ -167,47 +167,28 @@ const InboundExcelUpload: React.FC = () => {
     };
 
     // Download template
-    // NOTE: Urutan kolom WAJIB sama dengan urutan index kolom yang dibaca
-    // backend (lihat konstanta colReceiptID, colInboundDate, dst di
-    // controller Go). Header dulu (Receipt ID s/d Remarks), baru kolom
-    // detail (Item Code s/d Division) menyusul.
     const downloadTemplate = async () => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Inbound Template');
 
         // Define columns
         worksheet.columns = [
-            // ---- Header fields ----
-            { header: 'Receipt ID', key: 'receipt_id', width: 18 },
-            { header: 'Inbound Date', key: 'inbound_date', width: 14 },
-            { header: 'IB Type', key: 'ib_type', width: 12 },
-            { header: 'Supplier', key: 'supplier', width: 14 },
-            { header: 'Trucker', key: 'trucker', width: 20 },
-            { header: 'Driver', key: 'driver', width: 12 },
-            { header: 'Warehouse Code', key: 'whs_code', width: 14 },
-            { header: 'Owner Code', key: 'owner_code', width: 14 },
-            { header: 'Origin', key: 'origin', width: 16 },
-            { header: 'PO Date', key: 'po_date', width: 14 },
-            { header: 'Truck No.', key: 'no_truck', width: 12 },
-            { header: 'Container No.', key: 'container', width: 14 },
-            { header: 'Truck Size', key: 'truck_size', width: 12 },
-            { header: 'Arrival Time', key: 'arrival_time', width: 12 },
-            { header: 'Start Unloading', key: 'start_unloading', width: 14 },
-            { header: 'Finish Unloading', key: 'end_unloading', width: 14 },
-            { header: 'BL No.', key: 'bl_no', width: 12 },
-            { header: 'Koli', key: 'koli', width: 10 },
-            { header: 'Remarks', key: 'remarks', width: 20 },
-            // ---- Detail fields ----
-            { header: 'Item Code', key: 'item_code', width: 16 },
+            { header: 'Receipt ID', key: 'receipt_id', width: 20 },
+            { header: 'Inbound Date', key: 'inbound_date', width: 15 },
+            { header: 'Supplier', key: 'supplier', width: 20 },
+            { header: 'Warehouse Code', key: 'whs_code', width: 15 },
+            { header: 'Owner Code', key: 'owner_code', width: 15 },
+            { header: 'Origin', key: 'origin', width: 20 },
+            { header: 'Item Code', key: 'item_code', width: 20 },
             { header: 'UOM', key: 'uom', width: 10 },
             { header: 'Quantity', key: 'quantity', width: 12 },
-            { header: 'Location', key: 'location', width: 14 },
+            { header: 'Location', key: 'location', width: 15 },
             { header: 'QA Status', key: 'qa_status', width: 12 },
-            { header: 'Receive Date', key: 'rec_date', width: 14 },
+            { header: 'Receive Date', key: 'rec_date', width: 15 },
             { header: 'Production Date', key: 'prod_date', width: 15 },
             { header: 'Expiration Date', key: 'exp_date', width: 15 },
-            { header: 'Lot Number', key: 'lot_number', width: 16 },
-            { header: 'Division', key: 'division', width: 16 }
+            { header: 'Lot Number', key: 'lot_number', width: 20 },
+            { header: 'Division', key: 'division', width: 15 }
         ];
 
         // Style header row
@@ -219,30 +200,43 @@ const InboundExcelUpload: React.FC = () => {
         };
         worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
-        // Sample data: 2 Receipt ID berbeda dalam satu file (RCP-2026-001
-        // dan RCP-2026-002), masing-masing 7 baris item, untuk
-        // mendemonstrasikan bahwa satu file bisa menghasilkan lebih dari
-        // satu Inbound (satu Inbound per Receipt ID).
-        const sampleRows = [
-            // ---- RCP-2026-001 ----
-            { receipt_id: 'RCP-2026-001', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 30037791, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-001', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 30047340, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-001', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10030875, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-001', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10030873, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-001', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10029911, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-001', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10022884, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-001', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10036340, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            // ---- RCP-2026-002 ----
-            { receipt_id: 'RCP-2026-002', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10036342, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-002', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10035319, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-002', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10099486, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-002', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10099485, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-002', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10099487, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-002', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10030420, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-            { receipt_id: 'RCP-2026-002', inbound_date: '2026-04-24', ib_type: 'NORMAL', supplier: 'JYME', trucker: 'AA_REG - ANTERA', driver: 'B123', whs_code: 'WH-B', owner_code: 'YUWELL', origin: 'SHANGHAI', po_date: '2026-04-20', no_truck: 'B2', container: '1', truck_size: '2', arrival_time: '09:25', start_unloading: '09:25', end_unloading: '15:54', bl_no: '1', koli: 1, remarks: '', item_code: 10030432, uom: 'PCS', quantity: 100, location: 'STAGING', qa_status: 'A', rec_date: '2026-04-24', prod_date: '', exp_date: '', lot_number: 'LOT01', division: 'E-COMMERCE' },
-        ];
-
-        sampleRows.forEach((row) => worksheet.addRow(row));
+        // Add sample data
+        worksheet.addRow({
+            receipt_id: 'RCP-2024-001',
+            inbound_date: '2024-12-27',
+            supplier: 'SUP001',
+            whs_code: 'WH01',
+            owner_code: 'OWN001',
+            origin: 'INDONESIA',
+            item_code: 'ITEM001',
+            uom: 'PCS',
+            quantity: 100,
+            location: 'A-01-01',
+            qa_status: 'A',
+            rec_date: '2024-12-27',
+            prod_date: '2024-12-01',
+            exp_date: '2025-12-01',
+            lot_number: 'LOT001',
+            division: 'DIV001'
+        });
+        worksheet.addRow({
+            receipt_id: 'RCP-2024-001',
+            inbound_date: '2024-12-27',
+            supplier: 'SUP001',
+            whs_code: 'WH01',
+            owner_code: 'OWN001',
+            origin: 'INDONESIA',
+            item_code: 'ITEM001',
+            uom: 'PCS',
+            quantity: 100,
+            location: 'A-01-01',
+            qa_status: 'A',
+            rec_date: '2024-12-27',
+            prod_date: '2024-12-01',
+            exp_date: '2025-12-01',
+            lot_number: 'LOT001',
+            division: 'DIV001'
+        });
 
         // Generate Excel file
         const buffer = await workbook.xlsx.writeBuffer();
@@ -372,12 +366,8 @@ const InboundExcelUpload: React.FC = () => {
                                         <ul className="list-disc list-inside space-y-1">
                                             <li>Download and use the provided template</li>
                                             <li>Fill in all required fields according to your inventory policy</li>
-                                            <li>One Receipt ID = one Inbound. Rows with the same Receipt ID must have identical header info (Inbound Date, IB Type, Supplier, Trucker, Warehouse Code, Owner Code, Origin, etc.)</li>
-                                            <li><span className="font-medium">Required fields:</span> Receipt ID, Inbound Date, IB Type, Supplier, Trucker, Warehouse Code, Owner Code, Origin, PO Date</li>
-                                            <li><span className="font-medium">IB Type</span> must be exactly <code className="px-1 bg-blue-100 rounded">RETURN</code> or <code className="px-1 bg-blue-100 rounded">NORMAL</code> (case-sensitive)</li>
-                                            <li>Date format: <code className="px-1 bg-blue-100 rounded">YYYY-MM-DD</code> (e.g. 2026-04-24)</li>
-                                            <li>Time format (Arrival Time, Start/Finish Unloading): <code className="px-1 bg-blue-100 rounded">HH:mm</code> 24-hour, e.g. 09:25 — leave blank if not applicable</li>
-                                            <li>Ensure no duplicate items with same attributes within the same Receipt ID</li>
+                                            <li>Date format: YYYY-MM-DD</li>
+                                            <li>Ensure no duplicate items with same attributes</li>
                                             <li>Maximum file size: 10MB</li>
                                         </ul>
                                     </div>
