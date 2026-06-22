@@ -7,15 +7,16 @@ import { Button } from '@/components/ui/button';
 import router from 'next/router';
 import { ArrowLeft } from 'lucide-react';
 import Layout from '@/components/layout';
-import Select from 'react-select';
+import Select from "react-select";
 import { Customer } from '@/types/customer';
 import { ItemOptions } from '@/types/outbound';
+import { set } from 'date-fns';
 
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
 
-type Platform = 'SHOPEE' | 'TOKOPEDIA';
+type Platform = 'SHOPEE' | 'TOKOPEDIA' | 'LAZADA' | 'TIKTOK';
 
 interface PlatformOption {
     value: Platform;
@@ -23,16 +24,7 @@ interface PlatformOption {
     color: string;
     bgColor: string;
     borderColor: string;
-    logo: string;
-    sheetName: string;
-    headerRows: number; // rows to skip before data
-    colOrderNo: number;
-    colAWB: number;
-    colDate: number;
-    colSKU: number;
-    colProduct: number;
-    colQty: number;
-    exportGuide: string;
+    logo: string; // emoji placeholder
 }
 
 interface ExcelPreviewData {
@@ -41,12 +33,6 @@ interface ExcelPreviewData {
     fileName: string;
     fileSize: string;
     totalDataRows: number;
-    uniqueOrders: number;
-}
-
-interface SkippedOrder {
-    order_number: string;
-    reason: string;
 }
 
 interface UploadResponse {
@@ -56,13 +42,12 @@ interface UploadResponse {
     success_count?: number;
     failed_count?: number;
     outbound_numbers?: string[];
-    skipped_orders?: SkippedOrder[];   // ← tambah ini
     errors?: Array<{ row: number; message: string; detail: string }>;
     validation_errors?: Array<{ field: string; message: string; row: number }>;
 }
 
 // ─────────────────────────────────────────────
-// Platform Configs
+// Constants
 // ─────────────────────────────────────────────
 
 const PLATFORM_OPTIONS: PlatformOption[] = [
@@ -73,15 +58,6 @@ const PLATFORM_OPTIONS: PlatformOption[] = [
         bgColor: 'bg-orange-50',
         borderColor: 'border-orange-400',
         logo: '🛍️',
-        sheetName: 'orders',
-        headerRows: 1,
-        colOrderNo: 0,
-        colAWB: 4,
-        colDate: 9,
-        colProduct: 13,
-        colSKU: 14,
-        colQty: 18,
-        exportGuide: 'Seller Center → Pesanan Saya → Export → "Pesanan yang Perlu Dikirim"',
     },
     {
         value: 'TOKOPEDIA',
@@ -90,24 +66,33 @@ const PLATFORM_OPTIONS: PlatformOption[] = [
         bgColor: 'bg-green-50',
         borderColor: 'border-green-400',
         logo: '🟢',
-        sheetName: 'OrderSKUList',
-        headerRows: 2,
-        colOrderNo: 0,
-        colSKU: 6,
-        colProduct: 7,
-        colQty: 9,
-        colDate: 29,
-        colAWB: 38,
-        exportGuide: 'Seller Center → Pesanan → Export → pilih tanggal → Download',
     },
+    // {
+    //     value: 'LAZADA',
+    //     label: 'Lazada',
+    //     color: 'text-blue-700',
+    //     bgColor: 'bg-blue-50',
+    //     borderColor: 'border-blue-400',
+    //     logo: '🔵',
+    // },
+    // {
+    //     value: 'TIKTOK',
+    //     label: 'TikTok Shop',
+    //     color: 'text-pink-700',
+    //     bgColor: 'bg-pink-50',
+    //     borderColor: 'border-pink-400',
+    //     logo: '🎵',
+    // },
 ];
+
+const EXPECTED_HEADERS = ['No', 'Date', 'Platform', 'Order Number', 'AWB Number', 'Product Name', 'Qty', 'SKU'];
 
 // ─────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────
 
 const EcommerceExcelUpload: React.FC = () => {
-    const [selectedPlatform, setSelectedPlatform] = useState<PlatformOption>(PLATFORM_OPTIONS[0]);
+    const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<ExcelPreviewData | null>(null);
     const [loading, setLoading] = useState(false);
@@ -116,28 +101,63 @@ const EcommerceExcelUpload: React.FC = () => {
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [customer, setCustomer] = useState<Customer[]>([]);
     const [customerOptions, setCustomerOptions] = useState<ItemOptions[]>([]);
-    const [customerSelected, setCustomerSelected] = useState<string>('');
-
-    const alertRef = useRef<HTMLDivElement>(null);
+    const [customerSelected, setCustomerSelected] = useState<string>("");
 
     useEffect(() => {
-        fetchCustomers();
+        setSelectedPlatform(PLATFORM_OPTIONS[0].value);
+        fetchData();
     }, []);
 
-    const fetchCustomers = async () => {
+    const fetchData = async () => {
         try {
-            const res = await api.get('/customers');
-            if (res.data.success) {
+            const [customers
+                // , warehouses,
+                // owners,
+                // transporters
+            ] = await Promise.all([
+                api.get("/customers"),
+                // api.get("/warehouses"),
+                // api.get("/owners/user"),
+                // api.get("/transporters"),
+            ]);
+
+            if (
+                customers.data.success
+                // warehouses.data.success &&
+                // owners.data.success &&
+                // transporters.data.success
+            ) {
+                setCustomer(customers.data.data);
                 setCustomerOptions(
-                    res.data.data.map((item: Customer) => ({
+                    customers.data.data.map((item: Customer) => ({
                         value: item.customer_code,
                         label: item.customer_name,
                     }))
                 );
+                // setWhsOptions(
+                //   warehouses.data.data.map((item: any) => ({
+                //     value: item.code,
+                //     label: item.code,
+                //   }))
+                // );
+                // setOwnerOptions(
+                //   owners.data.data.map((item: any) => ({
+                //     value: item.owner_code,
+                //     label: item.owner_code,
+                //   }))
+                // );
+                // setTransporter(transporters.data.data);
+                // setTransporterOptions(
+                //   transporters.data.data.map((item: Transporter) => ({
+                //     value: item.transporter_code,
+                //     label: item.transporter_name,
+                //   }))
+                // );
             }
         } catch (error) {
-            console.error('Error fetching customers:', error);
+            console.error("Error fetching data:", error);
         }
     };
 
@@ -151,15 +171,20 @@ const EcommerceExcelUpload: React.FC = () => {
         return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
     };
 
-    const isValidExcelFile = (f: File): boolean =>
-        f.name.endsWith('.xlsx') || f.name.endsWith('.xls');
-
-    // ── Platform selection (also clears file) ──
-
-    const handlePlatformSelect = (p: PlatformOption) => {
-        setSelectedPlatform(p);
-        clearFile();
+    const isValidExcelFile = (f: File): boolean => {
+        const validTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+        ];
+        return (
+            validTypes.includes(f.type) ||
+            f.name.endsWith('.xlsx') ||
+            f.name.endsWith('.xls')
+        );
     };
+
+    const getPlatformConfig = (p: Platform): PlatformOption =>
+        PLATFORM_OPTIONS.find((o) => o.value === p)!;
 
     // ── File Handling ──────────────────────────
 
@@ -171,23 +196,35 @@ const EcommerceExcelUpload: React.FC = () => {
             return;
         }
         setFile(selected);
-        await previewExcelFile(selected, selectedPlatform);
+        await previewExcelFile(selected);
     };
 
-    const handleDragEnter = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
-    const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
-    const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
-    const handleDrop = async (e: React.DragEvent) => {
+    const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    };
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+    const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
         setIsDragging(false);
         const dropped = e.dataTransfer.files[0];
-        if (!dropped || !isValidExcelFile(dropped)) {
+        if (!dropped) return;
+        if (!isValidExcelFile(dropped)) {
             alert('Please select a valid Excel file (.xlsx or .xls)');
             return;
         }
         setFile(dropped);
-        await previewExcelFile(dropped, selectedPlatform);
+        await previewExcelFile(dropped);
     };
 
     const clearFile = () => {
@@ -199,95 +236,137 @@ const EcommerceExcelUpload: React.FC = () => {
     };
 
     // ── Preview ────────────────────────────────
-    // Reads the native platform sheet and extracts only the columns we care about
 
-    const previewExcelFile = async (f: File, platform: PlatformOption) => {
+    const previewExcelFile = async (f: File) => {
         try {
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(await f.arrayBuffer());
 
-            // Find target sheet (case-insensitive)
-            const worksheet = workbook.worksheets.find(
-                (ws) => ws.name.toLowerCase() === platform.sheetName.toLowerCase()
-            );
-
+            const worksheet = workbook.worksheets[0];
             if (!worksheet) {
-                const available = workbook.worksheets.map((ws) => ws.name).join(', ');
-                alert(`Sheet "${platform.sheetName}" tidak ditemukan.\nSheet tersedia: ${available}`);
-                clearFile();
+                alert('No worksheet found in the file');
                 return;
             }
 
-            // Read header row (first row of the sheet)
-            const headerRow = worksheet.getRow(1);
+            // Headers from row 1
             const headers: string[] = [];
-            headerRow.eachCell((cell) => headers.push(cell.value?.toString() || ''));
+            worksheet.getRow(1).eachCell((cell) => {
+                headers.push(cell.value?.toString() || '');
+            });
 
-            // Preview columns that matter
-            const previewColIndices = [
-                platform.colOrderNo,
-                platform.colAWB,
-                platform.colDate,
-                platform.colSKU,
-                platform.colProduct,
-                platform.colQty,
-            ];
-            const previewHeaders = previewColIndices.map((i) => headers[i] || `Col ${i + 1}`);
-
-            // Data rows (skip headerRows)
-            const dataStartRow = platform.headerRows + 1;
-            const totalDataRows = Math.max(0, worksheet.rowCount - platform.headerRows);
-            const maxPreviewRows = Math.min(worksheet.rowCount, dataStartRow + 9);
-
+            // Up to 10 preview data rows
+            const totalDataRows = worksheet.rowCount - 1;
+            const maxPreview = Math.min(worksheet.rowCount, 11);
             const rows: string[][] = [];
-            const orderNumberSet = new Set<string>();
-
-            for (let i = dataStartRow; i <= maxPreviewRows; i++) {
+            for (let i = 2; i <= maxPreview; i++) {
                 const row = worksheet.getRow(i);
-                const rowData = previewColIndices.map((colIdx) => {
-                    const cell = row.getCell(colIdx + 1);
+                const rowData: string[] = headers.map((_, idx) => {
+                    const cell = row.getCell(idx + 1);
                     const val = cell.value;
                     if (val instanceof Date) return val.toISOString().split('T')[0];
                     if (val && typeof val === 'object' && 'result' in val)
                         return String((val as any).result ?? '');
-                    return val?.toString().trim() || '';
+                    return val?.toString() || '';
                 });
                 rows.push(rowData);
-
-                // Track unique order numbers for stats
-                const orderNo = rowData[0]; // colOrderNo is first in previewColIndices
-                if (orderNo) orderNumberSet.add(orderNo);
             }
-
-            // Count all unique orders in full file (not just preview)
-            let allUniqueOrders = 0;
-            for (let i = dataStartRow; i <= worksheet.rowCount; i++) {
-                const cell = worksheet.getRow(i).getCell(platform.colOrderNo + 1);
-                const val = cell.value?.toString().trim();
-                if (val) orderNumberSet.add(val);
-            }
-            allUniqueOrders = orderNumberSet.size;
 
             setPreview({
-                headers: previewHeaders,
+                headers,
                 rows,
                 fileName: f.name,
                 fileSize: formatFileSize(f.size),
                 totalDataRows,
-                uniqueOrders: allUniqueOrders,
             });
         } catch (err) {
             console.error('Error previewing file:', err);
             alert('Failed to preview file. Please ensure it is a valid Excel file.');
-            clearFile();
         }
+    };
+
+    // ── Template Download ──────────────────────
+
+    const downloadTemplate = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Ecommerce Orders');
+
+        worksheet.columns = [
+            { header: 'No', key: 'no', width: 6 },
+            { header: 'Date', key: 'date', width: 20 },
+            { header: 'Platform', key: 'platform', width: 15 },
+            { header: 'Order Number', key: 'order_number', width: 25 },
+            { header: 'AWB Number', key: 'awb_number', width: 25 },
+            { header: 'Product Name', key: 'product_name', width: 50 },
+            { header: 'Qty', key: 'qty', width: 8 },
+            { header: 'SKU', key: 'sku', width: 20 },
+        ];
+
+        // Style header row
+        worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        worksheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFEE4D2D' }, // Shopee orange
+        };
+        worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Sample rows
+        const sampleRows = [
+            {
+                no: 1,
+                date: '2026-02-19 19:01:00',
+                platform: 'Shopee',
+                order_number: '2602195UU5AFKB',
+                awb_number: 'JNE001234567890',
+                product_name: 'Yuwell YE660D + USB | Tensimeter Digital',
+                qty: 1,
+                sku: '30001063',
+            },
+            {
+                no: 2,
+                date: '2026-02-19 20:15:00',
+                platform: 'Shopee',
+                order_number: '2602195UU5AFKB',
+                awb_number: 'JNE001234567890',
+                product_name: 'Contoh Produk Kedua Dalam 1 Order',
+                qty: 2,
+                sku: '30001064',
+            },
+            {
+                no: 3,
+                date: '2026-02-20 09:30:00',
+                platform: 'Shopee',
+                order_number: '2602205XYZABC',
+                awb_number: '',
+                product_name: 'Produk di Order Berbeda',
+                qty: 3,
+                sku: '30001065',
+            },
+        ];
+
+        sampleRows.forEach((row) => worksheet.addRow(row));
+
+        // Add note row
+        const noteRow = worksheet.addRow(['', '', '', '', '', '← Tiap Order Number unik = 1 Outbound', '', '']);
+        noteRow.font = { italic: true, color: { argb: 'FF888888' } };
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'Ecommerce_Outbound_Upload_Template.xlsx';
+        link.click();
+        window.URL.revokeObjectURL(url);
     };
 
     // ── Upload ─────────────────────────────────
 
     const handleUpload = async () => {
         if (!file) { alert('Please select a file first'); return; }
-        if (!customerSelected) { alert('Please select a customer first'); return; }
+        if (!selectedPlatform) { alert('Please select a platform first'); return; }
 
         setLoading(true);
         setUploadResult(null);
@@ -296,8 +375,10 @@ const EcommerceExcelUpload: React.FC = () => {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('platform', selectedPlatform.value);
-            formData.append('customer', customerSelected);
+            formData.append('platform', selectedPlatform);
+            if (customerSelected) {
+                formData.append('customer', customerSelected);
+            }
 
             const response = await api.post('/outbound/upload-ecommerce-excel', formData, {
                 withCredentials: true,
@@ -306,6 +387,15 @@ const EcommerceExcelUpload: React.FC = () => {
 
             setUploadResult(response.data);
             setShowAlert(true);
+
+            if (response.data.success) {
+                setFile(null);
+                setPreview(null);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                setTimeout(() => {
+                    router.push('/wms/outbound/data');
+                }, 1500);
+            }
         } catch (error: any) {
             const errorData = error.response?.data;
             setUploadResult(
@@ -318,14 +408,12 @@ const EcommerceExcelUpload: React.FC = () => {
             setShowAlert(true);
         } finally {
             setLoading(false);
-            // Scroll ke result alert setelah render
-            setTimeout(() => {
-                alertRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
         }
     };
 
     // ── Render ─────────────────────────────────
+
+    const activePlatformConfig = selectedPlatform ? getPlatformConfig(selectedPlatform) : null;
 
     return (
         <Layout title="Outbound" subTitle="Import Ecommerce Excel">
@@ -345,52 +433,73 @@ const EcommerceExcelUpload: React.FC = () => {
                         </Button>
                     </div>
 
+                    {/* Page Header */}
+                    <div className="mb-8" style={{ display: "none" }}>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                            Upload Ecommerce Orders to Outbound
+                        </h1>
+                        <p className="text-gray-600">
+                            Upload order data from Shopee, Tokopedia, Lazada, or TikTok Shop —
+                            each Order Number will automatically create a separate Outbound.
+                        </p>
+                    </div>
+
+                    {/* Main Card */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
 
                         {/* ── Step 1: Select Platform ── */}
                         <div className="p-6 border-b border-gray-200">
-                            <div className="flex items-center gap-2 mb-4">
-                                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold">1</span>
-                                <h2 className="text-lg font-semibold text-gray-900">Pilih Platform</h2>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold">1</span>
+                                    <h2 className="text-lg font-semibold text-gray-900">Select Platform</h2>
+                                </div>
+                                <button
+                                    onClick={downloadTemplate}
+                                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                                >
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Download Template
+                                </button>
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 {PLATFORM_OPTIONS.map((p) => (
                                     <button
                                         key={p.value}
-                                        onClick={() => handlePlatformSelect(p)}
+                                        onClick={() => setSelectedPlatform(p.value)}
                                         className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all font-medium text-sm
-                                            ${selectedPlatform.value === p.value
+                                            ${selectedPlatform === p.value
                                                 ? `${p.bgColor} ${p.borderColor} ${p.color} shadow-md scale-105`
                                                 : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                                             }`}
                                     >
                                         <span className="text-3xl">{p.logo}</span>
                                         <span>{p.label}</span>
-                                        {selectedPlatform.value === p.value && (
+                                        {selectedPlatform === p.value && (
                                             <span className="text-xs font-normal opacity-75">Selected ✓</span>
                                         )}
                                     </button>
                                 ))}
                             </div>
 
-                            {/* Export guide */}
+                            {/* Info Notes */}
                             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                <div className="flex gap-2">
-                                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <div className="flex">
+                                    <svg className="w-5 h-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                                     </svg>
                                     <div className="text-sm text-blue-800">
-                                        <p className="font-medium mb-1">
-                                            Cara export dari {selectedPlatform.label}:
-                                        </p>
-                                        <p className="font-mono text-xs bg-blue-100 px-2 py-1 rounded inline-block">
-                                            {selectedPlatform.exportGuide}
-                                        </p>
-                                        <ul className="list-disc list-inside space-y-1 mt-2">
-                                            <li>Upload langsung file Excel hasil export — <strong>tanpa perlu edit</strong></li>
-                                            <li>1 Order Number = 1 Outbound document</li>
-                                            <li>Baris dengan Order Number sama = multi-item dalam 1 Outbound</li>
+                                        <p className="font-medium mb-1">Important Notes:</p>
+                                        <ul className="list-disc list-inside space-y-1">
+                                            <li>Download and use the provided template</li>
+                                            <li>Required columns: <span className="font-mono text-xs">{EXPECTED_HEADERS.join(', ')}</span></li>
+                                            <li>Each unique <strong>Order Number</strong> = 1 separate Outbound document</li>
+                                            <li>Multiple rows with the same Order Number = multiple items in one Outbound</li>
+                                            <li>SKU must match an existing product item code in the system</li>
+                                            <li>Date format: <span className="font-mono text-xs">YYYY-MM-DD</span> or <span className="font-mono text-xs">YYYY-MM-DD HH:mm:ss</span></li>
                                             <li>Maximum file size: 10MB</li>
                                         </ul>
                                     </div>
@@ -399,14 +508,16 @@ const EcommerceExcelUpload: React.FC = () => {
                         </div>
 
                         {/* ── Step 2: Upload File ── */}
-                        <div className="p-6 border-b border-gray-200">
+                        <div className={`p-6 border-b border-gray-200 transition-opacity ${!selectedPlatform ? 'opacity-50 pointer-events-none' : ''}`}>
                             <div className="flex items-center gap-2 mb-4">
                                 <span className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold">2</span>
                                 <h2 className="text-lg font-semibold text-gray-900">
                                     Upload File
-                                    <span className={`ml-2 text-sm font-normal px-2 py-0.5 rounded-full ${selectedPlatform.bgColor} ${selectedPlatform.color}`}>
-                                        {selectedPlatform.logo} {selectedPlatform.label}
-                                    </span>
+                                    {activePlatformConfig && (
+                                        <span className={`ml-2 text-sm font-normal px-2 py-0.5 rounded-full ${activePlatformConfig.bgColor} ${activePlatformConfig.color}`}>
+                                            {activePlatformConfig.logo} {activePlatformConfig.label}
+                                        </span>
+                                    )}
                                 </h2>
                             </div>
 
@@ -441,9 +552,7 @@ const EcommerceExcelUpload: React.FC = () => {
                                     <span className={`text-sm font-medium mb-1 ${isDragging ? 'text-blue-700' : 'text-gray-700'}`}>
                                         {isDragging ? '📂 Drop your file here!' : 'Click to upload or drag and drop'}
                                     </span>
-                                    <span className="text-xs text-gray-500">
-                                        File Excel export {selectedPlatform.label} (.xlsx, .xls) — maks 10MB
-                                    </span>
+                                    <span className="text-xs text-gray-500">Excel files (.xlsx, .xls) up to 10MB</span>
                                 </label>
                             </div>
 
@@ -470,20 +579,46 @@ const EcommerceExcelUpload: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Customer + Upload */}
+                            {/* Action Buttons */}
                             {file && (
                                 <div className="mt-4 flex gap-3">
                                     <div className="flex-1">
                                         <Select
-                                            placeholder="Select Customer *"
-                                            value={customerOptions.find((o) => o.value === customerSelected) || null}
+                                            placeholder="Select Customer (optional)"
+                                            value={customerOptions.find(
+                                                (option) => option.value === customerSelected
+                                            )}
                                             options={customerOptions}
-                                            onChange={(opt) => opt && setCustomerSelected(opt.value)}
+                                            onChange={(selectedOption) => {
+                                                if (selectedOption) {
+                                                    setCustomerSelected(selectedOption.value);
+                                                }
+                                            }}
+                                        // formatOptionLabel={(option, { context }) => {
+                                        //     const cust = customer.find(
+                                        //         (c) => c.customer_code === option.value
+                                        //     );
+
+                                        //     if (context === "menu") {
+                                        //         // tampil di dropdown
+                                        //         return (
+                                        //             <div>
+                                        //                 <div>{option.label}</div>
+                                        //                 <div className="text-xs text-gray-500">
+                                        //                     {cust?.cust_addr1}, {cust?.cust_city}
+                                        //                 </div>
+                                        //             </div>
+                                        //         );
+                                        //     }
+
+                                        //     // tampil setelah kepilih (hanya label utama)
+                                        //     return <div>{option.label}</div>;
+                                        // }}
                                         />
                                     </div>
                                     <button
                                         onClick={handleUpload}
-                                        disabled={loading || !customerSelected}
+                                        disabled={loading || !selectedPlatform}
                                         className="flex-1 h-9 inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                                     >
                                         {loading ? (
@@ -499,14 +634,14 @@ const EcommerceExcelUpload: React.FC = () => {
                                                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                                 </svg>
-                                                Upload &amp; Buat Outbound
+                                                Upload &amp; Create Outbound
                                             </>
                                         )}
                                     </button>
                                     <button
                                         onClick={clearFile}
                                         disabled={loading}
-                                        className="px-6 h-9 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="px-6 h-9 py-0 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
                                         Clear
                                     </button>
@@ -522,20 +657,22 @@ const EcommerceExcelUpload: React.FC = () => {
                                     <h2 className="text-lg font-semibold text-gray-900">
                                         Preview
                                         <span className="ml-2 text-sm font-normal text-gray-500">
-                                            (menampilkan {preview.rows.length} dari {preview.totalDataRows} baris data)
+                                            (showing first {preview.rows.length} of {preview.totalDataRows} data rows)
                                         </span>
                                     </h2>
                                 </div>
 
-                                {/* Stats */}
+                                {/* Stats bar */}
                                 <div className="grid grid-cols-3 gap-4 mb-4">
                                     <div className="bg-blue-50 rounded-lg p-3 text-center">
                                         <p className="text-2xl font-bold text-blue-700">{preview.totalDataRows}</p>
-                                        <p className="text-xs text-blue-600">Total Baris</p>
+                                        <p className="text-xs text-blue-600">Total Rows</p>
                                     </div>
                                     <div className="bg-purple-50 rounded-lg p-3 text-center">
-                                        <p className="text-2xl font-bold text-purple-700">{preview.uniqueOrders}</p>
-                                        <p className="text-xs text-purple-600">Unique Orders → Outbound</p>
+                                        <p className="text-2xl font-bold text-purple-700">
+                                            {new Set(preview.rows.map(r => r[3])).size}
+                                        </p>
+                                        <p className="text-xs text-purple-600">Unique Orders (preview)</p>
                                     </div>
                                     <div className="bg-green-50 rounded-lg p-3 text-center">
                                         <p className="text-2xl font-bold text-green-700">{preview.fileSize}</p>
@@ -574,7 +711,7 @@ const EcommerceExcelUpload: React.FC = () => {
 
                         {/* ── Result Alert ── */}
                         {showAlert && uploadResult && (
-                            <div ref={alertRef} className="p-6">
+                            <div className="p-6">
                                 <div className={`rounded-lg p-4 ${uploadResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
                                     <div className="flex">
                                         <div className="flex-shrink-0">
@@ -594,21 +731,17 @@ const EcommerceExcelUpload: React.FC = () => {
                                                 {uploadResult.message}
                                             </h3>
 
-                                            {/* ── Success Details ── */}
+                                            {/* Success Details */}
                                             {uploadResult.success && (
                                                 <div className="mt-3 text-sm text-green-700 space-y-1">
                                                     <div className="flex gap-6">
                                                         <p>📦 Total Items: <strong>{uploadResult.total_rows}</strong></p>
-                                                        <p>✅ Berhasil: <strong>{uploadResult.success_count}</strong></p>
-                                                        {uploadResult.failed_count != null && uploadResult.failed_count > 0 && (
-                                                            <p>⚠️ Diskip: <strong>{uploadResult.failed_count} order</strong></p>
-                                                        )}
+                                                        <p>✅ Success: <strong>{uploadResult.success_count}</strong></p>
                                                     </div>
-
                                                     {uploadResult.outbound_numbers && uploadResult.outbound_numbers.length > 0 && (
                                                         <div className="mt-3">
                                                             <p className="font-medium mb-2">
-                                                                Outbound Numbers ({uploadResult.outbound_numbers.length}):
+                                                                Generated Outbound Numbers ({uploadResult.outbound_numbers.length}):
                                                             </p>
                                                             <div className="flex flex-wrap gap-2">
                                                                 {uploadResult.outbound_numbers.map((num, idx) => (
@@ -619,47 +752,17 @@ const EcommerceExcelUpload: React.FC = () => {
                                                             </div>
                                                         </div>
                                                     )}
-
-                                                    {/* Skipped orders — success case */}
-                                                    {uploadResult.skipped_orders && uploadResult.skipped_orders.length > 0 && (
-                                                        <div className="mt-3">
-                                                            <p className="font-medium mb-2 text-yellow-800">
-                                                                ⚠️ {uploadResult.skipped_orders.length} Order Diskip:
-                                                            </p>
-                                                            <div className="max-h-48 overflow-y-auto bg-white rounded p-2 border border-yellow-200 space-y-1">
-                                                                {uploadResult.skipped_orders.map((s, idx) => (
-                                                                    <div key={idx} className="flex items-start gap-2 pb-1 border-b border-yellow-100 last:border-b-0">
-                                                                        <span className="font-mono text-xs bg-yellow-50 text-yellow-800 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
-                                                                            {s.order_number}
-                                                                        </span>
-                                                                        <span className="text-xs text-yellow-700">{s.reason}</span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Tombol ke Outbound Data */}
-                                                    <div className="mt-4 pt-3 border-t border-green-200">
-                                                        <button
-                                                            onClick={() => router.push('/wms/outbound/data')}
-                                                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                                            </svg>
-                                                            Lihat Outbound Data
-                                                        </button>
-                                                    </div>
                                                 </div>
                                             )}
 
-                                            {/* ── Error Details ── */}
-                                            {!uploadResult.success && (
+                                            {/* Error Details */}
+                                            {!uploadResult.success && (uploadResult.validation_errors?.length || uploadResult.errors?.length) ? (
                                                 <div className="mt-3 text-sm text-red-700 space-y-3">
                                                     {uploadResult.validation_errors && uploadResult.validation_errors.length > 0 && (
                                                         <div>
-                                                            <p className="font-medium mb-2">Validation Errors ({uploadResult.validation_errors.length}):</p>
+                                                            <p className="font-medium mb-2">
+                                                                Validation Errors ({uploadResult.validation_errors.length}):
+                                                            </p>
                                                             <div className="max-h-60 overflow-y-auto bg-white rounded p-2 border border-red-200 space-y-2">
                                                                 {uploadResult.validation_errors.map((e, idx) => (
                                                                     <div key={idx} className="pb-2 border-b border-red-100 last:border-b-0">
@@ -688,27 +791,8 @@ const EcommerceExcelUpload: React.FC = () => {
                                                             </div>
                                                         </div>
                                                     )}
-
-                                                    {/* Skipped orders — failed case */}
-                                                    {uploadResult.skipped_orders && uploadResult.skipped_orders.length > 0 && (
-                                                        <div>
-                                                            <p className="font-medium mb-2 text-yellow-800">
-                                                                ⚠️ {uploadResult.skipped_orders.length} Order Diskip:
-                                                            </p>
-                                                            <div className="max-h-48 overflow-y-auto bg-white rounded p-2 border border-yellow-200 space-y-1">
-                                                                {uploadResult.skipped_orders.map((s, idx) => (
-                                                                    <div key={idx} className="flex items-start gap-2 pb-1 border-b border-yellow-100 last:border-b-0">
-                                                                        <span className="font-mono text-xs bg-yellow-50 text-yellow-800 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
-                                                                            {s.order_number}
-                                                                        </span>
-                                                                        <span className="text-xs text-yellow-700">{s.reason}</span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
                                                 </div>
-                                            )}
+                                            ) : null}
                                         </div>
 
                                         <button onClick={() => setShowAlert(false)} className="ml-3 flex-shrink-0">
