@@ -969,7 +969,7 @@ const OutboundTable = () => {
 
       <Dialog open={openImportModal} onOpenChange={setOpenImportModal}>
         <DialogContent className="sm:max-w-md bg-white">
-          <DialogHeader><DialogTitle>Pilih Tipe Import</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Select the type of import</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
             <button
               onClick={() => { setOpenImportModal(false); router.push("/wms/outbound/import-excel"); }}
@@ -984,6 +984,15 @@ const OutboundTable = () => {
             >
               <ShoppingCart className="h-10 w-10 text-slate-600" />
               <span className="text-sm font-semibold text-slate-700">E-Commerce</span>
+            </button>
+
+            {/* B2B — NEW */}
+            <button
+              onClick={() => { setOpenImportModal(false); router.push("/wms/outbound/import-excel/b2b"); }}
+              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-green-500 hover:bg-green-50"
+            >
+              <Truck className="h-10 w-10 text-slate-600" />
+              <span className="text-sm font-semibold text-slate-700">B2B</span>
             </button>
           </div>
         </DialogContent>
