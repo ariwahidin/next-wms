@@ -315,6 +315,7 @@ const PickingSheetPrint = () => {
               {invPolicy.use_lot_no && <th style={th}>LOT NO</th>}
 
               <th style={th}>LOCATION</th>
+              <th style={th}>PALLET</th>
               <th style={th}>QTY</th>
               <th style={th}>CBM</th>
             </tr>
@@ -437,6 +438,17 @@ const PickingSheetPrint = () => {
                       >
                         {item.location}
                       </td>
+                      <td
+                        style={{
+                          ...td,
+                          textAlign: "center",
+                          whiteSpace: "nowrap",
+                          fontWeight: "bold",
+                          fontSize: "12px",
+                        }}
+                      >
+                        {item.rec_date >= "2026-06-25" && item.pallet}
+                      </td>
                       <td style={{ ...td, textAlign: "center" }}>
                         {item.quantity} {item.uom}
                       </td>
@@ -454,6 +466,7 @@ const PickingSheetPrint = () => {
                     {invPolicy.require_expiry_date && <td style={{ ...td }}></td>}
                     {invPolicy.use_lot_no && <td style={{ ...td }}></td>}
 
+                    <td style={{ ...td, textAlign: "right" }}></td>
                     <td style={{ ...td, textAlign: "right" }}>TOTAL</td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
                     <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td>
@@ -471,6 +484,7 @@ const PickingSheetPrint = () => {
               {invPolicy.require_expiry_date && <td style={{ ...td }}></td>}
               {invPolicy.use_lot_no && <td style={{ ...td }}></td>}
 
+              <td style={{ ...td, textAlign: "right" }}></td>
               <td style={{ ...td, textAlign: "right" }}>GRAND TOTAL</td>
               <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
               <td style={{ ...td, textAlign: "center" }}>{grandTotalCbm}</td>
