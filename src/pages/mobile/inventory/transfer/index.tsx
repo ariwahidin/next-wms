@@ -1084,50 +1084,7 @@ const TransferPage = () => {
             ? `All items in pallet ${scanPalletId}`
             : `All items of ${scanBarcode} in ${scanLocation}`;
 
-    // ── Shared destination location + pallet block ────────────────────────────────
-    // Reusable JSX for all 3 dialogs
 
-    //   const DestinationBlock = ({ inputId }: { inputId: string }) => (
-    //     <div className="space-y-3">
-    //       <div className="space-y-1">
-    //         <label className="font-semibold text-gray-700 text-sm block">Destination Location :</label>
-    //         <div className="relative">
-    //           <Input
-    //             id={inputId}
-    //             autoComplete="off"
-    //             placeholder="Entry destination location..."
-    //             value={scanLocation2}
-    //             onChange={(e) => setScanLocation2(e.target.value)}
-    //             autoFocus
-    //           />
-    //           {scanLocation2 && (
-    //             <button
-    //               type="button"
-    //               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-    //               onClick={() => { setScanLocation2(""); setSelectedDestPallet(""); document.getElementById(inputId)?.focus(); }}
-    //             >
-    //               <XCircle size={18} />
-    //             </button>
-    //           )}
-    //         </div>
-    //         {scanLocation2.trim().length > 0 && scanLocation2.trim().length < 8 && (
-    //           <p className="text-xs text-gray-400">
-    //             {8 - scanLocation2.trim().length} more character{8 - scanLocation2.trim().length !== 1 ? "s" : ""} to check pallets
-    //           </p>
-    //         )}
-    //       </div>
-
-    //       {/* Show pallet selector only when location >= 8 chars */}
-    //       {scanLocation2.trim().length >= 8 && (
-    //         <DestPalletSelect
-    //           pallets={destPalletHook.pallets}
-    //           value={selectedDestPallet}
-    //           onChange={setSelectedDestPallet}
-    //           loading={destPalletHook.loading}
-    //         />
-    //       )}
-    //     </div>
-    //   );
 
     // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -1304,6 +1261,18 @@ const TransferPage = () => {
                 {/* ── Result Section ── */}
                 {!loading && listInboundScanned.length > 0 && (
                     <div className="space-y-3">
+
+                        {/* Search By Info */}
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                            <div className="flex items-center gap-2">
+                                {/* <span>From</span> */}
+                                <span className="font-semibold">{ scanLocation != "" ? "Location : "+scanLocation : "Pallet : " + scanPalletId}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span>Found:</span>
+                                <span className="font-semibold">{filteredScannedItems.length}</span>
+                            </div>
+                        </div>
 
                         {/* ── Mini Stat Cards ── */}
                         <div className="flex gap-2">
