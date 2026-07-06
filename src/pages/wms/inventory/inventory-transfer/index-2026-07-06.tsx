@@ -1,3 +1,4 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
@@ -178,30 +179,6 @@ function buildOptions<T>(
         .map(([v, qty]) => ({ value: v, label: `${v} (${qty})` }));
 }
 
-// ─── Helper: build QA Status options map with qty + description ─────────────
-// Same grouping logic as buildOptions, but enriches the label with the
-// QA status description (from master data) so the dropdown reads nicely,
-// e.g. "OK - Good Stock (120)" instead of just "OK (120)".
-
-function buildQaStatusOptions<T>(
-    items: T[],
-    keyFn: (item: T) => string,
-    qtyFn: (item: T) => number,
-    qaStatuses: QaStatus[]
-): SelectOption[] {
-    const map = new Map<string, number>();
-    items.forEach((item) => {
-        const key = keyFn(item);
-        if (key) map.set(key, (map.get(key) || 0) + qtyFn(item));
-    });
-    return Array.from(map.entries())
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([v, qty]) => {
-            const desc = qaStatuses.find((q) => q.qa_status === v)?.description;
-            return { value: v, label: desc ? `${v} - ${desc} (${qty})` : `${v} (${qty})` };
-        });
-}
-
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function InventoryTransferPage() {
@@ -260,7 +237,7 @@ export default function InventoryTransferPage() {
 
     return (
         <Layout title="Inventory" subTitle="Inventory Transfer">
-            <div className="max-w-screen-2xl mx-auto p-6">
+            <div className="max-w-7xl mx-auto p-6">
                 <div className="flex border-b border-gray-200 mb-6">
                     <TabButton active={activeTab === "by-quantity"} onClick={() => setActiveTab("by-quantity")}>
                         By Quantity
@@ -299,7 +276,6 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
     const [filterDivision, setFilterDivision] = useState<SelectOption | null>(null);
     const [filterLocation, setFilterLocation] = useState<SelectOption | null>(null);
     const [filterPallet, setFilterPallet] = useState<SelectOption | null>(null);
-    const [filterQaStatus, setFilterQaStatus] = useState<SelectOption | null>(null);
 
     const [selectedGroup, setSelectedGroup] = useState<GroupedInventory | null>(null);
     const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
@@ -327,7 +303,6 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
             setFilterDivision(null);
             setFilterLocation(null);
             setFilterPallet(null);
-            setFilterQaStatus(null);
             setError("");
             setSuccess("");
             return;
@@ -339,7 +314,6 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
             setFilterDivision(null);
             setFilterLocation(null);
             setFilterPallet(null);
-            setFilterQaStatus(null);
             setError("");
             setSuccess("");
             try {
@@ -362,47 +336,32 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         }
     }, [formData.to_whs_code, locations]);
 
-    // ── Cross-filter: each option set is built from data filtered by the OTHER filters ──
+    // ── Cross-filter: each option set is built from data filtered by the OTHER two filters ──
 
-    // For division options: filter by location + pallet + qa status (exclude division filter)
+    // For division options: filter by location + pallet (exclude division filter)
     const forDivision = useMemo(() => inventories.filter((g) => {
         if (filterLocation && g.location !== filterLocation.value) return false;
         if (filterPallet && g.pallet !== filterPallet.value) return false;
-        if (filterQaStatus && g.qa_status !== filterQaStatus.value) return false;
         return true;
-    }), [inventories, filterLocation, filterPallet, filterQaStatus]);
+    }), [inventories, filterLocation, filterPallet]);
 
-    // For location options: filter by division + pallet + qa status (exclude location filter)
+    // For location options: filter by division + pallet (exclude location filter)
     const forLocation = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterPallet && g.pallet !== filterPallet.value) return false;
-        if (filterQaStatus && g.qa_status !== filterQaStatus.value) return false;
         return true;
-    }), [inventories, filterDivision, filterPallet, filterQaStatus]);
+    }), [inventories, filterDivision, filterPallet]);
 
-    // For pallet options: filter by division + location + qa status (exclude pallet filter)
+    // For pallet options: filter by division + location (exclude pallet filter)
     const forPallet = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterLocation && g.location !== filterLocation.value) return false;
-        if (filterQaStatus && g.qa_status !== filterQaStatus.value) return false;
         return true;
-    }), [inventories, filterDivision, filterLocation, filterQaStatus]);
-
-    // For QA status options: filter by division + location + pallet (exclude QA status filter)
-    const forQaStatus = useMemo(() => inventories.filter((g) => {
-        if (filterDivision && g.division_code !== filterDivision.value) return false;
-        if (filterLocation && g.location !== filterLocation.value) return false;
-        if (filterPallet && g.pallet !== filterPallet.value) return false;
-        return true;
-    }), [inventories, filterDivision, filterLocation, filterPallet]);
+    }), [inventories, filterDivision, filterLocation]);
 
     const divisionFilterOptions = useMemo(() => buildOptions(forDivision, (g) => g.division_code, (g) => g.qty_available), [forDivision]);
     const locationFilterOptions = useMemo(() => buildOptions(forLocation, (g) => g.location, (g) => g.qty_available), [forLocation]);
-    const palletFilterOptions = useMemo(() => buildOptions(forPallet, (g) => g.pallet, (g) => g.qty_available), [forPallet]);
-    const qaStatusFilterOptions = useMemo(
-        () => buildQaStatusOptions(forQaStatus, (g) => g.qa_status, (g) => g.qty_available, qaStatuses),
-        [forQaStatus, qaStatuses]
-    );
+    const palletFilterOptions   = useMemo(() => buildOptions(forPallet,   (g) => g.pallet,        (g) => g.qty_available), [forPallet]);
 
     // ── Auto-reset invalid selections after cross-filter ──
     useEffect(() => {
@@ -429,22 +388,13 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         }
     }, [palletFilterOptions]);
 
-    useEffect(() => {
-        if (filterQaStatus && !qaStatusFilterOptions.find((o) => o.value === filterQaStatus.value)) {
-            setFilterQaStatus(null);
-            setSelectedGroup(null);
-            setFormData(emptyForm);
-        }
-    }, [qaStatusFilterOptions]);
-
     // ── Final displayed list: apply all active filters ──
     const displayedInventories = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterLocation && g.location !== filterLocation.value) return false;
         if (filterPallet && g.pallet !== filterPallet.value) return false;
-        if (filterQaStatus && g.qa_status !== filterQaStatus.value) return false;
         return true;
-    }), [inventories, filterDivision, filterLocation, filterPallet, filterQaStatus]);
+    }), [inventories, filterDivision, filterLocation, filterPallet]);
 
     const totalQtyDisplayed = useMemo(() => displayedInventories.reduce((sum, g) => sum + g.qty_available, 0), [displayedInventories]);
     const displayedUom = displayedInventories[0]?.uom ?? "";
@@ -538,7 +488,6 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         setFilterDivision(null);
         setFilterLocation(null);
         setFilterPallet(null);
-        setFilterQaStatus(null);
         setSelectedGroup(null);
         setFormData(emptyForm);
         setError(""); setSuccess("");
@@ -546,8 +495,8 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
 
     const emptyMessage = !filterItem ? "Select an item to view inventory"
         : inventoriesLoading ? ""
-            : displayedInventories.length === 0 && inventories.length > 0 ? "No inventory matches the selected filters"
-                : "No inventory found for this item";
+        : displayedInventories.length === 0 && inventories.length > 0 ? "No inventory matches the selected filters"
+        : "No inventory found for this item";
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -586,12 +535,6 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
                                     <Select options={palletFilterOptions} value={filterPallet}
                                         onChange={(opt) => { setFilterPallet(opt); setSelectedGroup(null); setFormData(emptyForm); }}
                                         placeholder="All pallets" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
-                                </div>
-                                <div>
-                                    <FieldLabel>QA Status</FieldLabel>
-                                    <Select options={qaStatusFilterOptions} value={filterQaStatus}
-                                        onChange={(opt) => { setFilterQaStatus(opt); setSelectedGroup(null); setFormData(emptyForm); }}
-                                        placeholder="All QA statuses" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
                                 </div>
                             </>
                         )}
@@ -772,14 +715,12 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
 
     const [filterWhs, setFilterWhs] = useState<SelectOption | null>(null);
     const [filterProduct, setFilterProduct] = useState<SelectOption | null>(null);
-
-    // Division/Location/Pallet/Lot/QA Status are all OPTIONAL filters, same level — pick any, in any order.
     const [filterDivision, setFilterDivision] = useState<SelectOption | null>(null);
+
     const [filterLocation, setFilterLocation] = useState<SelectOption | null>(null);
     const [filterPallet, setFilterPallet] = useState<SelectOption | null>(null);
     const [filterRecDate, setFilterRecDate] = useState("");
     const [filterLot, setFilterLot] = useState<SelectOption | null>(null);
-    const [filterQaStatus, setFilterQaStatus] = useState<SelectOption | null>(null);
 
     const [cartons, setCartons] = useState<CartonGroup[]>([]);
     const [cartonsLoading, setCartonsLoading] = useState(false);
@@ -814,19 +755,16 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
         load();
     }, []);
 
-    // Only Warehouse + Item Code are required to fetch. The rest are optional.
-    const canFetch = !!(filterWhs && filterProduct);
+    const canFetch = !!(filterWhs && filterProduct && filterDivision);
 
     useEffect(() => {
         if (!canFetch) {
             setCartons([]);
             setSelectedCartons(new Set());
-            setFilterDivision(null);
             setFilterLocation(null);
             setFilterPallet(null);
             setFilterRecDate("");
             setFilterLot(null);
-            setFilterQaStatus(null);
             return;
         }
         const fetch = async () => {
@@ -836,85 +774,52 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                 const params: Record<string, string> = {
                     item_code: filterProduct!.value,
                     whs_code: filterWhs!.value,
+                    division_code: filterDivision!.value,
                 };
-                if (filterDivision) params.division_code = filterDivision.value;
                 if (filterLocation) params.location = filterLocation.value;
                 if (filterPallet) params.pallet = filterPallet.value;
                 if (filterRecDate) params.rec_date = filterRecDate;
                 if (filterLot) params.lot_number = filterLot.value;
-                // Sent defensively in case the backend later supports it; if the backend
-                // ignores unknown params, the client-side filter below still narrows results.
-                if (filterQaStatus) params.qa_status = filterQaStatus.value;
                 const res = await api.get("/inventory/cartons", { params, withCredentials: true });
                 if (res.data.success) setCartons(res.data.data.cartons || []);
             } catch { setCartons([]); } finally { setCartonsLoading(false); }
         };
         fetch();
-    }, [filterWhs, filterProduct, filterDivision, filterLocation, filterPallet, filterRecDate, filterLot, filterQaStatus]);
+    }, [filterWhs, filterProduct, filterDivision, filterLocation, filterPallet, filterRecDate, filterLot]);
 
     useEffect(() => {
         setFilteredDestLocations(toWhsCode ? locations.filter((l: Location) => l.whs_code === toWhsCode) : locations);
         setToLocation("");
     }, [toWhsCode, locations]);
 
-    // ── Cross-filter for By Carton optional filters (Division, Location, Pallet, Lot, QA Status) ──
-    // Each option list is built from cartons filtered by the OTHER active filters,
-    // so none of these six filters is forced into an order — pick any one first.
+    // ── Cross-filter for By Carton optional filters ──
 
-    const forDivision = useMemo(() => cartons.filter((c) => {
-        if (filterLocation && c.location !== filterLocation.value) return false;
-        if (filterPallet && c.pallet !== filterPallet.value) return false;
-        if (filterLot && c.lot_number !== filterLot.value) return false;
-        if (filterQaStatus && c.qa_status !== filterQaStatus.value) return false;
-        return true;
-    }), [cartons, filterLocation, filterPallet, filterLot, filterQaStatus]);
-
+    // For location options: filter by pallet + lot (exclude location)
     const forLocation = useMemo(() => cartons.filter((c) => {
-        if (filterDivision && c.division_code !== filterDivision.value) return false;
         if (filterPallet && c.pallet !== filterPallet.value) return false;
         if (filterLot && c.lot_number !== filterLot.value) return false;
-        if (filterQaStatus && c.qa_status !== filterQaStatus.value) return false;
         return true;
-    }), [cartons, filterDivision, filterPallet, filterLot, filterQaStatus]);
+    }), [cartons, filterPallet, filterLot]);
 
+    // For pallet options: filter by location + lot (exclude pallet)
     const forPallet = useMemo(() => cartons.filter((c) => {
-        if (filterDivision && c.division_code !== filterDivision.value) return false;
         if (filterLocation && c.location !== filterLocation.value) return false;
         if (filterLot && c.lot_number !== filterLot.value) return false;
-        if (filterQaStatus && c.qa_status !== filterQaStatus.value) return false;
         return true;
-    }), [cartons, filterDivision, filterLocation, filterLot, filterQaStatus]);
+    }), [cartons, filterLocation, filterLot]);
 
+    // For lot options: filter by location + pallet (exclude lot)
     const forLot = useMemo(() => cartons.filter((c) => {
-        if (filterDivision && c.division_code !== filterDivision.value) return false;
         if (filterLocation && c.location !== filterLocation.value) return false;
         if (filterPallet && c.pallet !== filterPallet.value) return false;
-        if (filterQaStatus && c.qa_status !== filterQaStatus.value) return false;
         return true;
-    }), [cartons, filterDivision, filterLocation, filterPallet, filterQaStatus]);
+    }), [cartons, filterLocation, filterPallet]);
 
-    const forQaStatus = useMemo(() => cartons.filter((c) => {
-        if (filterDivision && c.division_code !== filterDivision.value) return false;
-        if (filterLocation && c.location !== filterLocation.value) return false;
-        if (filterPallet && c.pallet !== filterPallet.value) return false;
-        if (filterLot && c.lot_number !== filterLot.value) return false;
-        return true;
-    }), [cartons, filterDivision, filterLocation, filterPallet, filterLot]);
-
-    const divisionFilterOptions = useMemo(() => buildOptions(forDivision, (c) => c.division_code, (c) => c.qty_available), [forDivision]);
-    const locationFilterOptions = useMemo(() => buildOptions(forLocation, (c) => c.location, (c) => c.qty_available), [forLocation]);
-    const palletOptions = useMemo(() => buildOptions(forPallet, (c) => c.pallet, (c) => c.qty_available), [forPallet]);
-    const lotOptions = useMemo(() => buildOptions(forLot, (c) => c.lot_number, (c) => c.qty_available), [forLot]);
-    const qaStatusFilterOptions = useMemo(
-        () => buildQaStatusOptions(forQaStatus, (c) => c.qa_status, (c) => c.qty_available, qaStatuses),
-        [forQaStatus, qaStatuses]
-    );
+    const locationFilterOptions = useMemo(() => buildOptions(forLocation, (c) => c.location,   (c) => c.qty_available), [forLocation]);
+    const palletOptions         = useMemo(() => buildOptions(forPallet,   (c) => c.pallet,      (c) => c.qty_available), [forPallet]);
+    const lotOptions            = useMemo(() => buildOptions(forLot,      (c) => c.lot_number,  (c) => c.qty_available), [forLot]);
 
     // ── Auto-reset invalid selections after cross-filter ──
-    useEffect(() => {
-        if (filterDivision && !divisionFilterOptions.find((o) => o.value === filterDivision.value)) setFilterDivision(null);
-    }, [divisionFilterOptions]);
-
     useEffect(() => {
         if (filterLocation && !locationFilterOptions.find((o) => o.value === filterLocation.value)) setFilterLocation(null);
     }, [locationFilterOptions]);
@@ -926,23 +831,6 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
     useEffect(() => {
         if (filterLot && !lotOptions.find((o) => o.value === filterLot.value)) setFilterLot(null);
     }, [lotOptions]);
-
-    useEffect(() => {
-        if (filterQaStatus && !qaStatusFilterOptions.find((o) => o.value === filterQaStatus.value)) setFilterQaStatus(null);
-    }, [qaStatusFilterOptions]);
-
-    // ── Final displayed list: apply all active optional filters client-side too ──
-    // (covers the case where the backend response already includes multiple
-    // divisions/locations/pallets/lots/qa statuses because those params were omitted from the request,
-    // or because the backend doesn't support the qa_status param yet)
-    const displayedCartons = useMemo(() => cartons.filter((c) => {
-        if (filterDivision && c.division_code !== filterDivision.value) return false;
-        if (filterLocation && c.location !== filterLocation.value) return false;
-        if (filterPallet && c.pallet !== filterPallet.value) return false;
-        if (filterLot && c.lot_number !== filterLot.value) return false;
-        if (filterQaStatus && c.qa_status !== filterQaStatus.value) return false;
-        return true;
-    }), [cartons, filterDivision, filterLocation, filterPallet, filterLot, filterQaStatus]);
 
     const destLocationOptions: SelectOption[] = filteredDestLocations.map((l: Location) => ({ value: l.location_code, label: l.location_code }));
     const warehouseOptions: SelectOption[] = warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }));
@@ -956,13 +844,13 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
             return next;
         });
     };
-    const selectAll = () => setSelectedCartons(new Set(displayedCartons.map((c) => c.carton_number)));
+    const selectAll = () => setSelectedCartons(new Set(cartons.map((c) => c.carton_number)));
     const clearAll = () => setSelectedCartons(new Set());
 
-    const selectedCartonData = displayedCartons.filter((c) => selectedCartons.has(c.carton_number));
+    const selectedCartonData = cartons.filter((c) => selectedCartons.has(c.carton_number));
     const totalQty = selectedCartonData.reduce((sum, c) => sum + c.qty_available, 0);
-    const totalQtyAll = useMemo(() => displayedCartons.reduce((sum, c) => sum + c.qty_available, 0), [displayedCartons]);
-    const cartonsUom = displayedCartons[0]?.uom ?? "";
+    const totalQtyAll = useMemo(() => cartons.reduce((sum, c) => sum + c.qty_available, 0), [cartons]);
+    const cartonsUom = cartons[0]?.uom ?? "";
 
     const sourceConsistent = useMemo(() => {
         if (selectedCartonData.length === 0) return true;
@@ -1026,13 +914,7 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
             if (canFetch) {
                 setCartonsLoading(true);
                 try {
-                    const params: Record<string, string> = { item_code: filterProduct!.value, whs_code: filterWhs!.value };
-                    if (filterDivision) params.division_code = filterDivision.value;
-                    if (filterLocation) params.location = filterLocation.value;
-                    if (filterPallet) params.pallet = filterPallet.value;
-                    if (filterRecDate) params.rec_date = filterRecDate;
-                    if (filterLot) params.lot_number = filterLot.value;
-                    if (filterQaStatus) params.qa_status = filterQaStatus.value;
+                    const params: Record<string, string> = { item_code: filterProduct!.value, whs_code: filterWhs!.value, division_code: filterDivision!.value };
                     const res = await api.get("/inventory/cartons", { params, withCredentials: true });
                     if (res.data.success) setCartons(res.data.data.cartons || []);
                 } catch { } finally { setCartonsLoading(false); }
@@ -1046,7 +928,6 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
     const handleReset = () => {
         setFilterWhs(null); setFilterProduct(null); setFilterDivision(null);
         setFilterLocation(null); setFilterPallet(null); setFilterRecDate(""); setFilterLot(null);
-        setFilterQaStatus(null);
         setSelectedCartons(new Set());
         setToWhsCode(""); setToLocation(""); setNewQaStatus(""); setDivisionCode(""); setReason("");
         setCartons([]);
@@ -1056,87 +937,66 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
     const hasSelection = selectedCartonData.length > 0;
     const emptyMessage = !filterWhs ? "Select a warehouse to start"
         : !filterProduct ? "Select an item code"
-            : cartonsLoading ? ""
-                : displayedCartons.length === 0 && cartons.length > 0 ? "No cartons match the selected filters"
-                    : "No cartons found";
+        : !filterDivision ? "Select a division"
+        : cartonsLoading ? ""
+        : "No cartons found";
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-            {/* ── Column 1: Filters (small) ── */}
-            <div className="lg:col-span-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6">
-                    <div className="border-b border-gray-200 px-4 py-3">
-                        <h3 className="text-sm font-semibold text-gray-900">Filters</h3>
+                    <div className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-gray-900">Select Cartons</h3>
+                        <span className="text-xs text-gray-500">{selectedCartons.size} selected</span>
                     </div>
                     <div className="p-4 space-y-3">
                         <div>
                             <FieldLabel required>Warehouse</FieldLabel>
                             <Select options={warehouseOptions} value={filterWhs}
-                                onChange={(opt) => { setFilterWhs(opt); setFilterProduct(null); setFilterDivision(null); setFilterLocation(null); setFilterPallet(null); setFilterRecDate(""); setFilterLot(null); setFilterQaStatus(null); }}
-                                placeholder="Search warehouse..." isClearable isSearchable isLoading={masterLoading} styles={customSelectStyles} className="text-sm" />
+                                onChange={(opt) => { setFilterWhs(opt); setFilterProduct(null); setFilterDivision(null); setFilterLocation(null); setFilterPallet(null); setFilterRecDate(""); setFilterLot(null); }}
+                                placeholder="Select warehouse..." isClearable isSearchable isLoading={masterLoading} styles={customSelectStyles} className="text-sm" />
                         </div>
                         <div>
                             <FieldLabel required>Item Code</FieldLabel>
                             <Select options={productOptions} value={filterProduct}
-                                onChange={(opt) => { setFilterProduct(opt); setFilterDivision(null); setFilterLocation(null); setFilterPallet(null); setFilterRecDate(""); setFilterLot(null); setFilterQaStatus(null); }}
+                                onChange={(opt) => { setFilterProduct(opt); setFilterLocation(null); setFilterPallet(null); setFilterRecDate(""); setFilterLot(null); }}
                                 placeholder="Search item..." isClearable isSearchable isDisabled={!filterWhs} isLoading={masterLoading} styles={customSelectStyles} className="text-sm" />
+                        </div>
+                        <div>
+                            <FieldLabel required>Division</FieldLabel>
+                            <Select options={divisionOptions} value={filterDivision}
+                                onChange={(opt) => { setFilterDivision(opt); setFilterLocation(null); setFilterPallet(null); setFilterRecDate(""); setFilterLot(null); }}
+                                placeholder="Select division..." isClearable isSearchable isDisabled={!filterProduct} isLoading={masterLoading} styles={customSelectStyles} className="text-sm" />
                         </div>
 
                         {cartons.length > 0 && (
                             <>
                                 <div className="border-t border-gray-100 pt-3">
-                                    <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Optional filters — pick any, in any order</p>
-                                </div>
-                                <div>
-                                    <FieldLabel>Division</FieldLabel>
-                                    <Select options={divisionFilterOptions} value={filterDivision} onChange={(opt) => setFilterDivision(opt)}
-                                        placeholder="Search division..." isClearable isSearchable styles={customSelectStyles} className="text-sm" />
+                                    <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Optional filters</p>
                                 </div>
                                 <div>
                                     <FieldLabel>Location</FieldLabel>
                                     <Select options={locationFilterOptions} value={filterLocation} onChange={(opt) => setFilterLocation(opt)}
-                                        placeholder="Search location..." isClearable isSearchable styles={customSelectStyles} className="text-sm" />
+                                        placeholder="All locations" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
                                 </div>
                                 <div>
                                     <FieldLabel>Pallet</FieldLabel>
                                     <Select options={palletOptions} value={filterPallet} onChange={(opt) => setFilterPallet(opt)}
-                                        placeholder="Search pallet..." isClearable isSearchable styles={customSelectStyles} className="text-sm" />
+                                        placeholder="All pallets" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
                                 </div>
                                 <div>
                                     <FieldLabel>Lot Number</FieldLabel>
                                     <Select options={lotOptions} value={filterLot} onChange={(opt) => setFilterLot(opt)}
-                                        placeholder="Search lot number..." isClearable isSearchable styles={customSelectStyles} className="text-sm" />
-                                </div>
-                                <div>
-                                    <FieldLabel>QA Status</FieldLabel>
-                                    <Select options={qaStatusFilterOptions} value={filterQaStatus} onChange={(opt) => setFilterQaStatus(opt)}
-                                        placeholder="Search QA status..." isClearable isSearchable styles={customSelectStyles} className="text-sm" />
-                                </div>
-                                <div>
-                                    <FieldLabel>Receive Date</FieldLabel>
-                                    <input type="date" value={filterRecDate} onChange={(e) => setFilterRecDate(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                                        placeholder="All lots" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
                                 </div>
                             </>
                         )}
-                    </div>
-                </div>
-            </div>
 
-            {/* ── Column 2: Carton cards (medium, spacious grid) ── */}
-            <div className="lg:col-span-4">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6">
-                    <div className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-gray-900">Cartons</h3>
-                        <span className="text-xs text-gray-500">{selectedCartons.size} selected</span>
-                    </div>
-                    <div className="p-4 space-y-3">
-                        {displayedCartons.length > 0 && (
-                            <div className="flex gap-2">
+                        {cartons.length > 0 && (
+                            <div className="flex gap-2 pt-1">
                                 <button onClick={selectAll} type="button"
                                     className="flex-1 text-xs px-2 py-1.5 rounded border border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors">
-                                    Select all ({displayedCartons.length})
+                                    Select all ({cartons.length})
                                 </button>
                                 <button onClick={clearAll} type="button"
                                     className="flex-1 text-xs px-2 py-1.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors">
@@ -1145,55 +1005,43 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                             </div>
                         )}
 
-                        {!cartonsLoading && displayedCartons.length > 0 && (
+                        {!cartonsLoading && cartons.length > 0 && (
                             <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
-                                <span className="text-xs text-gray-500">{displayedCartons.length} carton(s)</span>
+                                <span className="text-xs text-gray-500">{cartons.length} carton(s)</span>
                                 <span className="text-xs font-semibold text-gray-800">Total: {totalQtyAll} {cartonsUom}</span>
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 sm:grid-cols-1 gap-3 max-h-[75vh] overflow-y-auto pr-1">
-                            {cartonsLoading ? (
-                                <div className="col-span-full"><LoadingSpinner /></div>
-                            ) : !canFetch || displayedCartons.length === 0 ? (
-                                <p className="col-span-full text-sm text-gray-400 text-center py-6">{emptyMessage}</p>
-                            ) : displayedCartons.map((carton) => {
-                                const checked = selectedCartons.has(carton.carton_number);
-                                const qaDesc = qaStatuses.find((q: QaStatus) => q.qa_status === carton.qa_status)?.description;
-                                return (
-                                    <label key={carton.carton_number}
-                                        className={`flex flex-col gap-1.5 p-3 rounded-lg border cursor-pointer transition-all ${checked ? "border-blue-500 bg-blue-50 ring-1 ring-blue-300" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"}`}>
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <input type="checkbox" checked={checked} onChange={() => toggleCarton(carton.carton_number)} className="accent-blue-600 shrink-0" />
-                                                <span className="text-xs font-semibold text-gray-900 truncate">📦 {carton.carton_number}</span>
+                        <div className="space-y-2 max-h-[380px] overflow-y-auto">
+                            {cartonsLoading ? <LoadingSpinner />
+                                : !canFetch || cartons.length === 0 ? (
+                                    <p className="text-sm text-gray-400 text-center py-6">{emptyMessage}</p>
+                                ) : cartons.map((carton) => {
+                                    const checked = selectedCartons.has(carton.carton_number);
+                                    return (
+                                        <label key={carton.carton_number}
+                                            className={`flex gap-3 p-3 rounded-lg border cursor-pointer transition-all ${checked ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"}`}>
+                                            <input type="checkbox" checked={checked} onChange={() => toggleCarton(carton.carton_number)} className="mt-0.5 accent-blue-600 shrink-0" />
+                                            <div className="min-w-0">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="text-xs font-semibold text-gray-900">📦 {carton.carton_number}</span>
+                                                    <span className={`text-xs px-2 py-0.5 rounded shrink-0 ml-2 ${carton.qty_available > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                                                        {carton.qty_available} {carton.uom}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-500">📍 {carton.whs_code} | {carton.location}</p>
+                                                <p className="text-xs text-gray-500">🏷️ lot: {carton.lot_number} | pallet: {carton.pallet}</p>
+                                                <p className="text-xs text-gray-500">📅 rec: {carton.rec_date}</p>
                                             </div>
-                                            <span className={`text-xs px-2 py-0.5 rounded shrink-0 ${carton.qty_available > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                                                {carton.qty_available} {carton.uom}
-                                            </span>
-                                        </div>
-                                        <div className="text-xs text-gray-600 space-y-0.5 pl-6">
-                                            <p className="truncate"><span className="text-gray-400">Item:</span> {carton.item_code}</p>
-                                            <p className="truncate text-gray-500">{carton.item_name}</p>
-                                            <p><span className="text-gray-400">Whs:</span> {carton.whs_code} · <span className="text-gray-400">Loc:</span> {carton.location}</p>
-                                            <p><span className="text-gray-400">Div:</span> {carton.division_code}</p>
-                                            <p><span className="text-gray-400">Lot:</span> {carton.lot_number} · <span className="text-gray-400">Pallet:</span> {carton.pallet}</p>
-                                            <p><span className="text-gray-400">Rec:</span> {carton.rec_date}</p>
-                                            {(carton.prod_date || carton.exp_date) && (
-                                                <p><span className="text-gray-400">Prod/Exp:</span> {carton.prod_date || "-"} / {carton.exp_date || "-"}</p>
-                                            )}
-                                            <p><span className="text-gray-400">QA:</span> {carton.qa_status}{qaDesc ? ` - ${qaDesc}` : ""}</p>
-                                        </div>
-                                    </label>
-                                );
-                            })}
+                                        </label>
+                                    );
+                                })}
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* ── Column 3: Destination form (large) ── */}
-            <div className="lg:col-span-5">
+            <div className="lg:col-span-2">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                     <div className="border-b border-gray-200 px-6 py-4">
                         <h2 className="text-xl font-semibold text-gray-900">Transfer by Carton</h2>
