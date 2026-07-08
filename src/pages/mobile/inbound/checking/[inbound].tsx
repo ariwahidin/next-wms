@@ -185,6 +185,11 @@ const CheckingPage = () => {
     const [pendingDeleteCarton, setPendingDeleteCarton] = useState<string | null>(null);
     const [isDeletingCarton, setIsDeletingCarton] = useState(false);
 
+    // ── Delete all pending items state ────────────────────────────────────────
+    const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+    const [isDeletingAll, setIsDeletingAll] = useState(false);
+    const [deleteProgress, setDeleteProgress] = useState(0);
+
     const handleQrInputChange = (raw: string) => {
         setQrRawInput(raw)
         const parsed = parseQRCode(raw)
@@ -606,6 +611,87 @@ const CheckingPage = () => {
         }
     };
 
+    // ── Delete all pending items ──────────────────────────────────────────────
+    const confirmDeleteAllPending = () => {
+        const pendingCount = listInboundScanned.filter(
+            (item) => item.status === "pending" && item.id !== undefined
+        ).length;
+
+        if (pendingCount === 0) {
+            eventBus.emit("showAlert", {
+                title: "Info",
+                description: "No pending items to delete.",
+                type: "info",
+            });
+            return;
+        }
+
+        setShowDeleteAllModal(true);
+    };
+
+    const handleDeleteAllPending = async () => {
+        if (isDeletingAll) return;
+
+        const itemsToDelete = listInboundScanned.filter(
+            (item) => item.status === "pending" && item.id !== undefined
+        );
+
+        if (itemsToDelete.length === 0) {
+            setShowDeleteAllModal(false);
+            return;
+        }
+
+        setIsDeletingAll(true);
+        setDeleteProgress(0);
+
+        const total = itemsToDelete.length;
+        let deleted = 0;
+        let successCount = 0;
+
+        // Ambil inbound_detail_id untuk refresh
+        const inboundDetailId = itemsToDelete[0].inbound_detail_id;
+
+        try {
+            for (const item of itemsToDelete) {
+                try {
+                    await api.delete("/mobile/inbound/scan/" + item.id);
+                    successCount++;
+                } catch (error) {
+                    console.error(`Error deleting item ${item.id}:`, error);
+                }
+
+                deleted++;
+                // Update progress from 1% to 100%
+                const progress = Math.round((deleted / total) * 100);
+                setDeleteProgress(progress);
+
+                // Small delay to show progress
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+
+            eventBus.emit("showAlert", {
+                title: "Success!",
+                description: `Successfully deleted ${successCount} of ${total} pending items.`,
+                type: "success",
+            });
+
+            // Refresh data
+            fetchScannedItems(inboundDetailId);
+            fetchInboundDetail();
+        } catch (error) {
+            console.error("Error during bulk delete:", error);
+            eventBus.emit("showAlert", {
+                title: "Error!",
+                description: "Failed to delete some items.",
+                type: "error",
+            });
+        } finally {
+            setIsDeletingAll(false);
+            setShowDeleteAllModal(false);
+            setDeleteProgress(0);
+        }
+    };
+
     const handleConfirmPutaway = async (inbound_no: string) => {
         try {
             const response = await api.put(
@@ -999,8 +1085,21 @@ const CheckingPage = () => {
                         {/* ── By Item Tab ── */}
                         {detailTab === "byItem" && (
                             <>
-                                <div className="text-sm text-gray-500">
-                                    Total Scanned: {filteredScannedItems.length}
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm text-gray-500">
+                                        Total Scanned: {filteredScannedItems.length}
+                                    </div>
+                                    {listInboundScanned.filter((item) => item.status === "pending").length > 0 && (
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            className="h-7 text-xs"
+                                            onClick={confirmDeleteAllPending}
+                                            disabled={isDeletingAll}
+                                        >
+                                            Delete All Pending
+                                        </Button>
+                                    )}
                                 </div>
                                 <div className="max-h-60 overflow-y-auto space-y-2">
                                     {filteredScannedItems.length > 0 ? (
@@ -1194,6 +1293,73 @@ const CheckingPage = () => {
                                         Deleting...
                                     </>
                                 ) : "Delete"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Delete All Pending Items Modal ── */}
+                <Dialog open={showDeleteAllModal} onOpenChange={(open) => {
+                    if (!isDeletingAll) {
+                        setShowDeleteAllModal(open);
+                    }
+                }}>
+                    <DialogContent className="bg-white">
+                        <DialogHeader>
+                            <DialogTitle>Delete All Pending Items</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                            <p className="text-sm text-gray-700">
+                                Are you sure you want to delete all pending items?
+                            </p>
+                            <p className="text-xs text-gray-500">
+                                This will delete{" "}
+                                <strong>
+                                    {listInboundScanned.filter((i) => i.status === "pending" && i.id !== undefined).length}
+                                </strong>{" "}
+                                pending item(s).
+                            </p>
+
+                            {/* Progress Bar */}
+                            {isDeletingAll && (
+                                <div className="space-y-2">
+                                    <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+                                        <div
+                                            className="bg-blue-500 h-6 rounded-full transition-all duration-300 flex items-center justify-center"
+                                            style={{ width: `${deleteProgress}%` }}
+                                        >
+                                            <span className="text-xs font-semibold text-white">
+                                                {deleteProgress}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-center text-gray-600">
+                                        Deleting items... Please wait.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                variant="ghost"
+                                disabled={isDeletingAll}
+                                onClick={() => {
+                                    setShowDeleteAllModal(false);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                disabled={isDeletingAll}
+                                onClick={handleDeleteAllPending}
+                            >
+                                {isDeletingAll ? (
+                                    <>
+                                        <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                                        Deleting...
+                                    </>
+                                ) : "Delete All"}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
