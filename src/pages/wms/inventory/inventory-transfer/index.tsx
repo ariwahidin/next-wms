@@ -863,6 +863,8 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                 const res = await api.get("/inventory/cartons", { params, withCredentials: true });
                 if (res.data.success) setCartons(res.data.data.cartons || []);
             } catch { setCartons([]); } finally { setCartonsLoading(false); }
+
+            console.log("Displaying cartons : ", displayedCartons)
         };
         fetch();
     }, [filterWhs, filterProduct, filterDivision, filterLocation, filterPallet, filterRecDate, filterLot, filterQaStatus]);
@@ -1214,7 +1216,7 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                                 const checked = selectedCartons.has(carton.carton_number);
                                 const qaDesc = qaStatuses.find((q: QaStatus) => q.qa_status === carton.qa_status)?.description;
                                 return (
-                                    <label key={carton.carton_number}
+                                    <label key={carton.carton_number+ carton.item_code + carton.location + carton.whs_code + carton.pallet}
                                         className={`flex flex-col gap-1.5 p-3 rounded-lg border cursor-pointer transition-all ${checked ? "border-blue-500 bg-blue-50 ring-1 ring-blue-300" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"}`}>
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex items-center gap-2 min-w-0">

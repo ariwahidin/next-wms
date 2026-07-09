@@ -387,6 +387,16 @@ const CheckingPage = () => {
     // ── Scan handlers ──────────────────────────────────────────────────────────
     const handleScan = async () => {
         if (!scanLocation.trim() || !scanBarcode.trim()) return;
+
+        if (lotNo.length > 15){
+            eventBus.emit("showAlert", {
+                title: "Error!",
+                description: "Lot number cannot exceed 15 characters.",
+                type: "error",
+            });
+            return;
+        }
+
         if (isSerial && serialInputs.every((s) => s.trim() === "")) {
             eventBus.emit("showAlert", {
                 title: "Error!",
@@ -1418,6 +1428,11 @@ const CheckingPage = () => {
                                         Inner Serial : <span className="font-mono font-semibold">
                                             {parsedQR.innerSerialStart + " → " + parsedQR.innerSerialEnd}
                                         </span>
+                                    </p>
+                                )}
+                                {parsedQR?.serial && (
+                                    <p className="text-xs text-gray-600">
+                                        Serial : <span className="font-mono font-semibold">{parsedQR.serial}</span>
                                     </p>
                                 )}
                             </div>
