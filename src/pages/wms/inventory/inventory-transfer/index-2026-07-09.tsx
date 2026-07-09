@@ -785,18 +785,12 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
     const [cartonsLoading, setCartonsLoading] = useState(false);
     const [selectedCartons, setSelectedCartons] = useState<Set<string>>(new Set());
 
-    // ★ CHANGED: toWhsCode / toLocation are now OPTIONAL, same "keep current" pattern
-    // as newQaStatus / divisionCode / newLotNumber below. Empty string = keep the
-    // source warehouse/location of the selected cartons (valid because
-    // sourceConsistent guarantees they all share the same whs_code/location).
     const [toWhsCode, setToWhsCode] = useState("");
     const [toLocation, setToLocation] = useState("");
     const [newQaStatus, setNewQaStatus] = useState("");
     const [divisionCode, setDivisionCode] = useState("");
-    // Free-text lot number override, applies uniformly to all selected cartons.
-    // Empty string = keep each carton's original lot number.
-    const [newLotNumber, setNewLotNumber] = useState("");
     const [reason, setReason] = useState("");
+    const [filteredDestLocations, setFilteredDestLocations] = useState<Location[]>([]);
 
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
@@ -857,6 +851,11 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
         };
         fetch();
     }, [filterWhs, filterProduct, filterDivision, filterLocation, filterPallet, filterRecDate, filterLot, filterQaStatus]);
+
+    useEffect(() => {
+        setFilteredDestLocations(toWhsCode ? locations.filter((l: Location) => l.whs_code === toWhsCode) : locations);
+        setToLocation("");
+    }, [toWhsCode, locations]);
 
     // ── Cross-filter for By Carton optional filters (Division, Location, Pallet, Lot, QA Status) ──
     // Each option list is built from cartons filtered by the OTHER active filters,
@@ -945,6 +944,7 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
         return true;
     }), [cartons, filterDivision, filterLocation, filterPallet, filterLot, filterQaStatus]);
 
+    const destLocationOptions: SelectOption[] = filteredDestLocations.map((l: Location) => ({ value: l.location_code, label: l.location_code }));
     const warehouseOptions: SelectOption[] = warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }));
     const productOptions: SelectOption[] = products.map((p) => ({ value: p.item_code, label: `${p.item_code} — ${p.item_name}` }));
     const divisionOptions: SelectOption[] = divisions.map((d) => ({ value: d.code, label: `${d.code} — ${d.name}` }));
@@ -970,46 +970,16 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
         return selectedCartonData.every((c) => c.whs_code === first.whs_code && c.location === first.location);
     }, [selectedCartonData]);
 
-    // ★ CHANGED: source warehouse/location of the selected cartons (only meaningful
-    // when sourceConsistent is true, which is enforced before submit).
-    const sourceWhsCode = selectedCartonData[0]?.whs_code || "";
-    const sourceLocation = selectedCartonData[0]?.location || "";
-
-    // ★ CHANGED: effective destination = explicit choice, falling back to source
-    // (i.e. "keep current warehouse/location" when left blank).
-    const effectiveToWhsCode = toWhsCode || sourceWhsCode;
-    const effectiveToLocation = toLocation || sourceLocation;
-
-    // ★ CHANGED: destination location options are now filtered by the EFFECTIVE
-    // warehouse (explicit choice, or source warehouse if left blank) instead of
-    // requiring the user to pick a warehouse first.
-    const filteredDestLocations = useMemo(
-        () => (effectiveToWhsCode ? locations.filter((l: Location) => l.whs_code === effectiveToWhsCode) : locations),
-        [effectiveToWhsCode, locations]
-    );
-    const destLocationOptions: SelectOption[] = filteredDestLocations.map((l: Location) => ({ value: l.location_code, label: l.location_code }));
-
-    // ★ CHANGED: only clear the manually-picked location when the user explicitly
-    // changes the warehouse dropdown (not on every carton-selection change).
-    useEffect(() => {
-        setToLocation("");
-    }, [toWhsCode]);
-
-    const trimmedNewLotNumber = newLotNumber.trim();
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(""); setSuccess("");
         if (selectedCartonData.length === 0) { setError("Please select at least one carton."); return; }
+        if (!toWhsCode || !toLocation) { setError("Destination warehouse and location are required."); return; }
         if (!sourceConsistent) { setError("Selected cartons must be from the same source warehouse and location."); return; }
-        // ★ CHANGED: To Warehouse / To Location are optional now — no more
-        // "required" validation. If left blank, effectiveToWhsCode / effectiveToLocation
-        // already fall back to the source warehouse/location.
         const first = selectedCartonData[0];
-        if (first.whs_code === effectiveToWhsCode && first.location === effectiveToLocation &&
+        if (first.whs_code === toWhsCode && first.location === toLocation &&
             (newQaStatus === "" || newQaStatus === first.qa_status) &&
-            (divisionCode === "" || divisionCode === first.division_code) &&
-            (trimmedNewLotNumber === "" || trimmedNewLotNumber === first.lot_number)) {
+            (divisionCode === "" || divisionCode === first.division_code)) {
             setError("Source and destination are the same for all selected cartons."); return;
         }
 
@@ -1022,16 +992,15 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
             const payload: TransferFormData = {
                 item_code: carton.item_code,
                 from_whs_code: carton.whs_code,
-                // ★ CHANGED: fallback to the carton's own warehouse/location when left blank
-                to_whs_code: toWhsCode || carton.whs_code,
+                to_whs_code: toWhsCode,
                 from_location: carton.location,
-                to_location: toLocation || carton.location,
+                to_location: toLocation,
                 old_qa_status: carton.qa_status,
                 new_qa_status: newQaStatus || carton.qa_status,
                 rec_date: carton.rec_date || "",
                 prod_date: carton.prod_date || "",
                 exp_date: carton.exp_date || "",
-                lot_number: trimmedNewLotNumber || carton.lot_number || "",
+                lot_number: carton.lot_number || "",
                 pallet: carton.pallet || "",
                 qty_to_transfer: carton.qty_available,
                 reason,
@@ -1051,7 +1020,7 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
         if (failedCartons.length === 0) {
             setSuccess(`Successfully transferred ${selectedCartonData.length} carton(s).`);
             setSelectedCartons(new Set());
-            setToWhsCode(""); setToLocation(""); setNewQaStatus(""); setDivisionCode(""); setNewLotNumber(""); setReason("");
+            setToWhsCode(""); setToLocation(""); setNewQaStatus(""); setDivisionCode(""); setReason("");
             onRefresh();
             mutate("/inventories");
             if (canFetch) {
@@ -1079,7 +1048,7 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
         setFilterLocation(null); setFilterPallet(null); setFilterRecDate(""); setFilterLot(null);
         setFilterQaStatus(null);
         setSelectedCartons(new Set());
-        setToWhsCode(""); setToLocation(""); setNewQaStatus(""); setDivisionCode(""); setNewLotNumber(""); setReason("");
+        setToWhsCode(""); setToLocation(""); setNewQaStatus(""); setDivisionCode(""); setReason("");
         setCartons([]);
         setError(""); setSuccess("");
     };
@@ -1260,26 +1229,18 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                         <SectionTitle>Destination Information</SectionTitle>
                         <div className="grid grid-cols-2 gap-4 mb-6">
                             <div>
-                                {/* ★ CHANGED: no longer "required" — optional, keeps source warehouse if blank */}
-                                <FieldLabel>To Warehouse</FieldLabel>
+                                <FieldLabel required>To Warehouse</FieldLabel>
                                 <Select options={warehouseOptions} value={warehouseOptions.find((o: SelectOption) => o.value === toWhsCode) || null}
                                     onChange={(opt: SelectOption | null) => setToWhsCode(opt?.value || "")}
-                                    placeholder="Keep Current Warehouse" isClearable isSearchable isDisabled={!hasSelection} styles={customSelectStyles} className="text-sm" />
-                                {hasSelection && toWhsCode === "" && (
-                                    <p className="text-xs text-gray-500 mt-1">Keeps current warehouse ({sourceWhsCode})</p>
-                                )}
+                                    placeholder="Select warehouse..." isClearable isSearchable isDisabled={!hasSelection} styles={customSelectStyles} className="text-sm" />
                             </div>
                             <div>
-                                {/* ★ CHANGED: no longer "required" — optional, keeps source location if blank */}
-                                <FieldLabel>To Location</FieldLabel>
+                                <FieldLabel required>To Location</FieldLabel>
                                 <Select options={destLocationOptions} value={destLocationOptions.find((o: SelectOption) => o.value === toLocation) || null}
                                     onChange={(opt: SelectOption | null) => setToLocation(opt?.value || "")}
-                                    placeholder="Keep Current Location" isClearable isSearchable isDisabled={!hasSelection}
+                                    placeholder="Select location..." isClearable isSearchable isDisabled={!hasSelection || !toWhsCode}
                                     styles={customSelectStyles} className="text-sm"
-                                    noOptionsMessage={() => effectiveToWhsCode ? "No locations found" : "Select warehouse first"} />
-                                {hasSelection && toLocation === "" && (
-                                    <p className="text-xs text-gray-500 mt-1">Keeps current location ({sourceLocation})</p>
-                                )}
+                                    noOptionsMessage={() => toWhsCode ? "No locations found" : "Select warehouse first"} />
                             </div>
                             <div>
                                 <FieldLabel>New QA Status</FieldLabel>
@@ -1296,17 +1257,6 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                                     <option value="">Keep Current Division</option>
                                     {divisionOptions.map((opt: SelectOption) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                                 </select>
-                            </div>
-                            <div>
-                                <FieldLabel>New Lot Number</FieldLabel>
-                                <input type="text" value={newLotNumber} onChange={(e) => setNewLotNumber(e.target.value)} disabled={!hasSelection}
-                                    placeholder="Keep Current Lot Number"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100" />
-                                {hasSelection && trimmedNewLotNumber !== "" && (
-                                    <p className="text-xs text-blue-600 mt-1">
-                                        Will apply to all {selectedCartonData.length} selected carton(s)
-                                    </p>
-                                )}
                             </div>
                         </div>
 
