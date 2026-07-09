@@ -112,6 +112,10 @@ interface TransferFormData {
     rec_date: string;
     prod_date: string;
     exp_date: string;
+    // Exact source lot being consumed — used by the backend as a WHERE filter
+    // so FIFO never sweeps stock from an unintended lot. Distinct from
+    // `lot_number` below, which is the DESTINATION/new lot.
+    from_lot_number: string;
     lot_number: string;
     pallet: string;
     qty_to_transfer: number;
@@ -132,6 +136,7 @@ const emptyForm: TransferFormData = {
     rec_date: "",
     prod_date: "",
     exp_date: "",
+    from_lot_number: "",
     lot_number: "",
     pallet: "",
     qty_to_transfer: 0,
@@ -288,6 +293,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 }
 
 // ─── BY QUANTITY TAB ──────────────────────────────────────────────────────────
+// (unchanged from previous version)
 
 function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOptions, customSelectStyles, masterLoading, onRefresh }: any) {
     const [products, setProducts] = useState<Product[]>([]);
@@ -364,7 +370,6 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
 
     // ── Cross-filter: each option set is built from data filtered by the OTHER filters ──
 
-    // For division options: filter by location + pallet + qa status (exclude division filter)
     const forDivision = useMemo(() => inventories.filter((g) => {
         if (filterLocation && g.location !== filterLocation.value) return false;
         if (filterPallet && g.pallet !== filterPallet.value) return false;
@@ -372,7 +377,6 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         return true;
     }), [inventories, filterLocation, filterPallet, filterQaStatus]);
 
-    // For location options: filter by division + pallet + qa status (exclude location filter)
     const forLocation = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterPallet && g.pallet !== filterPallet.value) return false;
@@ -380,7 +384,6 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         return true;
     }), [inventories, filterDivision, filterPallet, filterQaStatus]);
 
-    // For pallet options: filter by division + location + qa status (exclude pallet filter)
     const forPallet = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterLocation && g.location !== filterLocation.value) return false;
@@ -388,7 +391,6 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         return true;
     }), [inventories, filterDivision, filterLocation, filterQaStatus]);
 
-    // For QA status options: filter by division + location + pallet (exclude QA status filter)
     const forQaStatus = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterLocation && g.location !== filterLocation.value) return false;
@@ -404,7 +406,6 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         [forQaStatus, qaStatuses]
     );
 
-    // ── Auto-reset invalid selections after cross-filter ──
     useEffect(() => {
         if (filterDivision && !divisionFilterOptions.find((o) => o.value === filterDivision.value)) {
             setFilterDivision(null);
@@ -437,7 +438,6 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         }
     }, [qaStatusFilterOptions]);
 
-    // ── Final displayed list: apply all active filters ──
     const displayedInventories = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterLocation && g.location !== filterLocation.value) return false;
@@ -467,6 +467,7 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
             rec_date: group.rec_date || "",
             prod_date: group.prod_date || "",
             exp_date: group.exp_date || "",
+            from_lot_number: group.lot_number || "",
             lot_number: group.lot_number || "",
             pallet: group.pallet || "",
             carton_number: group.carton_number || "",
@@ -763,6 +764,14 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
 }
 
 // ─── BY CARTON TAB ────────────────────────────────────────────────────────────
+// ★ CHANGED (this revision): mixed-source selections (cartons from different
+// warehouses/locations) are now fully supported. When "To Warehouse"/"To
+// Location" are left blank, each carton keeps its OWN source warehouse/location
+// — there's no requirement anymore that all selected cartons share one source.
+// If a carton's computed destination is identical to its source across every
+// field (warehouse, location, QA status, division, lot), that carton is
+// skipped (not sent to the API) instead of blocking the whole submission, and
+// the result banner reports transferred / skipped / failed counts.
 
 function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: any) {
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -785,10 +794,10 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
     const [cartonsLoading, setCartonsLoading] = useState(false);
     const [selectedCartons, setSelectedCartons] = useState<Set<string>>(new Set());
 
-    // ★ CHANGED: toWhsCode / toLocation are now OPTIONAL, same "keep current" pattern
-    // as newQaStatus / divisionCode / newLotNumber below. Empty string = keep the
-    // source warehouse/location of the selected cartons (valid because
-    // sourceConsistent guarantees they all share the same whs_code/location).
+    // toWhsCode / toLocation are OPTIONAL, same "keep current" pattern as
+    // newQaStatus / divisionCode / newLotNumber below. Empty string = keep
+    // each carton's OWN source warehouse/location — this now works correctly
+    // even when the selected cartons come from different warehouses/locations.
     const [toWhsCode, setToWhsCode] = useState("");
     const [toLocation, setToLocation] = useState("");
     const [newQaStatus, setNewQaStatus] = useState("");
@@ -933,9 +942,6 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
     }, [qaStatusFilterOptions]);
 
     // ── Final displayed list: apply all active optional filters client-side too ──
-    // (covers the case where the backend response already includes multiple
-    // divisions/locations/pallets/lots/qa statuses because those params were omitted from the request,
-    // or because the backend doesn't support the qa_status param yet)
     const displayedCartons = useMemo(() => cartons.filter((c) => {
         if (filterDivision && c.division_code !== filterDivision.value) return false;
         if (filterLocation && c.location !== filterLocation.value) return false;
@@ -964,32 +970,26 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
     const totalQtyAll = useMemo(() => displayedCartons.reduce((sum, c) => sum + c.qty_available, 0), [displayedCartons]);
     const cartonsUom = displayedCartons[0]?.uom ?? "";
 
-    const sourceConsistent = useMemo(() => {
-        if (selectedCartonData.length === 0) return true;
+    // Informational only — no longer gates submission. Mixed-source selections
+    // are fully supported: each carton keeps its own source WH/location unless
+    // a destination is explicitly chosen (which then applies to all of them).
+    const isMixedSource = useMemo(() => {
+        if (selectedCartonData.length < 2) return false;
         const first = selectedCartonData[0];
-        return selectedCartonData.every((c) => c.whs_code === first.whs_code && c.location === first.location);
+        return selectedCartonData.some((c) => c.whs_code !== first.whs_code || c.location !== first.location);
     }, [selectedCartonData]);
 
-    // ★ CHANGED: source warehouse/location of the selected cartons (only meaningful
-    // when sourceConsistent is true, which is enforced before submit).
-    const sourceWhsCode = selectedCartonData[0]?.whs_code || "";
-    const sourceLocation = selectedCartonData[0]?.location || "";
-
-    // ★ CHANGED: effective destination = explicit choice, falling back to source
-    // (i.e. "keep current warehouse/location" when left blank).
-    const effectiveToWhsCode = toWhsCode || sourceWhsCode;
-    const effectiveToLocation = toLocation || sourceLocation;
-
-    // ★ CHANGED: destination location options are now filtered by the EFFECTIVE
-    // warehouse (explicit choice, or source warehouse if left blank) instead of
-    // requiring the user to pick a warehouse first.
+    // Destination location dropdown: filtered by the EXPLICITLY chosen warehouse.
+    // If "To Warehouse" is left blank we can't assume a single source warehouse
+    // (sources may be mixed), so show all locations — the actual per-carton
+    // "keep current" fallback happens at submit time regardless of this list.
     const filteredDestLocations = useMemo(
-        () => (effectiveToWhsCode ? locations.filter((l: Location) => l.whs_code === effectiveToWhsCode) : locations),
-        [effectiveToWhsCode, locations]
+        () => (toWhsCode ? locations.filter((l: Location) => l.whs_code === toWhsCode) : locations),
+        [toWhsCode, locations]
     );
     const destLocationOptions: SelectOption[] = filteredDestLocations.map((l: Location) => ({ value: l.location_code, label: l.location_code }));
 
-    // ★ CHANGED: only clear the manually-picked location when the user explicitly
+    // Only clear the manually-picked location when the user explicitly
     // changes the warehouse dropdown (not on every carton-selection change).
     useEffect(() => {
         setToLocation("");
@@ -997,59 +997,82 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
 
     const trimmedNewLotNumber = newLotNumber.trim();
 
+    const hasSelection = selectedCartonData.length > 0;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(""); setSuccess("");
         if (selectedCartonData.length === 0) { setError("Please select at least one carton."); return; }
-        if (!sourceConsistent) { setError("Selected cartons must be from the same source warehouse and location."); return; }
-        // ★ CHANGED: To Warehouse / To Location are optional now — no more
-        // "required" validation. If left blank, effectiveToWhsCode / effectiveToLocation
-        // already fall back to the source warehouse/location.
-        const first = selectedCartonData[0];
-        if (first.whs_code === effectiveToWhsCode && first.location === effectiveToLocation &&
-            (newQaStatus === "" || newQaStatus === first.qa_status) &&
-            (divisionCode === "" || divisionCode === first.division_code) &&
-            (trimmedNewLotNumber === "" || trimmedNewLotNumber === first.lot_number)) {
-            setError("Source and destination are the same for all selected cartons."); return;
+
+        // ── Resolve the effective destination PER CARTON (keep-current fallback
+        // uses that carton's own source WH/location — this is what makes mixed
+        // sources safe to submit together) and flag no-op cartons to skip. ──
+        const plannedTransfers = selectedCartonData.map((carton) => {
+            const effWhsCode = toWhsCode || carton.whs_code;
+            const effLocation = toLocation || carton.location;
+            const effQaStatus = newQaStatus || carton.qa_status;
+            const effDivisionCode = divisionCode || carton.division_code;
+            const effLotNumber = trimmedNewLotNumber || carton.lot_number;
+            const isNoop =
+                effWhsCode === carton.whs_code &&
+                effLocation === carton.location &&
+                effQaStatus === carton.qa_status &&
+                effDivisionCode === carton.division_code &&
+                effLotNumber === carton.lot_number;
+            return { carton, effWhsCode, effLocation, effQaStatus, effDivisionCode, effLotNumber, isNoop };
+        });
+
+        const toProcess = plannedTransfers.filter((p) => !p.isNoop);
+        const skipped = plannedTransfers.filter((p) => p.isNoop);
+
+        if (toProcess.length === 0) {
+            setError("No changes to apply — source and destination are identical for every selected carton.");
+            return;
         }
 
         setSubmitting(true);
-        setProgress({ done: 0, total: selectedCartonData.length });
+        setProgress({ done: 0, total: toProcess.length });
         const failedCartons: string[] = [];
 
-        for (let i = 0; i < selectedCartonData.length; i++) {
-            const carton = selectedCartonData[i];
+        for (let i = 0; i < toProcess.length; i++) {
+            const { carton, effWhsCode, effLocation, effQaStatus, effDivisionCode, effLotNumber } = toProcess[i];
             const payload: TransferFormData = {
                 item_code: carton.item_code,
                 from_whs_code: carton.whs_code,
-                // ★ CHANGED: fallback to the carton's own warehouse/location when left blank
-                to_whs_code: toWhsCode || carton.whs_code,
+                to_whs_code: effWhsCode,
                 from_location: carton.location,
-                to_location: toLocation || carton.location,
+                to_location: effLocation,
                 old_qa_status: carton.qa_status,
-                new_qa_status: newQaStatus || carton.qa_status,
+                new_qa_status: effQaStatus,
                 rec_date: carton.rec_date || "",
                 prod_date: carton.prod_date || "",
                 exp_date: carton.exp_date || "",
-                lot_number: trimmedNewLotNumber || carton.lot_number || "",
+                from_lot_number: carton.lot_number || "",
+                lot_number: effLotNumber || "",
                 pallet: carton.pallet || "",
                 qty_to_transfer: carton.qty_available,
                 reason,
                 from_division_code: carton.division_code,
-                division_code: divisionCode || carton.division_code,
+                division_code: effDivisionCode,
                 carton_number: carton.carton_number,
             };
             try {
                 await api.post("/inventory/transfer", payload, { withCredentials: true });
             } catch { failedCartons.push(carton.carton_number); }
-            setProgress({ done: i + 1, total: selectedCartonData.length });
+            setProgress({ done: i + 1, total: toProcess.length });
         }
 
         setSubmitting(false);
         setProgress(null);
 
+        const succeededCount = toProcess.length - failedCartons.length;
+        const parts: string[] = [];
+        if (succeededCount > 0) parts.push(`${succeededCount} carton(s) transferred`);
+        if (skipped.length > 0) parts.push(`${skipped.length} carton(s) skipped (no changes)`);
+        if (failedCartons.length > 0) parts.push(`${failedCartons.length} carton(s) failed (${failedCartons.join(", ")})`);
+
         if (failedCartons.length === 0) {
-            setSuccess(`Successfully transferred ${selectedCartonData.length} carton(s).`);
+            setSuccess(parts.join(" · "));
             setSelectedCartons(new Set());
             setToWhsCode(""); setToLocation(""); setNewQaStatus(""); setDivisionCode(""); setNewLotNumber(""); setReason("");
             onRefresh();
@@ -1069,7 +1092,7 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                 } catch { } finally { setCartonsLoading(false); }
             }
         } else {
-            setError(`Transfer completed with errors. Failed cartons: ${failedCartons.join(", ")}`);
+            setError(`Transfer completed with errors. ${parts.join(" · ")}`);
             onRefresh();
         }
     };
@@ -1084,7 +1107,6 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
         setError(""); setSuccess("");
     };
 
-    const hasSelection = selectedCartonData.length > 0;
     const emptyMessage = !filterWhs ? "Select a warehouse to start"
         : !filterProduct ? "Select an item code"
             : cartonsLoading ? ""
@@ -1228,18 +1250,21 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                     <div className="border-b border-gray-200 px-6 py-4">
                         <h2 className="text-xl font-semibold text-gray-900">Transfer by Carton</h2>
-                        <p className="text-sm text-gray-500 mt-1">Transfer full cartons — no partial qty. Multiple cartons in one action.</p>
+                        <p className="text-sm text-gray-500 mt-1">Transfer full cartons — no partial qty. Multiple cartons in one action, even from different warehouses/locations.</p>
                     </div>
                     <form onSubmit={handleSubmit} className="p-6">
                         {hasSelection && (
-                            <div className={`rounded-lg p-4 mb-6 border ${sourceConsistent ? "bg-blue-50 border-blue-200" : "bg-amber-50 border-amber-300"}`}>
+                            <div className="rounded-lg p-4 mb-6 border bg-blue-50 border-blue-200">
                                 <div className="flex items-start justify-between mb-2">
-                                    <h3 className={`text-sm font-semibold ${sourceConsistent ? "text-blue-900" : "text-amber-900"}`}>
-                                        {sourceConsistent ? "Selected Cartons" : "⚠ Mixed Sources Detected"}
-                                    </h3>
+                                    <h3 className="text-sm font-semibold text-blue-900">Selected Cartons</h3>
                                     <span className="text-xs text-gray-600">{selectedCartonData.length} carton(s) · {totalQty} units total</span>
                                 </div>
-                                {!sourceConsistent && <p className="text-xs text-amber-800 mb-2">All selected cartons must be from the same warehouse and location.</p>}
+                                {isMixedSource && (
+                                    <p className="text-xs text-blue-800 mb-2">
+                                        ℹ️ These cartons come from different warehouses/locations. Each keeps its own source
+                                        warehouse/location unless you set a destination below — in that case, it applies to all of them.
+                                    </p>
+                                )}
                                 <div className="space-y-1 max-h-40 overflow-y-auto">
                                     {selectedCartonData.map((c: CartonGroup) => (
                                         <div key={c.carton_number} className="flex items-center justify-between text-xs text-gray-700 bg-white rounded px-2 py-1 border border-gray-100">
@@ -1260,25 +1285,27 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                         <SectionTitle>Destination Information</SectionTitle>
                         <div className="grid grid-cols-2 gap-4 mb-6">
                             <div>
-                                {/* ★ CHANGED: no longer "required" — optional, keeps source warehouse if blank */}
                                 <FieldLabel>To Warehouse</FieldLabel>
                                 <Select options={warehouseOptions} value={warehouseOptions.find((o: SelectOption) => o.value === toWhsCode) || null}
                                     onChange={(opt: SelectOption | null) => setToWhsCode(opt?.value || "")}
                                     placeholder="Keep Current Warehouse" isClearable isSearchable isDisabled={!hasSelection} styles={customSelectStyles} className="text-sm" />
                                 {hasSelection && toWhsCode === "" && (
-                                    <p className="text-xs text-gray-500 mt-1">Keeps current warehouse ({sourceWhsCode})</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {isMixedSource ? "Keeps each carton's own source warehouse" : `Keeps current warehouse (${selectedCartonData[0]?.whs_code})`}
+                                    </p>
                                 )}
                             </div>
                             <div>
-                                {/* ★ CHANGED: no longer "required" — optional, keeps source location if blank */}
                                 <FieldLabel>To Location</FieldLabel>
                                 <Select options={destLocationOptions} value={destLocationOptions.find((o: SelectOption) => o.value === toLocation) || null}
                                     onChange={(opt: SelectOption | null) => setToLocation(opt?.value || "")}
                                     placeholder="Keep Current Location" isClearable isSearchable isDisabled={!hasSelection}
                                     styles={customSelectStyles} className="text-sm"
-                                    noOptionsMessage={() => effectiveToWhsCode ? "No locations found" : "Select warehouse first"} />
+                                    noOptionsMessage={() => toWhsCode ? "No locations found" : "Showing all locations — select a warehouse to narrow down"} />
                                 {hasSelection && toLocation === "" && (
-                                    <p className="text-xs text-gray-500 mt-1">Keeps current location ({sourceLocation})</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {isMixedSource ? "Keeps each carton's own source location" : `Keeps current location (${selectedCartonData[0]?.location})`}
+                                    </p>
                                 )}
                             </div>
                             <div>
@@ -1333,7 +1360,7 @@ function ByCartonTab({ qaStatuses, locations, customSelectStyles, onRefresh }: a
                         <AlertBanner type="success" message={success} />
 
                         <div className="flex space-x-3">
-                            <button type="submit" disabled={submitting || !hasSelection || !sourceConsistent}
+                            <button type="submit" disabled={submitting || !hasSelection}
                                 className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
                                 {submitting
                                     ? <><SpinIcon />Processing {progress?.done ?? 0}/{progress?.total ?? selectedCartonData.length}...</>
