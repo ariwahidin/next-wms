@@ -1413,6 +1413,11 @@ const CheckingPage = () => {
                                         Model : <span className="font-mono font-semibold">{parsedQR.model}</span>
                                     </p>
                                 )}
+                                {parsedQR?.batch && (
+                                    <p className="text-xs text-gray-600">
+                                        Batch : <span className="font-mono font-semibold">{parsedQR.batch}</span>
+                                    </p>
+                                )}
                                 {scanLocation && (
                                     <p className="text-xs text-gray-600">
                                         Pallet ID : <span className="font-mono font-semibold">{scanLocation}</span>
@@ -1542,10 +1547,11 @@ const CheckingPage = () => {
                                                     id="lot_no"
                                                     list="lotNoOptions"
                                                     className="w-full text-xs"
-                                                    value={lotNo}
+                                                    value={parsedQR?.batch && !lotNo ? parsedQR.batch : lotNo}
                                                     onChange={(e) => setLotNo(e.target.value)}
                                                     placeholder="Enter lot number..."
                                                     autoComplete="off"
+                                                    readOnly = {parsedQR?.batch ? true : false}
                                                 />
                                                 <datalist id="lotNoOptions">
                                                     {uniqueLotNos.map((d, i) => <option key={i} value={d} />)}
@@ -1558,6 +1564,7 @@ const CheckingPage = () => {
                                                             setLotNo("");
                                                             document.getElementById("lot_no")?.focus();
                                                         }}
+                                                        disabled={parsedQR?.batch ? true : false}
                                                     >
                                                         <XCircle size={18} />
                                                     </button>
