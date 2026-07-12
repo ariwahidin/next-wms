@@ -32,6 +32,7 @@ import {
   Layers,
   Grid,
   Package,
+  Box,
 } from "lucide-react";
 
 
@@ -46,7 +47,9 @@ type StockTake = {
 const StockTakeModal = ({ isOpen, onClose, onGenerate }) => {
   const [loading, setLoading] = useState(false);
   const [locations, setLocations] = useState([]);
+  const [owners, setOwners] = useState([]);
   const [filters, setFilters] = useState({
+    ownerCode: "",
     fromRow: "",
     toRow: "",
     fromBay: "",
@@ -75,8 +78,20 @@ const StockTakeModal = ({ isOpen, onClose, onGenerate }) => {
   useEffect(() => {
     if (isOpen) {
       fetchLocations();
+      fetchOwners();
     }
   }, [isOpen]);
+
+  const fetchOwners = async () => {
+    try {
+      const res = await api.get("/owners");
+      if (res.data.success) {
+        setOwners(res.data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch owners:", err);
+    }
+  };
 
   const fetchLocations = async () => {
     try {
@@ -111,6 +126,7 @@ const StockTakeModal = ({ isOpen, onClose, onGenerate }) => {
 
   const resetFilters = () => {
     setFilters({
+      ownerCode: "",
       fromRow: "",
       toRow: "",
       fromBay: "",
@@ -144,10 +160,10 @@ const StockTakeModal = ({ isOpen, onClose, onGenerate }) => {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Generate Stock Take
+                  Generate Cycle Count
                 </h3>
                 <p className="text-sm text-gray-500">
-                  Set location filters for stock take generation
+                  Set location filters for cycle count generation
                 </p>
               </div>
             </div>
@@ -181,6 +197,31 @@ const StockTakeModal = ({ isOpen, onClose, onGenerate }) => {
                   ))}
                 </select>
               </div> */}
+
+              {/* Customer/Owner Selection - WAJIB */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Package className="inline h-4 w-4 mr-1" />
+                  Customer <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={filters.ownerCode}
+                  onChange={(e) => handleFilterChange("ownerCode", e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                >
+                  <option value="">Select Customer</option>
+                  {owners.map((owner) => (
+                    <option key={owner.code} value={owner.code}>
+                      {owner.name}
+                    </option>
+                  ))}
+                </select>
+                {!filters.ownerCode && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Please select a customer to continue
+                  </p>
+                )}
+              </div>
 
               {/* Row Range */}
               <div>
@@ -380,6 +421,11 @@ const StockTakeModal = ({ isOpen, onClose, onGenerate }) => {
                   Filter Summary:
                 </h4>
                 <div className="text-xs text-gray-600 space-y-1">
+                  {filters.ownerCode && (
+                    <div className="font-medium text-slate-900">
+                      Customer: {owners.find((o) => o.Code === filters.ownerCode)?.Name || filters.ownerCode}
+                    </div>
+                  )}
                   {filters.area && <div>Area: {filters.area}</div>}
                   {(filters.fromRow || filters.toRow) && (
                     <div>
@@ -434,8 +480,8 @@ const StockTakeModal = ({ isOpen, onClose, onGenerate }) => {
               </button>
               <button
                 onClick={handleGenerate}
-                disabled={loading}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-lg text-sm font-medium transition-colors"
+                disabled={loading || !filters.ownerCode}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
               >
                 {loading ? (
                   <>
@@ -445,7 +491,7 @@ const StockTakeModal = ({ isOpen, onClose, onGenerate }) => {
                 ) : (
                   <>
                     <Plus className="h-4 w-4" />
-                    Generate Stock Take
+                    Generate
                   </>
                 )}
               </button>
@@ -469,50 +515,54 @@ export default function StockTakePage() {
     setIsModalOpen(true);
   };
 
-  const generateStockTake = async (filters) => {
-    setLoading(true);
-    try {
-      // Ganti dengan API call yang sebenarnya
-      console.log("Generating stock take with filters:", filters);
-
-      const res = await api.post("/stock-take/generate", { filters }, { withCredentials: true });
-      if (res.data.success) {
-        fetchStockTakes(); // reload data
-      }
-
-      // Simulasi delay
-      // await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log("Stock take generated successfully!");
-    } catch (err) {
-      console.error("Generate failed:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // const handleNewStockTake = () => {
-  //   // Navigate to create new stock take page
-  //   // router.push('/stock-take/create');
-  //   // Or you can add your create logic here
-  //   generateStockTake();
-  // };
-
-  // Generate stock take
-  // const generateStockTake = async () => {
+  // const generateStockTake = async (filters) => {
   //   setLoading(true);
   //   try {
-  //     const res = await api.post("/stock-take/generate", null, { withCredentials: true });
+  //     // Ganti dengan API call yang sebenarnya
+  //     console.log("Generating stock take with filters:", filters);
+
+  //     const res = await api.post("/stock-take/generate", { filters }, { withCredentials: true });
   //     if (res.data.success) {
-  //       // await fetchStockTakes(); // reload data
-  //       // router.push("/stock-take/list");
   //       fetchStockTakes(); // reload data
   //     }
+
+  //     // Simulasi delay
+  //     // await new Promise((resolve) => setTimeout(resolve, 2000));
+  //     console.log("Stock take generated successfully!");
   //   } catch (err) {
   //     console.error("Generate failed:", err);
   //   } finally {
   //     setLoading(false);
   //   }
   // };
+
+  const generateStockTake = async (filters) => {
+    setLoading(true);
+    try {
+      const res = await api.post("/stock-take/generate", { filters }, { withCredentials: true });
+      if (res.data.success) {
+        fetchStockTakes();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to generate cycle count");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const handleDelete = async (code) => {
+    if (!confirm(`Delete cycle count session ${code}? This cannot be undone.`)) return;
+    try {
+      const res = await api.delete(`/stock-take/${code}`, { withCredentials: true });
+      if (res.data.success) {
+        fetchStockTakes();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete cycle count");
+    }
+  };
+
 
   const fetchStockTakes = async () => {
     try {
@@ -557,7 +607,7 @@ export default function StockTakePage() {
   };
 
   return (
-    <Layout title="Stock Take" subTitle="Stock Take Activity" className="w-full">
+    <Layout title="Cycle Count" subTitle="Cycle Count Activity" className="w-full">
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
         <div className="max-w-7xl mx-auto px-6 py-6">
           {/* Header Section */}
@@ -569,11 +619,11 @@ export default function StockTakePage() {
                     <TrendingUp className="w-3 h-3 text-white" />
                   </div>
                   <h1 className="text-lg font-semibold text-slate-900">
-                    Stock Take Activity
+                    Cycle Count Sessions
                   </h1>
                 </div>
                 <p className="text-slate-600 text-xs">
-                  Monitor and track your inventory stock take sessions
+                  Monitor and track your inventory cycle count sessions
                 </p>
               </div>
               <button
@@ -581,7 +631,7 @@ export default function StockTakePage() {
                 className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4" />
-                New Stock Take
+                New Cycle Count
               </button>
             </div>
           </div>
@@ -614,7 +664,7 @@ export default function StockTakePage() {
                     <p className="text-lg font-semibold text-emerald-600">
                       {
                         data.filter(
-                          (item) => item.status.toLowerCase() === "completed"
+                          (item) => item.status.toLowerCase() === "closed"
                         ).length
                       }
                     </p>
@@ -636,7 +686,7 @@ export default function StockTakePage() {
                     <p className="text-lg font-semibold text-amber-600">
                       {
                         data.filter(
-                          (item) => item.status.toLowerCase() === "in progress"
+                          (item) => item.status.toLowerCase() === "in_progress"
                         ).length
                       }
                     </p>
@@ -696,7 +746,7 @@ export default function StockTakePage() {
                               <TrendingUp className="w-6 h-6 text-slate-400" />
                             </div>
                             <p className="text-slate-600 font-medium mb-1 text-sm">
-                              No stock take sessions found
+                              No cycle count sessions found
                             </p>
                             <p className="text-slate-400 text-xs">
                               Create your first session to get started
@@ -781,13 +831,12 @@ export default function StockTakePage() {
                                 className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-amber-50 text-amber-600 hover:text-amber-700 transition-colors"
                                 title="View Detail"
                               >
-                                <Eye className="w-3.5 h-3.5" />
+                                <Box className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // Handle delete action
-                                  console.log("Delete", stk.code);
+                                  handleDelete(stk.code);
                                 }}
                                 className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
                                 title="Delete"
@@ -809,7 +858,7 @@ export default function StockTakePage() {
           {data.length > 0 && (
             <div className="mt-4 text-center">
               <p className="text-xs text-slate-500">
-                Showing {data.length} stock take session
+                Showing {data.length} cycle count session
                 {data.length !== 1 ? "s" : ""} • Click any row to view detailed
                 progress
               </p>

@@ -5,21 +5,61 @@ import PageHeader from "@/components/mobile/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import api from "@/lib/api";
+import { Package, ClipboardCheck } from "lucide-react";
 
-import { useRouter } from "next/navigation"; // Pastikan import ini ditambahkan
+import { useRouter } from "next/navigation";
 
 type StockTake = {
   ID: number;
   code: string;
   status: string;
   CreatedAt: string;
+  total_system_qty: number;
+  total_counted_qty: number;
 };
+
+// ─── Status badge (biar konsisten & gampang di-scan mata) ────────────────────
+
+const STATUS_STYLES: Record<string, string> = {
+  open: "bg-gray-100 text-gray-600",
+  in_progress: "bg-blue-100 text-blue-700",
+  closed: "bg-green-100 text-green-700",
+  cancelled: "bg-red-100 text-red-600",
+};
+
+const StatusBadge = ({ status }: { status: string }) => (
+  <span
+    className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+      STATUS_STYLES[status] || "bg-gray-100 text-gray-600"
+    }`}
+  >
+    {status.replace("_", " ")}
+  </span>
+);
+
+// ─── Qty summary — minimalis, dua angka + icon, gak makan tempat ─────────────
+
+const QtySummary = ({ systemQty, countedQty }: { systemQty: number; countedQty: number }) => (
+  <div className="flex items-center gap-4 mt-2 text-sm">
+    <div className="flex items-center gap-1.5 text-gray-500">
+      <Package size={14} />
+      <span>
+        System: <span className="font-medium text-gray-700">{systemQty}</span>
+      </span>
+    </div>
+    <div className="flex items-center gap-1.5 text-gray-500">
+      <ClipboardCheck size={14} />
+      <span>
+        Counted: <span className="font-medium text-gray-700">{countedQty}</span>
+      </span>
+    </div>
+  </div>
+);
 
 export default function StockOpnamePage() {
   const [search, setSearch] = useState("");
   const [data, setData] = useState<StockTake[]>([]);
   const [isLoading, setLoading] = useState(true);
-  // Di dalam komponen:
   const router = useRouter();
 
   const fetchStockTakes = async () => {
@@ -28,11 +68,12 @@ export default function StockOpnamePage() {
         withCredentials: true,
       });
       if (res.data.success) {
-        setLoading(false);
         setData(res.data.data);
       }
     } catch (err) {
       console.error("Fetch failed:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,12 +95,12 @@ export default function StockOpnamePage() {
 
   return (
     <>
-      <PageHeader title="Stock Opname" showBackButton />
+      <PageHeader title="Cycle Count" showBackButton />
 
       <div className="min-h-screen bg-gray-50 px-4 pt-4 pb-20 max-w-md mx-auto">
         <div className="space-y-3">
           <Input
-            placeholder="Search STO..."
+            placeholder="Search Cycle Count..."
             className="mb-4"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -71,21 +112,25 @@ export default function StockOpnamePage() {
             </p>
           )}
 
-          <div className="space-y-4">
-            {filteredItems.map((item) => {
-              return (
-                <Card
-                  key={item.ID}
-                  className="p-4"
-                  onClick={() =>
-                    router.push(`/mobile/inventory/stock-opname/${item.code}`)
-                  }
-                >
-                  <h3 className="font-semibold text-lg mb-1">{item.code}</h3>
-                  <p className="text-sm text-gray-500">{item.status}</p>
-                </Card>
-              );
-            })}
+          <div className="space-y-3">
+            {filteredItems.map((item) => (
+              <Card
+                key={item.ID}
+                className="p-4 cursor-pointer active:bg-gray-50 transition-colors"
+                onClick={() =>
+                  router.push(`/mobile/inventory/stock-opname/${item.code}`)
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg">{item.code}</h3>
+                  <StatusBadge status={item.status} />
+                </div>
+                <QtySummary
+                  systemQty={item.total_system_qty}
+                  countedQty={item.total_counted_qty}
+                />
+              </Card>
+            ))}
           </div>
 
           {filteredItems.length === 0 && (

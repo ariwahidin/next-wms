@@ -9,6 +9,7 @@ import {
   Wrench,
   SettingsIcon,
   LucideIcon,
+  ClipboardList
 } from "lucide-react";
 
 export const iconMap: Record<string, LucideIcon> = {
@@ -21,4 +22,5 @@ export const iconMap: Record<string, LucideIcon> = {
   Smartphone,
   Wrench,
   SettingsIcon,
+  ClipboardList
 };

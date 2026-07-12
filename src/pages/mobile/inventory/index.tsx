@@ -85,7 +85,7 @@ const inventoryMenus = [
 
   // { label: "Search Location", icon: <LocateFixedIcon />, href: "/mobile/inventory/scan-location" },
   {
-    label: "Stock Take",
+    label: "Cycle Count",
     icon: <ClipboardList />,
     href: "/mobile/inventory/stock-opname",
   }, // bisa juga diganti jadi "Physical Stock Count"
