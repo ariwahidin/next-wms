@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
@@ -72,9 +73,8 @@ const ScanModeToggle = ({ value, onChange }: ScanModeToggleProps) => (
         key={mode.value}
         type="button"
         onClick={() => onChange(mode.value)}
-        className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-          value === mode.value ? "bg-blue-500 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"
-        }`}
+        className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${value === mode.value ? "bg-blue-500 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"
+          }`}
       >
         {mode.label}
       </button>
@@ -169,6 +169,10 @@ export default function StockOpnamePage() {
       return;
     }
 
+    if (scanMode === "sku") {
+
+    }
+
     const value = scanMode === "ean" ? barcode : skuInput;
     if (!value.trim()) {
       setLookupProduct(null);
@@ -234,6 +238,15 @@ export default function StockOpnamePage() {
     }
   };
 
+  const handleSKUInputChange = (raw: string) => {
+    const parsed = parseQRCode(raw);
+    if (parsed?.sku) {
+      setSkuInput(parsed.sku || "");
+    } else {
+      setSkuInput(raw);
+    }
+  };
+
   const handleModeChange = (mode: ScanMode) => {
     setScanMode(mode);
     resetScanFields();
@@ -254,6 +267,30 @@ export default function StockOpnamePage() {
     setLookupProduct(null);
     setLookupError("");
     // location & divisionCode sengaja TIDAK direset — user biasanya lanjut di lokasi/division yang sama
+  };
+
+
+  const lookupProductNow = async (mode: "ean" | "sku", value: string) => {
+    try {
+      const queryParams = mode === "ean" ? { barcode: value.trim() } : { sku: value.trim() };
+      const res = await api.get("/products/lookup", {
+        params: queryParams,
+        withCredentials: true,
+      });
+      if (res.data.success) {
+        setLookupProduct(res.data.data);
+        setLookupError("");
+        return res.data.data;
+      } else {
+        setLookupProduct(null);
+        setLookupError(`Product not found for this ${mode === "ean" ? "barcode" : "SKU"}.`);
+        return null;
+      }
+    } catch {
+      setLookupProduct(null);
+      setLookupError(`Product not found for this ${mode === "ean" ? "barcode" : "SKU"}.`);
+      return null;
+    }
   };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
@@ -298,7 +335,16 @@ export default function StockOpnamePage() {
         });
         return;
       }
-      if (!lookupProduct) {
+
+      let product = lookupProduct;
+      if (!product) {
+        // debounce belum sempet jalan, lookup langsung sebelum reject
+        setLookupLoading(true);
+        product = await lookupProductNow(scanMode as "ean" | "sku", primaryValue);
+        setLookupLoading(false);
+      }
+
+      if (!product) {
         eventBus.emit("showAlert", {
           title: "Error!",
           description: lookupError || "Not registered in product master.",
@@ -306,6 +352,15 @@ export default function StockOpnamePage() {
         });
         return;
       }
+
+      // if (!lookupProduct) {
+      //   eventBus.emit("showAlert", {
+      //     title: "Error!",
+      //     description: lookupError || "Not registered in product master.",
+      //     type: "error",
+      //   });
+      //   return;
+      // }
     }
 
     if (isSubmit) return;
@@ -341,11 +396,11 @@ export default function StockOpnamePage() {
           document.getElementById(focusId)?.focus();
         }, 50);
       } else {
-        eventBus.emit("showAlert", {
-          title: "Failed",
-          description: res.data.message || "Failed to submit scan.",
-          type: "error",
-        });
+        // eventBus.emit("showAlert", {
+        //   title: "Failed",
+        //   description: res.data.message || "Failed to submit scan.",
+        //   type: "error",
+        // });
       }
     } catch (err: any) {
       console.error("Submit error:", err);
@@ -563,6 +618,11 @@ export default function StockOpnamePage() {
                     className="w-full pr-10"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault(); // cegah native form submit langsung
+                      }
+                    }}
                     autoFocus
                   />
                   {location && (
@@ -593,6 +653,11 @@ export default function StockOpnamePage() {
                       className="w-full mt-1 pr-10"
                       value={barcode}
                       onChange={(e) => setBarcode(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault(); // cegah native form submit langsung
+                        }
+                      }}
                     />
                     {barcode && (
                       <button
@@ -642,7 +707,12 @@ export default function StockOpnamePage() {
                       id="sku-input"
                       className="w-full mt-1 pr-10"
                       value={skuInput}
-                      onChange={(e) => setSkuInput(e.target.value)}
+                      onChange={(e) => handleSKUInputChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault(); // cegah native form submit langsung
+                        }
+                      }}
                     />
                     {skuInput && (
                       <button
@@ -787,18 +857,16 @@ export default function StockOpnamePage() {
               <button
                 type="button"
                 onClick={() => setTab("byItem")}
-                className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                  tab === "byItem" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500"
-                }`}
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "byItem" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500"
+                  }`}
               >
                 By Item
               </button>
               <button
                 type="button"
                 onClick={() => setTab("byLocation")}
-                className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                  tab === "byLocation" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500"
-                }`}
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "byLocation" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500"
+                  }`}
               >
                 By Location
                 {Object.keys(locationGroups).length > 0 && (
@@ -810,9 +878,8 @@ export default function StockOpnamePage() {
               <button
                 type="button"
                 onClick={() => setTab("byCarton")}
-                className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                  tab === "byCarton" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500"
-                }`}
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "byCarton" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500"
+                  }`}
               >
                 By Carton
                 {Object.keys(cartonGroups).length > 0 && (

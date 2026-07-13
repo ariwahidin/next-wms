@@ -14,7 +14,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { ArrowBigLeft, Search, PackageCheck, MapPin, TrendingUp } from "lucide-react";
+import { ArrowBigLeft, Search, PackageCheck, MapPin, TrendingUp, Download } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -30,22 +30,44 @@ type ProgressBySKU = {
   progress_qty: number;
 };
 
+// Matches backend DivisionDayProgress (harian, bukan cumulative).
+// location_counted/qty_counted: null kalau division tsb gak ada aktivitas
+// di tanggal itu (render sebagai "-" di UI, bukan 0).
 type DivisionDayProgress = {
   location_counted: number | null;
   qty_counted: number | null;
-  progress_percent: number | null;
+  location_percent: number | null;
+  qty_percent: number | null;
 };
 
+// Matches backend DivisionPivotRow
 type DivisionPivotRow = {
   division_code: string;
-  system_qty: number;
   system_location: number;
+  system_qty: number;
   daily: Record<string, DivisionDayProgress>;
+  total_location_counted: number;
+  total_qty_counted: number;
+  total_location_percent: number;
+  total_qty_percent: number;
+};
+
+// Matches backend GrandTotalRow — dipakai buat baris "Total" (gabungan
+// semua division) dan "Total % Counting" paling bawah.
+type GrandTotalRow = {
+  system_location: number;
+  system_qty: number;
+  daily: Record<string, DivisionDayProgress>;
+  total_location_counted: number;
+  total_qty_counted: number;
+  total_location_percent: number;
+  total_qty_percent: number;
 };
 
 type ProgressByDivisionResult = {
   dates: string[];
   divisions: DivisionPivotRow[];
+  grand_total: GrandTotalRow;
 };
 
 type ResultTab = "bySku" | "byDivision" | "byLocation" | "byPic";
@@ -117,6 +139,11 @@ const formatDateTime = (iso: string | null) => {
     minute: "2-digit",
   });
 };
+
+const formatNum = (n: number | null | undefined) =>
+  n == null ? "-" : n.toLocaleString("id-ID");
+
+const formatPct = (n: number | null | undefined) => (n == null ? "-" : `${n.toFixed(2)}%`);
 
 // ─── KPI Summary Cards ──────────────────────────────────────────────────
 
@@ -307,91 +334,254 @@ function BySkuTable({ data }: { data: ProgressBySKU[] }) {
   );
 }
 
-// ─── By Division Pivot Table ────────────────────────────────────────────
+// ─── By Division Pivot Table (mirrors "Report Daily Progress STO" Excel) ──
+//
+// Layout persis kayak Excel:
+//   Header:   Inventory Stock | [tanggal: Loc, Qty]... | Total (Loc, Qty)
+//   Body:     1 row per division -> Count Location & Count Qty (harian, bukan cumulative)
+//   Row Total: gabungan semua division (dari grand_total)
+//   Row Achievement per division: % (location_percent / qty_percent) per tanggal
+//   Row Total % Counting: % gabungan semua division (dari grand_total)
 
-function ByDivisionTable({ data }: { data: ProgressByDivisionResult | null }) {
+function ByDivisionTable({ data, sto }: { data: ProgressByDivisionResult | null; sto: string }) {
   if (!data || data.divisions.length === 0) {
     return <p className="text-sm text-gray-500 text-center py-6">No division data found.</p>;
   }
 
+  const { dates, divisions, grand_total } = data;
+
+  const handleExport = async () => {
+    try {
+      const res = await api.get(`/stock-take/export-division/${sto}`, {
+        withCredentials: true,
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Report_Daily_Progress_STO_${sto}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to export excel:", err);
+    }
+  };
+
   return (
-    <div className="overflow-auto rounded-xl border shadow-sm">
-      <Table className="text-sm">
-        <TableHeader>
-          <TableRow>
-            <TableHead
-              rowSpan={2}
-              className="border border-gray-200 align-bottom sticky left-0 bg-white z-10"
-            >
-              Division
-            </TableHead>
-            <TableHead
-              colSpan={2}
-              className="text-center border border-gray-200 sticky left-[120px] bg-white z-10"
-            >
-              System
-            </TableHead>
-            {data.dates.map((date) => (
-              <TableHead key={date} colSpan={3} className="text-center border border-gray-200">
-                {formatDateLabel(date)}
+
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Download size={14} className="mr-1.5" />
+          Download Excel
+        </Button>
+      </div>
+      <div className="overflow-auto rounded-xl border shadow-sm">
+        <Table className="text-sm">
+          <TableHeader>
+            {/* Row 1: group headers */}
+            <TableRow>
+              <TableHead
+                rowSpan={2}
+                className="border border-gray-200 align-bottom sticky left-0 bg-white z-10"
+              >
+                Category
               </TableHead>
+              <TableHead
+                colSpan={2}
+                className="text-center border border-gray-200 bg-purple-50 sticky left-[120px] bg-white z-10"
+              >
+                Inventory Stock
+              </TableHead>
+              {dates.map((date) => (
+                <TableHead
+                  key={date}
+                  colSpan={2}
+                  className="text-center border border-gray-200 bg-blue-50"
+                >
+                  {formatDateLabel(date)}
+                </TableHead>
+              ))}
+              <TableHead colSpan={2} className="text-center border border-gray-200 bg-orange-50">
+                Total
+              </TableHead>
+            </TableRow>
+            {/* Row 2: sub headers */}
+            <TableRow>
+              <TableHead className="border border-gray-200 sticky left-[120px] bg-white z-10">
+                Loc
+              </TableHead>
+              <TableHead className="border border-gray-200 sticky left-[184px] bg-white z-10">
+                Qty
+              </TableHead>
+              {dates.map((date) => (
+                <Fragment key={date}>
+                  <TableHead className="border border-gray-200">Loc</TableHead>
+                  <TableHead className="border border-gray-200">Qty</TableHead>
+                </Fragment>
+              ))}
+              <TableHead className="border border-gray-200 font-semibold">Loc</TableHead>
+              <TableHead className="border border-gray-200 font-semibold">Qty</TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {/* ── Body: 1 baris per division, angka harian (bukan cumulative) ── */}
+            {divisions.map((division) => (
+              <TableRow key={division.division_code}>
+                <TableCell className="border border-gray-200 font-medium sticky left-0 bg-white z-10">
+                  {division.division_code}
+                </TableCell>
+                <TableCell className="border border-gray-200 sticky left-[120px] bg-white z-10">
+                  {formatNum(division.system_location)}
+                </TableCell>
+                <TableCell className="border border-gray-200 sticky left-[184px] bg-white z-10">
+                  {formatNum(division.system_qty)}
+                </TableCell>
+                {dates.map((date) => {
+                  const day = division.daily[date];
+                  return (
+                    <Fragment key={date}>
+                      <TableCell className="border border-gray-200 text-center">
+                        {day ? formatNum(day.location_counted) : "-"}
+                      </TableCell>
+                      <TableCell className="border border-gray-200 text-center">
+                        {day ? formatNum(day.qty_counted) : "-"}
+                      </TableCell>
+                    </Fragment>
+                  );
+                })}
+                <TableCell className="border border-gray-200 text-center font-medium">
+                  {formatNum(division.total_location_counted)}
+                </TableCell>
+                <TableCell className="border border-gray-200 text-center font-medium">
+                  {formatNum(division.total_qty_counted)}
+                </TableCell>
+              </TableRow>
             ))}
-          </TableRow>
-          <TableRow>
-            <TableHead className="border border-gray-200 sticky left-[120px] bg-white z-10">
-              Loc
-            </TableHead>
-            <TableHead className="border border-gray-200 sticky left-[184px] bg-white z-10">
-              Qty
-            </TableHead>
-            {data.dates.map((date) => (
-              <Fragment key={date}>
-                <TableHead className="border border-gray-200">Loc</TableHead>
-                <TableHead className="border border-gray-200">Qty</TableHead>
-                <TableHead className="border border-gray-200">%</TableHead>
-              </Fragment>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.divisions.map((division) => (
-            <TableRow key={division.division_code}>
-              <TableCell className="border border-gray-200 font-medium sticky left-0 bg-white z-10">
-                {division.division_code}
+
+            {/* ── Row: Total (gabungan semua division) ── */}
+            <TableRow className="bg-orange-50 font-semibold">
+              <TableCell className="border border-gray-200 sticky left-0 bg-orange-50 z-10">
+                Total
               </TableCell>
-              <TableCell className="border border-gray-200 sticky left-[120px] bg-white z-10">
-                {division.system_location}
+              <TableCell className="border border-gray-200 sticky left-[120px] bg-orange-50 z-10">
+                {formatNum(grand_total.system_location)}
               </TableCell>
-              <TableCell className="border border-gray-200 sticky left-[184px] bg-white z-10">
-                {division.system_qty}
+              <TableCell className="border border-gray-200 sticky left-[184px] bg-orange-50 z-10">
+                {formatNum(grand_total.system_qty)}
               </TableCell>
-              {data.dates.map((date) => {
-                const day = division.daily[date];
+              {dates.map((date) => {
+                const day = grand_total.daily[date];
                 return (
                   <Fragment key={date}>
                     <TableCell className="border border-gray-200 text-center">
-                      {day?.location_counted ?? <span className="text-gray-300">-</span>}
+                      {formatNum(day?.location_counted)}
                     </TableCell>
                     <TableCell className="border border-gray-200 text-center">
-                      {day?.qty_counted ?? <span className="text-gray-300">-</span>}
-                    </TableCell>
-                    <TableCell
-                      className={`border border-gray-200 text-center font-medium ${day?.progress_percent != null ? progressColor(day.progress_percent) : ""
-                        }`}
-                    >
-                      {day?.progress_percent != null ? (
-                        `${day.progress_percent}%`
-                      ) : (
-                        <span className="text-gray-300">-</span>
-                      )}
+                      {formatNum(day?.qty_counted)}
                     </TableCell>
                   </Fragment>
                 );
               })}
+              <TableCell className="border border-gray-200 text-center">
+                {formatNum(grand_total.total_location_counted)}
+              </TableCell>
+              <TableCell className="border border-gray-200 text-center">
+                {formatNum(grand_total.total_qty_counted)}
+              </TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+
+            {/* ── Rows: Achievement per division (%) ── */}
+            {divisions.map((division) => (
+              <TableRow key={`ach-${division.division_code}`} className="bg-blue-50/60 text-xs">
+                <TableCell className="border border-gray-200 sticky left-0 bg-blue-50/60 z-10">
+                  Achievement {division.division_code}
+                </TableCell>
+                <TableCell className="border border-gray-200 sticky left-[120px] bg-blue-50/60 z-10" />
+                <TableCell className="border border-gray-200 sticky left-[184px] bg-blue-50/60 z-10" />
+                {dates.map((date) => {
+                  const day = division.daily[date];
+                  return (
+                    <Fragment key={date}>
+                      <TableCell
+                        className={`border border-gray-200 text-center ${day?.location_percent != null ? progressColor(day.location_percent) : ""
+                          }`}
+                      >
+                        {day ? formatPct(day.location_percent) : "-"}
+                      </TableCell>
+                      <TableCell
+                        className={`border border-gray-200 text-center ${day?.qty_percent != null ? progressColor(day.qty_percent) : ""
+                          }`}
+                      >
+                        {day ? formatPct(day.qty_percent) : "-"}
+                      </TableCell>
+                    </Fragment>
+                  );
+                })}
+                <TableCell
+                  className={`border border-gray-200 text-center font-medium ${progressColor(
+                    division.total_location_percent
+                  )}`}
+                >
+                  {formatPct(division.total_location_percent)}
+                </TableCell>
+                <TableCell
+                  className={`border border-gray-200 text-center font-medium ${progressColor(
+                    division.total_qty_percent
+                  )}`}
+                >
+                  {formatPct(division.total_qty_percent)}
+                </TableCell>
+              </TableRow>
+            ))}
+
+            {/* ── Row: Total % Counting (gabungan semua division) ── */}
+            <TableRow className="bg-blue-100 font-semibold">
+              <TableCell className="border border-gray-200 sticky left-0 bg-blue-100 z-10">
+                Total % Counting
+              </TableCell>
+              <TableCell className="border border-gray-200 sticky left-[120px] bg-blue-100 z-10" />
+              <TableCell className="border border-gray-200 sticky left-[184px] bg-blue-100 z-10" />
+              {dates.map((date) => {
+                const day = grand_total.daily[date];
+                return (
+                  <Fragment key={date}>
+                    <TableCell
+                      className={`border border-gray-200 text-center ${day?.location_percent != null ? progressColor(day.location_percent) : ""
+                        }`}
+                    >
+                      {formatPct(day?.location_percent)}
+                    </TableCell>
+                    <TableCell
+                      className={`border border-gray-200 text-center ${day?.qty_percent != null ? progressColor(day.qty_percent) : ""
+                        }`}
+                    >
+                      {formatPct(day?.qty_percent)}
+                    </TableCell>
+                  </Fragment>
+                );
+              })}
+              <TableCell
+                className={`border border-gray-200 text-center ${progressColor(
+                  grand_total.total_location_percent
+                )}`}
+              >
+                {formatPct(grand_total.total_location_percent)}
+              </TableCell>
+              <TableCell
+                className={`border border-gray-200 text-center ${progressColor(
+                  grand_total.total_qty_percent
+                )}`}
+              >
+                {formatPct(grand_total.total_qty_percent)}
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
@@ -492,7 +682,7 @@ function ProgressDashboard({ sto }: { sto: string }) {
           </div>
 
           {tab === "bySku" && <BySkuTable data={bySkuData} />}
-          {tab === "byDivision" && <ByDivisionTable data={byDivisionData} />}
+          {tab === "byDivision" && <ByDivisionTable data={byDivisionData} sto={sto} />}
           {tab === "byLocation" && <ByLocationTable data={byLocationData} />}
           {tab === "byPic" && <ByPicTable data={byPicData} />}
         </>
