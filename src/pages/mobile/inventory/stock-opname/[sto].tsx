@@ -169,9 +169,6 @@ export default function StockOpnamePage() {
       return;
     }
 
-    if (scanMode === "sku") {
-
-    }
 
     const value = scanMode === "ean" ? barcode : skuInput;
     if (!value.trim()) {
@@ -208,8 +205,12 @@ export default function StockOpnamePage() {
 
   // ── QR Parsing ─────────────────────────────────────────────────────────────
   const handleQrInputChange = (raw: string) => {
+
+    console.log("QR raw input:", raw);
     setQrRawInput(raw);
     const parsed = parseQRCode(raw);
+
+    console.log("QR parsed:", parsed);
 
     if (parsed) {
       setParsedQR(parsed);
@@ -240,12 +241,9 @@ export default function StockOpnamePage() {
 
   const handleSKUInputChange = (raw: string) => {
     const parsed = parseQRCode(raw);
-    if (parsed?.sku) {
-      setSkuInput(parsed.sku || "");
-    } else {
-      setSkuInput(raw);
-    }
+    setSkuInput(parsed?.sku || raw);
   };
+
 
   const handleModeChange = (mode: ScanMode) => {
     setScanMode(mode);
@@ -257,6 +255,7 @@ export default function StockOpnamePage() {
   };
 
   const resetScanFields = () => {
+    setLocation("");
     setQrRawInput("");
     setParsedQR(null);
     setBarcode("");
@@ -393,7 +392,8 @@ export default function StockOpnamePage() {
         getStockTakeBarcode();
         setTimeout(() => {
           const focusId = scanMode === "qr" ? "qr-input" : scanMode === "sku" ? "sku-input" : "barcode";
-          document.getElementById(focusId)?.focus();
+          // document.getElementById(focusId)?.focus();
+          document.getElementById("location")?.focus();
         }, 50);
       } else {
         // eventBus.emit("showAlert", {
@@ -707,7 +707,9 @@ export default function StockOpnamePage() {
                       id="sku-input"
                       className="w-full mt-1 pr-10"
                       value={skuInput}
-                      onChange={(e) => handleSKUInputChange(e.target.value)}
+                      onChange={(e) => {
+                        handleSKUInputChange(e.target.value);
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault(); // cegah native form submit langsung
@@ -764,6 +766,11 @@ export default function StockOpnamePage() {
                       placeholder="Scan QR code here..."
                       value={qrRawInput}
                       onChange={(e) => handleQrInputChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault(); // cegah native form submit langsung
+                        }
+                      }}
                     />
                     {qrRawInput && (
                       <button

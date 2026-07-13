@@ -40,7 +40,7 @@ type StockTake = {
   ID: number;
   code: string;
   status: string;
-  CreatedAt: string;
+  created_at: string;
 };
 
 // start modal component
@@ -798,12 +798,12 @@ export default function StockTakePage() {
                               <Calendar className="w-3 h-3 text-slate-400" />
                               <span className="font-medium text-xs">
                                 {format(
-                                  new Date(stk.CreatedAt),
+                                  new Date(stk.created_at),
                                   "MMM dd, yyyy"
                                 )}
                               </span>
                               <span className="text-slate-400 text-xs">
-                                {format(new Date(stk.CreatedAt), "HH:mm")}
+                                {format(new Date(stk.created_at), "HH:mm")}
                               </span>
                             </div>
                           </TableCell>
