@@ -33,14 +33,29 @@ import {
   Grid,
   Package,
   Box,
+  AlertTriangle,
+  XCircle,
+  MoreVertical,
+  LockIcon,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 
+
+// type StockTake = {
+//   ID: number;
+//   code: string;
+//   status: string;
+//   created_at: string;
+// };
 
 type StockTake = {
   ID: number;
   code: string;
   status: string;
   created_at: string;
+  updated_at: string;
+  total_system_qty: number;
+  total_counted_qty: number;
 };
 
 // start modal component
@@ -502,8 +517,73 @@ const StockTakeModal = ({ isOpen, onClose, onGenerate }) => {
     </div>
   );
 };
-
 // End modal component
+
+
+// Confirm Modal component
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, description, confirmLabel, variant = "danger", loading }) => {
+  if (!isOpen) return null;
+
+  const variantStyles = {
+    danger: {
+      icon: "text-red-600 bg-red-50",
+      button: "bg-red-600 hover:bg-red-700 disabled:bg-red-300",
+    },
+    warning: {
+      icon: "text-amber-600 bg-amber-50",
+      button: "bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300",
+    },
+    default: {
+      icon: "text-slate-600 bg-slate-50",
+      button: "bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400",
+    },
+  };
+  const style = variantStyles[variant] || variantStyles.default;
+
+  return (
+    <div className="fixed inset-0 z-[60] overflow-y-auto">
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        onClick={onClose}
+      />
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div className="relative transform overflow-hidden rounded-xl bg-white shadow-2xl transition-all sm:w-full sm:max-w-sm">
+          <div className="px-6 py-5">
+            <div className="flex items-start gap-3">
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${style.icon}`}>
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+                <p className="mt-1 text-sm text-gray-500">{description}</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed ${style.button}`}
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              ) : null}
+              {confirmLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+// End confirm modal
 
 export default function StockTakePage() {
   const [data, setData] = useState<StockTake[]>([]);
@@ -511,30 +591,17 @@ export default function StockTakePage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
+  const [openActionMenu, setOpenActionMenu] = useState<{ id: number; code: string; top: number; left: number } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "cancel" | "close" | "delete";
+    code: string;
+  } | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
   const handleNewStockTake = () => {
     setIsModalOpen(true);
   };
-
-  // const generateStockTake = async (filters) => {
-  //   setLoading(true);
-  //   try {
-  //     // Ganti dengan API call yang sebenarnya
-  //     console.log("Generating stock take with filters:", filters);
-
-  //     const res = await api.post("/stock-take/generate", { filters }, { withCredentials: true });
-  //     if (res.data.success) {
-  //       fetchStockTakes(); // reload data
-  //     }
-
-  //     // Simulasi delay
-  //     // await new Promise((resolve) => setTimeout(resolve, 2000));
-  //     console.log("Stock take generated successfully!");
-  //   } catch (err) {
-  //     console.error("Generate failed:", err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const generateStockTake = async (filters) => {
     setLoading(true);
@@ -550,19 +617,95 @@ export default function StockTakePage() {
     }
   };
 
+  // const handleDelete = async (code) => {
+  //   if (!confirm(`Delete cycle count session ${code}? This cannot be undone.`)) return;
+  //   try {
+  //     const res = await api.delete(`/stock-take/${code}`, { withCredentials: true });
+  //     if (res.data.success) {
+  //       fetchStockTakes();
+  //     }
+  //   } catch (err) {
+  //     alert(err.response?.data?.message || "Failed to delete cycle count");
+  //   }
+  // };
 
-  const handleDelete = async (code) => {
-    if (!confirm(`Delete cycle count session ${code}? This cannot be undone.`)) return;
+  const handleCancelSession = async (code: string) => {
+    setConfirmLoading(true);
+    try {
+      const res = await api.post(`/stock-take/${code}/cancel`, {}, { withCredentials: true });
+      if (res.data.success) {
+        fetchStockTakes();
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to cancel session");
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  const handleCloseSession = async (code: string) => {
+    setConfirmLoading(true);
+    try {
+      const res = await api.post(`/stock-take/${code}/close`, {}, { withCredentials: true });
+      if (res.data.success) {
+        fetchStockTakes();
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to close session");
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  const handleDelete = async (code: string) => {
+    setConfirmLoading(true);
     try {
       const res = await api.delete(`/stock-take/${code}`, { withCredentials: true });
       if (res.data.success) {
         fetchStockTakes();
       }
-    } catch (err) {
+    } catch (err: any) {
       alert(err.response?.data?.message || "Failed to delete cycle count");
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
+  const executeConfirmAction = async () => {
+    if (!confirmAction) return;
+    const { type, code } = confirmAction;
+    if (type === "cancel") await handleCancelSession(code);
+    else if (type === "close") await handleCloseSession(code);
+    else if (type === "delete") await handleDelete(code);
+    setConfirmAction(null);
+  };
+
+  const confirmModalConfig = () => {
+    if (!confirmAction) return null;
+    const { type, code } = confirmAction;
+    if (type === "cancel") {
+      return {
+        title: "Cancel Cycle Count Session",
+        description: `Are you sure you want to cancel session ${code}? Progress will be marked as cancelled.`,
+        confirmLabel: "Cancel Session",
+        variant: "warning" as const,
+      };
+    }
+    if (type === "close") {
+      return {
+        title: "Close Cycle Count Session",
+        description: `Are you sure you want to close session ${code}? No further scanning will be allowed after this.`,
+        confirmLabel: "Close Session",
+        variant: "default" as const,
+      };
+    }
+    return {
+      title: "Delete Cycle Count Session",
+      description: `Delete session ${code}? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger" as const,
+    };
+  };
 
   const fetchStockTakes = async () => {
     try {
@@ -583,19 +726,46 @@ export default function StockTakePage() {
     fetchStockTakes();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        !(e.target as HTMLElement).closest(".action-menu-wrapper") &&
+        !(e.target as HTMLElement).closest(".action-menu-portal")
+      ) {
+        setOpenActionMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+
+    const handleScroll = () => setOpenActionMenu(null);
+    window.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, []);
+
   const renderStatus = (status: string) => {
     const s = status.toLowerCase();
-    if (s === "completed") {
+    if (s === "closed" || s === "completed") {
       return (
         <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-medium px-2 py-0.5 text-xs">
-          Completed
+          Closed
         </Badge>
       );
     }
-    if (s === "in progress") {
+    if (s === "in_progress") {
       return (
         <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 font-medium px-2 py-0.5 text-xs">
           In Progress
+        </Badge>
+      );
+    }
+    if (s === "cancelled" || s === "canceled") {
+      return (
+        <Badge className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 font-medium px-2 py-0.5 text-xs">
+          Cancelled
         </Badge>
       );
     }
@@ -604,6 +774,16 @@ export default function StockTakePage() {
         {status}
       </Badge>
     );
+  };
+
+  const getProgressPercent = (counted: number, system: number) => {
+    if (!system || system === 0) return 0;
+    const pct = (counted / system) * 100;
+    return Math.min(Math.round(pct * 10) / 10, 100); // cap di 100%, 1 desimal
+  };
+
+  const getVariance = (counted: number, system: number) => {
+    return counted - system;
   };
 
   return (
@@ -637,17 +817,13 @@ export default function StockTakePage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-slate-600">
-                      Total Sessions
-                    </p>
-                    <p className="text-lg font-semibold text-slate-900">
-                      {data.length}
-                    </p>
+                    <p className="text-xs font-medium text-slate-600">Total Sessions</p>
+                    <p className="text-lg font-semibold text-slate-900">{data.length}</p>
                   </div>
                   <Hash className="w-5 h-5 text-slate-400" />
                 </div>
@@ -658,15 +834,25 @@ export default function StockTakePage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-slate-600">
-                      Completed
+                    <p className="text-xs font-medium text-slate-600">In Progress</p>
+                    <p className="text-lg font-semibold text-amber-600">
+                      {data.filter((item) => item.status.toLowerCase() === "in_progress").length}
                     </p>
+                  </div>
+                  <div className="w-5 h-5 bg-amber-100 rounded-full flex items-center justify-center">
+                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600">Completed</p>
                     <p className="text-lg font-semibold text-emerald-600">
-                      {
-                        data.filter(
-                          (item) => item.status.toLowerCase() === "closed"
-                        ).length
-                      }
+                      {data.filter((item) => item.status.toLowerCase() === "closed").length}
                     </p>
                   </div>
                   <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center">
@@ -680,20 +866,14 @@ export default function StockTakePage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-slate-600">
-                      In Progress
-                    </p>
-                    <p className="text-lg font-semibold text-amber-600">
-                      {
-                        data.filter(
-                          (item) => item.status.toLowerCase() === "in_progress"
-                        ).length
-                      }
+                    <p className="text-xs font-medium text-slate-600">Total Qty Counted</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {data
+                        .reduce((sum, item) => sum + (item.total_counted_qty || 0), 0)
+                        .toLocaleString("id-ID")}
                     </p>
                   </div>
-                  <div className="w-5 h-5 bg-amber-100 rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                  </div>
+                  <Package className="w-5 h-5 text-slate-400" />
                 </div>
               </CardContent>
             </Card>
@@ -714,6 +894,12 @@ export default function StockTakePage() {
                       </TableHead>
                       <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3">
                         Status
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3">
+                        Progress
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 text-right">
+                        Qty (Counted / System)
                       </TableHead>
                       <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3">
                         Created
@@ -788,6 +974,65 @@ export default function StockTakePage() {
                           >
                             {renderStatus(stk.status)}
                           </TableCell>
+
+                          {/* Progress */}
+                          <TableCell
+                            className="py-3 cursor-pointer"
+                            onClick={() => router.push(`/stock-take/progress/${stk.code}`)}
+                          >
+                            {(() => {
+                              const pct = getProgressPercent(stk.total_counted_qty, stk.total_system_qty);
+                              const barColor =
+                                pct >= 100
+                                  ? "bg-emerald-500"
+                                  : pct >= 50
+                                    ? "bg-amber-500"
+                                    : "bg-slate-400";
+                              return (
+                                <div className="flex items-center gap-2 min-w-[110px]">
+                                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full ${barColor} transition-all`}
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-medium text-slate-600 w-10 text-right">
+                                    {pct}%
+                                  </span>
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+
+                          {/* Qty */}
+                          <TableCell
+                            className="py-3 text-right cursor-pointer"
+                            onClick={() => router.push(`/stock-take/progress/${stk.code}`)}
+                          >
+                            {(() => {
+                              const variance = getVariance(stk.total_counted_qty, stk.total_system_qty);
+                              return (
+                                <div className="flex flex-col items-end">
+                                  <span className="text-sm font-semibold text-slate-900">
+                                    {stk.total_counted_qty?.toLocaleString("id-ID")}
+                                    <span className="text-slate-400 font-normal">
+                                      {" "}/ {stk.total_system_qty?.toLocaleString("id-ID")}
+                                    </span>
+                                  </span>
+                                  {variance !== 0 && (
+                                    <span
+                                      className={`text-xs font-medium ${variance < 0 ? "text-red-500" : "text-blue-500"
+                                        }`}
+                                    >
+                                      {variance > 0 ? "+" : ""}
+                                      {variance.toLocaleString("id-ID")}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+
                           <TableCell
                             className="py-3 cursor-pointer"
                             onClick={() =>
@@ -807,7 +1052,43 @@ export default function StockTakePage() {
                               </span>
                             </div>
                           </TableCell>
+
                           <TableCell className="py-3">
+                            <div className="flex items-center justify-center action-menu-wrapper">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  if (openActionMenu?.id === stk.ID) {
+                                    setOpenActionMenu(null);
+                                  } else {
+                                    const menuWidth = 192; // w-48
+                                    const menuHeight = 220; // estimasi tinggi menu
+                                    const spaceBelow = window.innerHeight - rect.bottom;
+                                    const openUpward = spaceBelow < menuHeight;
+
+                                    let left = rect.right - menuWidth;
+                                    if (left < 8) left = 8;
+                                    if (left + menuWidth > window.innerWidth - 8) {
+                                      left = window.innerWidth - menuWidth - 8;
+                                    }
+
+                                    const top = openUpward
+                                      ? rect.top - menuHeight - 4
+                                      : rect.bottom + 4;
+
+                                    setOpenActionMenu({ id: stk.ID, code: stk.code, top, left });
+                                  }
+                                }}
+                                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"
+                                title="Actions"
+                              >
+                                <MoreVertical className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </TableCell>
+
+                          {/* <TableCell className="py-3">
                             <div className="flex items-center justify-center gap-1">
                               <button
                                 onClick={(e) => {
@@ -844,7 +1125,7 @@ export default function StockTakePage() {
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                          </TableCell>
+                          </TableCell> */}
                         </TableRow>
                       ))
                     )}
@@ -853,6 +1134,83 @@ export default function StockTakePage() {
               </div>
             </CardContent>
           </Card>
+
+          {openActionMenu &&
+            typeof window !== "undefined" &&
+            createPortal(
+              <div
+                className="action-menu-portal fixed z-[100] w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1"
+                style={{ top: openActionMenu.top, left: openActionMenu.left }}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const code = openActionMenu.code;
+                    setOpenActionMenu(null);
+                    router.push(`/stock-take/progress/${code}`);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <ChartBar className="w-3.5 h-3.5 text-blue-600" />
+                  View Progress
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const code = openActionMenu.code;
+                    setOpenActionMenu(null);
+                    router.push(`/stock-take/${code}`);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <Box className="w-3.5 h-3.5 text-amber-600" />
+                  View Detail
+                </button>
+
+                <div className="my-1 border-t border-slate-100" />
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const code = openActionMenu.code;
+                    setOpenActionMenu(null);
+                    setConfirmAction({ type: "cancel", code });
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <XCircle className="w-3.5 h-3.5 text-orange-600" />
+                  Cancel Session
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const code = openActionMenu.code;
+                    setOpenActionMenu(null);
+                    setConfirmAction({ type: "close", code });
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <LockIcon className="w-3.5 h-3.5 text-slate-600" />
+                  Close Session
+                </button>
+
+                <div className="my-1 border-t border-slate-100" />
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const code = openActionMenu.code;
+                    setOpenActionMenu(null);
+                    setConfirmAction({ type: "delete", code });
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </button>
+              </div>,
+              document.body
+            )}
 
           {/* Footer */}
           {data.length > 0 && (
@@ -872,6 +1230,16 @@ export default function StockTakePage() {
         onClose={() => setIsModalOpen(false)}
         onGenerate={generateStockTake}
       />
+
+      {confirmAction && (
+        <ConfirmModal
+          isOpen={!!confirmAction}
+          onClose={() => setConfirmAction(null)}
+          onConfirm={executeConfirmAction}
+          loading={confirmLoading}
+          {...confirmModalConfig()}
+        />
+      )}
     </Layout>
   );
 }

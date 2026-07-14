@@ -251,11 +251,12 @@ export default function StockOpnamePage() {
     setTimeout(() => {
       const focusId = mode === "qr" ? "qr-input" : mode === "sku" ? "sku-input" : "barcode";
       document.getElementById(focusId)?.focus();
+      // document.getElementById(focusId)?.focus();
     }, 50);
   };
 
   const resetScanFields = () => {
-    setLocation("");
+    // setLocation("");
     setQrRawInput("");
     setParsedQR(null);
     setBarcode("");
@@ -392,8 +393,8 @@ export default function StockOpnamePage() {
         getStockTakeBarcode();
         setTimeout(() => {
           const focusId = scanMode === "qr" ? "qr-input" : scanMode === "sku" ? "sku-input" : "barcode";
-          // document.getElementById(focusId)?.focus();
-          document.getElementById("location")?.focus();
+          document.getElementById(focusId)?.focus();
+          // document.getElementById("location")?.focus();
         }, 50);
       } else {
         // eventBus.emit("showAlert", {
