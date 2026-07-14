@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import JsBarcode from "jsbarcode";
 
 type StockTake = {
   id: number;
@@ -16,6 +17,7 @@ type StockTakePrintItem = {
   location: string;
   item_code: string;
   item_name: string;
+  division: string;
   system_qty: number;
   counted_qty: number;
   difference: number;
@@ -32,6 +34,8 @@ export default function StockTakePrintPage() {
   const [items, setItems] = useState<StockTakePrintItem[]>([]);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const barcodeRef = useRef<SVGSVGElement | null>(null);
 
   const printDate = new Date().toLocaleDateString("id-ID", {
     day: "2-digit",
@@ -66,6 +70,19 @@ export default function StockTakePrintPage() {
   }, [id, rowsParam]);
 
   useEffect(() => {
+    if (barcodeRef.current && id) {
+      JsBarcode(barcodeRef.current, stockTake?.code || id, {
+        format: "CODE128",
+        width: 1.3,
+        height: 30,
+        fontSize: 10,
+        margin: 0,
+        displayValue: true,
+      });
+    }
+  }, [id, stockTake]);
+
+  useEffect(() => {
     if (!loading && items.length > 0) {
       const timer = setTimeout(() => window.print(), 500);
       return () => clearTimeout(timer);
@@ -76,28 +93,28 @@ export default function StockTakePrintPage() {
   const displayQty = (val: number) => (val === 0 ? "" : val);
 
   return (
-    <div className="p-2 text-black text-sm">
-      {/* <h1 className="text-md font-bold text-center mb-2">STOCK COUNT</h1> */}
-      <p className="text-left">Cycle count ID : {id}</p>
-      <p className="text-left">Location : {selectedRows.join(", ")}</p>
-      <p className="text-left">Generated on : {stockTake?.created_at ? new Date(stockTake.created_at).toLocaleString() : "N/A"}</p>
-      {/* <div className=" gap-6 mb-4 text-left">
-        <p>
-          Row: {selectedRows.length > 0 ? selectedRows.join(", ") : "All Rows"}
-        </p>
-        <p>Date: {printDate}</p>
-      </div> */}
+    <div className="p-2 text-black text-sm relative">
 
+      <div className="absolute top-2 right-2">
+        <svg ref={barcodeRef}></svg>
+      </div>
+
+
+      {/* <h1 className="text-md font-bold text-center mb-2">STOCK COUNT</h1> */}
+      <p className="text-left" style={{ fontSize: "10px" }}>Cycle count ID : {id}</p>
+      <p className="text-left" style={{ fontSize: "10px" }}>Location : {selectedRows.join(", ")}</p>
+      <p className="text-left" style={{ fontSize: "10px" }}>Generated on : {stockTake?.created_at ? new Date(stockTake.created_at).toLocaleString() : "N/A"}</p>
       <table className="w-full border border-black border-collapse text-sm mt-1">
-        <thead>
+        <thead style={{ fontSize: "10px" }}>
           <tr className="bg-gray-200">
-            <th className="border border-black px-2 py-1">No.</th>
-            <th className="border border-black px-2 py-1">Location</th>
-            {/* <th className="border border-black px-2 py-1">SKU</th> */}
-            <th className="border border-black px-2 py-1">Item Name</th>
-            <th className="border border-black px-2 py-1">Stock</th>
-            <th className="border border-black px-2 py-1">Count</th>
-            <th className="border border-black px-2 py-1">Diff</th>
+            <th className="border border-black   py-0">No.</th>
+            <th className="border border-black px-2 py-0">Location</th>
+            {/* <th className="border border-black px-2 py-0">SKU</th> */}
+            <th className="border border-black px-2 py-0">Item</th>
+            {/* <th className="border border-black px-2 py-0">Division</th> */}
+            <th className="border border-black px-2 py-0">Stock</th>
+            <th className="border border-black px-2 py-0">Count</th>
+            <th className="border border-black px-2 py-0">Diff</th>
           </tr>
         </thead>
         <tbody>
@@ -110,26 +127,44 @@ export default function StockTakePrintPage() {
           ) : (
             items.map((item, index) => (
               <tr key={`${item.location}-${item.item_code}-${index}`}>
-                <td className="border border-black px-2 py-1">{index + 1}</td>
-                <td className="border border-black px-2 py-1">
-                  {item.location}
+                <td className="border border-black px-2 py-0 w-5" style={{ fontSize: "10px" }}>{index + 1}</td>
+                <td className="border border-black px-2 py-0 w-20" style={{ fontSize: "10px" }}>
+                  <span style={{ fontSize: "10px" }}>{item.location}</span>
                 </td>
-                {/* <td className="border border-black px-2 py-1">
-                  {item.item_code}
+                {/* <td className="border border-black px-2 py-0">
+                  <span style={{ fontSize: "10px" }}>{item.item_code}</span>
                 </td> */}
-                <td className="border  border-black px-2 py-1">
-                  <span className="text-sm">{item.item_name}</span>
-                  <span className="text-xs text-gray-400 block">
+                <td
+                  className="border border-black"
+                  style={{
+                    maxWidth: "150px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontSize: "10px",
+                    lineHeight: "1.2",   // kunci utama: kecilin line-height
+                    padding: "1px 4px",
+                  }}
+                >
+                  <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {item.item_name}
+                  </div>
+                  <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {item.item_code}
-                  </span>
+                  </div>
+                  <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {item.division}
+                  </div>
                 </td>
-                <td className="border border-black px-2 py-1 text-right w-20">
+                {/* <td className="border border-black px-2 py-0" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <span style={{ fontSize: "10px" }}>{item.division}</span>
+                </td> */}
+                <td className="border border-black px-2 py-0 text-right w-10" style={{ fontSize: "10px" }}>
                   {item.system_qty}
                 </td>
-                <td className="border border-black px-2 py-1 text-right w-20">
+                <td className="border border-black px-2 py-0 text-right w-20" style={{ fontSize: "0px" }}>
                   {displayQty(item.counted_qty)}
                 </td>
-                <td className="border border-black px-2 py-1 text-right w-20">
+                <td className="border border-black px-2 py-0 text-right w-10" style={{ fontSize: "10px" }}>
                   {displayQty(item.difference)}
                 </td>
               </tr>
@@ -138,16 +173,16 @@ export default function StockTakePrintPage() {
         </tbody>
         {/* <tfoot>
           <tr>
-            <td colSpan={3} className="border border-black px-2 py-1 text-right font-bold">
+            <td colSpan={3} className="border border-black px-2 py-0 text-right font-bold">
               Total
             </td>
-            <td className="border border-black px-2 py-1 text-right font-bold">
+            <td className="border border-black px-2 py-0 text-right font-bold">
               {items.reduce((acc, item) => acc + item.system_qty, 0)}
             </td>
-            <td className="border border-black px-2 py-1 text-right font-bold">
+            <td className="border border-black px-2 py-0 text-right font-bold">
               {items.reduce((acc, item) => acc + item.counted_qty, 0)}
             </td>
-            <td className="border border-black px-2 py-1 text-right font-bold">
+            <td className="border border-black px-2 py-0 text-right font-bold">
               {items.reduce((acc, item) => acc + item.difference, 0)}
             </td>
           </tr>
