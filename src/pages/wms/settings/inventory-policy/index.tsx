@@ -33,6 +33,7 @@ interface InventoryPolicy {
   validate_receive_scan?: boolean;
   allocation_lot_by_order?: boolean;
   picking_with_scanner?: boolean;
+  picking_exclude_locations_under_cycle_count?: boolean;
 }
 
 export default function InventoryPolicyPage() {
@@ -67,7 +68,8 @@ export default function InventoryPolicyPage() {
     require_putaway_scan: false,
     validate_receive_scan: false,
     allocation_lot_by_order: false,
-    picking_with_scanner: false
+    picking_with_scanner: false,
+    picking_exclude_locations_under_cycle_count: false      
   });
 
   useEffect(() => {
@@ -125,7 +127,8 @@ export default function InventoryPolicyPage() {
       require_putaway_scan: false,
       validate_receive_scan: false,
       allocation_lot_by_order: false,
-      picking_with_scanner: false
+      picking_with_scanner: false,
+      picking_exclude_locations_under_cycle_count: false
     });
     setShowModal(true);
   };
@@ -156,7 +159,8 @@ export default function InventoryPolicyPage() {
       require_putaway_scan: (policy as any).require_putaway_scan || false,
       validate_receive_scan: (policy as any).validate_receive_scan || false,
       allocation_lot_by_order: (policy as any).allocation_lot_by_order || false,
-      picking_with_scanner: (policy as any).picking_with_scanner || false
+      picking_with_scanner: (policy as any).picking_with_scanner || false,
+      picking_exclude_locations_under_cycle_count: (policy as any).picking_exclude_locations_under_cycle_count || false
     });
     setShowModal(true);
   };
@@ -283,6 +287,7 @@ export default function InventoryPolicyPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lot Settings</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock Method</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requirements</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cycle Count</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Other</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
@@ -321,6 +326,13 @@ export default function InventoryPolicyPage() {
                               {policy.require_scan_pick_location && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 rounded">Scan Pick Loc</span>}
                             </div>
                           </td>
+
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1">
+                              {policy.picking_exclude_locations_under_cycle_count && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 rounded">Pick Exclude</span>}
+                            </div>
+                          </td>
+
                           <td className="px-4 py-3">
                             <div className="flex flex-wrap gap-1">
                               {policy.require_putaway_scan && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-lime-50 text-lime-700 rounded">Putaway Scan</span>}
@@ -534,8 +546,6 @@ export default function InventoryPolicyPage() {
                       </div>
                     </div>
 
-
-
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">Outbound Rule</h3>
                       <div className="space-y-2.5">
@@ -617,7 +627,29 @@ export default function InventoryPolicyPage() {
                       </div>
                     </div>
 
-
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">Cycle Count</h3>
+                      <div className="space-y-2.5">
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.picking_exclude_locations_under_cycle_count}
+                            onChange={(e) => handleCheckboxChange('picking_exclude_locations_under_cycle_count', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">Picking exclude locations under cycle count</span>
+                        </label>
+                        {/* <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.use_cycle_count}
+                            onChange={(e) => handleCheckboxChange('use_cycle_count', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">Cycle Count</span>
+                        </label> */}
+                      </div>
+                    </div>
 
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">Other Settings</h3>
@@ -654,6 +686,7 @@ export default function InventoryPolicyPage() {
                         </label>
                       </div>
                     </div>
+                  
                   </div>
                 </div>
 

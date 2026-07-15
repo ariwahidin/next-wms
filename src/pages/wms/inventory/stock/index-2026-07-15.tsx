@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Download, RefreshCw, Package, MapPin, Grid3x3, CheckCircle2, XCircle, AlertCircle, Clock, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Download, RefreshCw, Package, MapPin, Grid3x3, CheckCircle2, XCircle, AlertCircle, Clock } from 'lucide-react';
 import api from "@/lib/api";
 import Layout from '@/components/layout';
 
@@ -40,39 +40,6 @@ interface ApiResponse {
     filters: FilterOptions;
 }
 
-// Column definitions used for sort + per-column search
-type ColumnKey =
-    | 'location' | 'item_code' | 'item_name' | 'category' | 'group' | 'qa_status'
-    | 'division_code' | 'rec_date' | 'prod_date' | 'exp_date' | 'lot_number'
-    | 'total_qty_available' | 'total_qty_onhand' | 'total_qty_allocated' | 'inventory_count';
-
-interface ColumnDef {
-    key: ColumnKey;
-    label: string;
-    align?: 'left' | 'center' | 'right';
-    numeric?: boolean;
-}
-
-const COLUMNS: ColumnDef[] = [
-    { key: 'location', label: 'Location', align: 'left' },
-    { key: 'item_code', label: 'Item Code', align: 'left' },
-    { key: 'item_name', label: 'Item Name', align: 'left' },
-    { key: 'category', label: 'Category', align: 'left' },
-    { key: 'group', label: 'Group', align: 'left' },
-    { key: 'qa_status', label: 'QA Status', align: 'center' },
-    { key: 'division_code', label: 'Division', align: 'right' },
-    { key: 'rec_date', label: 'Rcv Date', align: 'center' },
-    { key: 'prod_date', label: 'Prod Date', align: 'center' },
-    { key: 'exp_date', label: 'Exp Date', align: 'center' },
-    { key: 'lot_number', label: 'Lot/Batch', align: 'center' },
-    { key: 'total_qty_available', label: 'Available', align: 'right', numeric: true },
-    { key: 'total_qty_onhand', label: 'Onhand', align: 'right', numeric: true },
-    { key: 'total_qty_allocated', label: 'Allocated', align: 'right', numeric: true },
-    { key: 'inventory_count', label: 'Records', align: 'center', numeric: true },
-];
-
-type SortDirection = 'asc' | 'desc' | null;
-
 const InventoryAvailablePage: React.FC = () => {
     const [inventories, setInventories] = useState<InventoryGrouped[]>([]);
     const [filterOptions, setFilterOptions] = useState<FilterOptions>({
@@ -93,17 +60,6 @@ const InventoryAvailablePage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    // Per-column search text
-    const [columnFilters, setColumnFilters] = useState<Record<ColumnKey, string>>({
-        location: '', item_code: '', item_name: '', category: '', group: '', qa_status: '',
-        division_code: '', rec_date: '', prod_date: '', exp_date: '', lot_number: '',
-        total_qty_available: '', total_qty_onhand: '', total_qty_allocated: '', inventory_count: ''
-    });
-
-    // Sort state
-    const [sortKey, setSortKey] = useState<ColumnKey | null>(null);
-    const [sortDirection, setSortDirection] = useState<SortDirection>(null);
 
     const fetchInventory = async () => {
         setLoading(true);
@@ -176,72 +132,9 @@ const InventoryAvailablePage: React.FC = () => {
         });
     };
 
-    const clearColumnFilters = () => {
-        setColumnFilters({
-            location: '', item_code: '', item_name: '', category: '', group: '', qa_status: '',
-            division_code: '', rec_date: '', prod_date: '', exp_date: '', lot_number: '',
-            total_qty_available: '', total_qty_onhand: '', total_qty_allocated: '', inventory_count: ''
-        });
-    };
-
-    const handleColumnFilterChange = (key: ColumnKey, value: string) => {
-        setColumnFilters(prev => ({ ...prev, [key]: value }));
-    };
-
-    // Cycles: none -> asc -> desc -> none
-    const handleSort = (key: ColumnKey) => {
-        if (sortKey !== key) {
-            setSortKey(key);
-            setSortDirection('asc');
-        } else if (sortDirection === 'asc') {
-            setSortDirection('desc');
-        } else if (sortDirection === 'desc') {
-            setSortKey(null);
-            setSortDirection(null);
-        } else {
-            setSortDirection('asc');
-        }
-    };
-
-    const hasActiveColumnFilters = Object.values(columnFilters).some(v => v !== '');
-
-    // Apply per-column search + sort on top of the server-fetched data
-    const displayedInventories = useMemo(() => {
-        let result = [...inventories];
-
-        // Per-column text filters (case-insensitive "contains")
-        (Object.keys(columnFilters) as ColumnKey[]).forEach((key) => {
-            const val = columnFilters[key].trim().toLowerCase();
-            if (!val) return;
-            result = result.filter(inv => {
-                const cell = inv[key];
-                return String(cell ?? '').toLowerCase().includes(val);
-            });
-        });
-
-        // Sort
-        if (sortKey && sortDirection) {
-            const colDef = COLUMNS.find(c => c.key === sortKey);
-            result.sort((a, b) => {
-                const aVal = a[sortKey];
-                const bVal = b[sortKey];
-
-                let cmp = 0;
-                if (colDef?.numeric) {
-                    cmp = (Number(aVal) || 0) - (Number(bVal) || 0);
-                } else {
-                    cmp = String(aVal ?? '').localeCompare(String(bVal ?? ''), undefined, { numeric: true, sensitivity: 'base' });
-                }
-                return sortDirection === 'asc' ? cmp : -cmp;
-            });
-        }
-
-        return result;
-    }, [inventories, columnFilters, sortKey, sortDirection]);
-
     const exportToCSV = () => {
         const headers = ['Location', 'Item Code', 'Item Name', 'Barcode', 'Category', 'Group', 'QA Status', 'UOM', 'Qty Available', 'Qty Onhand', 'Qty Allocated', 'Count'];
-        const rows = displayedInventories.map(inv => [
+        const rows = inventories.map(inv => [
             inv.location,
             inv.item_code,
             inv.item_name,
@@ -269,13 +162,6 @@ const InventoryAvailablePage: React.FC = () => {
         setFilters(prev => ({ ...prev, [key]: value }));
     };
 
-    const renderSortIcon = (key: ColumnKey) => {
-        if (sortKey !== key) return <ArrowUpDown className="w-3 h-3 text-slate-300 group-hover:text-slate-400" />;
-        if (sortDirection === 'asc') return <ArrowUp className="w-3 h-3 text-blue-600" />;
-        if (sortDirection === 'desc') return <ArrowDown className="w-3 h-3 text-blue-600" />;
-        return <ArrowUpDown className="w-3 h-3 text-slate-300" />;
-    };
-
     return (
         <Layout title="Inventory" subTitle="Stock">
             <div className="min-h-screen bg-slate-50">
@@ -285,9 +171,7 @@ const InventoryAvailablePage: React.FC = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h1 className="text-lg font-semibold text-slate-900">Inventory Stock</h1>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Grouped by Location • {displayedInventories.length} of {inventories.length} items
-                                </p>
+                                <p className="text-xs text-slate-500 mt-0.5">Grouped by Location • {inventories.length} items</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
@@ -300,7 +184,7 @@ const InventoryAvailablePage: React.FC = () => {
                                 </button>
                                 <button
                                     onClick={exportToCSV}
-                                    disabled={displayedInventories.length === 0}
+                                    disabled={inventories.length === 0}
                                     className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50 flex items-center gap-1.5"
                                 >
                                     <Download className="w-3.5 h-3.5" />
@@ -432,28 +316,28 @@ const InventoryAvailablePage: React.FC = () => {
                     </div>
 
                     {/* Summary Cards */}
-                    {displayedInventories.length > 0 && (
+                    {inventories.length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 mb-4">
                             <div className="bg-white rounded-lg border border-slate-200 p-3">
                                 <div className="text-xs text-slate-600 mb-1">Total Items</div>
-                                <div className="text-xl font-bold text-slate-900">{displayedInventories.length}</div>
+                                <div className="text-xl font-bold text-slate-900">{inventories.length}</div>
                             </div>
                             <div className="bg-white rounded-lg border border-slate-200 p-3">
                                 <div className="text-xs text-slate-600 mb-1">Total Available</div>
                                 <div className="text-xl font-bold text-green-600">
-                                    {displayedInventories.reduce((sum, inv) => sum + inv.total_qty_available, 0).toLocaleString()}
+                                    {inventories.reduce((sum, inv) => sum + inv.total_qty_available, 0).toLocaleString()}
                                 </div>
                             </div>
                             <div className="bg-white rounded-lg border border-slate-200 p-3">
                                 <div className="text-xs text-slate-600 mb-1">Total Onhand</div>
                                 <div className="text-xl font-bold text-blue-600">
-                                    {displayedInventories.reduce((sum, inv) => sum + inv.total_qty_onhand, 0).toLocaleString()}
+                                    {inventories.reduce((sum, inv) => sum + inv.total_qty_onhand, 0).toLocaleString()}
                                 </div>
                             </div>
                             <div className="bg-white rounded-lg border border-slate-200 p-3">
                                 <div className="text-xs text-slate-600 mb-1">Total Allocated</div>
                                 <div className="text-xl font-bold text-orange-600">
-                                    {displayedInventories.reduce((sum, inv) => sum + inv.total_qty_allocated, 0).toLocaleString()}
+                                    {inventories.reduce((sum, inv) => sum + inv.total_qty_allocated, 0).toLocaleString()}
                                 </div>
                             </div>
                         </div>
@@ -465,74 +349,39 @@ const InventoryAvailablePage: React.FC = () => {
                             <table className="w-full text-sm">
                                 <thead className="bg-slate-50 border-b border-slate-200">
                                     <tr>
-                                        {COLUMNS.map(col => (
-                                            <th
-                                                key={col.key}
-                                                className={`px-3 py-2.5 text-xs font-semibold text-slate-700 select-none ${
-                                                    col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'
-                                                }`}
-                                                style={{ whiteSpace: 'nowrap' }}
-                                            >
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleSort(col.key)}
-                                                    className={`group inline-flex items-center gap-1 hover:text-slate-900 ${
-                                                        col.align === 'center' ? 'justify-center w-full' : col.align === 'right' ? 'justify-end w-full' : ''
-                                                    }`}
-                                                >
-                                                    {col.label}
-                                                    {renderSortIcon(col.key)}
-                                                </button>
-                                            </th>
-                                        ))}
-                                    </tr>
-                                    {/* Per-column search row */}
-                                    <tr className="bg-white border-t border-slate-100">
-                                        {COLUMNS.map(col => (
-                                            <th key={`filter-${col.key}`} className="px-2 py-1.5">
-                                                <input
-                                                    type="text"
-                                                    value={columnFilters[col.key]}
-                                                    onChange={(e) => handleColumnFilterChange(col.key, e.target.value)}
-                                                    placeholder="Search..."
-                                                    className={`w-full min-w-[80px] px-1.5 py-1 text-xs border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent ${
-                                                        col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'
-                                                    }`}
-                                                />
-                                            </th>
-                                        ))}
+                                        <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Location</th>
+                                        <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Item Code</th>
+                                        <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Item Name</th>
+                                        <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Category</th>
+                                        <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Group</th>
+                                        <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700" style={{ whiteSpace: 'nowrap' }}>QA Status</th>
+                                        <th className="px-3 py-2.5 text-right text-xs font-semibold text-slate-700">Division</th>
+                                        <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Rcv Date</th>
+                                        <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Prod Date</th>
+                                        <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Exp Date</th>
+                                        <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Lot</th>
+                                        <th className="px-3 py-2.5 text-right text-xs font-semibold text-slate-700">Available</th>
+                                        <th className="px-3 py-2.5 text-right text-xs font-semibold text-slate-700">Onhand</th>
+                                        <th className="px-3 py-2.5 text-right text-xs font-semibold text-slate-700">Allocated</th>
+                                        <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700">Records</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200" style={{fontSize : "x-small"}}>
                                     {loading ? (
                                         <tr>
-                                            <td colSpan={COLUMNS.length} className="px-3 py-8 text-center text-sm text-slate-500">
+                                            <td colSpan={10} className="px-3 py-8 text-center text-sm text-slate-500">
                                                 <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-blue-600" />
                                                 Loading inventory data...
                                             </td>
                                         </tr>
-                                    ) : displayedInventories.length === 0 ? (
+                                    ) : inventories.length === 0 ? (
                                         <tr>
-                                            <td colSpan={COLUMNS.length} className="px-3 py-8 text-center text-sm text-slate-500">
-                                                {error
-                                                    ? 'Failed to load data'
-                                                    : hasActiveColumnFilters
-                                                        ? (
-                                                            <span>
-                                                                No results match your column filters.{' '}
-                                                                <button
-                                                                    onClick={clearColumnFilters}
-                                                                    className="text-blue-600 hover:text-blue-700 font-medium"
-                                                                >
-                                                                    Clear column filters
-                                                                </button>
-                                                            </span>
-                                                        )
-                                                        : 'No inventory found'}
+                                            <td colSpan={10} className="px-3 py-8 text-center text-sm text-slate-500">
+                                                {error ? 'Failed to load data' : 'No inventory found'}
                                             </td>
                                         </tr>
                                     ) : (
-                                        displayedInventories.map((inv, idx) => (
+                                        inventories.map((inv, idx) => (
                                             <tr key={`${inv.location}-${inv.item_code}-${inv.barcode}-${idx}`} className="hover:bg-slate-50 transition-colors">
                                                 <td className="px-3 py-2.5">
                                                     <div className="flex items-center gap-1.5">
@@ -543,7 +392,7 @@ const InventoryAvailablePage: React.FC = () => {
                                                 <td className="px-3 py-2.5">
                                                     <span className="font-mono text-xs text-slate-900">{inv.item_code}</span>
                                                 </td>
-                                                <td className="px-3 py-2.5" style={{ whiteSpace: 'nowrap' }}>
+                                                <td className="px-3 py-2.5">
                                                     <div>
                                                         <div className="text-slate-900 font-medium">{inv.item_name}</div>
                                                         <div className="text-xs text-slate-500 font-mono">{inv.barcode}</div>
