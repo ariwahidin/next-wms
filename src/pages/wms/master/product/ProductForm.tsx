@@ -40,6 +40,7 @@ export default function ProductForm({
   const [width, setWidth] = useState<number | "">("");
   const [length, setLength] = useState<number | "">("");
   const [height, setHeight] = useState<number | "">("");
+  const [grossWeight, setGrossWeight] = useState<number | "">("");
   const [categoryCode, setCategoryCode] = useState<string>("");
   const [groupCode, setGroupCode] = useState<string>("");
   const [groupOptions, setGroupOptions] = useState<ItemOptions[]>([
@@ -136,6 +137,9 @@ export default function ProductForm({
     setLength(typeof editData.length === "number" ? editData.length : "");
     setWidth(typeof editData.width === "number" ? editData.width : "");
     setHeight(typeof editData.height === "number" ? editData.height : "");
+    setGrossWeight(
+      typeof editData.gross_weight === "number" ? editData.gross_weight : ""
+    );
 
     // group
     if (editData.group) setGroupCode(editData.group);
@@ -173,6 +177,7 @@ export default function ProductForm({
     setLength("");
     setGroupCode("");
     setCategoryCode("");
+    setGrossWeight("");
     setSelectedUom(uomOptions[0] ?? null);
     setSelectedSerial(yesNo[1]);
     setSelectedWaranty(yesNo[1]);
@@ -185,71 +190,6 @@ export default function ProductForm({
     setOpen?.(false);
   };
 
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   // Validasi minimal
-  //   if (!itemCode || !itemName || !gmc || !selectedSerial || !selectedUom) {
-  //     setError(
-  //       "Harap isi field wajib: Item Code, Item Name, Barcode, Serial, dan UOM."
-  //     );
-  //     // Fokus ke field pertama yang kosong
-  //     if (!itemCode) {
-  //       document.getElementById("item-code")?.focus();
-  //     } else if (!itemName) {
-  //       document.getElementById("item-name")?.focus();
-  //     } else if (!gmc) {
-  //       document.getElementById("barcode")?.focus();
-  //     } else if (!selectedSerial) {
-  //       document.getElementById("serial")?.focus();
-  //     } else if (!selectedUom) {
-  //       document.getElementById("uom")?.focus();
-  //     }
-  //     return;
-  //   }
-
-  //   try {
-  //     setError(null);
-
-  //     const payload = {
-  //       item_code: itemCode,
-  //       item_name: itemName,
-  //       gmc, // backend sebelumnya menggunakan key gmc
-  //       cbm: cbm === "" ? 0 : Number(cbm),
-  //       width: width === "" ? 0 : Number(width),
-  //       length: length === "" ? 0 : Number(length),
-  //       height: height === "" ? 0 : Number(height),
-  //       category: categoryCode,
-  //       group: groupCode,
-  //       serial: selectedSerial.value,
-  //       waranty: selectedWaranty.value,
-  //       adaptor: selectedAdaptor.value,
-  //       manual_book: selectedManualBook.value,
-  //       uom: selectedUom.value,
-  //       owner_code : "YMID"
-  //     };
-
-  //     if (editData) {
-  //       await api.put(`/products/${editData.ID}`, payload, {
-  //         withCredentials: true,
-  //       });
-  //     } else {
-  //       await api.post("/products", payload, { withCredentials: true });
-  //     }
-
-  //     mutate("/products");
-  //     resetForm();
-  //     setOpen?.(false);
-  //   } catch (err: any) {
-  //     if (err?.response?.status === 400) {
-  //       setError("Data yang dimasukkan tidak valid.");
-  //     } else if (err?.response) {
-  //       setError("Terjadi kesalahan, coba lagi nanti.");
-  //     } else {
-  //       setError("Tidak ada respon dari server.");
-  //     }
-  //   }
-  // };
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -279,6 +219,7 @@ export default function ProductForm({
         width: width === "" ? 0 : Number(width),
         length: length === "" ? 0 : Number(length),
         height: height === "" ? 0 : Number(height),
+        gross_weight: grossWeight === "" ? 0 : Number(grossWeight),
         category: categoryCode,
         group: groupCode,
         serial: selectedSerial.value,
@@ -515,6 +456,25 @@ export default function ProductForm({
                   value={height}
                   onChange={(e) =>
                     setHeight(
+                      e.target.value === "" ? "" : Number(e.target.value)
+                    )
+                  }
+                  placeholder="0.00"
+                  min={0}
+                  step="0.01"
+                />
+              </div>
+
+              {/* Gross Weight */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="height">Gross Weight (kg)</Label>
+                <Input
+                  id="gross-weight"
+                  type="number"
+                  inputMode="decimal"
+                  value={grossWeight}
+                  onChange={(e) =>
+                    setGrossWeight(
                       e.target.value === "" ? "" : Number(e.target.value)
                     )
                   }

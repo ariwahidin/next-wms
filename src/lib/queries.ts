@@ -579,7 +579,9 @@ export async function getStockReport(viewBy: string) {
   SUM(iv.qty_allocated) AS [ALLOCATED],
   SUM(iv.qty_available) AS [AVAILABLE],
   p.cbm [CBM],
-  (SUM(iv.qty_available)) * p.cbm AS [TOTAL CBM]
+  (SUM(iv.qty_available)) * p.cbm AS [TOTAL CBM],
+  p.gross_weight AS [GROSS WEIGHT],
+  (SUM(iv.qty_available)) * p.gross_weight AS [TOTAL GROSS WEIGHT]
   FROM inventories iv
   left join products p ON iv.item_code = p.item_code
   where iv.qty_onhand > 0
@@ -591,7 +593,8 @@ export async function getStockReport(viewBy: string) {
   iv.[location],
   iv.whs_code,
   iv.qa_status,
-  p.cbm
+  p.cbm,
+  p.gross_weight
   ORDER BY iv.item_code ASC`;
 
   if (viewBy === "item") {
@@ -636,9 +639,9 @@ export async function getMasterItem() {
   width AS Width,
   [length] AS [Length],
   height AS Height,
+  gross_weight AS [Gross Weight],
   uom AS UOM,
   cbm AS [CBM (M3)],
-  net_weight AS [Net Weight],
   [group] AS [Group],
   category AS [Category]
   FROM products

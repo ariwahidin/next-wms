@@ -80,6 +80,7 @@ const ProductTable = () => {
     { field: "width", headerName: "Width", width: 100 },
     { field: "length", headerName: "Length", width: 100 },
     { field: "height", headerName: "Height", width: 100 },
+    { field: "gross_weight", headerName: "Gross Weight (Kg)", width: 200 },
     { field: "has_serial", headerName: "SN", width: 70, cellStyle: { textAlign: "center" } },
     { field: "has_waranty", headerName: "Waranty", width: 120, cellStyle: { textAlign: "center" } },
     { field: "has_adaptor", headerName: "Adaptor", width: 120, cellStyle: { textAlign: "center" } },
