@@ -55,7 +55,18 @@ export default function RackVisualization() {
   const fetchRackData = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/locations');
+    //   if (useDemo) {
+    //     await new Promise(resolve => setTimeout(resolve, 500));
+    //     setRackData(demoData);
+    //     setInventoryData(demoInventory);
+    //   } else if (apiUrl) {
+    //     const response = await fetch(apiUrl);
+    //     const result = await response.json();
+    //     setRackData(result.data || []);
+    //     setInventoryData(result.inventory || []);
+    //   }
+
+    const response = await api.get('/locations');
       const result = await response.data;
       setRackData(result.data || []);
 
@@ -82,7 +93,7 @@ export default function RackVisualization() {
       return;
     }
 
-    const items = inventoryData.filter(inv =>
+    const items = inventoryData.filter(inv => 
       inv.item_code.toLowerCase() === searchItemCode.trim().toLowerCase()
     );
 
@@ -90,7 +101,7 @@ export default function RackVisualization() {
       const locations = [];
       const bayList = [];
       const binList = [];
-
+      
       items.forEach(item => {
         const location = rackData.find(loc => loc.location_code === item.location_code);
         if (location) {
@@ -104,12 +115,7 @@ export default function RackVisualization() {
         setFoundLocation(locations[0]);
         setBlinkBay(bayList);
         setBlinkBin(binList);
-
-        // Auto-switch to the row/bay where the item was found so the user
-        // doesn't have to manually navigate to Side View to see the blink.
-        setSelectedRow(locations[0].row);
-        setSelectedView('side');
-
+        
         setTimeout(() => {
           setBlinkBay([]);
           setBlinkBin([]);
@@ -157,13 +163,13 @@ export default function RackVisualization() {
 
   const getRackStructure = () => {
     const structure = {};
-
+    
     filteredData.forEach(item => {
       const { bay, level, bin } = item;
-
+      
       if (!structure[bay]) structure[bay] = {};
       if (!structure[bay][level]) structure[bay][level] = [];
-
+      
       structure[bay][level].push(item);
     });
 
@@ -178,16 +184,7 @@ export default function RackVisualization() {
 
   const rackStructure = getRackStructure();
   const bays = Object.keys(rackStructure).sort();
-
-  // FIX: previously this only took levels from the first bay
-  // (`rackStructure[bays[0]]`), which breaks whenever a row mixes bays that
-  // use different level naming schemes (e.g. normal bays with level
-  // "01"-"06" vs a staging bay like "AG" with level "IN"). Any bay whose
-  // levels weren't present in bays[0] would silently render zero bins.
-  // Instead, build the level list from the union of levels across ALL bays
-  // in the currently selected row, so every bay renders its own bins
-  // correctly regardless of level naming.
-  const levels = [...new Set(filteredData.map(item => item.level))].sort();
+  const levels = bays.length > 0 ? Object.keys(rackStructure[bays[0]] || {}).sort() : [];
 
   const TopView = () => {
     const rowGroups = {};
@@ -203,14 +200,14 @@ export default function RackVisualization() {
     const renderRowWithBays = (row) => {
       const rowData = rowGroups[row];
       const baysInRow = [...new Set(rowData.map(item => item.bay))].sort();
-
+      
       return (
         <div key={row} className="mb-4">
           <div className="flex items-center gap-4">
             <span className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-bold min-w-[80px] text-center">
               Row {row}
             </span>
-            <div className="flex gap-3 overflow-x-auto pb-2 flex-1">
+            <div className="flex gap-3">
               {baysInRow.map(bay => {
                 const locationsInBay = rowData.filter(item => item.bay === bay);
                 const activeCount = locationsInBay.filter(loc => loc.is_active).length;
@@ -220,7 +217,7 @@ export default function RackVisualization() {
                 const hasInventory = getBayInventoryStatus(row, bay);
                 const hasPicking = getBayPickingStatus(row, bay);
                 const isBlink = blinkBay.some(b => b.row === row && b.bay === bay);
-
+                
                 return (
                   <div
                     key={`${row}-${bay}`}
@@ -248,7 +245,7 @@ export default function RackVisualization() {
                       <div className="flex flex-col items-center justify-center h-full p-2">
                         <div className="bg-white bg-opacity-90 rounded px-2 py-1 mb-1">
                           <span className="text-base font-bold text-gray-800">
-                            {String(bay)}
+                            {bay as React.ReactNode}
                           </span>
                         </div>
                         <div className="text-center">
@@ -257,6 +254,11 @@ export default function RackVisualization() {
                               {totalCount} loc
                             </span>
                           </div>
+                          {/* <div className="bg-green-600 bg-opacity-70 rounded px-1 py-0.5">
+                            <span className="text-[9px] text-white font-semibold">
+                              {activeCount} act
+                            </span>
+                          </div> */}
                         </div>
                       </div>
                     </div>
@@ -272,7 +274,7 @@ export default function RackVisualization() {
     return (
       <div className="bg-gradient-to-br from-gray-100 to-gray-200 p-8 rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold mb-6 text-gray-700 text-center">Top View - Warehouse Layout Overview</h3>
-
+        
         {allRows.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             No data available
@@ -287,11 +289,11 @@ export default function RackVisualization() {
               {allRows.map((row, index) => {
                 const rowNumber = row.match(/\d+/)?.[0];
                 const isOddRow = rowNumber && parseInt(rowNumber) % 2 === 1;
-
+                
                 return (
                   <div key={row}>
                     {renderRowWithBays(row)}
-
+                    
                     {isOddRow && index < allRows.length - 1 && (
                       <div className="my-4">
                         <div className="bg-yellow-400 py-3 rounded-lg shadow text-center">
@@ -320,7 +322,7 @@ export default function RackVisualization() {
   const SideView = () => (
     <div className="bg-gradient-to-br from-gray-100 to-gray-200 p-8 rounded-lg shadow-lg">
       <h3 className="text-lg font-semibold mb-6 text-gray-700">Side View - Row {selectedRow}</h3>
-
+      
       {bays.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           No data available for Row {selectedRow}
@@ -339,17 +341,8 @@ export default function RackVisualization() {
                 <div className="flex flex-col-reverse gap-3">
                   {levels.map((level) => {
                     const binsInLevel = rackStructure[bay]?.[level] || [];
-
-                    // Skip rendering a level row entirely for this bay if
-                    // the bay has no locations at that level. This matters
-                    // now that `levels` is the union across all bays in the
-                    // row (e.g. normal bays with "01"-"06" plus a staging
-                    // bay with "IN") - without this, every bay would show
-                    // empty placeholder rows for levels it doesn't have.
-                    if (binsInLevel.length === 0) return null;
-
-                    const heightFromGround = parseInt(level) || 0;
-
+                    const heightFromGround = parseInt(level);
+                    
                     return (
                       <div key={level} className="flex items-center gap-3">
                         <div className="w-14 relative">
@@ -367,7 +360,7 @@ export default function RackVisualization() {
                             const hasItems = itemsInBin.length > 0;
                             const isBinBlink = blinkBin.includes(binItem.location_code);
                             const isPickable = binItem.is_pickable;
-
+                            
                             return (
                               <div
                                 key={binItem.ID}
@@ -443,7 +436,45 @@ export default function RackVisualization() {
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
             Storage Overview
           </h1>
+          {/* <p className="text-gray-600">Warehouse Management System - Real Data from API</p> */}
         </div>
+
+        {/* <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Data Configuration</h2>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="useDemo"
+                checked={useDemo}
+                onChange={(e) => setUseDemo(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <label htmlFor="useDemo" className="text-sm text-gray-700">
+                Use Demo Data
+              </label>
+            </div>
+            
+            {!useDemo && (
+              <div className="flex-1 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter API URL (e.g., https://api.example.com/locations)"
+                  value={apiUrl}
+                  onChange={(e) => setApiUrl(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={fetchRackData}
+                  disabled={loading}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  {loading ? 'Loading...' : 'Load Data'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div> */}
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Search Item by Code</h2>
@@ -516,7 +547,7 @@ export default function RackVisualization() {
                   ))}
                 </select>
               </div>
-
+              
               <div className="flex gap-4 text-sm">
                 <div className="bg-blue-50 px-4 py-2 rounded-lg">
                   <span className="text-gray-600">Total Locations: </span>
@@ -649,6 +680,10 @@ export default function RackVisualization() {
                     <p className="text-xs text-gray-500">Bin</p>
                     <p className="font-bold text-gray-800">{selectedBin.bin}</p>
                   </div>
+                  {/* <div>
+                    <p className="text-xs text-gray-500">Area</p>
+                    <p className="font-bold text-gray-800">{selectedBin.area}</p>
+                  </div> */}
                   <div>
                     <p className="text-xs text-gray-500">Status</p>
                     <p className={`font-bold ${selectedBin.is_active ? 'text-green-600' : 'text-red-600'}`}>
@@ -667,7 +702,7 @@ export default function RackVisualization() {
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">
                     Items in this Bin ({getItemsInBin(selectedBin.location_code).length})
                   </h3>
-
+                  
                   {getItemsInBin(selectedBin.location_code).length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -679,9 +714,9 @@ export default function RackVisualization() {
                   ) : (
                     <div className="space-y-3">
                       {getItemsInBin(selectedBin.location_code).map((item) => {
-                        const isSearchedItem = searchItemCode &&
+                        const isSearchedItem = searchItemCode && 
                           item.item_code.toLowerCase() === searchItemCode.toLowerCase();
-
+                        
                         return (
                           <div
                             key={item.id}

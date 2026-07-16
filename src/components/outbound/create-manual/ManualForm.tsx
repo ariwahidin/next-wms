@@ -83,6 +83,7 @@ export default function ManualForm() {
     { value: "B2B - Consignment", label: "B2B - Consignment" },
     { value: "B2B - Normal", label: "B2B - Normal" },
     { value: "B2C - Marketplace", label: "B2C - Marketplace" },
+    { value: "ADJUSTMENT", label: "Adjustment" },
   ];
 
   const fetchData = async () => {
@@ -432,7 +433,7 @@ export default function ManualForm() {
                         ? true
                         : false
                     }
-                    
+
                     // isDisabled={
                     //   formData.status == "picking" ||
                     //     formData.status == "complete"

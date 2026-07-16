@@ -74,8 +74,9 @@ export default function ManualForm() {
   );
   const [itemsReceived, setItemsReceived] = useState<ItemReceived[]>([]);
   const [inboundTypeOptions, setInboundTypeOptions] = useState<ItemOptions[]>([
-    { value: "NORMAL", label: "NORMAL" },
-    { value: "RETURN", label: "RETURN" },
+    { value: "NORMAL", label: "Normal" },
+    { value: "RETURN", label: "Return" },
+    { value: "ADJUSTMENT", label: "Adjustment" },
   ]);
   const [originOptions, setOriginOptions] = useState<ItemOptions[]>([
     { value: "INDONESIA", label: "INDONESIA" },

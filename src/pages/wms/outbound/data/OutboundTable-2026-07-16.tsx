@@ -25,7 +25,6 @@ import {
   Calendar,
   SlidersHorizontal,
   Package2,
-  Tag,
 } from "lucide-react";
 import useSWR from "swr";
 import {
@@ -71,18 +70,12 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 type OutboundStatus = "open" | "picking" | "packing" | "packed" | "complete" | "cancel";
 
-interface ItemOptions {
-  value: string;
-  label: string;
-}
-
 interface FilterParams {
   startDate: Date;
   endDate: Date;
   search: string;
   searchItem: string;
   statuses: OutboundStatus[];
-  orderTypes: string[];
 }
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -94,15 +87,6 @@ const STATUS_OPTIONS: { value: OutboundStatus; label: string; color: string; dot
   { value: "packed", label: "Packed", color: "bg-purple-50 border-purple-200 text-purple-700", dot: "bg-purple-500" },
   { value: "complete", label: "Completed", color: "bg-green-50 border-green-200 text-green-700", dot: "bg-green-500" },
   { value: "cancel", label: "Cancel", color: "bg-red-50 border-red-200 text-red-700", dot: "bg-red-500" },
-];
-
-// ─── Order Type config ────────────────────────────────────────────────────────
-
-const ORDERTYPE_OPTIONS: ItemOptions[] = [
-  { value: "B2B - Consignment", label: "B2B - Consignment" },
-  { value: "B2B - Normal", label: "B2B - Normal" },
-  { value: "B2C - Marketplace", label: "B2C - Marketplace" },
-  { value: "ADJUSTMENT", label: "Adjustment" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -117,7 +101,6 @@ const buildUrl = (filters: FilterParams) => {
   if (filters.search) params.set("search", filters.search);
   if (filters.searchItem) params.set("search_item", filters.searchItem);
   if (filters.statuses.length > 0) params.set("statuses", filters.statuses.join(","));
-  if (filters.orderTypes.length > 0) params.set("order_types", filters.orderTypes.join(","));
   return `/outbound/filter?${params.toString()}`;
 };
 
@@ -259,13 +242,6 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
     onChange({ ...filters, statuses: next });
   };
 
-  const toggleOrderType = (orderType: string) => {
-    const next = filters.orderTypes.includes(orderType)
-      ? filters.orderTypes.filter((s) => s !== orderType)
-      : [...filters.orderTypes, orderType];
-    onChange({ ...filters, orderTypes: next });
-  };
-
   const handleReset = () => {
     const reset: FilterParams = {
       startDate: subDays(new Date(), 7),
@@ -273,7 +249,6 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
       search: "",
       searchItem: "",
       statuses: [],
-      orderTypes: [],
     };
     setLocalSearch("");
     setLocalItem("");
@@ -284,7 +259,6 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
     filters.search !== "" ||
     filters.searchItem !== "" ||
     filters.statuses.length > 0 ||
-    filters.orderTypes.length > 0 ||
     fmt(filters.startDate) !== fmt(subDays(new Date(), 7)) ||
     fmt(filters.endDate) !== fmt(new Date());
 
@@ -394,70 +368,6 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
         {/* Divider */}
         <div className="hidden h-10 w-px bg-slate-200 sm:block" />
 
-        {/* Order Type multi-select dropdown — NEW */}
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-            Order Type
-          </label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="flex min-w-[170px] items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm transition-all hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1">
-                <span className="text-slate-600 truncate">
-                  {filters.orderTypes.length === 0
-                    ? <span className="text-slate-400">All order types</span>
-                    : filters.orderTypes.length === 1
-                      ? <span className="truncate">{filters.orderTypes[0]}</span>
-                      : <span className="text-slate-600">{filters.orderTypes.length} selected</span>
-                  }
-                </span>
-                <svg className="h-3.5 w-3.5 text-slate-400 shrink-0" viewBox="0 0 16 16" fill="none">
-                  <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 p-1.5 bg-white shadow-xl border border-slate-200" align="start">
-              {ORDERTYPE_OPTIONS.map((opt) => {
-                const active = filters.orderTypes.includes(opt.value);
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => toggleOrderType(opt.value)}
-                    className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors hover:bg-slate-50"
-                  >
-                    {/* Checkbox */}
-                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 transition-all
-                      ${active ? "border-slate-800 bg-slate-800" : "border-slate-300 bg-white"}`}>
-                      {active && (
-                        <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 10" fill="none">
-                          <path d="M1.5 5.5L3.5 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </span>
-                    <Tag className="h-3 w-3 shrink-0 text-slate-400" />
-                    <span className="text-slate-700 font-medium truncate">{opt.label}</span>
-                  </button>
-                );
-              })}
-              {filters.orderTypes.length > 0 && (
-                <>
-                  <div className="my-1 border-t border-slate-100" />
-                  <button
-                    type="button"
-                    onClick={() => onChange({ ...filters, orderTypes: [] })}
-                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
-                  >
-                    <X className="h-3 w-3" /> Clear selection
-                  </button>
-                </>
-              )}
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {/* Divider */}
-        <div className="hidden h-10 w-px bg-slate-200 sm:block" />
-
         {/* Header search */}
         <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
           <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
@@ -518,12 +428,6 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
               </span>
             );
           })}
-          {filters.orderTypes.length > 0 && filters.orderTypes.map((ot) => (
-            <span key={ot} className="flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-              <Tag className="h-3 w-3" />
-              {ot}
-            </span>
-          ))}
           {filters.search && (
             <span className="rounded-full bg-slate-900 px-2.5 py-0.5 text-xs font-medium text-white">
               `{filters.search}`
@@ -553,7 +457,6 @@ const OutboundTable = () => {
     search: "",
     searchItem: "",
     statuses: [],
-    orderTypes: [],
   });
 
   // SWR dengan URL yang berubah sesuai filter
