@@ -224,9 +224,8 @@ export default function RackVisualization() {
                 return (
                   <div
                     key={`${row}-${bay}`}
-                    className={`relative transition-all cursor-pointer hover:scale-105 ${
-                      isBlink ? 'animate-pulse' : ''
-                    }`}
+                    className={`relative transition-all cursor-pointer hover:scale-105 ${isBlink ? 'animate-pulse' : ''
+                      }`}
                     onClick={() => handleBayClick(row, bay)}
                   >
                     {hasPicking && (
@@ -234,17 +233,16 @@ export default function RackVisualization() {
                         !P
                       </div>
                     )}
-                    <div className={`w-20 h-28 border-2 rounded-lg shadow-md ${
-                      isBlink
-                        ? 'bg-yellow-300 border-yellow-600 ring-4 ring-yellow-400'
-                        : hasInventory
+                    <div className={`w-20 h-28 border-2 rounded-lg shadow-md ${isBlink
+                      ? 'bg-yellow-300 border-yellow-600 ring-4 ring-yellow-400'
+                      : hasInventory
                         ? 'bg-green-400 border-green-700'
                         : isFullyActive
-                        ? 'bg-blue-400 border-blue-700'
-                        : hasInactive && activeCount > 0
-                        ? 'bg-gradient-to-b from-blue-400 to-red-300 border-yellow-600'
-                        : 'bg-red-300 border-red-600 opacity-70'
-                    }`}>
+                          ? 'bg-blue-400 border-blue-700'
+                          : hasInactive && activeCount > 0
+                            ? 'bg-gradient-to-b from-blue-400 to-red-300 border-yellow-600'
+                            : 'bg-red-300 border-red-600 opacity-70'
+                      }`}>
                       <div className="flex flex-col items-center justify-center h-full p-2">
                         <div className="bg-white bg-opacity-90 rounded px-2 py-1 mb-1">
                           <span className="text-base font-bold text-gray-800">
@@ -329,12 +327,19 @@ export default function RackVisualization() {
         <div className="overflow-x-auto">
           <div className="flex gap-8 justify-center min-w-max pb-4">
             {bays.map((bay) => (
-              <div key={bay} className="relative">
+              // <div key={bay} className="relative">
+              <div key={bay} className="relative flex flex-col">
                 <div className="text-center mb-4">
                   <span className="bg-green-600 text-white px-4 py-1 rounded text-sm font-bold">
                     Bay {bay}
                   </span>
                 </div>
+
+                {/* Spacer: dorong level+ground ke bawah kolom supaya
+                   ground level tetap sejajar walau jumlah level beda
+                   antar bay (misal Bay 13/14 cuma punya 2 level vs
+                  Bay 11/12 punya 6 level) */}
+                <div className="flex-1"></div>
 
                 <div className="flex flex-col-reverse gap-3">
                   {levels.map((level) => {
@@ -380,15 +385,14 @@ export default function RackVisualization() {
                                   </div>
                                 )}
                                 <div
-                                  className={`w-24 h-20 border-2 rounded transition-all cursor-pointer ${
-                                    isBinBlink
-                                      ? 'bg-yellow-300 border-yellow-600 hover:bg-yellow-400 hover:scale-105 animate-pulse ring-4 ring-yellow-400'
-                                      : hasItems
+                                  className={`w-24 h-20 border-2 rounded transition-all cursor-pointer ${isBinBlink
+                                    ? 'bg-yellow-300 border-yellow-600 hover:bg-yellow-400 hover:scale-105 animate-pulse ring-4 ring-yellow-400'
+                                    : hasItems
                                       ? 'bg-green-400 border-green-600 hover:bg-green-500 hover:scale-105'
                                       : binItem.is_active
-                                      ? 'bg-blue-400 border-blue-600 hover:bg-blue-500 hover:scale-105'
-                                      : 'bg-red-300 border-red-500 opacity-50'
-                                  }`}
+                                        ? 'bg-blue-400 border-blue-600 hover:bg-blue-500 hover:scale-105'
+                                        : 'bg-red-300 border-red-500 opacity-50'
+                                    }`}
                                 >
                                   <div className="flex flex-col items-center justify-center h-full p-2">
                                     <span className="text-xs font-bold text-white">
@@ -437,307 +441,303 @@ export default function RackVisualization() {
 
   return (
     <Layout title="Utilities" subTitle="Storage Overview">
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-            Storage Overview
-          </h1>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+              Storage Overview
+            </h1>
+          </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Search Item by Code</h2>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Enter item code (e.g., ITM-001)"
-              value={searchItemCode}
-              onChange={(e) => setSearchItemCode(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearchItem()}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={handleSearchItem}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
-            >
-              Search
-            </button>
-            {foundLocation && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Search Item by Code</h2>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Enter item code (e.g., ITM-001)"
+                value={searchItemCode}
+                onChange={(e) => setSearchItemCode(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearchItem()}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
               <button
-                onClick={() => {
-                  setSearchItemCode('');
-                  setFoundLocation(null);
-                  setBlinkBay([]);
-                  setBlinkBin([]);
-                }}
-                className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-semibold"
+                onClick={handleSearchItem}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
               >
-                Clear
+                Search
               </button>
+              {foundLocation && (
+                <button
+                  onClick={() => {
+                    setSearchItemCode('');
+                    setFoundLocation(null);
+                    setBlinkBay([]);
+                    setBlinkBin([]);
+                  }}
+                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-semibold"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {foundLocation && (
+              <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-500 rounded">
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold">Item found in {blinkBay.length} location(s):</span>
+                </p>
+                <div className="mt-2 space-y-1">
+                  {inventoryData
+                    .filter(inv => inv.item_code.toLowerCase() === searchItemCode.toLowerCase())
+                    .map((item, idx) => {
+                      const loc = rackData.find(r => r.location_code === item.location_code);
+                      return loc ? (
+                        <p key={idx} className="text-xs text-gray-600">
+                          • Row {loc.row}, Bay {loc.bay}, Level {loc.level}, Bin {loc.bin}
+                          <span className="ml-2 text-green-600 font-bold">({loc.location_code})</span>
+                        </p>
+                      ) : null;
+                    })}
+                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  Click any blinking bay in Top View or switch to Side View to see exact locations
+                </p>
+              </div>
             )}
           </div>
-          {foundLocation && (
-            <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-500 rounded">
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold">Item found in {blinkBay.length} location(s):</span>
-              </p>
-              <div className="mt-2 space-y-1">
-                {inventoryData
-                  .filter(inv => inv.item_code.toLowerCase() === searchItemCode.toLowerCase())
-                  .map((item, idx) => {
-                    const loc = rackData.find(r => r.location_code === item.location_code);
-                    return loc ? (
-                      <p key={idx} className="text-xs text-gray-600">
-                        • Row {loc.row}, Bay {loc.bay}, Level {loc.level}, Bin {loc.bin}
-                        <span className="ml-2 text-green-600 font-bold">({loc.location_code})</span>
-                      </p>
-                    ) : null;
-                  })}
-              </div>
-              <p className="text-xs text-gray-600 mt-2">
-                Click any blinking bay in Top View or switch to Side View to see exact locations
-              </p>
-            </div>
-          )}
-        </div>
 
-        {selectedView === 'side' && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-              <div className="flex items-center gap-4">
-                <label className="text-sm font-semibold text-gray-700">Select Row:</label>
-                <select
-                  value={selectedRow}
-                  onChange={(e) => setSelectedRow(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                >
-                  {uniqueRows.map(row => (
-                    <option key={row} value={row}>Row {row}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-4 text-sm">
-                <div className="bg-blue-50 px-4 py-2 rounded-lg">
-                  <span className="text-gray-600">Total Locations: </span>
-                  <span className="font-bold text-blue-600">{filteredData.length}</span>
+          {selectedView === 'side' && (
+            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                <div className="flex items-center gap-4">
+                  <label className="text-sm font-semibold text-gray-700">Select Row:</label>
+                  <select
+                    value={selectedRow}
+                    onChange={(e) => setSelectedRow(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                  >
+                    {uniqueRows.map(row => (
+                      <option key={row} value={row}>Row {row}</option>
+                    ))}
+                  </select>
                 </div>
-                <div className="bg-green-50 px-4 py-2 rounded-lg">
-                  <span className="text-gray-600">Active: </span>
-                  <span className="font-bold text-green-600">
-                    {filteredData.filter(item => item.is_active).length}
-                  </span>
-                </div>
-                <div className="bg-red-50 px-4 py-2 rounded-lg">
-                  <span className="text-gray-600">Inactive: </span>
-                  <span className="font-bold text-red-600">
-                    {filteredData.filter(item => !item.is_active).length}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        <div className="flex justify-center mb-6">
-          <div className="bg-white rounded-lg shadow-md p-1 inline-flex">
-            <button
-              onClick={() => setSelectedView('top')}
-              className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                selectedView === 'top'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Top View
-            </button>
-            <button
-              onClick={() => setSelectedView('side')}
-              className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                selectedView === 'side'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Side View
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-          ) : (
-            selectedView === 'top' ? <TopView /> : <SideView />
-          )}
-        </div>
-
-        <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Legend</h3>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-green-400 border-2 border-green-600 rounded"></div>
-              <span className="text-sm text-gray-700">Has Inventory</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-400 border-2 border-blue-600 rounded"></div>
-              <span className="text-sm text-gray-700">Active (Empty)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-300 border-2 border-red-500 rounded opacity-50"></div>
-              <span className="text-sm text-gray-700">Inactive</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-yellow-400 rounded"></div>
-              <span className="text-sm text-gray-700">Aisle Area</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-yellow-300 border-2 border-yellow-600 rounded animate-pulse"></div>
-              <span className="text-sm text-gray-700">Search Result</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative w-8 h-8 bg-blue-400 border-2 border-blue-600 rounded">
-                <div className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold">
-                  !P
-                </div>
-              </div>
-              <span className="text-sm text-gray-700">Not Pickable</span>
-            </div>
-          </div>
-        </div>
-
-        {showModal && selectedBin && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-lg">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">Bin Details</h2>
-                    <p className="text-blue-100">Location: {selectedBin.location_code}</p>
+                <div className="flex gap-4 text-sm">
+                  <div className="bg-blue-50 px-4 py-2 rounded-lg">
+                    <span className="text-gray-600">Total Locations: </span>
+                    <span className="font-bold text-blue-600">{filteredData.length}</span>
                   </div>
+                  <div className="bg-green-50 px-4 py-2 rounded-lg">
+                    <span className="text-gray-600">Active: </span>
+                    <span className="font-bold text-green-600">
+                      {filteredData.filter(item => item.is_active).length}
+                    </span>
+                  </div>
+                  <div className="bg-red-50 px-4 py-2 rounded-lg">
+                    <span className="text-gray-600">Inactive: </span>
+                    <span className="font-bold text-red-600">
+                      {filteredData.filter(item => !item.is_active).length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-center mb-6">
+            <div className="bg-white rounded-lg shadow-md p-1 inline-flex">
+              <button
+                onClick={() => setSelectedView('top')}
+                className={`px-6 py-2 rounded-md font-semibold transition-all ${selectedView === 'top'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+              >
+                Top View
+              </button>
+              <button
+                onClick={() => setSelectedView('side')}
+                className={`px-6 py-2 rounded-md font-semibold transition-all ${selectedView === 'side'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+              >
+                Side View
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : (
+              selectedView === 'top' ? <TopView /> : <SideView />
+            )}
+          </div>
+
+          <div className="mt-6 bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Legend</h3>
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-green-400 border-2 border-green-600 rounded"></div>
+                <span className="text-sm text-gray-700">Has Inventory</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-400 border-2 border-blue-600 rounded"></div>
+                <span className="text-sm text-gray-700">Active (Empty)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-red-300 border-2 border-red-500 rounded opacity-50"></div>
+                <span className="text-sm text-gray-700">Inactive</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-yellow-400 rounded"></div>
+                <span className="text-sm text-gray-700">Aisle Area</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-yellow-300 border-2 border-yellow-600 rounded animate-pulse"></div>
+                <span className="text-sm text-gray-700">Search Result</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative w-8 h-8 bg-blue-400 border-2 border-blue-600 rounded">
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold">
+                    !P
+                  </div>
+                </div>
+                <span className="text-sm text-gray-700">Not Pickable</span>
+              </div>
+            </div>
+          </div>
+
+          {showModal && selectedBin && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-2xl font-bold mb-2">Bin Details</h2>
+                      <p className="text-blue-100">Location: {selectedBin.location_code}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowModal(false);
+                        setSelectedBin(null);
+                      }}
+                      className="text-white hover:bg-blue-800 rounded-full p-2 transition-colors"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-gray-50 p-4 rounded-lg">
+                    <div>
+                      <p className="text-xs text-gray-500">Row</p>
+                      <p className="font-bold text-gray-800">{selectedBin.row}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Bay</p>
+                      <p className="font-bold text-gray-800">{selectedBin.bay}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Level</p>
+                      <p className="font-bold text-gray-800">{selectedBin.level}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Bin</p>
+                      <p className="font-bold text-gray-800">{selectedBin.bin}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Status</p>
+                      <p className={`font-bold ${selectedBin.is_active ? 'text-green-600' : 'text-red-600'}`}>
+                        {selectedBin.is_active ? 'Active' : 'Inactive'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Is Pickable</p>
+                      <p className={`font-bold ${selectedBin.is_pickable ? 'text-green-600' : 'text-red-600'}`}>
+                        {selectedBin.is_pickable ? 'True' : 'False'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                      Items in this Bin ({getItemsInBin(selectedBin.location_code).length})
+                    </h3>
+
+                    {getItemsInBin(selectedBin.location_code).length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                        <p className="font-semibold">No items in this bin</p>
+                        <p className="text-sm mt-1">This location is empty</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {getItemsInBin(selectedBin.location_code).map((item) => {
+                          const isSearchedItem = searchItemCode &&
+                            item.item_code.toLowerCase() === searchItemCode.toLowerCase();
+
+                          return (
+                            <div
+                              key={item.id}
+                              className={`p-4 rounded-lg border-2 transition-all ${isSearchedItem
+                                ? 'bg-yellow-50 border-yellow-400 shadow-lg ring-2 ring-yellow-300'
+                                : 'bg-white border-gray-200 hover:border-blue-300'
+                                }`}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${isSearchedItem
+                                      ? 'bg-yellow-400 text-yellow-900'
+                                      : 'bg-blue-100 text-blue-700'
+                                      }`}>
+                                      {item.item_code}
+                                    </span>
+                                    {isSearchedItem && (
+                                      <span className="px-2 py-1 bg-yellow-400 text-yellow-900 rounded text-xs font-bold animate-pulse">
+                                        ★ FOUND
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h4 className="font-semibold text-gray-800 mb-1">{item.item_name}</h4>
+                                  <div className="flex gap-4 text-sm text-gray-600">
+                                    <span>Quantity: <span className="font-bold text-gray-800">{item.qty}</span></span>
+                                    <span>Unit: <span className="font-bold text-gray-800">{item.unit}</span></span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-lg border-t flex justify-end">
                   <button
                     onClick={() => {
                       setShowModal(false);
                       setSelectedBin(null);
                     }}
-                    className="text-white hover:bg-blue-800 rounded-full p-2 transition-colors"
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    Close
                   </button>
                 </div>
               </div>
-
-              <div className="p-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-gray-50 p-4 rounded-lg">
-                  <div>
-                    <p className="text-xs text-gray-500">Row</p>
-                    <p className="font-bold text-gray-800">{selectedBin.row}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Bay</p>
-                    <p className="font-bold text-gray-800">{selectedBin.bay}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Level</p>
-                    <p className="font-bold text-gray-800">{selectedBin.level}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Bin</p>
-                    <p className="font-bold text-gray-800">{selectedBin.bin}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Status</p>
-                    <p className={`font-bold ${selectedBin.is_active ? 'text-green-600' : 'text-red-600'}`}>
-                      {selectedBin.is_active ? 'Active' : 'Inactive'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Is Pickable</p>
-                    <p className={`font-bold ${selectedBin.is_pickable ? 'text-green-600' : 'text-red-600'}`}>
-                      {selectedBin.is_pickable ? 'True' : 'False'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Items in this Bin ({getItemsInBin(selectedBin.location_code).length})
-                  </h3>
-
-                  {getItemsInBin(selectedBin.location_code).length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                      </svg>
-                      <p className="font-semibold">No items in this bin</p>
-                      <p className="text-sm mt-1">This location is empty</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {getItemsInBin(selectedBin.location_code).map((item) => {
-                        const isSearchedItem = searchItemCode &&
-                          item.item_code.toLowerCase() === searchItemCode.toLowerCase();
-
-                        return (
-                          <div
-                            key={item.id}
-                            className={`p-4 rounded-lg border-2 transition-all ${
-                              isSearchedItem
-                                ? 'bg-yellow-50 border-yellow-400 shadow-lg ring-2 ring-yellow-300'
-                                : 'bg-white border-gray-200 hover:border-blue-300'
-                            }`}
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                    isSearchedItem
-                                      ? 'bg-yellow-400 text-yellow-900'
-                                      : 'bg-blue-100 text-blue-700'
-                                  }`}>
-                                    {item.item_code}
-                                  </span>
-                                  {isSearchedItem && (
-                                    <span className="px-2 py-1 bg-yellow-400 text-yellow-900 rounded text-xs font-bold animate-pulse">
-                                      ★ FOUND
-                                    </span>
-                                  )}
-                                </div>
-                                <h4 className="font-semibold text-gray-800 mb-1">{item.item_name}</h4>
-                                <div className="flex gap-4 text-sm text-gray-600">
-                                  <span>Quantity: <span className="font-bold text-gray-800">{item.qty}</span></span>
-                                  <span>Unit: <span className="font-bold text-gray-800">{item.unit}</span></span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-lg border-t flex justify-end">
-                <button
-                  onClick={() => {
-                    setShowModal(false);
-                    setSelectedBin(null);
-                  }}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
-                >
-                  Close
-                </button>
-              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
     </Layout>
   );
 }

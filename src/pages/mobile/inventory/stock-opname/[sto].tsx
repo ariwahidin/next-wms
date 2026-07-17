@@ -111,6 +111,7 @@ export default function StockOpnamePage() {
   const [lookupError, setLookupError] = useState("");
 
   const [isSubmit, setIsSubmit] = useState(false);
+  const [autoSubmit, setAutoSubmit] = useState(true);
   const [dataStockTakeBarcode, setDataStockTakeBarcode] = useState<StockTakeBarcode[]>([]);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<ResultTab>("byItem");
@@ -124,6 +125,8 @@ export default function StockOpnamePage() {
   const [itemScrollEl, setItemScrollEl] = useState<HTMLDivElement | null>(null);
   const [locationScrollEl, setLocationScrollEl] = useState<HTMLDivElement | null>(null);
   const [cartonScrollEl, setCartonScrollEl] = useState<HTMLDivElement | null>(null);
+
+  const [qtyLocked, setQtyLocked] = useState(false);
 
   // ── Fetch helpers ──────────────────────────────────────────────────────────
   const fetchDivisions = async () => {
@@ -153,6 +156,16 @@ export default function StockOpnamePage() {
   useEffect(() => {
     fetchDivisions();
   }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("stockOpname_autoSubmit");
+    if (saved !== null) setAutoSubmit(saved === "true");
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("stockOpname_autoSubmit", String(autoSubmit));
+  }, [autoSubmit]);
+
 
   useEffect(() => {
     if (params?.sto) {
@@ -230,9 +243,11 @@ export default function StockOpnamePage() {
       if (parsed.labelType === "CARTON") {
         setCartonNumber(parsed.cartonSerial || "");
         setQty(parsed.innerSerials?.length || parsed.qtyPerCarton || 1);
+        setQtyLocked(true);
       } else {
         setCartonNumber("");
         setQty(1);
+        setQtyLocked(false);
       }
     } else {
       setParsedQR(null);
@@ -264,6 +279,7 @@ export default function StockOpnamePage() {
     setLotNo("");
     setCartonNumber("");
     setQty(1);
+    setQtyLocked(false);
     setLookupProduct(null);
     setLookupError("");
     // location & divisionCode sengaja TIDAK direset — user biasanya lanjut di lokasi/division yang sama
@@ -603,6 +619,26 @@ export default function StockOpnamePage() {
               <ScanModeToggle value={scanMode} onChange={handleModeChange} />
             </div>
 
+            <div className="flex items-center justify-between border-t pt-3">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium text-gray-700">Auto Submit</span>
+                <span className="text-[10px] text-gray-400">(Enter → submit)</span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={autoSubmit}
+                onClick={() => setAutoSubmit((v) => !v)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${autoSubmit ? "bg-blue-500" : "bg-gray-300"
+                  }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${autoSubmit ? "translate-x-6" : "translate-x-1"
+                    }`}
+                />
+              </button>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-3">
               {/* Location */}
               <div className="relative">
@@ -656,7 +692,8 @@ export default function StockOpnamePage() {
                       onChange={(e) => setBarcode(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                          e.preventDefault(); // cegah native form submit langsung
+                          e.preventDefault();
+                          if (autoSubmit) handleSubmit(e as any);
                         }
                       }}
                     />
@@ -713,7 +750,8 @@ export default function StockOpnamePage() {
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                          e.preventDefault(); // cegah native form submit langsung
+                          e.preventDefault();
+                          if (autoSubmit) handleSubmit(e as any);
                         }
                       }}
                     />
@@ -769,7 +807,8 @@ export default function StockOpnamePage() {
                       onChange={(e) => handleQrInputChange(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                          e.preventDefault(); // cegah native form submit langsung
+                          e.preventDefault();
+                          if (autoSubmit) handleSubmit(e as any);
                         }
                       }}
                     />
@@ -817,14 +856,25 @@ export default function StockOpnamePage() {
 
               {/* Qty */}
               <div className="space-y-2">
-                <label htmlFor="qty" className="text-sm text-gray-600">
-                  Quantity
+                <label htmlFor="qty" className="text-sm text-gray-600 flex items-center justify-between">
+                  <span>Quantity</span>
+                  {qtyLocked && (
+                    <button
+                      type="button"
+                      className="text-xs text-blue-500 hover:text-blue-700 font-normal underline"
+                      onClick={() => setQtyLocked(false)}
+                    >
+                      Edit (partial carton)
+                    </button>
+                  )}
                 </label>
                 <Input
                   type="number"
                   id="qty"
                   min={1}
                   value={qty}
+                  disabled={qtyLocked}
+                  className={qtyLocked ? "bg-gray-100 text-gray-500" : ""}
                   onChange={(e) => {
                     const val = e.target.value;
                     if (val === "") { setQty(""); return; }
@@ -833,6 +883,11 @@ export default function StockOpnamePage() {
                   }}
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 />
+                {qtyLocked && (
+                  <p className="text-xs text-gray-400 italic">
+                    Locked — full carton scan. Click &quot;Edit&quot; if this carton has been opened partially.
+                  </p>
+                )}
               </div>
 
               <Button type="submit" className="w-full" disabled={isSubmit}>
