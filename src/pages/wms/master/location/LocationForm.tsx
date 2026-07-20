@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import useSWR from "swr";
 import {
   MapPin,
   Building2,
@@ -15,17 +16,12 @@ import {
 import api from "@/lib/api";
 import { mutate } from "swr";
 
-// Mock API for demonstration
-// const api = {
-//   put: async (url, data, config) => {
-//     console.log("PUT request:", url, data, config);
-//     return new Promise((resolve) => setTimeout(resolve, 1000));
-//   },
-//   post: async (url, data, config) => {
-//     console.log("POST request:", url, data, config);
-//     return new Promise((resolve) => setTimeout(resolve, 1000));
-//   },
-// };
+// Fetcher for dropdown options (owners, warehouses)
+const optionFetcher = (url: string) =>
+  api.get(url, { withCredentials: true }).then((res) => {
+    if (res.data.success) return res.data.data;
+    return [];
+  });
 
 // UI Components
 const Button = ({
@@ -54,7 +50,6 @@ const Button = ({
 
   return (
     <button
-      // type={type}
       className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
@@ -70,6 +65,17 @@ const Input = ({ className = "", error, ...props }) => (
     } ${className}`}
     {...props}
   />
+);
+
+const Select = ({ className = "", error, children, ...props }) => (
+  <select
+    className={`flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+      error ? "border-red-500 focus-visible:ring-red-500" : ""
+    } ${className}`}
+    {...props}
+  >
+    {children}
+  </select>
 );
 
 const Switch = ({ checked, onCheckedChange, ...props }) => (
@@ -94,7 +100,12 @@ const Switch = ({ checked, onCheckedChange, ...props }) => (
 type LocationFormValues = {
   is_active: boolean;
   is_pickable: boolean;
-  // tambahkan field lainnya di sini kalau ada, misalnya:
+  whs_code: string;
+  owner_code: string;
+  row: string;
+  bay: string;
+  level: string;
+  bin: string;
   name: string;
 };
 
@@ -106,7 +117,7 @@ export default function LocationForm({ editData, setEditData, onClose }) {
     reset,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<LocationFormValues>({ 
+  } = useForm<LocationFormValues>({
     defaultValues: {
       is_active: true,
     },
@@ -115,11 +126,13 @@ export default function LocationForm({ editData, setEditData, onClose }) {
   const isActive = watch("is_active");
   const isPickable = watch("is_pickable");
 
+  const { data: owners } = useSWR("/owners", optionFetcher);
+  const { data: warehouses } = useSWR("/warehouses", optionFetcher);
+
   useEffect(() => {
     if (editData) {
       console.log("Editing data:", editData);
       Object.entries(editData).forEach(([key, value]) => {
-        // setValue(key, value);
         setValue(key as keyof LocationFormValues, value as any);
       });
     } else {
@@ -141,8 +154,8 @@ export default function LocationForm({ editData, setEditData, onClose }) {
         });
       }
 
-      mutate("/locations"); // Refresh the locations list
-      reset(); // Reset the form
+      mutate("/locations");
+      reset();
 
       setEditData(null);
       onClose();
@@ -157,8 +170,18 @@ export default function LocationForm({ editData, setEditData, onClose }) {
       label: "WHS Code",
       icon: MapPin,
       required: true,
-      placeholder: "e.g., WH-A1-01",
-      description: "Unique identifier for the location",
+      type: "select",
+      options: warehouses,
+      description: "Warehouse this location belongs to",
+    },
+    {
+      name: "owner_code",
+      label: "Owner Code",
+      icon: Building2,
+      required: true,
+      type: "select",
+      options: owners,
+      description: "Owner this location belongs to",
     },
     {
       name: "row",
@@ -166,7 +189,7 @@ export default function LocationForm({ editData, setEditData, onClose }) {
       icon: Grid3X3,
       placeholder: "",
       description: "Row designation in the warehouse",
-      required: true
+      required: true,
     },
     {
       name: "bay",
@@ -192,13 +215,6 @@ export default function LocationForm({ editData, setEditData, onClose }) {
       description: "Specific bin within the level",
       required: true,
     },
-    // {
-    //   name: "area",
-    //   label: "Area",
-    //   icon: Grid3X3,
-    //   placeholder: "Picking, Storage...",
-    //   description: "Functional area designation",
-    // },
   ];
 
   return (
@@ -247,11 +263,31 @@ export default function LocationForm({ editData, setEditData, onClose }) {
                   <span>{field.label}</span>
                   {field.required && <span className="text-red-500">*</span>}
                 </label>
-                <Input
-                  {...register(field.name as keyof LocationFormValues, { required: field.required })}
-                  placeholder={field.placeholder}
-                  error={error}
-                />
+
+                {field.type === "select" ? (
+                  <Select
+                    {...register(field.name as keyof LocationFormValues, {
+                      required: field.required,
+                    })}
+                    error={error}
+                  >
+                    <option value="">-- Select {field.label} --</option>
+                    {(field.options || []).map((opt: any) => (
+                      <option key={opt.code} value={opt.code}>
+                        {opt.code} - {opt.name}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input
+                    {...register(field.name as keyof LocationFormValues, {
+                      required: field.required,
+                    })}
+                    placeholder={field.placeholder}
+                    error={error}
+                  />
+                )}
+
                 {field.description && (
                   <p className="text-xs text-gray-500">{field.description}</p>
                 )}
@@ -351,4 +387,4 @@ export default function LocationForm({ editData, setEditData, onClose }) {
       </div>
     </div>
   );
-}
+};

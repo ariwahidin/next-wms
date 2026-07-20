@@ -173,13 +173,12 @@ const LocationExcelUpload: React.FC = () => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Location Template');
 
-        // Define columns
         worksheet.columns = [
             { header: 'Location Code', key: 'location_code', width: 20 },
-            { header: 'Warehouse Code', key: 'whs_code', width: 20 }
+            { header: 'Warehouse Code', key: 'whs_code', width: 20 },
+            { header: 'Owner Code', key: 'owner_code', width: 20 }
         ];
 
-        // Style header row
         const headerRowStyle = worksheet.getRow(1);
         headerRowStyle.font = { bold: true, color: { argb: 'FFFFFFFF' } };
         headerRowStyle.fill = {
@@ -189,41 +188,23 @@ const LocationExcelUpload: React.FC = () => {
         };
         headerRowStyle.alignment = { vertical: 'middle', horizontal: 'center' };
 
-        // Add sample data with explanation
         worksheet.addRow({
             location_code: 'YM090102',
-            whs_code: 'WH01'
+            whs_code: 'WH01',
+            owner_code: 'YUWELL'
         });
 
         worksheet.addRow({
             location_code: 'YM080105',
-            whs_code: 'WH01'
+            whs_code: 'WH01',
+            owner_code: 'YUWELL'
         });
 
         worksheet.addRow({
             location_code: 'AB060201',
-            whs_code: 'WH02'
+            whs_code: 'WH02',
+            owner_code: 'ACME'
         });
-
-        // Add notes below data
-        // worksheet.addRow([]);
-        // worksheet.addRow(['Notes:']);
-        // worksheet.addRow(['Location Code Format: RRRBBLNN (9 characters)']);
-        // worksheet.addRow(['- RRR: Row (3 characters, e.g., YMK, ABC)']);
-        // worksheet.addRow(['- BB: Bay (2 digits, e.g., 49, 50)']);
-        // worksheet.addRow(['- L: Level (1 character, e.g., A, B, C)']);
-        // worksheet.addRow(['- NN: Bin (2 digits, e.g., 02, 05)']);
-        // worksheet.addRow(['Example: YMK49B102']);
-        // worksheet.addRow(['  - Row: YMK']);
-        // worksheet.addRow(['  - Bay: 49 (odd = area ganjil)']);
-        // worksheet.addRow(['  - Level: B1']);
-        // worksheet.addRow(['  - Bin: 02']);
-
-        // Style notes
-        // for (let i = 5; i <= 13; i++) {
-        //   const row = worksheet.getRow(i);
-        //   row.font = { italic: true, color: { argb: 'FF6B7280' } };
-        // }
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], {
@@ -390,6 +371,10 @@ const LocationExcelUpload: React.FC = () => {
                                             <p className="flex items-start">
                                                 <span className="mr-2"><WarehouseIcon className="w-4 h-4" /></span>
                                                 <span>Warehouse code, please check your warehouse code on <Link href="/wms/master/warehouse" className="text-blue-600 hover:underline">Warehouse Master</Link></span>
+                                            </p>
+                                            <p className="flex items-start">
+                                                <span className="mr-2">🏢</span>
+                                                <span>Owner code, please check your owner code on <Link href="/wms/master/owner" className="text-blue-600 hover:underline">Owner Master</Link></span>
                                             </p>
                                         </div>
                                     </div>

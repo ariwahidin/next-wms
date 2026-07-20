@@ -46,6 +46,7 @@ const LocationTable = ({ setEditData }: any) => {
       filter: false,
     },
     { field: "whs_code", headerName: "Whs Code", width: 120 },
+    { field: "owner_code", headerName: "Owner", width: 120 },
     { field: "location_code", headerName: "Location", width: 120 },
     { field: "row", headerName: "Row", width: 100 },
     { field: "bay", headerName: "Bay", width: 100 },
