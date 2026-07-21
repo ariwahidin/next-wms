@@ -200,7 +200,7 @@ export default function ProductForm({
 
     // Validate
     if (!itemCode || !itemName || !gmc || !selectedUom || !selectedOwner) {
-      setError("Harap isi field wajib: Owner, Item Code, Item Name, Barcode, dan UOM.");
+      setError("Please fill in all required fields: Owner, ItemCode/SKU, Item Name, Barcode, dan UOM.");
       return;
     }
 
@@ -316,12 +316,12 @@ export default function ProductForm({
 
               {/* Item Code */}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="item-code">Item Code <span className="text-red-500">*</span></Label>
+                <Label htmlFor="item-code">Item Code (SKU) <span className="text-red-500">*</span></Label>
                 <Input
                   id="item-code"
                   value={itemCode}
                   onChange={(e) => setItemCode(e.target.value.toUpperCase())}
-                  placeholder="Entry Item Code"
+                  placeholder="Entry ItemCode/SKU"
                 />
               </div>
 
@@ -474,7 +474,7 @@ export default function ProductForm({
 
               {/* Qty Per Carton */}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="qtyPerCarton">Qty Per Carton</Label>
+                <Label htmlFor="qtyPerCarton">Qty/Carton</Label>
                 <Input
                   inputMode="numeric"
                   type="number"
