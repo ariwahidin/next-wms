@@ -25,6 +25,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { Server } from "lucide-react";
 import { ConnectionStatus } from "./connection-status";
+import { useRealtimeEvents } from "@/hooks/useRealtimeEvents";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -37,6 +39,9 @@ export default function Layout({
 }) {
   const router = useRouter();
   const userRedux = useAppSelector((state) => state.user);
+
+  useRealtimeEvents();
+
   useEffect(() => {
     if (props.subTitle) {
       window.document.title = props.subTitle;
@@ -87,6 +92,7 @@ export default function Layout({
         </header>
         <div className={`${inter.variable} font-sans`}>{children}</div>
       </SidebarInset>
+      <Toaster richColors position="top-right" />
     </SidebarProvider>
   );
 }
