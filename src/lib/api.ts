@@ -19,7 +19,6 @@ api.interceptors.request.use((config) => {
     return config;
   }
 
-  console.log("Next Auth Token:", next_token);
 
   if (next_token) config.headers.Authorization = `Bearer ${next_token}`;
   return config;

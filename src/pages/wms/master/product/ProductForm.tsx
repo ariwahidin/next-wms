@@ -61,6 +61,10 @@ export default function ProductForm({
   const [uomOptions, setUomOptions] = useState<Option[]>([]);
   const [selectedUom, setSelectedUom] = useState<Option | null>(null);
 
+  // Category
+  const [categoryOptions, setCategoryOptions] = useState<Option[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Option | null>(null);
+
   // Owner
   const [ownerOptions, setOwnerOptions] = useState<Option[]>([]);
   const [selectedOwner, setSelectedOwner] = useState<Option | null>(null);
@@ -85,9 +89,10 @@ export default function ProductForm({
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [uomRes, ownerRes] = await Promise.all([
+        const [uomRes, ownerRes, categoryRes] = await Promise.all([
           api.get("/uoms", { withCredentials: true }),
           api.get("/owners", { withCredentials: true }),
+          api.get("/categories", { withCredentials: true }),
         ]);
 
         if (uomRes.data?.success) {
@@ -107,6 +112,16 @@ export default function ProductForm({
             }))
           );
         }
+
+        if (categoryRes.data?.success) {
+          setCategoryOptions(
+            (categoryRes.data.data || []).map((c: any) => ({
+              value: c.code,
+              label: c.code,
+            }))
+          );
+        }
+
       } catch (err) {
         console.error("Failed to fetch options:", err);
       }
@@ -144,6 +159,11 @@ export default function ProductForm({
     if (uomOptions.length > 0) {
       const found = uomOptions.find((o) => o.value === editData.uom);
       if (found) setSelectedUom(found);
+    }
+
+    if (categoryOptions.length > 0) {
+      const found = categoryOptions.find((o) => o.value === editData.category);
+      if (found) setSelectedCategory(found);
     }
   }, [open, editData, uomOptions, yesNo]);
 
@@ -220,7 +240,8 @@ export default function ProductForm({
         height: height === "" ? 0 : Number(height),
         weight: weight === "" ? 0 : Number(weight),
         color: color.toUpperCase(),
-        category: categoryCode.toUpperCase(),
+        // category: categoryCode.toUpperCase(),
+        category: selectedCategory.value,
         group: groupCode.toUpperCase(),
         serial: selectedSerial.value,
         waranty: selectedWaranty.value,
@@ -385,6 +406,20 @@ export default function ProductForm({
 
               {/* Category */}
               <div className="flex flex-col gap-2">
+                <Label>Category <span className="text-red-500">*</span></Label>
+                <Select
+                  inputId="category"
+                  classNamePrefix="rs"
+                  styles={selectStyles}
+                  placeholder="Select category"
+                  options={categoryOptions}
+                  value={selectedCategory}
+                  onChange={(opt: any) => setSelectedCategory(opt)}
+                />
+              </div>
+
+
+              {/* <div className="flex flex-col gap-2">
                 <Label htmlFor="category">Category</Label>
                 <Input
                   id="category"
@@ -392,7 +427,7 @@ export default function ProductForm({
                   onChange={(e) => setCategoryCode(e.target.value.toUpperCase())}
                   placeholder="Entry Category"
                 />
-              </div>
+              </div> */}
 
               {/* Width */}
               <div className="flex flex-col gap-2">

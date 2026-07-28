@@ -861,7 +861,7 @@ const OutboundTable = () => {
     },
     {
       field: "outbound_date",
-      headerName: "Outbound Date",
+      headerName: "Date",
       width: 140,
       valueFormatter: (params: any) => {
         if (!params.value) return "";
