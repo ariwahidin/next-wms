@@ -154,9 +154,13 @@ export default function StockTakeDetailPage() {
     return <Badge className="bg-blue-600 text-white">−{Math.abs(diff)}</Badge>;
   };
 
+  const totalLocation = new Set(filtered.filter((item) => item.location).map((item) => item.location)).size;
+
   const totalItem = new Set(
     filtered.filter((item) => item.item_code).map((item) => item.item_code)
   ).size;
+
+
 
   return (
     <Layout title="Stock Take Detail" subTitle={`Stock Take ID: ${code}`}>
@@ -175,6 +179,9 @@ export default function StockTakeDetailPage() {
               </h2>
 
               <p className="text-sm text-gray-500">
+              </p>
+              <p className="text-sm text-gray-500">
+                Total Location: {totalLocation}
               </p>
               <p className="text-sm text-gray-500">
                 Total SKU: {totalItem}

@@ -92,6 +92,19 @@ export default function StockTakePrintPage() {
   // Kosongkan cell kalau nilainya 0, biar sheet buat lapangan gak penuh angka "0"
   const displayQty = (val: number) => (val === 0 ? "" : val);
 
+  const totalLocation = new Set(
+    items.filter((item) => item.location).map((item) => item.location)
+  ).size;
+
+  // Baris pertama dari sebuah lokasi baru (beda dari lokasi row sebelumnya) ->
+  // border atas ditebalin, biar keliatan batas antar lokasi. Selama masih
+  // satu lokasi yang sama, border antar row tetap tipis (normal) kayak biasa.
+  const isNewLocationGroup = (index: number) =>
+    index === 0 || items[index].location !== items[index - 1].location;
+
+  const groupBorderStyle = (index: number): React.CSSProperties =>
+    isNewLocationGroup(index) ? { borderTop: "2px solid black" } : {};
+
   return (
     <div className="p-2 text-black text-sm relative">
 
@@ -102,6 +115,7 @@ export default function StockTakePrintPage() {
 
       {/* <h1 className="text-md font-bold text-center mb-2">STOCK COUNT</h1> */}
       <p className="text-left" style={{ fontSize: "10px" }}>Cycle count ID : {id}</p>
+      <p className="text-left" style={{ fontSize: "10px" }}>Total location : {totalLocation}</p>
       <p className="text-left" style={{ fontSize: "10px" }}>Location : {selectedRows.join(", ")}</p>
       <p className="text-left" style={{ fontSize: "10px" }}>Generated on : {stockTake?.created_at ? new Date(stockTake.created_at).toLocaleString() : "N/A"}</p>
       <table className="w-full border border-black border-collapse text-sm mt-1">
@@ -127,8 +141,16 @@ export default function StockTakePrintPage() {
           ) : (
             items.map((item, index) => (
               <tr key={`${item.location}-${item.item_code}-${index}`}>
-                <td className="border border-black px-2 py-0 w-5" style={{ fontSize: "10px" }}>{index + 1}</td>
-                <td className="border border-black px-2 py-0 w-20" style={{ fontSize: "10px" }}>
+                <td
+                  className="border border-black px-2 py-0 w-5"
+                  style={{ fontSize: "10px", ...groupBorderStyle(index) }}
+                >
+                  {index + 1}
+                </td>
+                <td
+                  className="border border-black px-2 py-0 w-20"
+                  style={{ fontSize: "10px", ...groupBorderStyle(index) }}
+                >
                   <span style={{ fontSize: "10px" }}>{item.location}</span>
                 </td>
                 {/* <td className="border border-black px-2 py-0">
@@ -143,6 +165,7 @@ export default function StockTakePrintPage() {
                     fontSize: "10px",
                     lineHeight: "1.2",   // kunci utama: kecilin line-height
                     padding: "1px 4px",
+                    ...groupBorderStyle(index),
                   }}
                 >
                   <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -158,13 +181,22 @@ export default function StockTakePrintPage() {
                 {/* <td className="border border-black px-2 py-0" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   <span style={{ fontSize: "10px" }}>{item.division}</span>
                 </td> */}
-                <td className="border border-black px-2 py-0 text-right w-10" style={{ fontSize: "10px" }}>
+                <td
+                  className="border border-black px-2 py-0 text-right w-10"
+                  style={{ fontSize: "10px", ...groupBorderStyle(index) }}
+                >
                   {item.system_qty}
                 </td>
-                <td className="border border-black px-2 py-0 text-right w-20" style={{ fontSize: "0px" }}>
+                <td
+                  className="border border-black px-2 py-0 text-right w-20"
+                  style={{ fontSize: "0px", ...groupBorderStyle(index) }}
+                >
                   {displayQty(item.counted_qty)}
                 </td>
-                <td className="border border-black px-2 py-0 text-right w-10" style={{ fontSize: "10px" }}>
+                <td
+                  className="border border-black px-2 py-0 text-right w-10"
+                  style={{ fontSize: "10px", ...groupBorderStyle(index) }}
+                >
                   {displayQty(item.difference)}
                 </td>
               </tr>

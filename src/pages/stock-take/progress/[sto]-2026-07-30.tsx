@@ -31,8 +31,8 @@ type ProgressBySKU = {
 };
 
 // Matches backend DivisionDayProgress (harian, bukan cumulative).
-// location_counted/qty_counted: null kalau division/category tsb gak ada
-// aktivitas di tanggal itu (render sebagai "-" di UI, bukan 0).
+// location_counted/qty_counted: null kalau division tsb gak ada aktivitas
+// di tanggal itu (render sebagai "-" di UI, bukan 0).
 type DivisionDayProgress = {
   location_counted: number | null;
   qty_counted: number | null;
@@ -53,7 +53,7 @@ type DivisionPivotRow = {
 };
 
 // Matches backend GrandTotalRow — dipakai buat baris "Total" (gabungan
-// semua division/category) dan "Total % Counting" paling bawah.
+// semua division) dan "Total % Counting" paling bawah.
 type GrandTotalRow = {
   system_location: number;
   system_qty: number;
@@ -70,27 +70,7 @@ type ProgressByDivisionResult = {
   grand_total: GrandTotalRow;
 };
 
-// Matches backend CategoryPivotRow — struktur identik dengan DivisionPivotRow,
-// cuma dimensi grouping-nya category (dari master item) bukan division_code.
-type CategoryPivotRow = {
-  category_code: string;
-  system_location: number;
-  system_qty: number;
-  daily: Record<string, DivisionDayProgress>;
-  total_location_counted: number;
-  total_qty_counted: number;
-  total_location_percent: number;
-  total_qty_percent: number;
-};
-
-// Matches backend ProgressByCategoryResult
-type ProgressByCategoryResult = {
-  dates: string[];
-  categories: CategoryPivotRow[];
-  grand_total: GrandTotalRow;
-};
-
-type ResultTab = "bySku" | "byCategory" | "byDivision" | "byLocation" | "byPic";
+type ResultTab = "bySku" | "byDivision" | "byLocation" | "byPic";
 
 
 type LocationItemDetail = {
@@ -606,261 +586,11 @@ function ByDivisionTable({ data, sto }: { data: ProgressByDivisionResult | null;
   );
 }
 
-// ─── By Category Pivot Table ──────────────────────────────────────────────
-// Mirror 1:1 dari ByDivisionTable — bedanya cuma sumber data (categories,
-// bukan divisions) dan endpoint export excel-nya.
-// NOTE: endpoint /stock-take/export-category/:code belum ada di backend,
-// tombol ini akan gagal sampai handler-nya dibuat (lihat catatan di respons).
-
-function ByCategoryTable({ data, sto }: { data: ProgressByCategoryResult | null; sto: string }) {
-  if (!data || data.categories.length === 0) {
-    return <p className="text-sm text-gray-500 text-center py-6">No category data found.</p>;
-  }
-
-  const { dates, categories, grand_total } = data;
-
-  const handleExport = async () => {
-    try {
-      const res = await api.get(`/stock-take/export-category/${sto}`, {
-        withCredentials: true,
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `Report_Daily_Progress_Category_STO_${sto}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Failed to export excel:", err);
-    }
-  };
-
-  return (
-
-    <div className="space-y-3">
-      <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download size={14} className="mr-1.5" />
-          Download Excel
-        </Button>
-      </div>
-      <div className="overflow-auto rounded-xl border shadow-sm">
-        <Table className="text-sm">
-          <TableHeader>
-            {/* Row 1: group headers */}
-            <TableRow>
-              <TableHead
-                rowSpan={2}
-                className="border border-gray-200 align-bottom sticky left-0 bg-white z-10"
-              >
-                Category
-              </TableHead>
-              <TableHead
-                colSpan={2}
-                className="text-center border border-gray-200 bg-purple-50 sticky left-[120px] bg-white z-10"
-              >
-                Inventory Stock
-              </TableHead>
-              {dates.map((date) => (
-                <TableHead
-                  key={date}
-                  colSpan={2}
-                  className="text-center border border-gray-200 bg-blue-50"
-                >
-                  {formatDateLabel(date)}
-                </TableHead>
-              ))}
-              <TableHead colSpan={2} className="text-center border border-gray-200 bg-orange-50">
-                Total
-              </TableHead>
-            </TableRow>
-            {/* Row 2: sub headers */}
-            <TableRow>
-              <TableHead className="border border-gray-200 sticky left-[120px] bg-white z-10">
-                Loc
-              </TableHead>
-              <TableHead className="border border-gray-200 sticky left-[184px] bg-white z-10">
-                Qty
-              </TableHead>
-              {dates.map((date) => (
-                <Fragment key={date}>
-                  <TableHead className="border border-gray-200">Loc</TableHead>
-                  <TableHead className="border border-gray-200">Qty</TableHead>
-                </Fragment>
-              ))}
-              <TableHead className="border border-gray-200 font-semibold">Loc</TableHead>
-              <TableHead className="border border-gray-200 font-semibold">Qty</TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {/* ── Body: 1 baris per category, angka harian (bukan cumulative) ── */}
-            {categories.map((category) => (
-              <TableRow key={category.category_code}>
-                <TableCell className="border border-gray-200 font-medium sticky left-0 bg-white z-10">
-                  {category.category_code}
-                </TableCell>
-                <TableCell className="border border-gray-200 sticky left-[120px] bg-white z-10">
-                  {formatNum(category.system_location)}
-                </TableCell>
-                <TableCell className="border border-gray-200 sticky left-[184px] bg-white z-10">
-                  {formatNum(category.system_qty)}
-                </TableCell>
-                {dates.map((date) => {
-                  const day = category.daily[date];
-                  return (
-                    <Fragment key={date}>
-                      <TableCell className="border border-gray-200 text-center">
-                        {day ? formatNum(day.location_counted) : "-"}
-                      </TableCell>
-                      <TableCell className="border border-gray-200 text-center">
-                        {day ? formatNum(day.qty_counted) : "-"}
-                      </TableCell>
-                    </Fragment>
-                  );
-                })}
-                <TableCell className="border border-gray-200 text-center font-medium">
-                  {formatNum(category.total_location_counted)}
-                </TableCell>
-                <TableCell className="border border-gray-200 text-center font-medium">
-                  {formatNum(category.total_qty_counted)}
-                </TableCell>
-              </TableRow>
-            ))}
-
-            {/* ── Row: Total (gabungan semua category) ── */}
-            <TableRow className="bg-orange-50 font-semibold">
-              <TableCell className="border border-gray-200 sticky left-0 bg-orange-50 z-10">
-                Total
-              </TableCell>
-              <TableCell className="border border-gray-200 sticky left-[120px] bg-orange-50 z-10">
-                {formatNum(grand_total.system_location)}
-              </TableCell>
-              <TableCell className="border border-gray-200 sticky left-[184px] bg-orange-50 z-10">
-                {formatNum(grand_total.system_qty)}
-              </TableCell>
-              {dates.map((date) => {
-                const day = grand_total.daily[date];
-                return (
-                  <Fragment key={date}>
-                    <TableCell className="border border-gray-200 text-center">
-                      {formatNum(day?.location_counted)}
-                    </TableCell>
-                    <TableCell className="border border-gray-200 text-center">
-                      {formatNum(day?.qty_counted)}
-                    </TableCell>
-                  </Fragment>
-                );
-              })}
-              <TableCell className="border border-gray-200 text-center">
-                {formatNum(grand_total.total_location_counted)}
-              </TableCell>
-              <TableCell className="border border-gray-200 text-center">
-                {formatNum(grand_total.total_qty_counted)}
-              </TableCell>
-            </TableRow>
-
-            {/* ── Rows: Achievement per category (%) ── */}
-            {categories.map((category) => (
-              <TableRow key={`ach-${category.category_code}`} className="bg-blue-50/60 text-xs">
-                <TableCell className="border border-gray-200 sticky left-0 bg-blue-50/60 z-10">
-                  Achievement {category.category_code}
-                </TableCell>
-                <TableCell className="border border-gray-200 sticky left-[120px] bg-blue-50/60 z-10" />
-                <TableCell className="border border-gray-200 sticky left-[184px] bg-blue-50/60 z-10" />
-                {dates.map((date) => {
-                  const day = category.daily[date];
-                  return (
-                    <Fragment key={date}>
-                      <TableCell
-                        className={`border border-gray-200 text-center ${day?.location_percent != null ? progressColor(day.location_percent) : ""
-                          }`}
-                      >
-                        {day ? formatPct(day.location_percent) : "-"}
-                      </TableCell>
-                      <TableCell
-                        className={`border border-gray-200 text-center ${day?.qty_percent != null ? progressColor(day.qty_percent) : ""
-                          }`}
-                      >
-                        {day ? formatPct(day.qty_percent) : "-"}
-                      </TableCell>
-                    </Fragment>
-                  );
-                })}
-                <TableCell
-                  className={`border border-gray-200 text-center font-medium ${progressColor(
-                    category.total_location_percent
-                  )}`}
-                >
-                  {formatPct(category.total_location_percent)}
-                </TableCell>
-                <TableCell
-                  className={`border border-gray-200 text-center font-medium ${progressColor(
-                    category.total_qty_percent
-                  )}`}
-                >
-                  {formatPct(category.total_qty_percent)}
-                </TableCell>
-              </TableRow>
-            ))}
-
-            {/* ── Row: Total % Counting (gabungan semua category) ── */}
-            <TableRow className="bg-blue-100 font-semibold">
-              <TableCell className="border border-gray-200 sticky left-0 bg-blue-100 z-10">
-                Total % Counting
-              </TableCell>
-              <TableCell className="border border-gray-200 sticky left-[120px] bg-blue-100 z-10" />
-              <TableCell className="border border-gray-200 sticky left-[184px] bg-blue-100 z-10" />
-              {dates.map((date) => {
-                const day = grand_total.daily[date];
-                return (
-                  <Fragment key={date}>
-                    <TableCell
-                      className={`border border-gray-200 text-center ${day?.location_percent != null ? progressColor(day.location_percent) : ""
-                        }`}
-                    >
-                      {formatPct(day?.location_percent)}
-                    </TableCell>
-                    <TableCell
-                      className={`border border-gray-200 text-center ${day?.qty_percent != null ? progressColor(day.qty_percent) : ""
-                        }`}
-                    >
-                      {formatPct(day?.qty_percent)}
-                    </TableCell>
-                  </Fragment>
-                );
-              })}
-              <TableCell
-                className={`border border-gray-200 text-center ${progressColor(
-                  grand_total.total_location_percent
-                )}`}
-              >
-                {formatPct(grand_total.total_location_percent)}
-              </TableCell>
-              <TableCell
-                className={`border border-gray-200 text-center ${progressColor(
-                  grand_total.total_qty_percent
-                )}`}
-              >
-                {formatPct(grand_total.total_qty_percent)}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Progress Dashboard ─────────────────────────────────────────────
 
 function ProgressDashboard({ sto }: { sto: string }) {
   const [tab, setTab] = useState<ResultTab>("bySku");
   const [bySkuData, setBySkuData] = useState<ProgressBySKU[]>([]);
-  const [byCategoryData, setByCategoryData] = useState<ProgressByCategoryResult | null>(null);
   const [byDivisionData, setByDivisionData] = useState<ProgressByDivisionResult | null>(null);
   const [byLocationData, setByLocationData] = useState<LocationPivotRow[]>([]);
   const [byPicData, setByPicData] = useState<PicProgress[]>([]);
@@ -870,15 +600,13 @@ function ProgressDashboard({ sto }: { sto: string }) {
     if (!sto) return;
     setIsLoading(true);
     try {
-      const [skuRes, categoryRes, divisionRes, locationRes, picRes] = await Promise.all([
+      const [skuRes, divisionRes, locationRes, picRes] = await Promise.all([
         api.get(`/stock-take/progress-sku/${sto}`, { withCredentials: true }),
-        api.get(`/stock-take/progress-category/${sto}`, { withCredentials: true }),
         api.get(`/stock-take/progress-division/${sto}`, { withCredentials: true }),
         api.get(`/stock-take/progress-location/${sto}`, { withCredentials: true }),
         api.get(`/stock-take/progress-pic/${sto}`, { withCredentials: true }),
       ]);
       if (skuRes.data.success) setBySkuData(skuRes.data.data);
-      if (categoryRes.data.success) setByCategoryData(categoryRes.data.data);
       if (divisionRes.data.success) setByDivisionData(divisionRes.data.data);
       if (locationRes.data.success) setByLocationData(locationRes.data.data);
       if (picRes.data.success) setByPicData(picRes.data.data);
@@ -923,16 +651,6 @@ function ProgressDashboard({ sto }: { sto: string }) {
             </button>
             <button
               type="button"
-              onClick={() => setTab("byCategory")}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${tab === "byCategory"
-                ? "border-b-2 border-blue-500 text-blue-600"
-                : "text-gray-500 hover:text-gray-700"
-                }`}
-            >
-              By Category
-            </button>
-            <button
-              type="button"
               onClick={() => setTab("byDivision")}
               className={`px-4 py-2 text-sm font-medium transition-colors ${tab === "byDivision"
                 ? "border-b-2 border-blue-500 text-blue-600"
@@ -964,7 +682,6 @@ function ProgressDashboard({ sto }: { sto: string }) {
           </div>
 
           {tab === "bySku" && <BySkuTable data={bySkuData} />}
-          {tab === "byCategory" && <ByCategoryTable data={byCategoryData} sto={sto} />}
           {tab === "byDivision" && <ByDivisionTable data={byDivisionData} sto={sto} />}
           {tab === "byLocation" && <ByLocationTable data={byLocationData} />}
           {tab === "byPic" && <ByPicTable data={byPicData} />}
@@ -1049,47 +766,38 @@ function ByLocationTable({ data }: { data: LocationPivotRow[] }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative max-w-xs">
-            <Search className="absolute left-2.5 top-2.5 text-gray-400" size={16} />
-            <Input
-              placeholder="Search location..."
-              className="pl-8"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-
-          {/* Filter Division dipertahankan (masih berguna buat nyaring data),
-              yang dihapus cuma kolom Division di tabelnya (lihat header & body
-              di bawah). */}
-          <select
-            className="border rounded-md px-2 py-2 text-sm"
-            value={divisionFilter}
-            onChange={(e) => setDivisionFilter(e.target.value)}
-          >
-            <option value="all">All Divisions</option>
-            {divisions.map((div) => (
-              <option key={div} value={div}>
-                {div}
-              </option>
-            ))}
-          </select>
-
-          <label className="flex items-center gap-1.5 text-sm text-gray-600">
-            <input
-              type="checkbox"
-              checked={discrepancyOnly}
-              onChange={(e) => setDiscrepancyOnly(e.target.checked)}
-            />
-            Discrepancies only
-          </label>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative max-w-xs">
+          <Search className="absolute left-2.5 top-2.5 text-gray-400" size={16} />
+          <Input
+            placeholder="Search location..."
+            className="pl-8"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
-        <div className="text-sm text-gray-600 whitespace-nowrap">
-          Total Location: <span className="font-semibold text-gray-800">{filtered.length}</span>
-        </div>
+        <select
+          className="border rounded-md px-2 py-2 text-sm"
+          value={divisionFilter}
+          onChange={(e) => setDivisionFilter(e.target.value)}
+        >
+          <option value="all">All Divisions</option>
+          {divisions.map((div) => (
+            <option key={div} value={div}>
+              {div}
+            </option>
+          ))}
+        </select>
+
+        <label className="flex items-center gap-1.5 text-sm text-gray-600">
+          <input
+            type="checkbox"
+            checked={discrepancyOnly}
+            onChange={(e) => setDiscrepancyOnly(e.target.checked)}
+          />
+          Discrepancies only
+        </label>
       </div>
 
       <div className="flex gap-1">
@@ -1114,6 +822,7 @@ function ByLocationTable({ data }: { data: LocationPivotRow[] }) {
             <TableRow>
               <TableHead className="border border-gray-200 w-8" />
               <TableHead className="border border-gray-200">Location</TableHead>
+              <TableHead className="border border-gray-200">Division</TableHead>
               <TableHead className="border border-gray-200">Items (Sys/Counted)</TableHead>
               <TableHead className="border border-gray-200">Qty (Sys/Counted)</TableHead>
               <TableHead className="border border-gray-200">Status</TableHead>
@@ -1134,6 +843,7 @@ function ByLocationTable({ data }: { data: LocationPivotRow[] }) {
                     <TableCell className="border border-gray-200 font-medium">
                       {row.location}
                     </TableCell>
+                    <TableCell className="border border-gray-200">{row.division_code}</TableCell>
                     <TableCell className="border border-gray-200">
                       {row.system_item_count} / {row.counted_item_count}
                     </TableCell>
@@ -1154,7 +864,7 @@ function ByLocationTable({ data }: { data: LocationPivotRow[] }) {
 
                   {expanded.has(row.location) && (
                     <TableRow>
-                      <TableCell colSpan={6} className="border border-gray-200 bg-gray-50 p-3">
+                      <TableCell colSpan={7} className="border border-gray-200 bg-gray-50 p-3">
                         <Table className="text-xs">
                           <TableHeader>
                             <TableRow>
@@ -1196,7 +906,7 @@ function ByLocationTable({ data }: { data: LocationPivotRow[] }) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-gray-500 py-6 border border-gray-200">
+                <TableCell colSpan={7} className="text-center text-gray-500 py-6 border border-gray-200">
                   No locations found.
                 </TableCell>
               </TableRow>
