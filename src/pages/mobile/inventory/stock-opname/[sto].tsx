@@ -890,16 +890,19 @@ export default function StockOpnamePage() {
                 )}
               </div>
 
-              <Button type="submit" className="w-full" disabled={isSubmit}>
-                {isSubmit ? (
-                  <>
-                    <Loader2 className="mr-2 w-4 h-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit"
-                )}
-              </Button>
+              {!autoSubmit && !isSubmit && (
+                <Button type="submit" className="w-full" disabled={isSubmit}>
+                  {isSubmit ? (
+                    <>
+                      <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    "Submit"
+                  )}
+                </Button>
+              )}
+
             </form>
           </Card>
 

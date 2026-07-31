@@ -1164,7 +1164,7 @@ export default function StockTakePage() {
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   <Box className="w-3.5 h-3.5 text-amber-600" />
-                  View Detail
+                  View Detail / Print
                 </button>
 
                 <div className="my-1 border-t border-slate-100" />
@@ -1194,9 +1194,9 @@ export default function StockTakePage() {
                   Close Session
                 </button>
 
-                <div className="my-1 border-t border-slate-100" />
+                {/* <div className="my-1 border-t border-slate-100" /> */}
 
-                <button
+                {/* <button
                   onClick={(e) => {
                     e.stopPropagation();
                     const code = openActionMenu.code;
@@ -1207,7 +1207,7 @@ export default function StockTakePage() {
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   Delete
-                </button>
+                </button> */}
               </div>,
               document.body
             )}
