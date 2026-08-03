@@ -52,6 +52,10 @@ type StockTake = {
   updated_at: string;
   total_system_qty: number;
   total_counted_qty: number;
+  counted_location: number;
+  planned_location: number;
+  counted_item: number;
+  planned_item: number;
 };
 
 type StockTakeStatus = "open" | "in_progress" | "cancelled" | "closed";
@@ -259,9 +263,8 @@ const FilterBar = ({ filters, onChange }: FilterBarProps) => {
                     className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors hover:bg-slate-50"
                   >
                     <span
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 transition-all ${
-                        active ? "border-slate-800 bg-slate-800" : "border-slate-300 bg-white"
-                      }`}
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 transition-all ${active ? "border-slate-800 bg-slate-800" : "border-slate-300 bg-white"
+                        }`}
                     >
                       {active && (
                         <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 10" fill="none">
@@ -992,7 +995,7 @@ export default function StockTakePage() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+            {/* <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1048,6 +1051,69 @@ export default function StockTakePage() {
                     </p>
                   </div>
                   <Package className="w-5 h-5 text-slate-400" />
+                </div>
+              </CardContent>
+            </Card> */}
+
+            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600">Total Sessions</p>
+                    <p className="text-lg font-semibold text-slate-900">{data.length}</p>
+                  </div>
+                  <Hash className="w-5 h-5 text-slate-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600">Location Counted / Planned</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {data.reduce((sum, item) => sum + (item.counted_location || 0), 0)}
+                      <span className="text-slate-400 font-normal text-sm">
+                        {" "}/ {data.reduce((sum, item) => sum + (item.planned_location || 0), 0)}
+                      </span>
+                    </p>
+                  </div>
+                  <MapPin className="w-5 h-5 text-slate-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600">Qty Counted / Planned</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {data.reduce((sum, item) => sum + (item.total_counted_qty || 0), 0).toLocaleString("id-ID")}
+                      <span className="text-slate-400 font-normal text-sm">
+                        {" "}/ {data.reduce((sum, item) => sum + (item.total_system_qty || 0), 0).toLocaleString("id-ID")}
+                      </span>
+                    </p>
+                  </div>
+                  <Package className="w-5 h-5 text-slate-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600">Item Counted / Planned</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {data.reduce((sum, item) => sum + (item.counted_item || 0), 0)}
+                      <span className="text-slate-400 font-normal text-sm">
+                        {" "}/ {data.reduce((sum, item) => sum + (item.planned_item || 0), 0)}
+                      </span>
+                    </p>
+                  </div>
+                  <Box className="w-5 h-5 text-slate-400" />
                 </div>
               </CardContent>
             </Card>

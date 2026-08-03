@@ -711,6 +711,37 @@ export default function StockOpnamePage() {
                     )}
                   </div>
 
+                  <div className="relative">
+                    <label htmlFor="lot-number" className="text-sm text-gray-600">
+                      Lot Number
+                    </label>
+                    <Input
+                      autoComplete="off"
+                      id="lot-number"
+                      className="w-full mt-1 pr-10"
+                      value={lotNo}
+                      onChange={(e) => setLotNo(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (autoSubmit) handleSubmit(e as any);
+                        }
+                      }}
+                    />
+                    {lotNo && (
+                      <button
+                        type="button"
+                        className="absolute right-2 top-9 text-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          setLotNo("");
+                          document.getElementById("lot-number")?.focus();
+                        }}
+                      >
+                        <XCircle size={18} />
+                      </button>
+                    )}
+                  </div>
+
                   {lookupLoading && (
                     <div className="text-xs text-gray-500 flex items-center gap-1">
                       <Loader2 className="w-3 h-3 animate-spin" /> Checking product master...
@@ -769,6 +800,37 @@ export default function StockOpnamePage() {
                     )}
                   </div>
 
+                  <div className="relative">
+                    <label htmlFor="lot-number-sku" className="text-sm text-gray-600">
+                      Lot Number
+                    </label>
+                    <Input
+                      autoComplete="off"
+                      id="lot-number-sku"
+                      className="w-full mt-1 pr-10"
+                      value={lotNo}
+                      onChange={(e) => setLotNo(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (autoSubmit) handleSubmit(e as any);
+                        }
+                      }}
+                    />
+                    {lotNo && (
+                      <button
+                        type="button"
+                        className="absolute right-2 top-9 text-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          setLotNo("");
+                          document.getElementById("lot-number-sku")?.focus();
+                        }}
+                      >
+                        <XCircle size={18} />
+                      </button>
+                    )}
+                  </div>
+
                   {lookupLoading && (
                     <div className="text-xs text-gray-500 flex items-center gap-1">
                       <Loader2 className="w-3 h-3 animate-spin" /> Checking product master...
@@ -820,6 +882,37 @@ export default function StockOpnamePage() {
                           setQrRawInput("");
                           setParsedQR(null);
                           setBarcode("");
+                        }}
+                      >
+                        <XCircle size={18} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <label htmlFor="lot-number-qr" className="text-sm text-gray-600">
+                      Lot Number
+                    </label>
+                    <Input
+                      autoComplete="off"
+                      id="lot-number-qr"
+                      className="w-full mt-1 pr-10"
+                      value={lotNo}
+                      onChange={(e) => setLotNo(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (autoSubmit) handleSubmit(e as any);
+                        }
+                      }}
+                    />
+                    {lotNo && (
+                      <button
+                        type="button"
+                        className="absolute right-2 top-9 text-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          setLotNo("");
+                          document.getElementById("lot-number-qr")?.focus();
                         }}
                       >
                         <XCircle size={18} />
