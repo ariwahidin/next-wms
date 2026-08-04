@@ -123,6 +123,34 @@ const ToggleSwitch = ({
     </div>
 );
 
+interface Toggle3WayProps {
+    value: string;
+    onChange: (val: string) => void;
+    options: { value: string; label: string }[];
+}
+
+const Toggle3Way = ({ value, onChange, options }: Toggle3WayProps) => (
+    <div className="inline-flex rounded-full bg-gray-100 p-0.5 text-sm">
+        {options.map((opt) => (
+            <button
+                key={opt.value}
+                type="button"
+                onClick={() => onChange(opt.value)}
+                className={`px-3 py-1 rounded-full transition-colors ${
+                    value === opt.value
+                        ? "bg-blue-500 text-white font-semibold shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                }`}
+            >
+                {opt.label}
+            </button>
+        ))}
+    </div>
+);
+
+
+
+
 // ─── Generic Filter Select ────────────────────────────────────────────────────
 
 interface FilterSelectProps {
@@ -667,7 +695,8 @@ const TransferPage = () => {
     const [searchMode, setSearchMode] = useState<SearchMode>("barcode");
 
     // ── QR state ────────────────────────────────────────────────────────────────
-    const [isQrMode, setIsQrMode] = useState(false);
+    // const [isQrMode, setIsQrMode] = useState(false);
+    const [barcodeMode, setBarcodeMode] = useState<"sku" | "ean" | "qr">("ean");
     const [qrRawInput, setQrRawInput] = useState("");
     const [parsedQR, setParsedQR] = useState<ParsedQRData | null>(null);
 
@@ -785,13 +814,26 @@ const TransferPage = () => {
         }
     };
 
-    const handleModeToggle = (qr: boolean) => {
-        setIsQrMode(qr);
+    // const handleModeToggle = (qr: boolean) => {
+    //     setIsQrMode(qr);
+    //     setQrRawInput("");
+    //     setParsedQR(null);
+    //     setScanBarcode("");
+    //     setListInboundScanned([]);
+    //     setTimeout(() => { document.getElementById(qr ? "qr-input" : "barcode")?.focus(); }, 50);
+    // };
+
+    const handleModeToggle = (mode: "sku" | "ean" | "qr") => {
+        setBarcodeMode(mode);
         setQrRawInput("");
         setParsedQR(null);
         setScanBarcode("");
+        setScanSku("");
         setListInboundScanned([]);
-        setTimeout(() => { document.getElementById(qr ? "qr-input" : "barcode")?.focus(); }, 50);
+        setTimeout(() => {
+            const id = mode === "qr" ? "qr-input" : mode === "sku" ? "sku-input" : "barcode";
+            document.getElementById(id)?.focus();
+        }, 50);
     };
 
     const clearQr = () => {
@@ -814,7 +856,9 @@ const TransferPage = () => {
         setParsedQR(null);
         setListInboundScanned([]);
         setShowForm(true);
-        setIsQrMode(false);
+        // setIsQrMode(false);
+        setBarcodeMode("ean");
+        setScanSku("");
         setSelectedKeys(new Set());
         setTimeout(() => { document.getElementById(toPallet ? "pallet-id" : "location")?.focus(); }, 50);
     };
@@ -837,9 +881,17 @@ const TransferPage = () => {
 
     // ── Derived: is search button disabled ──────────────────────────────────────
 
+    // const isSearchDisabled = (() => {
+    //     if (loading) return true;
+    //     if (searchMode === "pallet") return !scanPalletId.trim();
+    //     if (location) return !scanLocation.trim();
+    //     return !scanBarcode.trim() || !scanLocation.trim();
+    // })();
+
     const isSearchDisabled = (() => {
         if (loading) return true;
         if (searchMode === "pallet") return !scanPalletId.trim();
+        if (barcodeMode === "sku") return !scanSku.trim() || !scanLocation.trim();
         if (location) return !scanLocation.trim();
         return !scanBarcode.trim() || !scanLocation.trim();
     })();
@@ -860,8 +912,15 @@ const TransferPage = () => {
         try {
             let payload: { location?: string; barcode?: string; sku?: string; pallet?: string; };
 
+            // if (searchMode === "pallet") {
+            //     payload = { pallet: scanPalletId.trim() };
+            // } else if (parsedQR?.sku && !parsedQR?.ean) {
+            //     payload = { location: scanLocation, sku: parsedQR.sku };
+            // } else if (location && !scanBarcode.trim()) {
             if (searchMode === "pallet") {
                 payload = { pallet: scanPalletId.trim() };
+            } else if (barcodeMode === "sku") {
+                payload = { location: scanLocation, sku: scanSku.trim() };
             } else if (parsedQR?.sku && !parsedQR?.ean) {
                 payload = { location: scanLocation, sku: parsedQR.sku };
             } else if (location && !scanBarcode.trim()) {
@@ -1131,12 +1190,27 @@ const TransferPage = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between">
+                                    {/* <div className="flex items-center justify-between">
                                         <label className="font-semibold text-gray-700 text-sm">Item Barcode :</label>
                                         <ToggleSwitch checked={isQrMode} onChange={handleModeToggle} labelOff="EAN" labelOn="QR Code" />
+                                    </div> */}
+
+                                    <div className="flex items-center justify-between">
+                                        <label className="font-semibold text-gray-700 text-sm">
+                                            {barcodeMode === "sku" ? "Item SKU" : barcodeMode === "ean" ? "Item Barcode (EAN)" : "Scan QR Code"}
+                                        </label>
+                                        <Toggle3Way
+                                            value={barcodeMode}
+                                            onChange={(v) => handleModeToggle(v as "sku" | "ean" | "qr")}
+                                            options={[
+                                                { value: "sku", label: "SKU" },
+                                                { value: "ean", label: "EAN" },
+                                                { value: "qr", label: "QR Code" },
+                                            ]}
+                                        />
                                     </div>
 
-                                    {!isQrMode && (
+                                    {barcodeMode === "ean" && (
                                         <div className="relative">
                                             <Input
                                                 id="barcode"
@@ -1157,7 +1231,29 @@ const TransferPage = () => {
                                         </div>
                                     )}
 
-                                    {isQrMode && (
+
+                                    {barcodeMode === "sku" && (
+                                        <div className="relative">
+                                            <Input
+                                                id="sku-input"
+                                                autoComplete="off"
+                                                placeholder="Entry item SKU..."
+                                                value={scanSku}
+                                                onChange={(e) => setScanSku(e.target.value)}
+                                            />
+                                            {scanSku && (
+                                                <button
+                                                    type="button"
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    onClick={() => { setScanSku(""); setListInboundScanned([]); document.getElementById("sku-input")?.focus(); }}
+                                                >
+                                                    <XCircle size={18} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {barcodeMode === "qr" && (
                                         <div className="space-y-2">
                                             <div className="relative">
                                                 <Input
@@ -1266,7 +1362,7 @@ const TransferPage = () => {
                         <div className="flex items-center justify-between text-xs text-gray-500">
                             <div className="flex items-center gap-2">
                                 {/* <span>From</span> */}
-                                <span className="font-semibold">{ scanLocation != "" ? "Location : "+scanLocation : "Pallet : " + scanPalletId}</span>
+                                <span className="font-semibold">{scanLocation != "" ? "Location : " + scanLocation : "Pallet : " + scanPalletId}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span>Found:</span>
