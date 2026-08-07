@@ -64,7 +64,7 @@ export default function StockOpnamePage() {
 
   const fetchStockTakes = async () => {
     try {
-      const res = await api.get("/stock-take", {
+      const res = await api.get("/stock-take/summary", {
         withCredentials: true,
       });
       if (res.data.success) {
