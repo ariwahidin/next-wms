@@ -323,7 +323,7 @@ export default function StockOpnamePage() {
     }
 
     const primaryValue = scanMode === "sku" ? skuInput : barcode;
-    if (!location.trim() || !primaryValue.trim() || Number(qty) < 1) {
+    if (!location.trim() || !primaryValue.trim() || Number(qty) < 0) {
       eventBus.emit("showAlert", {
         title: "Error!",
         description: `Please fill in location, ${scanMode === "sku" ? "SKU" : "barcode"}, and a valid quantity.`,
@@ -964,7 +964,7 @@ export default function StockOpnamePage() {
                 <Input
                   type="number"
                   id="qty"
-                  min={1}
+                  min={0}
                   value={qty}
                   disabled={qtyLocked}
                   className={qtyLocked ? "bg-gray-100 text-gray-500" : ""}
@@ -972,7 +972,8 @@ export default function StockOpnamePage() {
                     const val = e.target.value;
                     if (val === "") { setQty(""); return; }
                     const num = Number(val);
-                    setQty(num < 1 ? 1 : num);
+                    // setQty(num < 1 ? 1 : num);
+                    setQty(num);
                   }}
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 />

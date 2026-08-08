@@ -995,65 +995,6 @@ export default function StockTakePage() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            {/* <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-slate-600">Total Sessions</p>
-                    <p className="text-lg font-semibold text-slate-900">{data.length}</p>
-                  </div>
-                  <Hash className="w-5 h-5 text-slate-400" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-slate-600">In Progress</p>
-                    <p className="text-lg font-semibold text-amber-600">
-                      {data.filter((item) => item.status.toLowerCase() === "in_progress").length}
-                    </p>
-                  </div>
-                  <div className="w-5 h-5 bg-amber-100 rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-slate-600">Completed</p>
-                    <p className="text-lg font-semibold text-emerald-600">
-                      {data.filter((item) => item.status.toLowerCase() === "closed").length}
-                    </p>
-                  </div>
-                  <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-slate-600">Total Qty Counted</p>
-                    <p className="text-lg font-semibold text-slate-900">
-                      {data
-                        .reduce((sum, item) => sum + (item.total_counted_qty || 0), 0)
-                        .toLocaleString("id-ID")}
-                    </p>
-                  </div>
-                  <Package className="w-5 h-5 text-slate-400" />
-                </div>
-              </CardContent>
-            </Card> */}
 
             <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
               <CardContent className="p-4">
