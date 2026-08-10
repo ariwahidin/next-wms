@@ -22,4 +22,5 @@ export interface InventoryPolicy {
     require_putaway_scan: boolean;
     validate_receive_scan: boolean;
     allocation_lot_by_order: boolean;
+    allocation_location_by_order: boolean;
 }

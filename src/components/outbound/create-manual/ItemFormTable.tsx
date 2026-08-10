@@ -408,11 +408,18 @@ export default function ItemFormTable({
 
               {invPolicy?.use_lot_no &&
                 (invPolicy?.allocation_lot_by_order ||
-                  invPolicy?.require_lot_number) && (
+                  invPolicy?.require_lot_number) &&
+                (
                   <th className="p-2 border" style={{ width: "140px" }}>
                     Lot No.
                   </th>
                 )}
+
+              {invPolicy?.allocation_location_by_order && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Location
+                </th>
+              )}
 
 
               <th className="p-2 border" style={{ width: "130px" }}>
@@ -529,15 +536,15 @@ export default function ItemFormTable({
                     <Select
                       className="w-40"
                       key={item.ID}
-                    options={
-                      divisionOptions
-                    }
-                    // onFocus={() => handleFocus(item.item_code, item.ID)}
-                    // isLoading={selectStates[item.ID]?.loading ?? false}
-                    value={divisionOptions.find((option) => option.value === item.division_code)}
-                    onChange={(value) =>
-                      handleChange(item.ID, "division_code", value?.value)
-                    }
+                      options={
+                        divisionOptions
+                      }
+                      // onFocus={() => handleFocus(item.item_code, item.ID)}
+                      // isLoading={selectStates[item.ID]?.loading ?? false}
+                      value={divisionOptions.find((option) => option.value === item.division_code)}
+                      onChange={(value) =>
+                        handleChange(item.ID, "division_code", value?.value)
+                      }
                     />
                   </td>
                   <td className="p-2 border">
@@ -579,6 +586,24 @@ export default function ItemFormTable({
                         )}
                       </td>
                     )}
+
+                  {invPolicy?.allocation_location_by_order && (
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px" }}
+                        type="text"
+                        value={item.location}
+                        onChange={(e) =>
+                          handleChange(item.ID, "location", e.target.value)
+                        }
+                      />
+                      {errors[item.ID]?.remarks && (
+                        <small className="text-red-500">
+                          {errors[item.ID].location}
+                        </small>
+                      )}
+                    </td>
+                  )}
 
 
                   {/* <td className="p-2 border">

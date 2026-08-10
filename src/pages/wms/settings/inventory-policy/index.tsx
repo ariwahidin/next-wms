@@ -32,6 +32,7 @@ interface InventoryPolicy {
   require_putaway_scan?: boolean;
   validate_receive_scan?: boolean;
   allocation_lot_by_order?: boolean;
+  allocation_location_by_order?: boolean;
   picking_with_scanner?: boolean;
   picking_exclude_locations_under_cycle_count?: boolean;
 }
@@ -68,6 +69,7 @@ export default function InventoryPolicyPage() {
     require_putaway_scan: false,
     validate_receive_scan: false,
     allocation_lot_by_order: false,
+    allocation_location_by_order: false,
     picking_with_scanner: false,
     picking_exclude_locations_under_cycle_count: false      
   });
@@ -127,6 +129,7 @@ export default function InventoryPolicyPage() {
       require_putaway_scan: false,
       validate_receive_scan: false,
       allocation_lot_by_order: false,
+      allocation_location_by_order: false,
       picking_with_scanner: false,
       picking_exclude_locations_under_cycle_count: false
     });
@@ -159,6 +162,7 @@ export default function InventoryPolicyPage() {
       require_putaway_scan: (policy as any).require_putaway_scan || false,
       validate_receive_scan: (policy as any).validate_receive_scan || false,
       allocation_lot_by_order: (policy as any).allocation_lot_by_order || false,
+      allocation_location_by_order: (policy as any).allocation_location_by_order || false,
       picking_with_scanner: (policy as any).picking_with_scanner || false,
       picking_exclude_locations_under_cycle_count: (policy as any).picking_exclude_locations_under_cycle_count || false
     });
@@ -602,6 +606,19 @@ export default function InventoryPolicyPage() {
                           />
                           <span className="text-sm text-gray-700 group-hover:text-gray-900">Lot by Order</span>
                           <span className="text-xs text-gray-500">(Allocation lot by order)</span>
+                        </label>
+
+                        
+
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.allocation_location_by_order}
+                            onChange={(e) => handleCheckboxChange('allocation_location_by_order', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">Allocation Location by Order</span>
+                          <span className="text-xs text-gray-500">(Allocation location by order)</span>
                         </label>
 
                         <label className="flex items-center gap-2.5 cursor-pointer group">

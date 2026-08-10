@@ -64,8 +64,31 @@ interface FilterParams {
   startDate: Date;
   endDate: Date;
   searchLocation: string;
+  code: string;
   statuses: StockTakeStatus[];
 }
+
+const PAGE_SIZE = 20;
+
+const buildBaseParams = (filters: FilterParams) => {
+  const params = new URLSearchParams({
+    start_date: fmt(filters.startDate),
+    end_date: fmt(filters.endDate),
+  });
+  if (filters.searchLocation) params.set("search_location", filters.searchLocation);
+  if (filters.code) params.set("code", filters.code);
+  if (filters.statuses.length > 0) params.set("statuses", filters.statuses.join(","));
+  return params;
+};
+
+const buildListUrl = (filters: FilterParams, page: number) => {
+  const params = buildBaseParams(filters);
+  params.set("page", String(page));
+  params.set("page_size", String(PAGE_SIZE));
+  return `/stock-take?${params.toString()}`;
+};
+
+const buildStatsUrl = (filters: FilterParams) => `/stock-take/stats?${buildBaseParams(filters).toString()}`;
 
 const STATUS_OPTIONS: { value: StockTakeStatus; label: string; color: string; dot: string }[] = [
   { value: "open", label: "Open", color: "bg-blue-50 border-blue-200 text-blue-700", dot: "bg-blue-500" },
@@ -151,13 +174,23 @@ interface FilterBarProps {
 
 const FilterBar = ({ filters, onChange }: FilterBarProps) => {
   const [localLocation, setLocalLocation] = useState(filters.searchLocation);
+  const [localCode, setLocalCode] = useState(filters.code);
   const locationDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const codeDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleLocationChange = (val: string) => {
     setLocalLocation(val);
     if (locationDebounce.current) clearTimeout(locationDebounce.current);
     locationDebounce.current = setTimeout(() => {
       onChange({ ...filters, searchLocation: val });
+    }, 500);
+  };
+
+  const handleCodeChange = (val: string) => {
+    setLocalCode(val);
+    if (codeDebounce.current) clearTimeout(codeDebounce.current);
+    codeDebounce.current = setTimeout(() => {
+      onChange({ ...filters, code: val });
     }, 500);
   };
 
@@ -170,16 +203,19 @@ const FilterBar = ({ filters, onChange }: FilterBarProps) => {
 
   const handleReset = () => {
     setLocalLocation("");
+    setLocalCode("");
     onChange({
       startDate: subDays(new Date(), 14),
       endDate: new Date(),
       searchLocation: "",
+      code: "",
       statuses: [],
     });
   };
 
   const isFiltered =
     filters.searchLocation !== "" ||
+    filters.code !== "" ||
     filters.statuses.length > 0 ||
     fmt(filters.startDate) !== fmt(subDays(new Date(), 14)) ||
     fmt(filters.endDate) !== fmt(new Date());
@@ -295,6 +331,21 @@ const FilterBar = ({ filters, onChange }: FilterBarProps) => {
 
         <div className="hidden h-10 w-px bg-slate-200 sm:block" />
 
+        <div className="flex flex-col gap-1 min-w-[160px]">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+            Session Code
+          </label>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              value={localCode}
+              onChange={(e) => handleCodeChange(e.target.value)}
+              placeholder="Search session code..."
+              className="w-full rounded-md border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-sm text-slate-700 placeholder-slate-400 transition-all focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1"
+            />
+          </div>
+        </div>
+
         {/* Search location */}
         <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
           <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
@@ -342,7 +393,15 @@ const FilterBar = ({ filters, onChange }: FilterBarProps) => {
               Location: `{filters.searchLocation}`
             </span>
           )}
+
+          {filters.code && (
+            <span className="rounded-full bg-slate-900 px-2.5 py-0.5 text-xs font-medium text-white">
+              Code: `{filters.code}`
+            </span>
+          )}
         </div>
+
+
       )}
     </Card>
   );
@@ -777,8 +836,32 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, description, confirmL
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+type StockTakeStats = {
+  total_sessions: number;
+  total_system_qty: number;
+  total_counted_qty: number;
+  total_planned_location: number;
+  total_counted_location: number;
+  total_planned_item: number;
+  total_counted_item: number;
+};
+
+const EMPTY_STATS: StockTakeStats = {
+  total_sessions: 0,
+  total_system_qty: 0,
+  total_counted_qty: 0,
+  total_planned_location: 0,
+  total_counted_location: 0,
+  total_planned_item: 0,
+  total_counted_item: 0,
+};
 export default function StockTakePage() {
   const [data, setData] = useState<StockTake[]>([]);
+  const [stats, setStats] = useState<StockTakeStats>(EMPTY_STATS);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRefetching, setIsRefetching] = useState(false);
@@ -789,10 +872,29 @@ export default function StockTakePage() {
     startDate: subDays(new Date(), 14),
     endDate: new Date(),
     searchLocation: "",
+    code: "",
     statuses: [],
   });
 
   const [openActionMenu, setOpenActionMenu] = useState<{ id: number; code: string; top: number; left: number } | null>(null);
+
+
+  const handleFilterChange = (f: FilterParams) => {
+    setPage(1); // filter baru → balik ke halaman 1
+    setFilters(f);
+  };
+
+  const fetchStats = async (currentFilters: FilterParams) => {
+    try {
+      const res = await api.get(buildStatsUrl(currentFilters), { withCredentials: true });
+      if (res.data.success) {
+        setStats(res.data.data);
+      }
+    } catch (err) {
+      console.error("Fetch stats failed:", err);
+    }
+  };
+
   const [confirmAction, setConfirmAction] = useState<{
     type: "cancel" | "close" | "delete";
     code: string;
@@ -808,7 +910,8 @@ export default function StockTakePage() {
     try {
       const res = await api.post("/stock-take/generate", { filters: genFilters }, { withCredentials: true });
       if (res.data.success) {
-        fetchStockTakes(filters);
+        // fetchStockTakes(filters);
+        fetchStockTakes(filters, page);
       }
     } catch (err: any) {
       alert(err.response?.data?.message || "Failed to generate cycle count");
@@ -822,7 +925,8 @@ export default function StockTakePage() {
     try {
       const res = await api.post(`/stock-take/${code}/cancel`, {}, { withCredentials: true });
       if (res.data.success) {
-        fetchStockTakes(filters);
+        // fetchStockTakes(filters);
+        fetchStockTakes(filters, page);
       }
     } catch (err: any) {
       alert(err.response?.data?.message || "Failed to cancel session");
@@ -836,7 +940,8 @@ export default function StockTakePage() {
     try {
       const res = await api.post(`/stock-take/${code}/close`, {}, { withCredentials: true });
       if (res.data.success) {
-        fetchStockTakes(filters);
+        // fetchStockTakes(filters);
+        fetchStockTakes(filters, page);
       }
     } catch (err: any) {
       alert(err.response?.data?.message || "Failed to close session");
@@ -850,7 +955,8 @@ export default function StockTakePage() {
     try {
       const res = await api.delete(`/stock-take/${code}`, { withCredentials: true });
       if (res.data.success) {
-        fetchStockTakes(filters);
+        // fetchStockTakes(filters);
+        fetchStockTakes(filters, page);
       }
     } catch (err: any) {
       alert(err.response?.data?.message || "Failed to delete cycle count");
@@ -895,16 +1001,38 @@ export default function StockTakePage() {
     };
   };
 
-  const fetchStockTakes = async (currentFilters: FilterParams) => {
+  // const fetchStockTakes = async (currentFilters: FilterParams) => {
+  //   if (isFirstLoad.current) {
+  //     setLoading(true);
+  //   } else {
+  //     setIsRefetching(true);
+  //   }
+  //   try {
+  //     const res = await api.get(buildUrl(currentFilters), { withCredentials: true });
+  //     if (res.data.success) {
+  //       setData(res.data.data);
+  //     }
+  //   } catch (err) {
+  //     console.error("Fetch failed:", err);
+  //   } finally {
+  //     setLoading(false);
+  //     setIsRefetching(false);
+  //     isFirstLoad.current = false;
+  //   }
+  // };
+
+  const fetchStockTakes = async (currentFilters: FilterParams, currentPage: number) => {
     if (isFirstLoad.current) {
       setLoading(true);
     } else {
       setIsRefetching(true);
     }
     try {
-      const res = await api.get(buildUrl(currentFilters), { withCredentials: true });
+      const res = await api.get(buildListUrl(currentFilters, currentPage), { withCredentials: true });
       if (res.data.success) {
         setData(res.data.data);
+        setTotalPages(res.data.meta?.total_pages || 1);
+        setTotalCount(res.data.meta?.total || 0);
       }
     } catch (err) {
       console.error("Fetch failed:", err);
@@ -915,9 +1043,22 @@ export default function StockTakePage() {
     }
   };
 
+  // useEffect(() => {
+  //   fetchStockTakes(filters);
+  // }, [filters]);
+
   useEffect(() => {
-    fetchStockTakes(filters);
+    fetchStats(filters);
   }, [filters]);
+
+  useEffect(() => {
+    fetchStockTakes(filters, page);
+  }, [filters, page]);
+
+  const refetchCurrent = () => {
+    fetchStockTakes(filters, page);
+    fetchStats(filters);
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -1001,6 +1142,63 @@ export default function StockTakePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-slate-600">Total Sessions</p>
+                    <p className="text-lg font-semibold text-slate-900">{stats.total_sessions}</p>
+                  </div>
+                  <Hash className="w-5 h-5 text-slate-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600">Location Counted / Planned</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {stats.total_counted_location}
+                      <span className="text-slate-400 font-normal text-sm"> / {stats.total_planned_location}</span>
+                    </p>
+                  </div>
+                  <MapPin className="w-5 h-5 text-slate-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600">Qty Counted / Planned</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {stats.total_counted_qty.toLocaleString("id-ID")}
+                      <span className="text-slate-400 font-normal text-sm"> / {stats.total_system_qty.toLocaleString("id-ID")}</span>
+                    </p>
+                  </div>
+                  <Package className="w-5 h-5 text-slate-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600">Item Counted / Planned</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {stats.total_counted_item}
+                      <span className="text-slate-400 font-normal text-sm"> / {stats.total_planned_item}</span>
+                    </p>
+                  </div>
+                  <Box className="w-5 h-5 text-slate-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600">Total Sessions</p>
                     <p className="text-lg font-semibold text-slate-900">{data.length}</p>
                   </div>
                   <Hash className="w-5 h-5 text-slate-400" />
@@ -1057,11 +1255,12 @@ export default function StockTakePage() {
                   <Box className="w-5 h-5 text-slate-400" />
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
 
           {/* Filter Bar */}
-          <FilterBar filters={filters} onChange={setFilters} />
+          {/* <FilterBar filters={filters} onChange={setFilters} /> */}
+          <FilterBar filters={filters} onChange={handleFilterChange} />
 
           {/* Main Table */}
           <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden relative">
@@ -1314,11 +1513,38 @@ export default function StockTakePage() {
               document.body
             )}
 
-          {data.length > 0 && (
+          {/* {data.length > 0 && (
             <div className="mt-4 text-center">
               <p className="text-xs text-slate-500">
                 Showing {data.length} cycle count session{data.length !== 1 ? "s" : ""} • Click any row to view detailed progress
               </p>
+            </div>
+          )} */}
+
+          {!loading && data.length > 0 && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-xs text-slate-500">
+                Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} of {totalCount} sessions
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-400 disabled:opacity-40 disabled:hover:border-slate-200"
+                >
+                  Previous
+                </button>
+                <span className="text-xs text-slate-500">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-400 disabled:opacity-40 disabled:hover:border-slate-200"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>
