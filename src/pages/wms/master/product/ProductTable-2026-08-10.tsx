@@ -1,3 +1,5 @@
+
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
@@ -5,10 +7,9 @@
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import api from "@/lib/api";
-import { Download, Pencil, Plus, SlidersHorizontal, Trash2, Upload, X } from "lucide-react";
+import { Download, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import useSWR, { mutate } from "swr";
-import { ChangeEvent, useCallback, useMemo, useRef, useState } from "react";
-import Select from "react-select";
+import { ChangeEvent, useCallback, useRef, useState } from "react";
 import styles from "./ProductTable.module.css";
 import { Button } from "@/components/ui/button";
 import ProductForm from "./ProductForm";
@@ -16,15 +17,6 @@ import router from "next/router";
 import ExportProductModal from "./ExportProductModal";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-// ─── Fetchers ────────────────────────────────────────────────────────────────
 
 const fetcher = (url: string) =>
   api.get(url).then((res) => {
@@ -37,169 +29,11 @@ const fetcher = (url: string) =>
     return [];
   });
 
-const ownersFetcher = (url: string) =>
-  api.get(url, { withCredentials: true }).then((res) => {
-    if (res.data.success && res.data.data) {
-      return res.data.data.map((o: any) => ({
-        value: o.code,
-        label: `${o.code} - ${o.description}`,
-      }));
-    }
-    return [];
-  });
-
-const categoriesFetcher = (url: string) =>
-  api.get(url, { withCredentials: true }).then((res) => {
-    if (res.data.success && res.data.data) {
-      return res.data.data.map((c: any) => ({
-        value: c.code,
-        label: c.name,
-      }));
-    }
-    return [];
-  });
-
-// ─── react-select shared styles ───────────────────────────────────────────────
-
-const selectStyles = {
-  control: (base: any) => ({
-    ...base,
-    minHeight: 34,
-    borderColor: "#e2e8f0",
-    boxShadow: "none",
-    "&:hover": { borderColor: "#94a3b8" },
-  }),
-  menu: (base: any) => ({ ...base, zIndex: 50 }),
-};
-
-// ─── Filter Bar ──────────────────────────────────────────────────────────────
-
-interface FilterBarProps {
-  ownerOptions: SelectOption[];
-  categoryOptions: SelectOption[];
-  ownersLoading: boolean;
-  categoriesLoading: boolean;
-  selectedOwner: string;
-  selectedCategory: string;
-  onOwnerChange: (v: string) => void;
-  onCategoryChange: (v: string) => void;
-  onReset: () => void;
-}
-
-const FilterBar = ({
-  ownerOptions,
-  categoryOptions,
-  ownersLoading,
-  categoriesLoading,
-  selectedOwner,
-  selectedCategory,
-  onOwnerChange,
-  onCategoryChange,
-  onReset,
-}: FilterBarProps) => {
-  const isFiltered = selectedOwner !== "" || selectedCategory !== "";
-
-  return (
-    <div className="mb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5">
-        <SlidersHorizontal className="h-4 w-4 text-slate-500" />
-        <span
-          className="text-sm font-semibold text-slate-700 tracking-wide uppercase"
-          style={{ letterSpacing: "0.06em", fontSize: "0.7rem" }}
-        >
-          Filter & Search
-        </span>
-        {isFiltered && (
-          <span className="ml-1 rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-white">
-            Active
-          </span>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-end gap-3 px-4 py-3">
-        {/* Owner filter */}
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-            Owner
-          </label>
-          <Select
-            isClearable
-            placeholder="All owners"
-            className="w-48 text-sm"
-            classNamePrefix="rs"
-            options={ownerOptions}
-            isLoading={ownersLoading}
-            value={ownerOptions.find((o) => o.value === selectedOwner) ?? null}
-            onChange={(selected) => onOwnerChange(selected ? selected.value : "")}
-            styles={selectStyles}
-          />
-        </div>
-
-        <div className="hidden h-10 w-px bg-slate-200 sm:block" />
-
-        {/* Category filter */}
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-            Category
-          </label>
-          <Select
-            isClearable
-            placeholder="All categories"
-            className="w-48 text-sm"
-            classNamePrefix="rs"
-            options={categoryOptions}
-            isLoading={categoriesLoading}
-            value={categoryOptions.find((c) => c.value === selectedCategory) ?? null}
-            onChange={(selected) => onCategoryChange(selected ? selected.value : "")}
-            styles={selectStyles}
-          />
-        </div>
-
-        {isFiltered && (
-          <button
-            onClick={onReset}
-            className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 transition-all hover:border-slate-400 hover:text-slate-700"
-          >
-            <X className="h-3 w-3" />
-            Reset
-          </button>
-        )}
-      </div>
-
-      {isFiltered && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-2">
-          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">
-            Active:
-          </span>
-          {selectedOwner && (
-            <span className="flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700">
-              Owner: {selectedOwner}
-            </span>
-          )}
-          {selectedCategory && (
-            <span className="flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-              Category: {selectedCategory}
-            </span>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 const ProductTable = () => {
   const { data: rowData, error, mutate: revalidate } = useSWR("/products", fetcher);
-  const { data: ownerOptions, isLoading: ownersLoading } = useSWR("/owners", ownersFetcher);
-  const { data: categoryOptions, isLoading: categoriesLoading } = useSWR("/categories", categoriesFetcher);
-
   const [editData, setEditData] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
-
-  const [selectedOwner, setSelectedOwner] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
 
   // Prevent double-click on action buttons
   const deletingRef = useRef<Set<number>>(new Set());
@@ -293,21 +127,6 @@ const ProductTable = () => {
     []
   );
 
-  // Client-side filter by Owner & Category (backend /products has no filter query params yet)
-  const filteredRowData = useMemo(() => {
-    if (!rowData) return rowData;
-    return rowData.filter((row: any) => {
-      const ownerMatch = !selectedOwner || row.owner_code === selectedOwner;
-      const categoryMatch = !selectedCategory || row.category === selectedCategory;
-      return ownerMatch && categoryMatch;
-    });
-  }, [rowData, selectedOwner, selectedCategory]);
-
-  const handleResetFilters = () => {
-    setSelectedOwner("");
-    setSelectedCategory("");
-  };
-
   return (
     <>
       <div style={{ width: "100%" }}>
@@ -356,21 +175,8 @@ const ProductTable = () => {
           </div>
         </div>
 
-        {/* ── Filter Bar (Owner / Category) ── */}
-        <FilterBar
-          ownerOptions={ownerOptions ?? []}
-          categoryOptions={categoryOptions ?? []}
-          ownersLoading={ownersLoading}
-          categoriesLoading={categoriesLoading}
-          selectedOwner={selectedOwner}
-          selectedCategory={selectedCategory}
-          onOwnerChange={setSelectedOwner}
-          onCategoryChange={setSelectedCategory}
-          onReset={handleResetFilters}
-        />
-
         <AgGridReact
-          rowData={filteredRowData}
+          rowData={rowData}
           columnDefs={columnDefs}
           quickFilterText={quickFilterText}
           pagination={true}

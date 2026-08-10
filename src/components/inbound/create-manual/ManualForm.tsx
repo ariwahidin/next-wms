@@ -127,7 +127,7 @@ export default function ManualForm() {
   const fetchData = async () => {
     try {
       const [suppliers, transporters, warehouses, owners, origins] = await Promise.all([
-        api.get("/suppliers"),
+        api.get("/suppliers/owner/user"),
         api.get("/transporters"),
         api.get("/warehouses"),
         api.get("/owners/user"),

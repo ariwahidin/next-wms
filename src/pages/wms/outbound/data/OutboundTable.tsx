@@ -64,6 +64,7 @@ import { format, subDays } from "date-fns";
 import SyncEcommerceModal from "@/components/outbound/SyncEcommerceModal";
 import ArrangeShipmentModal from "@/components/outbound/ArrangeShipmentModal.patch";
 import { usePermission } from "@/hooks/usePermission";
+import Select from "react-select";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -83,6 +84,7 @@ interface FilterParams {
   searchItem: string;
   statuses: OutboundStatus[];
   orderTypes: string[];
+  owner: string;
 }
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -118,6 +120,7 @@ const buildUrl = (filters: FilterParams) => {
   if (filters.searchItem) params.set("search_item", filters.searchItem);
   if (filters.statuses.length > 0) params.set("statuses", filters.statuses.join(","));
   if (filters.orderTypes.length > 0) params.set("order_types", filters.orderTypes.join(","));
+  if (filters.owner) params.set("owners", filters.owner); // ← tambahan
   return `/outbound/filter?${params.toString()}`;
 };
 
@@ -134,6 +137,17 @@ const fetcher = (url: string) =>
   });
 
 // ─── Outside-component handlers (tidak perlu state) ──────────────────────────
+
+const ownersFetcher = (url: string) =>
+  api.get(url, { withCredentials: true }).then((res) => {
+    if (res.data.success && res.data.data) {
+      return res.data.data.map((o: any) => ({
+        value: o.code,
+        label: `${o.code} - ${o.description}`,
+      }));
+    }
+    return [];
+  });
 
 const HandleCopy = (item: any) => {
   router.push(`/wms/outbound/copy/${item.outbound_no}`);
@@ -236,6 +250,8 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const itemDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const { data: ownerOptions, isLoading: ownersLoading } = useSWR("/owners", ownersFetcher);
+
   const handleSearchChange = (val: string) => {
     setLocalSearch(val);
     clearTimeout(searchDebounce.current);
@@ -274,6 +290,7 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
       searchItem: "",
       statuses: [],
       orderTypes: [],
+      owner: "", // ← tambahan
     };
     setLocalSearch("");
     setLocalItem("");
@@ -285,6 +302,7 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
     filters.searchItem !== "" ||
     filters.statuses.length > 0 ||
     filters.orderTypes.length > 0 ||
+    filters.owner !== "" || // ← tambahan
     fmt(filters.startDate) !== fmt(subDays(new Date(), 7)) ||
     fmt(filters.endDate) !== fmt(new Date());
 
@@ -458,6 +476,38 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
         {/* Divider */}
         <div className="hidden h-10 w-px bg-slate-200 sm:block" />
 
+        {/* Owner filter — NEW */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+            Owner
+          </label>
+          <Select
+            isClearable
+            placeholder="All owners"
+            className="w-48 text-sm"
+            classNamePrefix="rs"
+            options={ownerOptions ?? []}
+            isLoading={ownersLoading}
+            value={ownerOptions?.find((o: any) => o.value === filters.owner) ?? null}
+            onChange={(selected) =>
+              onChange({ ...filters, owner: selected ? selected.value : "" })
+            }
+            styles={{
+              control: (base) => ({
+                ...base,
+                minHeight: 34,
+                borderColor: "#e2e8f0",
+                boxShadow: "none",
+                "&:hover": { borderColor: "#94a3b8" },
+              }),
+              menu: (base) => ({ ...base, zIndex: 50 }),
+            }}
+          />
+        </div>
+
+        {/* Divider */}
+        <div className="hidden h-10 w-px bg-slate-200 sm:block" />
+
         {/* Header search */}
         <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
           <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
@@ -524,6 +574,11 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
               {ot}
             </span>
           ))}
+          {filters.owner && (
+            <span className="flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700">
+              Owner: {filters.owner}
+            </span>
+          )}
           {filters.search && (
             <span className="rounded-full bg-slate-900 px-2.5 py-0.5 text-xs font-medium text-white">
               `{filters.search}`
@@ -554,6 +609,7 @@ const OutboundTable = () => {
     searchItem: "",
     statuses: [],
     orderTypes: [],
+    owner: "", // ← tambahan
   });
 
   // SWR dengan URL yang berubah sesuai filter
@@ -778,6 +834,7 @@ const OutboundTable = () => {
 
   const [columnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No.", maxWidth: 70 },
+    { field: "owner_code", headerName: "Owner", maxWidth: 100 },
     { field: "outbound_no", headerName: "Picking No", maxWidth: 140 },
     {
       headerName: "Actions",

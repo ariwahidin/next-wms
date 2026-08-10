@@ -57,6 +57,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { set } from "date-fns";
 import JsBarcode from "jsbarcode";
+import Select from "react-select";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -125,6 +126,17 @@ const fetcher = (url: string) =>
     return [];
   });
 
+
+const ownersFetcher = (url: string) =>
+  api.get(url, { withCredentials: true }).then((res) => {
+    if (res.data.success && res.data.data) {
+      return res.data.data.map((o: any) => ({
+        value: o.code,
+        label: `${o.code} - ${o.description}`,
+      }));
+    }
+    return [];
+  });
 // ─── Printable Labels Component ───────────────────────────────────────────────
 
 const PrintableLabels = ({ palletIDs }) => {
@@ -379,10 +391,12 @@ interface FilterBarProps {
 const FilterBar = ({ filters, onChange, loading }: FilterBarProps) => {
   const [localSearch, setLocalSearch] = useState(filters.search);
   const [localItem, setLocalItem] = useState(filters.searchItem);
-  const [localOwner, setLocalOwner] = useState(filters.owner);
+  // const [localOwner, setLocalOwner] = useState(filters.owner);
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const itemDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const ownerDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // const ownerDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { data: ownerOptions } = useSWR("/owners", ownersFetcher);
 
   const handleSearchChange = (val: string) => {
     setLocalSearch(val);
@@ -400,13 +414,13 @@ const FilterBar = ({ filters, onChange, loading }: FilterBarProps) => {
     }, 500);
   };
 
-  const handleOwnerChange = (val: string) => {
-    setLocalOwner(val);
-    clearTimeout(ownerDebounce.current);
-    ownerDebounce.current = setTimeout(() => {
-      onChange({ ...filters, owner: val });
-    }, 500);
-  };
+  // const handleOwnerChange = (val: string) => {
+  //   setLocalOwner(val);
+  //   clearTimeout(ownerDebounce.current);
+  //   ownerDebounce.current = setTimeout(() => {
+  //     onChange({ ...filters, owner: val });
+  //   }, 500);
+  // };
 
   const toggleStatus = (status: string) => {
     const next = filters.statuses.includes(status)
@@ -434,7 +448,8 @@ const FilterBar = ({ filters, onChange, loading }: FilterBarProps) => {
     };
     setLocalSearch("");
     setLocalItem("");
-    setLocalOwner("");
+    // setLocalOwner("");
+
     onChange(reset);
   };
 
@@ -613,7 +628,7 @@ const FilterBar = ({ filters, onChange, loading }: FilterBarProps) => {
         <div className="hidden h-10 w-px bg-slate-200 sm:block" />
 
         {/* Owner text filter */}
-        <div className="flex flex-col gap-1">
+        {/* <div className="flex flex-col gap-1">
           <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
             Owner
           </label>
@@ -626,6 +641,37 @@ const FilterBar = ({ filters, onChange, loading }: FilterBarProps) => {
               className="w-32 rounded-md border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-sm text-slate-700 placeholder-slate-400 transition-all focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1"
             />
           </div>
+        </div> */}
+
+        {/* Owner filter */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+            Owner
+          </label>
+          <Select
+            isClearable
+            placeholder="All owners"
+            className="w-48 text-sm"
+            classNamePrefix="rs"
+            options={ownerOptions ?? []}
+            isLoading={!ownerOptions}
+            value={
+              ownerOptions?.find((o: any) => o.value === filters.owner) ?? null
+            }
+            onChange={(selected) =>
+              onChange({ ...filters, owner: selected ? selected.value : "" })
+            }
+            styles={{
+              control: (base) => ({
+                ...base,
+                minHeight: 34,
+                borderColor: "#e2e8f0",
+                boxShadow: "none",
+                "&:hover": { borderColor: "#94a3b8" },
+              }),
+              menu: (base) => ({ ...base, zIndex: 50 }),
+            }}
+          />
         </div>
 
         <div className="hidden h-10 w-px bg-slate-200 sm:block" />

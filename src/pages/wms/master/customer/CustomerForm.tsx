@@ -5,13 +5,13 @@ import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
@@ -24,29 +24,46 @@ import Select from "react-select";
 
 type Option = { value: string; label: string };
 
-export default function CustomerForm({ editData, setEditData }) {
-  const [customer, setCustomer] = useState<Customer>({
-    ID: 0,
-    owner_code: "",
-    customer_code: "",
-    customer_name: "",
-    cust_addr1: "",
-    cust_addr2: "",
-    cust_city: "",
-    cust_area: "",
-  });
+const emptyCustomer: Customer = {
+  ID: 0,
+  owner_code: "",
+  customer_code: "",
+  customer_name: "",
+  cust_addr1: "",
+  cust_addr2: "",
+  cust_city: "",
+  cust_area: "",
+  cust_country: "",
+  cust_phone: "",
+  cust_email: "",
+};
+
+interface CustomerFormProps {
+  editData: any;
+  setEditData: (data: any) => void;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}
+
+export default function CustomerForm({ editData, setEditData, open, setOpen }: CustomerFormProps) {
+  const [customer, setCustomer] = useState<Customer>(emptyCustomer);
 
   const [error, setError] = useState<string | null>(null);
   // Owner
   const [ownerOptions, setOwnerOptions] = useState<Option[]>([]);
   const [selectedOwner, setSelectedOwner] = useState<Option | null>(null);
 
-  // 🔥 Jika editData berubah, isi form dengan data produk yang dipilih
+  // 🔥 Isi form dengan data customer yang dipilih saat modal dibuka untuk edit,
+  // atau kosongkan saat dibuka untuk tambah baru
   useEffect(() => {
+    if (!open) return;
+    setError(null);
     if (editData) {
       setCustomer(editData);
+    } else {
+      setCustomer(emptyCustomer);
     }
-  }, [editData]);
+  }, [open, editData]);
 
   useEffect(() => {
     (async () => {
@@ -75,22 +92,20 @@ export default function CustomerForm({ editData, setEditData }) {
     }
   };
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
 
     try {
       setError(null); // Reset error message jika form valid
 
       if (editData) {
-        console.log(editData);
-        // 🔥 Update produk jika sedang dalam mode edit
+        // 🔥 Update customer jika sedang dalam mode edit
         await api.put(
           `/customers/${editData.ID}`, customer,
           { withCredentials: true }
         );
       } else {
-        // 🔥 Tambah produk baru jika tidak sedang edit
+        // 🔥 Tambah customer baru jika tidak sedang edit
         await api.post(
           "/customers", customer,
           { withCredentials: true }
@@ -99,9 +114,8 @@ export default function CustomerForm({ editData, setEditData }) {
 
       mutate("/customers");
       setEditData(null);
-      setCustomer({ ID: 0, owner_code: "", customer_code: "", customer_name: "", cust_addr1: "", cust_addr2: "", cust_city: "", cust_area: "", cust_country: "", cust_phone: "", cust_email: "" });
-
-      document.getElementById("customerCode")?.focus();
+      setCustomer(emptyCustomer);
+      setOpen(false);
     } catch (err: any) {
       // Tangani error dengan cara yang lebih ramah
       if (err.response) {
@@ -119,25 +133,29 @@ export default function CustomerForm({ editData, setEditData }) {
   }
 
   // Menangani tombol Enter untuk submit
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      handleSubmit(e); // Submit form saat Enter
+      handleSubmit(e as any); // Submit form saat Enter
     }
   };
 
   const handleCancel = () => {
     setError(null);
     setEditData(null);
-    setCustomer({ ID: 0, owner_code: "", customer_code: "", customer_name: "", cust_addr1: "", cust_addr2: "", cust_city: "", cust_area: "" });
+    setCustomer(emptyCustomer);
+    setOpen(false);
   };
 
   return (
-    <Card className="w-[400px]">
-      <CardHeader>
-        <CardTitle>{editData ? "Edit Customer" : "Add Customer"}</CardTitle>
-        {/* <CardDescription>
-          {editData ? "Edit Customer" : "Add Customer"}
-        </CardDescription> */}
+    <Dialog open={open} onOpenChange={(o) => { if (!o) handleCancel(); else setOpen(o); }}>
+      <DialogContent className="max-w-2xl bg-white max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{editData ? "Edit Customer" : "Add Customer"}</DialogTitle>
+          <DialogDescription>
+            {editData ? "Update the customer details below." : "Fill in the details for the new customer."}
+          </DialogDescription>
+        </DialogHeader>
+
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -145,18 +163,16 @@ export default function CustomerForm({ editData, setEditData }) {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-      </CardHeader>
-      <CardContent>
+
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
-          <div className="grid w-full items-center gap-4">
+          <div className="grid grid-cols-2 gap-4">
 
             {/* Owner */}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="Owner">Owner</Label>
+              <Label htmlFor="owner">Owner</Label>
               <Select<Option>
                 inputId="owner"
                 classNamePrefix="rs"
-                // styles={selectStyles}
                 placeholder="Select owner"
                 options={ownerOptions}
                 value={ownerOptions.find(o => o.value === customer.owner_code) || null}
@@ -169,7 +185,7 @@ export default function CustomerForm({ editData, setEditData }) {
             </div>
 
             <div className="flex flex-col space-y-1">
-              <Label htmlFor="item_code">Customer Code</Label>
+              <Label htmlFor="customerCode">Customer Code</Label>
               <Input
                 readOnly={editData ? true : false}
                 id="customerCode"
@@ -178,8 +194,9 @@ export default function CustomerForm({ editData, setEditData }) {
                 placeholder=""
               />
             </div>
-            <div className="flex flex-col space-y-1">
-              <Label htmlFor="item_name">Name</Label>
+
+            <div className="flex flex-col space-y-1 col-span-2">
+              <Label htmlFor="customerName">Name</Label>
               <Input
                 id="customerName"
                 onChange={(e) => setCustomer({ ...customer, customer_name: e.target.value })}
@@ -187,8 +204,9 @@ export default function CustomerForm({ editData, setEditData }) {
                 placeholder=""
               />
             </div>
-            <div className="flex flex-col space-y-1">
-              <Label htmlFor="item_name">Address</Label>
+
+            <div className="flex flex-col space-y-1 col-span-2">
+              <Label htmlFor="customerAddr1">Address</Label>
               <textarea
                 className="w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 id="customerAddr1"
@@ -197,8 +215,9 @@ export default function CustomerForm({ editData, setEditData }) {
                 placeholder=""
               />
             </div>
+
             <div className="flex flex-col space-y-1">
-              <Label htmlFor="item_name">City</Label>
+              <Label htmlFor="customerCity">City</Label>
               <Input
                 id="customerCity"
                 onChange={(e) => setCustomer({ ...customer, cust_city: e.target.value })}
@@ -206,8 +225,9 @@ export default function CustomerForm({ editData, setEditData }) {
                 placeholder=""
               />
             </div>
+
             <div className="flex flex-col space-y-1">
-              <Label htmlFor="item_name">Country</Label>
+              <Label htmlFor="customerCountry">Country</Label>
               <Input
                 id="customerCountry"
                 onChange={(e) => setCustomer({ ...customer, cust_country: e.target.value })}
@@ -215,8 +235,9 @@ export default function CustomerForm({ editData, setEditData }) {
                 placeholder=""
               />
             </div>
+
             <div className="flex flex-col space-y-1">
-              <Label htmlFor="item_name">Phone</Label>
+              <Label htmlFor="customerPhone">Phone</Label>
               <Input
                 id="customerPhone"
                 onChange={(e) => setCustomer({ ...customer, cust_phone: e.target.value })}
@@ -224,8 +245,9 @@ export default function CustomerForm({ editData, setEditData }) {
                 placeholder=""
               />
             </div>
+
             <div className="flex flex-col space-y-1">
-              <Label htmlFor="item_name">Email</Label>
+              <Label htmlFor="customerEmail">Email</Label>
               <Input
                 id="customerEmail"
                 onChange={(e) => setCustomer({ ...customer, cust_email: e.target.value })}
@@ -235,18 +257,16 @@ export default function CustomerForm({ editData, setEditData }) {
             </div>
           </div>
         </form>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={handleCancel}>
-          Cancel
-        </Button>
-        <Button onClick={handleSubmit} type="submit">
-          {" "}
-          {/* Tombol submit */}
-          {editData ? "Update" : "Add"}
-        </Button>
-      </CardFooter>
-    </Card>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} type="submit">
+            {editData ? "Update" : "Add"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
-
