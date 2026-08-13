@@ -136,11 +136,23 @@ export default function ManualForm() {
 
       if (suppliers.data.success) {
         setSuppliers(suppliers.data.data);
+        // setSupplierOptions(
+        //   suppliers.data.data.map((item: Supplier) => ({
+        //     value: item.supplier_code,
+        //     label: item.supplier_name,
+        //   }))
+        // );
+
         setSupplierOptions(
-          suppliers.data.data.map((item: Supplier) => ({
-            value: item.supplier_code,
-            label: item.supplier_name,
-          }))
+          suppliers.data.data
+            .filter(
+              (supplier) =>
+                supplier.owner_code === formData.owner_code
+            )
+            .map((item: Supplier) => ({
+              value: item.supplier_code,
+              label: item.supplier_name,
+            }))
         );
 
         if (transporters.data.success) {
@@ -234,13 +246,11 @@ export default function ManualForm() {
         alert("Error saving inbound");
       }
     } else {
-
       try {
         eventBus.emit("loading", true);
         const res = await api.put(
           `/inbound/${formData.inbound_no}`,
           {
-            // ...formData,
             ...filteredFormData,
             items: muatan,
           },
@@ -302,6 +312,21 @@ export default function ManualForm() {
       eventBus.off("refreshData", handleRefresh);
     };
   }, [no]);
+
+
+  useEffect(() => {
+    setSupplierOptions(
+      suppliers
+        .filter(
+          (supplier) =>
+            supplier.owner_code === formData.owner_code
+        )
+        .map((item: Supplier) => ({
+          value: item.supplier_code,
+          label: item.supplier_name,
+        }))
+    );
+  }, [suppliers, formData.owner_code]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -445,7 +470,20 @@ export default function ManualForm() {
                         setFormData({
                           ...formData,
                           owner_code: selectedOption.value,
+                          supplier: "",
                         });
+
+                        setSupplierOptions(
+                          suppliers
+                            .filter(
+                              (supplier) =>
+                                supplier.owner_code === selectedOption.value
+                            )
+                            .map((item: Supplier) => ({
+                              value: item.supplier_code,
+                              label: item.supplier_name,
+                            }))
+                        );
                       }
                     }}
                   />
@@ -462,9 +500,11 @@ export default function ManualForm() {
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
                   <Select
-                    value={supplierOptions.find(
-                      (option) => option.value === formData.supplier
-                    )}
+                    // value={supplierOptions.find(
+                    //   (option) => option.value === formData.supplier
+                    // )}
+
+                    value={formData.supplier ? { value: formData.supplier, label: suppliers.find(s => s.supplier_code === formData.supplier)?.supplier_name || formData.supplier } : null}
                     options={supplierOptions}
                     onChange={(selectedOption) => {
                       if (selectedOption) {

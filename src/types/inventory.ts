@@ -8,6 +8,7 @@ export interface InventoryPolicy {
     use_vas: boolean;
     use_production_date: boolean;
     use_receive_location: boolean;
+    use_serial_number: boolean;
     require_expiry_date: boolean;
     require_lot_number: boolean;
     show_rec_date: boolean;

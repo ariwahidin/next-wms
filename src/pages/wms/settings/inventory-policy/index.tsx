@@ -18,6 +18,7 @@ interface InventoryPolicy {
   use_vas: boolean;
   use_production_date: boolean;
   use_receive_location: boolean;
+  use_serial_number: boolean;
   show_rec_date: boolean;
   require_expiry_date: boolean;
   require_lot_number: boolean;
@@ -71,7 +72,8 @@ export default function InventoryPolicyPage() {
     allocation_lot_by_order: false,
     allocation_location_by_order: false,
     picking_with_scanner: false,
-    picking_exclude_locations_under_cycle_count: false      
+    picking_exclude_locations_under_cycle_count: false,
+    use_serial_number: false
   });
 
   useEffect(() => {
@@ -131,7 +133,8 @@ export default function InventoryPolicyPage() {
       allocation_lot_by_order: false,
       allocation_location_by_order: false,
       picking_with_scanner: false,
-      picking_exclude_locations_under_cycle_count: false
+      picking_exclude_locations_under_cycle_count: false,
+      use_serial_number: false
     });
     setShowModal(true);
   };
@@ -164,7 +167,8 @@ export default function InventoryPolicyPage() {
       allocation_lot_by_order: (policy as any).allocation_lot_by_order || false,
       allocation_location_by_order: (policy as any).allocation_location_by_order || false,
       picking_with_scanner: (policy as any).picking_with_scanner || false,
-      picking_exclude_locations_under_cycle_count: (policy as any).picking_exclude_locations_under_cycle_count || false
+      picking_exclude_locations_under_cycle_count: (policy as any).picking_exclude_locations_under_cycle_count || false,
+      use_serial_number: (policy as any).use_serial_number || false
     });
     setShowModal(true);
   };
@@ -326,7 +330,7 @@ export default function InventoryPolicyPage() {
                             <div className="flex flex-wrap gap-1">
                               {policy.use_production_date && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-pink-50 text-pink-700 rounded">Prod Date</span>}
                               {policy.require_expiry_date && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-rose-50 text-rose-700 rounded">Expiry Date</span>}
-                              {policy.require_lot_number && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-orange-50 text-orange-700 rounded">Lot#</span>}
+                              {policy.require_lot_number && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-orange-50 text-orange-700 rounded">Inventory</span>}
                               {policy.require_scan_pick_location && <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 rounded">Scan Pick Loc</span>}
                             </div>
                           </td>
@@ -412,7 +416,7 @@ export default function InventoryPolicyPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">Lot Management</h3>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">Inventory</h3>
                       <div className="space-y-2.5">
                         <label className="flex items-center gap-2.5 cursor-pointer group">
                           <input
@@ -440,6 +444,7 @@ export default function InventoryPolicyPage() {
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                           />
                           <span className="text-sm text-gray-700 group-hover:text-gray-900">Allow Mixed Lot</span>
+                          <span className="text-xs text-gray-500">(Allow multiple lot numbers for the same item in the location, pallet id)</span>
                         </label>
                         <label className="flex items-center gap-2.5 cursor-pointer group">
                           <input
@@ -449,12 +454,23 @@ export default function InventoryPolicyPage() {
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                           />
                           <span className="text-sm text-gray-700 group-hover:text-gray-900">Require Lot Number</span>
+                          <span className="text-xs text-gray-500">(Require lot number when adding inventory)</span>
+                        </label>
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.use_serial_number}
+                            onChange={(e) => handleCheckboxChange('use_serial_number', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">Use Serial Number</span>
+                          <span className="text-xs text-gray-500">(Save serial number in the inventory)</span>
                         </label>
                       </div>
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">Stock Method</h3>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">Allocation Method</h3>
                       <div className="space-y-2.5">
                         <label className="flex items-center gap-2.5 cursor-pointer group">
                           <input
@@ -513,6 +529,17 @@ export default function InventoryPolicyPage() {
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">Inbound Rule</h3>
                       <div className="space-y-2.5">
+
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.use_receive_location}
+                            onChange={(e) => handleCheckboxChange('use_receive_location', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">Receive Location</span>
+                          <span className="text-xs text-gray-500">(Require location when create inbound planning)</span>
+                        </label>
 
 
                         <label className="flex items-center gap-2.5 cursor-pointer group">
@@ -608,7 +635,7 @@ export default function InventoryPolicyPage() {
                           <span className="text-xs text-gray-500">(Allocation lot by order)</span>
                         </label>
 
-                        
+
 
                         <label className="flex items-center gap-2.5 cursor-pointer group">
                           <input
@@ -674,7 +701,7 @@ export default function InventoryPolicyPage() {
 
 
 
-                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                        {/* <label className="flex items-center gap-2.5 cursor-pointer group">
                           <input
                             type="checkbox"
                             checked={formData.use_receive_location}
@@ -682,7 +709,7 @@ export default function InventoryPolicyPage() {
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                           />
                           <span className="text-sm text-gray-700 group-hover:text-gray-900">Receive Location</span>
-                        </label>
+                        </label> */}
                         <label className="flex items-center gap-2.5 cursor-pointer group">
                           <input
                             type="checkbox"
@@ -703,7 +730,7 @@ export default function InventoryPolicyPage() {
                         </label>
                       </div>
                     </div>
-                  
+
                   </div>
                 </div>
 

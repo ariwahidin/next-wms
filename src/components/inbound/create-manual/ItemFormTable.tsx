@@ -197,6 +197,7 @@ export default function ItemFormTable({
         mode: "create",
         is_serial: product.has_serial,
         division_code: "REGULAR",
+        serial_number: "", // Initialize serial_number as an empty string
       }));
 
       setMuatan((prev) => [...prev, ...newItems]);
@@ -245,22 +246,6 @@ export default function ItemFormTable({
     console.log("ID:", id);
     console.log("Field:", field);
     console.log("Value:", value);
-
-    // setMuatan((prev) =>
-    //   prev.map((m) =>
-    //     m.ID === id
-    //       ? { ...m, [field]: field === "quantity" ? Number(value) : value }
-    //       : m
-    //   )
-    // );
-
-    // setFilteredMuatan((prev) =>
-    //   prev.map((m) =>
-    //     m.ID === id
-    //       ? { ...m, [field]: field === "quantity" ? Number(value) : value }
-    //       : m
-    //   )
-    // );
 
     setMuatan((prev) =>
       prev.map((m) =>
@@ -398,6 +383,7 @@ export default function ItemFormTable({
         mode: "create",
         exp_date: "",
         lot_number: "",
+        serial_number: "",
       };
 
       // Sisipkan hasil copy di posisi setelah item yang dicopy
@@ -642,6 +628,12 @@ export default function ItemFormTable({
               {invPolicy?.use_lot_no && (
                 <th className="p-2 border" style={{ width: "140px" }}>
                   Lot No.
+                </th>
+              )}
+  
+              {invPolicy?.use_serial_number && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Serial No.
                 </th>
               )}
 
@@ -934,6 +926,28 @@ export default function ItemFormTable({
                           </td>
                         )}
 
+                        {invPolicy?.use_serial_number && (
+                          <td className="p-2 border">
+                            <Input
+                              style={{ fontSize: "12px", width: "130px" }}
+                              type="text"
+                              value={item.serial_number}
+                              onChange={(e) =>
+                                handleChange(
+                                  item.ID,
+                                  "serial_number",
+                                  e.target.value
+                                )
+                              }
+                            />
+                            {errors[item.ID]?.serial_number && (
+                              <small className="text-red-500">
+                                {errors[item.ID].serial_number}
+                              </small>
+                            )}
+                          </td>
+                        )}
+
                         <td
                           className="p-2 border space-x-2 text-center"
                           style={{ width: "100px" }}
@@ -1053,6 +1067,13 @@ export default function ItemFormTable({
                             {item.lot_number}
                           </td>
                         )}
+
+                        {invPolicy?.use_serial_number && (
+                          <td className="p-2 border text-center">
+                            {item.serial_number}
+                          </td>
+                        )}
+
                         <td
                           className="p-2 border space-x-2 text-center"
                           style={{ width: "160px" }}

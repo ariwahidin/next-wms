@@ -10,6 +10,7 @@ import router from "next/router";
 
 export default function InboundCard({ data }: { data: InboundItem }) {
   const {
+    owner_code,
     inbound_no,
     supplier_name,
     receipt_id,
@@ -50,6 +51,9 @@ export default function InboundCard({ data }: { data: InboundItem }) {
           <div className="text-sm font-semibold">
             {inbound_no}
             <br />
+            <span className="text-xs text-gray-500 rounded px-2 py-1 w-max mt-1 bg-blue-100 me-2">
+              {owner_code}
+            </span>
             <span className="text-xs text-gray-500 rounded px-2 py-1 w-max mt-1 bg-green-100">
               {status}
             </span>

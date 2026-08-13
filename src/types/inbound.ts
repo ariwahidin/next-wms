@@ -51,6 +51,7 @@ export interface ItemFormProps {
   category?: string;
   qa_status?: string;
   division_code?: string;
+  serial_number?: string;
 }
 
 export interface InboundReference {
@@ -120,6 +121,7 @@ export interface ItemOptions {
 }
 
 export type InboundItem = {
+  owner_code?: string;
   id: number;
   inbound_no: string;
   supplier_name: string;
