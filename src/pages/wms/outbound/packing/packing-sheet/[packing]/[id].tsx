@@ -98,8 +98,6 @@ const PickingSheetPrint = () => {
     <div style={{ padding: "10px", fontFamily: "Arial" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "center" }}>
-        {/* <img src="/images/yusen001.jpeg" alt="Logo" width="100" /> */}
-        {/* <canvas ref={barcodeRef}></canvas> */}
         <p
           style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}
         >
@@ -250,9 +248,9 @@ const PickingSheetPrint = () => {
             <th style={th}>NO</th>
             <th style={th}>PACKING NO</th>
             <th style={th}>CTN NO</th>
-            <th style={th}>ITEM</th>
+            <th style={th}>SKU</th>
             <th style={th}>DESCRIPTION</th>
-            <th style={th}>EAN</th>
+            {/* <th style={th}>EAN</th> */}
             <th style={th}>QTY</th>
             <th style={th}>UoM</th>
           </tr>
@@ -272,13 +270,13 @@ const PickingSheetPrint = () => {
               return (
                 <React.Fragment key={itemCode}>
 
-                  {records.map((item, j) => (   
+                  {records.map((item, j) => (
                     <tr key={j}>
                       {/* NO */}
                       <td style={{ textAlign: "center" }}>{numbering++}</td>
 
                       {/* PACKING NO */}
-                      <td style={{ textAlign: "center" }}>
+                      <td style={{ textAlign: "center", maxWidth: "50px" }}>
                         {j === 0 ? item.packing_no : ""}
                       </td>
                       <td style={{ textAlign: "center" }}>{item.pack_ctn_no}</td>
@@ -287,24 +285,24 @@ const PickingSheetPrint = () => {
                       <td style={{ textAlign: "center" }}>
                         {j === 0 ? item.item_code : ""}
                       </td>
-                      
+
                       {/* ITEM NAME */}
                       <td
                         style={{
-                          maxWidth: "150px",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
+                          maxWidth: "180px",       // batasi lebar kolom biar kolom lain tetap muat
+                          whiteSpace: "normal",     // izinkan wrap, jangan nowrap
+                          wordBreak: "break-word",  // patah kata kalau kepanjangan
+                          overflowWrap: "break-word",
+                          lineHeight: "1.2",
                         }}
-                        title={j === 0 ? item.item_name : ""}
                       >
                         {j === 0 ? item.item_name : ""}
                       </td>
 
                       {/* BARCODE */}
-                      <td style={{ textAlign: "center" }}>
+                      {/* <td style={{ textAlign: "center" }}>
                         {j === 0 ? item.barcode_scan : ""}
-                      </td>
+                      </td> */}
 
                       {/* QTY */}
                       <td style={{ textAlign: "center" }}>{item.qty_scan}</td>
@@ -314,7 +312,7 @@ const PickingSheetPrint = () => {
 
                   <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
                     <td style={{ ...td, textAlign: "center" }}>{''}</td>
-                    <td colSpan={5} style={{ ...td, textAlign: "right" }}>
+                    <td colSpan={4} style={{ ...td, textAlign: "right" }}>
                       TOTAL
                     </td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
@@ -327,7 +325,7 @@ const PickingSheetPrint = () => {
 
           {/* grand total */}
           <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
-            <td colSpan={6} style={{ ...td, textAlign: "right" }}>
+            <td colSpan={5} style={{ ...td, textAlign: "right" }}>
               GRAND TOTAL
             </td>
             <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
@@ -346,7 +344,7 @@ const PickingSheetPrint = () => {
       >
         <div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>
-             Checker
+            Checker
           </p>
           <div style={signatureLine}></div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
@@ -364,7 +362,7 @@ const PickingSheetPrint = () => {
         </div>
         <div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>
-             Driver
+            Driver
           </p>
           <div style={signatureLine}></div>
           <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
