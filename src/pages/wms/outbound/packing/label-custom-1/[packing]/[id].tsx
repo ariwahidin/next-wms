@@ -246,19 +246,9 @@ const CartonLabelPrinter: React.FC = () => {
                 <div className="header-to">To :</div>
                 <div className="header-customer">
                   <div className="customer-name">{carton.customer_name}</div>
-                  {/* <div className="customer-details">
-                                        <div>SHIPMENT ID : {carton.shipment_id}</div>
-                                        <div>STORE CODE : {carton.deliv_to}</div>
-                                    </div> */}
                   <div className="customer-address">{carton.deliv_address}</div>
                 </div>
               </div>
-
-              {/* From Section */}
-              {/* <div className="label-from">
-                <span className="from-label">From :</span>
-                <span className="from-company">YUWELL</span>
-              </div> */}
 
               {/* Order Number Section */}
               <div className="order-section">
@@ -293,38 +283,6 @@ const CartonLabelPrinter: React.FC = () => {
 
               {/* Bottom Grid Section */}
               <div className="bottom-section">
-                {/* <div className="bottom-left">
-                  <div className="bottom-label">Dimension L x W x H (cm)</div>
-                </div> */}
-                {/* <div className="bottom-right">
-                  <div className="bottom-label">Carton Code</div>
-                  <div className="bottom-value">{carton.shipment_id}{carton.pack_ctn_no.padStart(2, '0')}</div>
-                </div> */}
-                {/* <table className="contents-table">
-                                    <thead>
-                                        <tr>
-                                            <th className="th-no">No</th>
-                                            <th className="th-code">Item</th>
-                                            <th className="th-qty">Qty</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {carton.items.map((item, idx) => (
-                                            <tr key={idx}>
-                                                <td className="td-no">{idx + 1}</td>
-                                                <td className="td-code"><span>{item.item_code}</span> <br /> <span>{item.item_name}</span></td>
-                                                <td className="td-qty">{item.quantity}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colSpan={2} className="tf-label">TOTAL</td>
-                                            <td className="tf-total">{carton.total_quantity}</td>
-                                        </tr>
-                                    </tfoot>
-                                </table> */}
-
                 {carton.items.map((item, idx) => (
                   <div className="bottom-label" key={idx}>
                     <span>{item.item_code}</span> {' - '}<span>{item.item_name}</span>
@@ -338,15 +296,6 @@ const CartonLabelPrinter: React.FC = () => {
                   <span style={{ fontWeight: "bold" }}>YUWELL Warehouse</span> <br />
                   Jl. Raya Cakung Cilincing KM. 1.5, Cakung, Jakarta 13910 <br />
                 </div>
-                {/* <div className="footer-right">{new Date().toLocaleString('en-US', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                  hour12: true
-                })}</div> */}
               </div>
 
               {/* Footer Section */}
@@ -578,10 +527,14 @@ const CartonLabelPrinter: React.FC = () => {
           }
 
           /* Bottom Section */
+          // .bottom-section {
+          //   display: flex;
+          //   margin-bottom: 2mm;
+          // }
+
           .bottom-section {
             display: flex;
-            // border: 2px solid #000;
-            margin-bottom: 2mm;
+            flex-direction: column;
           }
 
           .bottom-left {
@@ -595,9 +548,15 @@ const CartonLabelPrinter: React.FC = () => {
             padding: 2mm;
           }
 
+          // .bottom-label {
+          //   font-size: 7pt;
+          //   margin-bottom: 1mm;
+          // }
+
           .bottom-label {
             font-size: 7pt;
-            margin-bottom: 1mm;
+            display: block;
+            width: 100%;
           }
 
           .bottom-value {
@@ -606,8 +565,9 @@ const CartonLabelPrinter: React.FC = () => {
           }
 
           .footer-section-delivered {
+            position: fixed;
             display: flex;
-            margin-top: 12mm;
+            margin-top: 120mm;
             margin-bottom: 2mm;
           }
 
