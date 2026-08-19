@@ -198,6 +198,8 @@ export default function ItemFormTable({
         is_serial: product.has_serial,
         division_code: "REGULAR",
         serial_number: "", // Initialize serial_number as an empty string
+        carton_number: "",
+        case_number: "",
       }));
 
       setMuatan((prev) => [...prev, ...newItems]);
@@ -356,6 +358,9 @@ export default function ItemFormTable({
         mode: "create",
         exp_date: "",
         lot_number: "",
+        serial_number: "",
+        carton_number: "",
+        case_number: "",
       };
 
       // Sisipkan hasil copy di posisi setelah item yang dicopy
@@ -384,6 +389,8 @@ export default function ItemFormTable({
         exp_date: "",
         lot_number: "",
         serial_number: "",
+        carton_number: "",
+        case_number: "",
       };
 
       // Sisipkan hasil copy di posisi setelah item yang dicopy
@@ -630,7 +637,19 @@ export default function ItemFormTable({
                   Lot No.
                 </th>
               )}
-  
+
+              {invPolicy?.use_carton_number && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Carton No.
+                </th>
+              )}
+
+              {invPolicy?.use_case_number && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Case No.
+                </th>
+              )}
+
               {invPolicy?.use_serial_number && (
                 <th className="p-2 border" style={{ width: "140px" }}>
                   Serial No.
@@ -926,6 +945,42 @@ export default function ItemFormTable({
                           </td>
                         )}
 
+                        {invPolicy?.use_carton_number && (
+                          <td className="p-2 border">
+                            <Input
+                              style={{ fontSize: "12px", width: "130px" }}
+                              type="text"
+                              value={item.carton_number}
+                              onChange={(e) =>
+                                handleChange(item.ID, "carton_number", e.target.value)
+                              }
+                            />
+                            {errors[item.ID]?.carton_number && (
+                              <small className="text-red-500">
+                                {errors[item.ID].carton_number}
+                              </small>
+                            )}
+                          </td>
+                        )}
+
+                        {invPolicy?.use_case_number && (
+                          <td className="p-2 border">
+                            <Input
+                              style={{ fontSize: "12px", width: "130px" }}
+                              type="text"
+                              value={item.case_number}
+                              onChange={(e) =>
+                                handleChange(item.ID, "case_number", e.target.value)
+                              }
+                            />
+                            {errors[item.ID]?.case_number && (
+                              <small className="text-red-500">
+                                {errors[item.ID].case_number}
+                              </small>
+                            )}
+                          </td>
+                        )}
+
                         {invPolicy?.use_serial_number && (
                           <td className="p-2 border">
                             <Input
@@ -1065,6 +1120,19 @@ export default function ItemFormTable({
                         {invPolicy?.use_lot_no && (
                           <td className="p-2 border text-center">
                             {item.lot_number}
+                          </td>
+                        )}
+
+
+                        {invPolicy?.use_carton_number && (
+                          <td className="p-2 border text-center">
+                            {item.carton_number}
+                          </td>
+                        )}
+
+                        {invPolicy?.use_case_number && (
+                          <td className="p-2 border text-center">
+                            {item.case_number}
                           </td>
                         )}
 

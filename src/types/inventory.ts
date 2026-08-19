@@ -9,6 +9,8 @@ export interface InventoryPolicy {
     use_production_date: boolean;
     use_receive_location: boolean;
     use_serial_number: boolean;
+    use_carton_number: boolean;
+    use_case_number: boolean;
     require_expiry_date: boolean;
     require_lot_number: boolean;
     show_rec_date: boolean;

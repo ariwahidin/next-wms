@@ -838,7 +838,8 @@ const InboundTable = () => {
                     className="cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleChecking(params.data.inbound_no);
+                      setConfirmAction({ type: "checking", inbound_no: params.data.inbound_no });
+                      // handleChecking(params.data.inbound_no);
                     }}
                   >
                     <Blocks className="mr-2 h-4 w-4" />
@@ -852,7 +853,8 @@ const InboundTable = () => {
                       className="cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handlePutaway(params.data.inbound_no);
+                        setConfirmAction({ type: "putaway", inbound_no: params.data.inbound_no });
+                        // handlePutaway(params.data.inbound_no);
                       }}
                     >
                       <Blocks className="mr-2 h-4 w-4" />
@@ -865,7 +867,8 @@ const InboundTable = () => {
                     className="cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleComplete(params.data.inbound_no);
+                      setConfirmAction({ type: "complete", inbound_no: params.data.inbound_no });
+                      // handleComplete(params.data.inbound_no);
                     }}
                   >
                     <CheckCheck className="mr-2 h-4 w-4" />
@@ -909,7 +912,8 @@ const InboundTable = () => {
                       className="cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleOpen(params.data.inbound_no);
+                        setConfirmAction({ type: "open", inbound_no: params.data.inbound_no });
+                        // handleOpen(params.data.inbound_no);
                       }}
                     >
                       <X className="mr-2 h-4 w-4" />
@@ -998,6 +1002,53 @@ const InboundTable = () => {
   const [palletModalOpen, setPalletModalOpen] = useState(false);
   const [selectedInbound, setSelectedInbound] = useState(null);
 
+
+  type ConfirmActionType = "checking" | "putaway" | "complete" | "open";
+
+  type ConfirmConfigItem = {
+    title: string;
+    description: string;
+    confirmText: string;
+  };
+
+  const CONFIRM_CONFIG: Record<ConfirmActionType, ConfirmConfigItem> = {
+    checking: {
+      title: "Start Checking?",
+      description: "This inbound will move to Checking status.",
+      confirmText: "Start Checking",
+    },
+    putaway: {
+      title: "Confirm Putaway?",
+      description: "This will confirm putaway for this inbound.",
+      confirmText: "Confirm Putaway",
+    },
+    complete: {
+      title: "Confirm Complete?",
+      description: "This inbound will be marked as Complete.",
+      confirmText: "Confirm Complete",
+    },
+    open: {
+      title: "Return to Open?",
+      description: "This inbound will be reverted back to Open status.",
+      confirmText: "Return to Open",
+    },
+  };
+
+  const handleConfirmAction = () => {
+    if (!confirmAction) return;
+    const { type, inbound_no } = confirmAction;
+    setConfirmAction(null);
+    if (type === "checking") handleChecking(inbound_no);
+    if (type === "putaway") handlePutaway(inbound_no);
+    if (type === "complete") handleComplete(inbound_no);
+    if (type === "open") handleOpen(inbound_no);
+  };
+
+  const [confirmAction, setConfirmAction] = useState<{
+    type: ConfirmActionType;
+    inbound_no: string;
+  } | null>(null);
+
   const handlePrintPalletID = (inbound_no: string) => {
     setSelectedInbound(inbound_no);
     setPalletModalOpen(true);
@@ -1005,7 +1056,7 @@ const InboundTable = () => {
 
   useEffect(() => {
     document.body.style.pointerEvents = "auto";
-  }, [palletModalOpen]);
+  }, [palletModalOpen, confirmAction]);
 
   const handleChecking = (inbound_no: string) => {
     eventBus.emit("loading", true);
@@ -1258,6 +1309,33 @@ const InboundTable = () => {
         onOpenChange={setPalletModalOpen}
         inboundNo={selectedInbound}
       />
+
+      <Dialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+        <DialogContent className="bg-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{confirmAction && CONFIRM_CONFIG[confirmAction.type].title}</DialogTitle>
+            <DialogDescription>
+              {confirmAction && CONFIRM_CONFIG[confirmAction.type].description}
+              {confirmAction && (
+                <>
+                  <br />
+                  <span className="font-medium text-slate-700">
+                    Inbound No: {confirmAction.inbound_no}
+                  </span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmAction(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmAction}>
+              {confirmAction && CONFIRM_CONFIG[confirmAction.type].confirmText}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

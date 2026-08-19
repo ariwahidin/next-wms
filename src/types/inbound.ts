@@ -52,6 +52,8 @@ export interface ItemFormProps {
   qa_status?: string;
   division_code?: string;
   serial_number?: string;
+  carton_number?: string;
+  case_number?: string;
 }
 
 export interface InboundReference {
