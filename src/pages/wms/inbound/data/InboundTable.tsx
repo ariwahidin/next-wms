@@ -847,7 +847,7 @@ const InboundTable = () => {
                   </DropdownMenuItem>
                 )}
 
-                {(params.data.status === "checking" ||
+                {/* {(params.data.status === "checking" ||
                   params.data.status === "partially received") && (
                     <DropdownMenuItem
                       className="cursor-pointer"
@@ -860,6 +860,34 @@ const InboundTable = () => {
                       <Blocks className="mr-2 h-4 w-4" />
                       Confirm Putaway
                     </DropdownMenuItem>
+                  )} */}
+
+                {(params.data.status === "checking" ||
+                  params.data.status === "partially received") && (
+                    <>
+                      {}
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmAction({ type: "check_putaway", inbound_no: params.data.inbound_no });
+                        }}
+                      >
+                        <Blocks className="mr-2 h-4 w-4" />
+                        Check All Items
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmAction({ type: "putaway", inbound_no: params.data.inbound_no });
+                        }}
+                      >
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Confirm Putaway
+                      </DropdownMenuItem>
+                    </>
                   )}
 
                 {params.data.status === "fully received" && (
@@ -1003,7 +1031,7 @@ const InboundTable = () => {
   const [selectedInbound, setSelectedInbound] = useState(null);
 
 
-  type ConfirmActionType = "checking" | "putaway" | "complete" | "open";
+  type ConfirmActionType = "checking" | "check_putaway" | "putaway" | "complete" | "open";
 
   type ConfirmConfigItem = {
     title: string;
@@ -1017,9 +1045,14 @@ const InboundTable = () => {
       description: "This inbound will move to Checking status.",
       confirmText: "Start Checking",
     },
+    check_putaway: {
+      title: "Check All Items?",
+      description: "This will generate pallet ID and insert scanned items. You can still review before confirming putaway.",
+      confirmText: "Check All",
+    },
     putaway: {
       title: "Confirm Putaway?",
-      description: "This will confirm putaway for this inbound.",
+      description: "This will finalize putaway to the assigned locations.",
       confirmText: "Confirm Putaway",
     },
     complete: {
@@ -1039,6 +1072,7 @@ const InboundTable = () => {
     const { type, inbound_no } = confirmAction;
     setConfirmAction(null);
     if (type === "checking") handleChecking(inbound_no);
+    if (type === "check_putaway") handleCheckPutaway(inbound_no);
     if (type === "putaway") handlePutaway(inbound_no);
     if (type === "complete") handleComplete(inbound_no);
     if (type === "open") handleOpen(inbound_no);
@@ -1088,10 +1122,28 @@ const InboundTable = () => {
       });
   };
 
+  const handleCheckPutaway = (inbound_no: string) => {
+    eventBus.emit("loading", true);
+    api
+      .post("/inbound/check-putaway", { inbound_no })
+      .then((response) => {
+        eventBus.emit("loading", false);
+        if (response.data.success) {
+          notify("Success", "Items checked, pallet generated. Please confirm putaway.", "success");
+          mutateData();
+        }
+      })
+      .catch((error) => {
+        eventBus.emit("loading", false);
+        notify("Error", error?.response?.data?.error ?? "Failed to check items", "error");
+      });
+  };
+
   const handlePutaway = (inbound_no: string) => {
     eventBus.emit("loading", true);
     api
-      .post("/inbound/handle-putaway", { inbound_no: inbound_no })
+      // .post("/inbound/handle-putaway", { inbound_no: inbound_no })
+      .post("/inbound/confirm-putaway", { inbound_no })
       .then((response) => {
         eventBus.emit("loading", false);
         if (response.data.success) {

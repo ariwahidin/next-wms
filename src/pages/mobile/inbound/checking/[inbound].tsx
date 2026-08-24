@@ -41,6 +41,7 @@ interface ScanItem {
     expDate?: string;
     lotNo?: string;
     caseNumber?: string;
+    cartonNumber?: string;
     itemModel?: string;
     qrRaw?: string;
     uploaded: boolean;
@@ -157,6 +158,7 @@ const CheckingPage = () => {
     const [expDate, setExpDate] = useState("");
     const [lotNo, setLotNo] = useState("");
     const [caseNumber, setCaseNumber] = useState("");
+    const [cartonNumber, setCartonNumber] = useState("");
     const [uom, setUom] = useState("");
     const [scanQty, setScanQty] = useState<string | number>(1);
 
@@ -224,6 +226,7 @@ const CheckingPage = () => {
 
             if (parsed.labelType === "CARTON") {
                 if (parsed.cartonSerial) setCaseNumber(parsed.cartonSerial)
+                if (parsed.cartonSerial) setCartonNumber(parsed.cartonSerial)
                 if (parsed.innerSerials && parsed.innerSerials.length > 0) {
                     setSerialInputs(parsed.innerSerials)
                     setScanQty(parsed.innerSerials.length)
@@ -246,6 +249,7 @@ const CheckingPage = () => {
         setProdDate("");
         setLotNo("");
         setCaseNumber("");
+        setCartonNumber("");
         setScanQty(1);
         setItemModel("");
         setInnerSerialError(false)
@@ -388,7 +392,7 @@ const CheckingPage = () => {
     const handleScan = async () => {
         if (!scanLocation.trim() || !scanBarcode.trim()) return;
 
-        if (lotNo.length > 15){
+        if (lotNo.length > 15) {
             eventBus.emit("showAlert", {
                 title: "Error!",
                 description: "Lot number cannot exceed 15 characters.",
@@ -427,11 +431,14 @@ const CheckingPage = () => {
             prodDate: prodDate,
             expDate: expDate,
             // lotNo: lotNo,
-            lotNo : parsedQR?.batch && !lotNo ? parsedQR.batch : lotNo,
+            lotNo: parsedQR?.batch && !lotNo ? parsedQR.batch : lotNo,
             caseNumber: caseNumber,
+            cartonNumber: cartonNumber,
             qrRaw: isQrMode ? qrRawInput : undefined,
             itemModel: parsedQR?.model ?? "",
-            innerSerials: parsedQR?.innerSerials ?? [],
+            // innerSerials: parsedQR?.innerSerials ?? [],
+            innerSerials : invPolicy.use_serial_number ? serialInputs.filter((s) => s.trim() !== "") : parsedQR?.innerSerials ?? [],
+            // serialNumber: serialNumber,
             uploaded: false,
         };
 
@@ -732,6 +739,7 @@ const CheckingPage = () => {
         setExpDate("");
         setLotNo("");
         setCaseNumber("");
+        setCartonNumber("");
         setQrRawInput("");
         setParsedQR(null);
         setInnerSerialError(false);
@@ -1060,22 +1068,20 @@ const CheckingPage = () => {
                             <button
                                 type="button"
                                 onClick={() => { setDetailTab("byItem"); setSearchTerm(""); }}
-                                className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                                    detailTab === "byItem"
-                                        ? "border-b-2 border-blue-500 text-blue-600"
-                                        : "text-gray-500 hover:text-gray-700"
-                                }`}
+                                className={`flex-1 py-2 text-sm font-medium transition-colors ${detailTab === "byItem"
+                                    ? "border-b-2 border-blue-500 text-blue-600"
+                                    : "text-gray-500 hover:text-gray-700"
+                                    }`}
                             >
                                 By Item
                             </button>
                             <button
                                 type="button"
                                 onClick={() => { setDetailTab("byCarton"); setSearchTerm(""); }}
-                                className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                                    detailTab === "byCarton"
-                                        ? "border-b-2 border-blue-500 text-blue-600"
-                                        : "text-gray-500 hover:text-gray-700"
-                                }`}
+                                className={`flex-1 py-2 text-sm font-medium transition-colors ${detailTab === "byCarton"
+                                    ? "border-b-2 border-blue-500 text-blue-600"
+                                    : "text-gray-500 hover:text-gray-700"
+                                    }`}
                             >
                                 By Carton
                                 {Object.keys(cartonGroups).length > 0 && (
@@ -1117,9 +1123,8 @@ const CheckingPage = () => {
                                         filteredScannedItems.map((item, index) => (
                                             <div
                                                 key={index}
-                                                className={`p-3 border rounded-lg transition-colors ${
-                                                    item.status === "in stock" ? "bg-green-50" : "bg-blue-50"
-                                                }`}
+                                                className={`p-3 border rounded-lg transition-colors ${item.status === "in stock" ? "bg-green-50" : "bg-blue-50"
+                                                    }`}
                                             >
                                                 <div className="text-xs space-y-1">
                                                     <div><strong>SKU:</strong> {item.item_code}</div>
@@ -1181,15 +1186,13 @@ const CheckingPage = () => {
                                             return (
                                                 <div
                                                     key={cartonNo}
-                                                    className={`border rounded-lg overflow-hidden ${
-                                                        allInStock ? "border-green-200" : "border-blue-200"
-                                                    }`}
+                                                    className={`border rounded-lg overflow-hidden ${allInStock ? "border-green-200" : "border-blue-200"
+                                                        }`}
                                                 >
                                                     {/* Carton Header */}
                                                     <div
-                                                        className={`flex items-center justify-between px-3 py-2 ${
-                                                            allInStock ? "bg-green-50" : "bg-blue-50"
-                                                        }`}
+                                                        className={`flex items-center justify-between px-3 py-2 ${allInStock ? "bg-green-50" : "bg-blue-50"
+                                                            }`}
                                                     >
                                                         <div className="space-y-0.5">
                                                             <div className="text-xs font-semibold font-mono text-gray-800">
@@ -1204,11 +1207,10 @@ const CheckingPage = () => {
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <span
-                                                                className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                                                                    allInStock
-                                                                        ? "bg-green-100 text-green-700"
-                                                                        : "bg-orange-100 text-orange-700"
-                                                                }`}
+                                                                className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${allInStock
+                                                                    ? "bg-green-100 text-green-700"
+                                                                    : "bg-orange-100 text-orange-700"
+                                                                    }`}
                                                             >
                                                                 {allInStock ? "In Stock" : "Pending"}
                                                             </span>
@@ -1424,11 +1426,16 @@ const CheckingPage = () => {
                                         Pallet ID : <span className="font-mono font-semibold">{scanLocation}</span>
                                     </p>
                                 )}
-                                {caseNumber && (
+                                {/* {caseNumber && (
                                     <p className="text-xs text-gray-600">
                                         Carton : <span className="font-mono font-semibold">{caseNumber}</span>
                                     </p>
-                                )}
+                                )} */}
+                                {/* {cartonNumber && (
+                                    <p className="text-xs text-gray-600">
+                                        Carton : <span className="font-mono font-semibold">{cartonNumber}</span>
+                                    </p>
+                                )} */}
                                 {parsedQR?.innerSerials && (
                                     <p className="text-xs text-gray-600">
                                         Inner Serial : <span className="font-mono font-semibold">
@@ -1444,7 +1451,7 @@ const CheckingPage = () => {
                             </div>
 
                             {/* Serial Form */}
-                            {isSerial ? (
+                            {/* {isSerial ? (
                                 <form onSubmit={handleSerialSubmit} className="space-y-3">
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-gray-700">Serial Numbers :</label>
@@ -1514,7 +1521,6 @@ const CheckingPage = () => {
                                     </div>
                                 </form>
                             ) : (
-                                /* Quantity Form */
                                 <form onSubmit={handleQuantitySubmit} className="space-y-3">
 
                                     {invPolicy?.use_production_date && (
@@ -1552,7 +1558,7 @@ const CheckingPage = () => {
                                                     onChange={(e) => setLotNo(e.target.value)}
                                                     placeholder="Enter lot number..."
                                                     autoComplete="off"
-                                                    readOnly = {parsedQR?.batch ? true : false}
+                                                    readOnly={parsedQR?.batch ? true : false}
                                                 />
                                                 <datalist id="lotNoOptions">
                                                     {uniqueLotNos.map((d, i) => <option key={i} value={d} />)}
@@ -1574,7 +1580,98 @@ const CheckingPage = () => {
                                         </div>
                                     )}
 
-                                    {/* Qty + UoM */}
+                                    <div className="flex flex-col">
+                                        <label htmlFor="lot_no" className="text-sm font-bold text-gray-700">
+                                            Carton No. :
+                                        </label>
+                                        <div className="relative">
+                                            <Input
+                                                type="text"
+                                                id="carton_number"
+                                                // list="lotNoOptions"
+                                                className="w-full text-xs"
+                                                value={parsedQR?.cartonSerial ? parsedQR.cartonSerial : cartonNumber}
+                                                onChange={(e) => setCartonNumber(e.target.value)}
+                                                placeholder="Enter carton number..."
+                                                autoComplete="off"
+                                                readOnly={parsedQR?.cartonSerial ? true : false}
+                                            />
+                                            {cartonNumber && (
+                                                <button
+                                                    type="button"
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    onClick={() => {
+                                                        setCartonNumber("");
+                                                        document.getElementById("carton_number")?.focus();
+                                                    }}
+                                                    disabled={parsedQR?.cartonSerial ? true : false}
+                                                >
+                                                    <XCircle size={18} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {invPolicy?.use_serial_number && isSerial && (
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-700">Serial Numbers :</label>
+                                            {serialInputs.map((serial, index) => (
+                                                <div key={index} className="relative">
+                                                    <Input
+                                                        autoComplete="off"
+                                                        id={`serial-${index}`}
+                                                        className="w-full pr-10"
+                                                        value={serial}
+                                                        onChange={(e) => {
+                                                            const newSerials = [...serialInputs];
+                                                            newSerials[index] = e.target.value;
+                                                            setSerialInputs(newSerials);
+                                                        }}
+                                                    />
+                                                    {serial && (
+                                                        <button
+                                                            type="button"
+                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                            onClick={() => {
+                                                                const newSerials = [...serialInputs];
+                                                                newSerials[index] = "";
+                                                                setSerialInputs(newSerials);
+                                                                (document.getElementById(`serial-${index}`) as HTMLInputElement)?.focus();
+                                                            }}
+                                                        >
+                                                            <XCircle size={18} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+
+                                            <div className="flex gap-4">
+                                                <button
+                                                    type="button"
+                                                    className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                                                    onClick={() => setSerialInputs([...serialInputs, ""])}
+                                                >
+                                                    + Add Serial
+                                                </button>
+                                                {serialInputs.length > 1 && (
+                                                    <button
+                                                        type="button"
+                                                        className="text-red-600 hover:text-red-800 text-sm font-semibold"
+                                                        onClick={() => setSerialInputs(serialInputs.slice(0, -1))}
+                                                    >
+                                                        − Remove Last
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {serialInputs.length > 1 && (
+                                                <div className="text-xs text-gray-500 break-all">
+                                                    Combined: {serialInputs.filter((s) => s.trim() !== "").join("-")}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div className="flex flex-col">
                                         <label htmlFor="qty" className="text-sm font-bold text-gray-700">
                                             Qty / Unit :
@@ -1618,7 +1715,205 @@ const CheckingPage = () => {
                                         </Button>
                                     </div>
                                 </form>
-                            )}
+                            )} */}
+
+
+                            <form onSubmit={handleQuantitySubmit} className="space-y-3">
+
+                                {invPolicy?.use_production_date && (
+                                    <div className="flex flex-col">
+                                        <DateInputMobile
+                                            label="Prod Date :"
+                                            value={prodDate}
+                                            onChange={(e) => setProdDate(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+
+                                {invPolicy?.require_expiry_date && (
+                                    <div className="flex flex-col">
+                                        <DateInputMobile
+                                            label="Exp Date :"
+                                            value={expDate}
+                                            onChange={(e) => setExpDate(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+
+                                {invPolicy?.use_lot_no && (
+                                    <div className="flex flex-col">
+                                        <label htmlFor="lot_no" className="text-sm font-bold text-gray-700">
+                                            Lot No. / Batch No. :
+                                        </label>
+                                        <div className="relative">
+                                            <Input
+                                                type="text"
+                                                id="lot_no"
+                                                list="lotNoOptions"
+                                                className="w-full text-xs"
+                                                value={parsedQR?.batch && !lotNo ? parsedQR.batch : lotNo}
+                                                onChange={(e) => setLotNo(e.target.value)}
+                                                placeholder="Enter lot number..."
+                                                autoComplete="off"
+                                                readOnly={parsedQR?.batch ? true : false}
+                                            />
+                                            <datalist id="lotNoOptions">
+                                                {uniqueLotNos.map((d, i) => <option key={i} value={d} />)}
+                                            </datalist>
+                                            {lotNo && (
+                                                <button
+                                                    type="button"
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    onClick={() => {
+                                                        setLotNo("");
+                                                        document.getElementById("lot_no")?.focus();
+                                                    }}
+                                                    disabled={parsedQR?.batch ? true : false}
+                                                >
+                                                    <XCircle size={18} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col">
+                                    <label htmlFor="lot_no" className="text-sm font-bold text-gray-700">
+                                        Carton No. :
+                                    </label>
+                                    <div className="relative">
+                                        <Input
+                                            type="text"
+                                            id="carton_number"
+                                            // list="lotNoOptions"
+                                            className="w-full text-xs"
+                                            value={parsedQR?.cartonSerial ? parsedQR.cartonSerial : cartonNumber}
+                                            onChange={(e) => setCartonNumber(e.target.value)}
+                                            placeholder="Enter carton number..."
+                                            autoComplete="off"
+                                            readOnly={parsedQR?.cartonSerial ? true : false}
+                                        />
+                                        {cartonNumber && (
+                                            <button
+                                                type="button"
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                onClick={() => {
+                                                    setCartonNumber("");
+                                                    document.getElementById("carton_number")?.focus();
+                                                }}
+                                                disabled={parsedQR?.cartonSerial ? true : false}
+                                            >
+                                                <XCircle size={18} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {invPolicy?.use_serial_number && isSerial && (
+                                    <div className="space-y-0.5">
+                                        <label className="text-sm font-bold text-gray-700">Serial Numbers :</label>
+                                        {serialInputs.map((serial, index) => (
+                                            <div key={index} className="relative">
+                                                <Input
+                                                    autoComplete="off"
+                                                    id={`serial-${index}`}
+                                                    className="w-full pr-10"
+                                                    value={serial}
+                                                    placeholder="Enter serial number..."
+                                                    onChange={(e) => {
+                                                        const newSerials = [...serialInputs];
+                                                        newSerials[index] = e.target.value;
+                                                        setSerialInputs(newSerials);
+                                                    }}
+                                                />
+                                                {serial && (
+                                                    <button
+                                                        type="button"
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                        onClick={() => {
+                                                            const newSerials = [...serialInputs];
+                                                            newSerials[index] = "";
+                                                            setSerialInputs(newSerials);
+                                                            (document.getElementById(`serial-${index}`) as HTMLInputElement)?.focus();
+                                                        }}
+                                                    >
+                                                        <XCircle size={18} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+
+                                        <div className="flex gap-4">
+                                            <button
+                                                type="button"
+                                                className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                                                onClick={() => setSerialInputs([...serialInputs, ""])}
+                                            >
+                                                + Add Serial
+                                            </button>
+                                            {serialInputs.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    className="text-red-600 hover:text-red-800 text-sm font-semibold"
+                                                    onClick={() => setSerialInputs(serialInputs.slice(0, -1))}
+                                                >
+                                                    − Remove Last
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {serialInputs.length > 1 && (
+                                            <div className="text-xs text-gray-500 break-all">
+                                                Combined: {serialInputs.filter((s) => s.trim() !== "").join("-")}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col">
+                                    <label htmlFor="qty" className="text-sm font-bold text-gray-700">
+                                        Qty / Unit :
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            min={1}
+                                            type="number"
+                                            id="qty"
+                                            list="qtyOptions"
+                                            className="w-28 text-xs"
+                                            value={scanQty}
+                                            autoComplete="off"
+                                            placeholder="Qty"
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === "") { setScanQty(""); return; }
+                                                const num = Number(val);
+                                                setScanQty(num < 1 ? 1 : num);
+                                            }}
+                                            onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                                        />
+                                        <datalist id="qtyOptions">
+                                            {uniqueQtys.map((d, i) => <option key={i} value={d} />)}
+                                        </datalist>
+                                        <Input
+                                            type="text"
+                                            id="unit"
+                                            className="w-20 text-xs"
+                                            readOnly
+                                            value={uom}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <Button type="submit" className="w-full" disabled={isSubmit}>
+                                        {isSubmit ? <><Loader2 className="mr-2 w-4 h-4 animate-spin" />Loading...</> : "Submit"}
+                                    </Button>
+                                    <Button type="button" className="w-full" variant="outline" onClick={closeDialog}>
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
