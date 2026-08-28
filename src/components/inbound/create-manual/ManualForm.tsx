@@ -281,6 +281,26 @@ export default function ManualForm() {
   useEffect(() => {
     if (!no) return;
 
+    // const fetchInbound = async () => {
+    //   eventBus.emit("loading", true);
+    //   try {
+    //     const res = await api.get(`/inbound/${no}`, {
+    //       withCredentials: true,
+    //     });
+    //     if (res.data.success) {
+    //       setFormData(res.data.data);
+    //       setReferences(res.data.data.references);
+    //       setMuatan(res.data.data.details);
+    //       setItemsReceived(res.data.data.received);
+    //       setInboundDetails(res.data.details);
+    //     }
+    //   } catch (error) {
+    //     console.error("Error fetching inbound:", error);
+    //   } finally {
+    //     eventBus.emit("loading", false);
+    //   }
+    // };
+
     const fetchInbound = async () => {
       eventBus.emit("loading", true);
       try {
@@ -288,11 +308,24 @@ export default function ManualForm() {
           withCredentials: true,
         });
         if (res.data.success) {
+          const detailsWithScan = res.data.details ?? [];
+
+          // buat lookup serial_numbers by detail ID
+          const serialMap = new Map<number, string[]>(
+            detailsWithScan.map((d: any) => [d.id, d.serial_numbers ?? []])
+          );
+
+          // merge serial_numbers ke muatan (dari res.data.data.details)
+          const mergedDetails = (res.data.data.details ?? []).map((d: any) => ({
+            ...d,
+            serial_numbers: serialMap.get(d.ID) ?? [],
+          }));
+
           setFormData(res.data.data);
           setReferences(res.data.data.references);
-          setMuatan(res.data.data.details);
+          setMuatan(mergedDetails);
           setItemsReceived(res.data.data.received);
-          setInboundDetails(res.data.details);
+          setInboundDetails(detailsWithScan);
         }
       } catch (error) {
         console.error("Error fetching inbound:", error);

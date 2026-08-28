@@ -865,28 +865,34 @@ const InboundTable = () => {
                 {(params.data.status === "checking" ||
                   params.data.status === "partially received") && (
                     <>
-                      {}
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmAction({ type: "check_putaway", inbound_no: params.data.inbound_no });
-                        }}
-                      >
-                        <Blocks className="mr-2 h-4 w-4" />
-                        Check All Items
-                      </DropdownMenuItem>
+                      {params.data.require_receive_scan == false && params.data.total_qty != params.data.qty_scan && (
 
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmAction({ type: "putaway", inbound_no: params.data.inbound_no });
-                        }}
-                      >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Confirm Putaway
-                      </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmAction({ type: "check_putaway", inbound_no: params.data.inbound_no });
+                          }}
+                        >
+                          <Blocks className="mr-2 h-4 w-4" />
+                          Check All Items
+                        </DropdownMenuItem>
+
+                      )}
+
+                      {params.data.require_putaway_scan == false && (
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmAction({ type: "putaway", inbound_no: params.data.inbound_no });
+                          }}
+                        >
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Confirm Putaway
+                        </DropdownMenuItem>
+                      )}
                     </>
                   )}
 
@@ -896,7 +902,6 @@ const InboundTable = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       setConfirmAction({ type: "complete", inbound_no: params.data.inbound_no });
-                      // handleComplete(params.data.inbound_no);
                     }}
                   >
                     <CheckCheck className="mr-2 h-4 w-4" />
@@ -934,22 +939,23 @@ const InboundTable = () => {
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
-                {(params.data.status === "checking" || params.data.status === "partially received" || params.data.status === "fully received") && (
-                  <>
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmAction({ type: "open", inbound_no: params.data.inbound_no });
-                        // handleOpen(params.data.inbound_no);
-                      }}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Return to Open
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
+                {(params.data.status === "checking" || params.data.status === "partially received" || params.data.status === "fully received")
+                  && params.data.status !== "open" &&
+                  (
+                    <>
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmAction({ type: "open", inbound_no: params.data.inbound_no });
+                        }}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Return to Open
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -1011,9 +1017,9 @@ const InboundTable = () => {
       },
     },
     { field: "total_line", headerName: "Items", width: 80 },
-    { field: "total_qty", headerName: "Request", width: 90 },
-    { field: "qty_scan", headerName: "Scan", width: 90 },
-    { field: "qty_putaway", headerName: "Putaway", width: 90 },
+    { field: "total_qty", headerName: "Planned", width: 90 },
+    { field: "qty_scan", headerName: "Checked", width: 90 },
+    { field: "qty_putaway", headerName: "PutAway", width: 90 },
   ]);
 
   const [selectedRows, setSelectedRows] = useState<any[]>([]);

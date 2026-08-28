@@ -5,6 +5,7 @@ import Select, { StylesConfig } from "react-select";
 import api from "@/lib/api";
 import Layout from "@/components/layout";
 import eventBus from "@/utils/eventBus";
+import { InventoryPolicy } from "@/types/inventory";
 
 interface Owner {
   ID: number;
@@ -47,41 +48,6 @@ const selectStyles: StylesConfig<OwnerOption, false> = {
   dropdownIndicator: (base) => ({ ...base, padding: "6px" }),
 };
 
-interface InventoryPolicy {
-  ID: number;
-  CreatedAt: string;
-  UpdatedAt: string;
-  DeletedAt: string | null;
-  owner_code: string;
-  use_lot_no: boolean;
-  use_case_no: boolean;
-  use_fifo: boolean;
-  use_fefo: boolean;
-  use_vas: boolean;
-  use_production_date: boolean;
-  use_receive_location: boolean;
-  use_serial_number: boolean;
-  use_carton_number: boolean;
-  use_case_number: boolean;
-  show_rec_date: boolean;
-  require_expiry_date: boolean;
-  require_lot_number: boolean;
-  require_scan_pick_location: boolean;
-  allow_mixed_lot: boolean;
-  allow_negative_stock: boolean;
-  validation_sn?: boolean;
-  require_picking_scan?: boolean;
-  require_packing_scan?: boolean;
-  picking_single_scan?: boolean;
-  require_receive_scan?: boolean;
-  require_putaway_scan?: boolean;
-  validate_receive_scan?: boolean;
-  allocation_lot_by_order?: boolean;
-  allocation_location_by_order?: boolean;
-  picking_with_scanner?: boolean;
-  picking_exclude_locations_under_cycle_count?: boolean;
-}
-
 type PolicyKey = keyof Omit<
   InventoryPolicy,
   "ID" | "CreatedAt" | "UpdatedAt" | "DeletedAt" | "owner_code"
@@ -108,7 +74,7 @@ const POLICY_GROUPS: PolicyGroup[] = [
       { key: "require_lot_number", label: "Require Lot Number" },
       { key: "use_serial_number", label: "Use Serial Number" },
       { key: "use_carton_number", label: "Use Carton Number" },
-      { key: "use_case_number", label: "Use Case Number (Inventory)" },
+      { key: "use_case_number", label: "Use Case Number" },
       { key: "use_production_date", label: "Production Date" },
       { key: "require_expiry_date", label: "Expiry Date" },
       { key: "show_rec_date", label: "Receive Date" },
@@ -125,6 +91,7 @@ const POLICY_GROUPS: PolicyGroup[] = [
   {
     title: "Inbound Rule",
     fields: [
+      { key: "inbound_can_input_serial", label: "Can Input Serial Number" },
       { key: "use_receive_location", label: "Receive Location" },
       { key: "require_receive_scan", label: "Receive Scan" },
       { key: "validate_receive_scan", label: "Validate Receive Scan" },
@@ -138,11 +105,14 @@ const POLICY_GROUPS: PolicyGroup[] = [
       { key: "require_packing_scan", label: "Packing Scan" },
       { key: "require_picking_scan", label: "Picking Required" },
       { key: "picking_single_scan", label: "Single Scan" },
-      { key: "allocation_lot_by_order", label: "Lot by Order" },
+      { key: "allocation_lot_by_order", label: "Allocation Lot by Order" },
       {
         key: "allocation_location_by_order",
         label: "Allocation Location by Order",
       },
+      { key: "allocation_case_by_order", label: "Allocation Case by Order" },
+      { key: "allocation_carton_by_order", label: "Allocation Carton by Order" },
+      { key: "allocation_serial_by_order", label: "Allocation Serial by Order" },
       { key: "validation_sn", label: "SN Validation" },
       { key: "use_vas", label: "VAS" },
       { key: "require_scan_pick_location", label: "Scan Pick Location" },
@@ -225,7 +195,11 @@ export default function InventoryPolicyPage() {
     require_putaway_scan: false,
     validate_receive_scan: false,
     allocation_lot_by_order: false,
+    inbound_can_input_serial: false,
     allocation_location_by_order: false,
+    allocation_case_by_order: false,
+    allocation_carton_by_order: false,
+    allocation_serial_by_order: false,
     picking_with_scanner: false,
     picking_exclude_locations_under_cycle_count: false,
     use_serial_number: false,
@@ -310,8 +284,12 @@ export default function InventoryPolicyPage() {
       require_receive_scan: false,
       require_putaway_scan: false,
       validate_receive_scan: false,
+      inbound_can_input_serial: false,
       allocation_lot_by_order: false,
       allocation_location_by_order: false,
+      allocation_case_by_order: false,
+      allocation_carton_by_order: false,
+      allocation_serial_by_order: false,
       picking_with_scanner: false,
       picking_exclude_locations_under_cycle_count: false,
       use_serial_number: false,
@@ -346,9 +324,13 @@ export default function InventoryPolicyPage() {
       require_receive_scan: (policy as any).require_receive_scan || false,
       require_putaway_scan: (policy as any).require_putaway_scan || false,
       validate_receive_scan: (policy as any).validate_receive_scan || false,
+      inbound_can_input_serial: (policy as any).inbound_can_input_serial || false,
       allocation_lot_by_order: (policy as any).allocation_lot_by_order || false,
       allocation_location_by_order:
         (policy as any).allocation_location_by_order || false,
+      allocation_case_by_order: (policy as any).allocation_case_by_order || false,
+      allocation_carton_by_order: (policy as any).allocation_carton_by_order || false,
+      allocation_serial_by_order: (policy as any).allocation_serial_by_order || false,
       picking_with_scanner: (policy as any).picking_with_scanner || false,
       picking_exclude_locations_under_cycle_count:
         (policy as any).picking_exclude_locations_under_cycle_count || false,
@@ -871,6 +853,27 @@ export default function InventoryPolicyPage() {
                         Inbound Rule
                       </h3>
                       <div className="space-y-2.5">
+
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.inbound_can_input_serial}
+                            onChange={(e) =>
+                              handleCheckboxChange(
+                                "inbound_can_input_serial",
+                                e.target.checked,
+                              )
+                            }
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                            Inbound Can Input Serial Number
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            (When create inbound planning, can input serial number)
+                          </span>
+                        </label>
+
                         <label className="flex items-center gap-2.5 cursor-pointer group">
                           <input
                             type="checkbox"
@@ -1051,7 +1054,7 @@ export default function InventoryPolicyPage() {
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                           />
                           <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                            Lot by Order
+                            Allocation Lot by Order
                           </span>
                           <span className="text-xs text-gray-500">
                             (Allocation lot by order)
@@ -1075,6 +1078,66 @@ export default function InventoryPolicyPage() {
                           </span>
                           <span className="text-xs text-gray-500">
                             (Allocation location by order)
+                          </span>
+                        </label>
+
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.allocation_case_by_order}
+                            onChange={(e) =>
+                              handleCheckboxChange(
+                                "allocation_case_by_order",
+                                e.target.checked,
+                              )
+                            }
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                            Allocation Case by Order
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            (Allocation case by order)
+                          </span>
+                        </label>
+
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.allocation_carton_by_order}
+                            onChange={(e) =>
+                              handleCheckboxChange(
+                                "allocation_carton_by_order",
+                                e.target.checked,
+                              )
+                            }
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                            Allocation Carton by Order
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            (Allocation carton by order)
+                          </span>
+                        </label>
+
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.allocation_serial_by_order}
+                            onChange={(e) =>
+                              handleCheckboxChange(
+                                "allocation_serial_by_order",
+                                e.target.checked,
+                              )
+                            }
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                            Allocation Serial by Order
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            (Allocation serial by order)
                           </span>
                         </label>
 

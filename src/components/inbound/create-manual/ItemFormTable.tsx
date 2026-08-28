@@ -31,6 +31,7 @@ import { Item } from "@radix-ui/react-dropdown-menu";
 import { InventoryPolicy } from "@/types/inventory";
 import { useRouter } from "next/navigation";
 import { QrCode } from "lucide-react";
+import SerialNumberModal from "./SerialNumberModal";
 
 
 // Skema validasi Yup
@@ -86,6 +87,32 @@ export default function ItemFormTable({
   const [searchTermMuatan, setSearchTermMuatan] = useState<string>("");
   const [filteredMuatan, setFilteredMuatan] = useState<ItemFormProps[]>([]);
   const [divisionOptions, setDivisionOptions] = useState([]);
+
+  const [isSerialModalOpen, setIsSerialModalOpen] = useState(false);
+  const [serialModalItem, setSerialModalItem] = useState<ItemFormProps | null>(null);
+
+  const handleOpenSerialModal = (item: ItemFormProps) => {
+    setSerialModalItem(item);
+    setIsSerialModalOpen(true);
+  };
+
+  const handleSaveSerialNumbers = (serials: string[]) => {
+    if (!serialModalItem) return;
+
+    setMuatan((prev) =>
+      prev.map((m) =>
+        m.ID === serialModalItem.ID ? { ...m, serial_numbers: serials } : m
+      )
+    );
+    setFilteredMuatan((prev) =>
+      prev.map((m) =>
+        m.ID === serialModalItem.ID ? { ...m, serial_numbers: serials } : m
+      )
+    );
+
+    setIsSerialModalOpen(false);
+    setSerialModalItem(null);
+  };
 
   console.log("INBOUND DETAILS ", inboundDetails);
 
@@ -198,6 +225,7 @@ export default function ItemFormTable({
         is_serial: product.has_serial,
         division_code: "REGULAR",
         serial_number: "", // Initialize serial_number as an empty string
+        serial_numbers: [] as string[],
         carton_number: "",
         case_number: "",
       }));
@@ -240,44 +268,107 @@ export default function ItemFormTable({
     setIsModalOpen(false);
   };
 
+  // const handleChange = (
+  //   id: number,
+  //   field: keyof ItemFormProps,
+  //   value: string | number
+  // ) => {
+  //   console.log("ID:", id);
+  //   console.log("Field:", field);
+  //   console.log("Value:", value);
+
+  //   setMuatan((prev) =>
+  //     prev.map((m) =>
+  //       m.ID === id
+  //         ? {
+  //           ...m,
+  //           [field]:
+  //             field === "quantity"
+  //               ? value === "" ? "" : Number(value)
+  //               : value,
+  //         }
+  //         : m
+  //     )
+  //   );
+
+  //   setFilteredMuatan((prev) =>
+  //     prev.map((m) =>
+  //       m.ID === id
+  //         ? {
+  //           ...m,
+  //           [field]:
+  //             field === "quantity"
+  //               ? value === "" ? "" : Number(value)
+  //               : value,
+  //         }
+  //         : m
+  //     )
+  //   );
+
+
+  // };
+
+  // const handleChange = (
+  //   id: number,
+  //   field: keyof ItemFormProps,
+  //   value: string | number
+  // ) => {
+  //   const applyUpdate = (m: ItemFormProps) => {
+  //     if (field === "quantity") {
+  //       const rawQty = value === "" ? "" : Number(value);
+  //       const qty = rawQty === "" ? "" : Math.floor(rawQty as number);
+
+  //       let nextSerials = m.serial_numbers ?? [];
+  //       if (m.is_serial && typeof qty === "number" && nextSerials.length > qty) {
+  //         const removed = nextSerials.length - qty;
+  //         nextSerials = nextSerials.slice(0, qty);
+  //         eventBus.emit("showAlert", {
+  //           title: "Perhatian",
+  //           description: `${removed} serial number dihapus karena qty diubah`,
+  //           type: "info",
+  //         });
+  //       }
+
+  //       return { ...m, quantity: qty, serial_numbers: nextSerials };
+  //     }
+
+  //     return { ...m, [field]: value };
+  //   };
+
+  //   setMuatan((prev) => prev.map((m) => (m.ID === id ? applyUpdate(m) : m)));
+  //   setFilteredMuatan((prev) => prev.map((m) => (m.ID === id ? applyUpdate(m) : m)));
+  // };
+
   const handleChange = (
     id: number,
     field: keyof ItemFormProps,
     value: string | number
   ) => {
-    console.log("ID:", id);
-    console.log("Field:", field);
-    console.log("Value:", value);
+    const applyUpdate = (m: ItemFormProps): ItemFormProps => {
+      if (field === "quantity") {
+        const rawQty = value === "" ? "" : Number(value);
+        // const qty: number | "" = rawQty === "" ? "" : Math.floor(rawQty as number);
+        const qty = rawQty === "" ? 0 : Math.floor(rawQty as number);
 
-    setMuatan((prev) =>
-      prev.map((m) =>
-        m.ID === id
-          ? {
-            ...m,
-            [field]:
-              field === "quantity"
-                ? value === "" ? "" : Number(value)
-                : value,
-          }
-          : m
-      )
-    );
+        let nextSerials = m.serial_numbers ?? [];
+        if (m.is_serial && typeof qty === "number" && nextSerials.length > qty) {
+          const removed = nextSerials.length - qty;
+          nextSerials = nextSerials.slice(0, qty);
+          eventBus.emit("showAlert", {
+            title: "Perhatian",
+            description: `${removed} serial number dihapus karena qty diubah`,
+            type: "info",
+          });
+        }
 
-    setFilteredMuatan((prev) =>
-      prev.map((m) =>
-        m.ID === id
-          ? {
-            ...m,
-            [field]:
-              field === "quantity"
-                ? value === "" ? "" : Number(value)
-                : value,
-          }
-          : m
-      )
-    );
+        return { ...m, quantity: qty, serial_numbers: nextSerials };
+      }
 
+      return { ...m, [field]: value };
+    };
 
+    setMuatan((prev) => prev.map((m) => (m.ID === id ? applyUpdate(m) : m)));
+    setFilteredMuatan((prev) => prev.map((m) => (m.ID === id ? applyUpdate(m) : m)));
   };
 
   const handleSaveItem = async () => {
@@ -520,6 +611,19 @@ export default function ItemFormTable({
   const allSelected =
     muatan?.length > 0 && selectedIds.length === muatan.length;
 
+  const policyColCount = [
+    invPolicy?.use_receive_location,
+    invPolicy?.show_rec_date,
+    invPolicy?.use_production_date,
+    invPolicy?.require_expiry_date,
+    invPolicy?.use_lot_no,
+    invPolicy?.use_carton_number,
+    invPolicy?.use_case_number,
+    invPolicy?.inbound_can_input_serial,
+  ].filter(Boolean).length;
+
+  const footerColSpan = 2 + policyColCount + 1;
+
   return (
     <>
       <div className="space-y-4">
@@ -589,7 +693,7 @@ export default function ItemFormTable({
                 UoM
               </th> */}
               <th className="p-2 border" style={{ width: "100px" }}>
-                Qty
+                Plan Qty
               </th>
 
 
@@ -650,11 +754,11 @@ export default function ItemFormTable({
                 </th>
               )}
 
-              {invPolicy?.use_serial_number && (
+              {/* {invPolicy?.inbound_can_input_serial && (
                 <th className="p-2 border" style={{ width: "140px" }}>
                   Serial No.
                 </th>
-              )}
+              )} */}
 
               <th className="p-2 border" style={{ width: "220px" }}>
                 Action
@@ -981,7 +1085,7 @@ export default function ItemFormTable({
                           </td>
                         )}
 
-                        {invPolicy?.use_serial_number && (
+                        {/* {invPolicy?.inbound_can_input_serial && (
                           <td className="p-2 border">
                             <Input
                               style={{ fontSize: "12px", width: "130px" }}
@@ -1001,65 +1105,97 @@ export default function ItemFormTable({
                               </small>
                             )}
                           </td>
-                        )}
+                        )} */}
 
                         <td
                           className="p-2 border space-x-2 text-center"
                           style={{ width: "100px" }}
                         >
-                          {item.mode == "create" ? (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  handleCancel(item);
-                                }}
-                              >
-                                <X size={14} />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleCopy(item.ID)}
-                              >
-                                <Copy size={14} />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleGenerateQR(item)}
-                                title="Generate QR"
-                              >
-                                <QrCode size={14} />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleDelete(item.ID)}
-                              >
-                                <Trash size={14} />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleCopy(item.ID)}
-                              >
-                                <Copy size={14} />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleGenerateQR(item)}
-                                title="Generate QR"
-                              >
-                                <QrCode size={14} />
-                              </Button>
-                            </>
-                          )}
+                          <div className="flex flex-wrap items-center justify-center gap-1">
+                            {item.mode == "create" ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    handleCancel(item);
+                                  }}
+                                >
+                                  <X size={14} />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleCopy(item.ID)}
+                                >
+                                  <Copy size={14} />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleGenerateQR(item)}
+                                  title="Generate QR"
+                                >
+                                  <QrCode size={14} />
+                                </Button>
+                                {invPolicy?.inbound_can_input_serial && (
+                                  <Button
+                                    size="sm"
+                                    variant={
+                                      (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity && item.quantity > 0
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    onClick={() => handleOpenSerialModal(item)}
+                                    title="Isi Serial Number"
+                                    className="min-w-[56px] justify-center"
+                                  >
+                                    SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity || 0}
+                                  </Button>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDelete(item.ID)}
+                                >
+                                  <Trash size={14} />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleCopy(item.ID)}
+                                >
+                                  <Copy size={14} />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleGenerateQR(item)}
+                                  title="Generate QR"
+                                >
+                                  <QrCode size={14} />
+                                </Button>
+                                {invPolicy?.inbound_can_input_serial && (
+                                  <Button
+                                    size="sm"
+                                    variant={
+                                      (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity && item.quantity > 0
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    onClick={() => handleOpenSerialModal(item)}
+                                    title="Isi Serial Number"
+                                    className="min-w-[56px] justify-center"
+                                  >
+                                    SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity || 0}
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </td>
                       </>
                     ) : (
@@ -1136,9 +1272,15 @@ export default function ItemFormTable({
                           </td>
                         )}
 
-                        {invPolicy?.use_serial_number && (
+                        {/* {invPolicy?.inbound_can_input_serial && (
                           <td className="p-2 border text-center">
                             {item.serial_number}
+                          </td>
+                        )} */}
+
+                        {invPolicy?.inbound_can_input_serial && (
+                          <td className="p-2 border text-center">
+                            {item.serial_numbers?.length ?? 0} SN
                           </td>
                         )}
 
@@ -1175,7 +1317,7 @@ export default function ItemFormTable({
                   )}
                 </td>
               )}
-              <td className="p-2 border" colSpan={8}></td>
+              <td className="p-2 border" colSpan={footerColSpan}></td>
             </tr>
           </tfoot>
         </table>
@@ -1188,6 +1330,17 @@ export default function ItemFormTable({
         selectedItems={muatan}
         mode={modalMode}
         editData={editingItem}
+      />
+      <SerialNumberModal
+        isOpen={isSerialModalOpen}
+        onClose={() => {
+          setIsSerialModalOpen(false);
+          setSerialModalItem(null);
+        }}
+        onSave={handleSaveSerialNumbers}
+        quantity={Number(serialModalItem?.quantity) || 0}
+        initialValue={serialModalItem?.serial_numbers ?? []}
+        itemCode={serialModalItem?.item_code ?? ""}
       />
     </>
   );

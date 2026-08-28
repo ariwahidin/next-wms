@@ -52,6 +52,7 @@ export interface ItemFormProps {
   qa_status?: string;
   division_code?: string;
   serial_number?: string;
+  serial_numbers?: string[];
   carton_number?: string;
   case_number?: string;
 }

@@ -50,6 +50,9 @@ export interface ItemFormProps {
   vas_name?: string;
   exp_date?: string;
   lot_number?: string;
+  serial_number?: string;
+  case_number?: string;
+  carton_number?: string;
   division_code?: string;
 }
 

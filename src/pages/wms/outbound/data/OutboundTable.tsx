@@ -686,6 +686,33 @@ const OutboundTable = () => {
     );
   };
 
+  const HandlePackingWithoutScan = (id: number) => {
+    showAlert(
+      "Packing Confirmation",
+      "The packing process is carried out by the system, are you sure to continue?",
+      "error",
+      async () => {
+        eventBus.emit("loading", true);
+        isSubmittingRef.current = true;
+        try {
+          const res = await api.post(
+            `/outbound/packing-all/${id}`,
+            {},
+            { withCredentials: true }
+          );
+          if (res.data.success) {
+            eventBus.emit("showAlert", { title: "Success!", description: res.data.message, type: "success" });
+            mutate();
+          }
+        } catch (error) {
+          console.error("Error saving inbound:", error);
+        } finally {
+          setTimeout(() => { eventBus.emit("loading", false); isSubmittingRef.current = false; }, 1500);
+        }
+      }
+    )
+  }
+
   const HandlePickingComplete = (id: number) => {
     showAlert("Complete Confirmation", "Are you sure you want to save this data?", "error", () => {
       eventBus.emit("loading", true);
@@ -867,11 +894,23 @@ const OutboundTable = () => {
                 </DropdownMenuItem>
               )}
 
+              {!params.data.require_packing_scan && params.data.status != "packed" && params.data.status != "complete" && (
+                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePackingWithoutScan(params.data.ID); }}>
+                  <CheckCheck className="mr-2 h-4 w-4" /> Confirm Packing Without Scan
+                </DropdownMenuItem>
+              )}
+
               {(params.data.status === "packing" || params.data.status === "packed") && (
                 <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePickingComplete(params.data.ID); }}>
                   <CheckCheck className="mr-2 h-4 w-4" /> Complete
                 </DropdownMenuItem>
               )}
+
+              {/* {(params.data.status === "packing" || params.data.status === "packed") && (
+                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePickingComplete(params.data.ID); }}>
+                  <CheckCheck className="mr-2 h-4 w-4" /> Complete
+                </DropdownMenuItem>
+              )} */}
 
               {params.data.status !== "open" && params.data.status !== "cancel" && (
                 <>

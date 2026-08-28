@@ -221,43 +221,25 @@ const PickingSheetPrint = () => {
           </tbody>
         </table>
 
-        <div style={{ fontSize: "12px", marginTop: "10px" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+
+        <div style={{ display: "flex", gap: "10px", marginTop: "10px", fontSize: "12px" }}>
+          <table style={{ width: "50%", borderCollapse: "collapse", fontSize: "10px" }}>
             <tbody>
-              <tr>
-                <td style={headerLabel}>Picking No</td>
-                <td style={headerValue}>{data.outbound_no}</td>
-                <td style={headerLabel}>Customer Name</td>
-                <td style={headerValue}>{data.customer_name}</td>
-              </tr>
-              <tr>
-                <td style={headerLabel}>Shipment ID</td>
-                <td style={headerValue}>{data.shipment_id}</td>
-                <td style={headerLabel}>Customer Address</td>
-                <td style={headerValue}>{data.cust_address}</td>
-              </tr>
-              <tr>
-                <td style={headerLabel}>Picking Date</td>
-                <td style={headerValue}>
-                  {new Date(data.outbound_date).toLocaleDateString("id-ID", {
+              {[
+                { label: "Order Type", value: data.owner_code + " - " + data.order_type },
+                { label: "Picking No", value: data.outbound_no },
+                { label: "Shipment ID", value: data.shipment_id },
+                {
+                  label: "Picking Date",
+                  value: new Date(data.outbound_date).toLocaleDateString("id-ID", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
-                  })}
-                </td>
-                <td style={headerLabel}>Customer City</td>
-                <td style={headerValue}>{data.cust_city}</td>
-              </tr>
-              <tr>
-                <td style={headerLabel}></td>
-                <td style={headerValue}></td>
-                <td style={headerLabel}>Delivery To</td>
-                <td style={headerValue}>{data.deliv_to_name}</td>
-              </tr>
-              <tr>
-                <td style={headerLabel}>Plan Pickup</td>
-                <td style={headerValue}>
-                  {new Date(
+                  }),
+                },
+                {
+                  label: "Plan Pickup",
+                  value: new Date(
                     `${data.plan_pickup_date}T${data.plan_pickup_time}`
                   ).toLocaleString("id-ID", {
                     day: "2-digit",
@@ -265,31 +247,43 @@ const PickingSheetPrint = () => {
                     year: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
-                  })}
-                </td>
-                <td style={headerLabel}>Delivery Address</td>
-                <td style={headerValue}>{data.deliv_address}</td>
-              </tr>
-              <tr>
-                <td style={headerLabel}>Print Date/Time</td>
-                <td style={headerValue}>
-                  {new Date().toLocaleString("id-ID", {
+                  }),
+                },
+                {
+                  label: "Print At",
+                  value: new Date().toLocaleString("id-ID", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
-                  })}
-                </td>
-                <td style={headerLabel}>Delivery City</td>
-                <td style={headerValue}>{data.deliv_city}</td>
-              </tr>
-              <tr>
-                <td style={headerLabel}>Remarks</td>
-                <td style={headerValue}>{data.remarks}</td>
-                <td style={headerLabel}></td>
-                <td style={headerValue}></td>
-              </tr>
+                  }),
+                },
+                { label: "Remarks", value: data.remarks },
+              ].map((f, idx) => (
+                <tr key={idx}>
+                  <td style={{ ...headerLabel, verticalAlign: "top" }}>{f.label}</td>
+                  <td style={{ ...headerValue, verticalAlign: "top" }}>{f.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <table style={{ width: "50%", borderCollapse: "collapse", fontSize: "10px" }}>
+            <tbody>
+              {[
+                { label: "Customer Name", value: data.customer_name },
+                { label: "Customer Address", value: data.cust_address },
+                { label: "Customer City", value: data.cust_city },
+                { label: "Delivery To", value: data.deliv_to_name },
+                { label: "Delivery Address", value: data.deliv_address },
+                { label: "Delivery City", value: data.deliv_city },
+              ].map((f, idx) => (
+                <tr key={idx}>
+                  <td style={{ ...headerLabel, verticalAlign: "top" }}>{f.label}</td>
+                  <td style={{ ...headerValue, verticalAlign: "top" }}>{f.value}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -312,10 +306,13 @@ const PickingSheetPrint = () => {
               {invPolicy.show_rec_date && <th style={th}>REC DATE</th>}
               {invPolicy.use_production_date && <th style={th}>PROD DATE</th>}
               {invPolicy.require_expiry_date && <th style={th}>EXP DATE</th>}
-              {invPolicy.use_lot_no && <th style={th}>LOT NO</th>}
+              {invPolicy.allocation_lot_by_order && <th style={th}>LOT NO</th>}
 
               <th style={th}>LOCATION</th>
-              <th style={th}>PALLET</th>
+              {data.owner_code === "YUWELL" && <th style={th}>PALLET</th>}
+              {invPolicy.allocation_case_by_order && <th style={th}>CASE NO</th>}
+              {invPolicy.allocation_carton_by_order && <th style={th}>CTN NO</th>}
+              {invPolicy.allocation_serial_by_order && <th style={th}>SERIAL NO</th>}
               <th style={th}>QTY</th>
               <th style={th}>CBM</th>
             </tr>
@@ -357,18 +354,18 @@ const PickingSheetPrint = () => {
                           ...td,
                           textAlign: "center",
                           fontWeight: "bold",
-                          fontSize: "12px",
+                          // fontSize: "12px",
                           verticalAlign: "top",
                         }}
                       >
                         {j === 0 && (
                           <>
-                            <span>{item.item_code}</span>
+                            <span style={{ fontSize: "9px" }}>{item.item_code}</span>
                             <br />
                             <span
                               style={{
                                 fontWeight: "normal",
-                                fontSize: "12px",
+                                fontSize: "9px",
                                 display: "inline-block",
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
@@ -377,7 +374,10 @@ const PickingSheetPrint = () => {
                               title={item.item_name}
                             >
                               {item.item_name}
+
                             </span>
+                            <br />
+                            <span style={{ fontSize: "9px", fontWeight: "normal", color: "gray" }}>{item.unit_model}</span>
                           </>
                         )}
                       </td>
@@ -421,7 +421,7 @@ const PickingSheetPrint = () => {
                           {item.exp_date}
                         </td>
                       )}
-                      {invPolicy.use_lot_no && (
+                      {invPolicy.allocation_lot_by_order && (
                         <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
                           {item.lot_number}
                         </td>
@@ -430,27 +430,50 @@ const PickingSheetPrint = () => {
                       <td
                         style={{
                           ...td,
-                          textAlign: "center",
-                          whiteSpace: "nowrap",
-                          fontWeight: "bold",
-                          fontSize: "12px",
+                          // textAlign: "center",
+                          // whiteSpace: "nowrap",
+                          // fontWeight: "bold",
+                          // fontSize: "12px",
                         }}
                       >
                         {item.location}
                       </td>
-                      <td
-                        style={{
-                          ...td,
-                          textAlign: "center",
-                          whiteSpace: "nowrap",
-                          fontWeight: "bold",
-                          fontSize: "12px",
-                        }}
-                      >
-                        {item.rec_date >= "2026-06-25" && item.pallet}
-                      </td>
+                      {data.owner_code === "YUWELL" && (
+
+
+                        <td
+                          style={{
+                            ...td,
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                            // fontWeight: "bold",
+                            // fontSize: "12px",
+                          }}
+                        >
+                          {item.rec_date >= "2026-06-25" && item.pallet}
+                        </td>
+                      )}
+
+
+                      {invPolicy.allocation_case_by_order && (
+                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
+                          {item.case_number}
+                        </td>
+                      )}
+
+                      {invPolicy.allocation_carton_by_order && (
+                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
+                          {item.carton_number}
+                        </td>
+                      )}
+                      {invPolicy.allocation_serial_by_order && (
+                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
+                          {item.serial_number}
+                        </td>
+                      )}
                       <td style={{ ...td, textAlign: "center" }}>
-                        {item.quantity} {item.uom}
+                        {item.quantity}
+                        {/* {item.uom} */}
                       </td>
                       <td style={{ ...td, textAlign: "center" }}>{item.cbm}</td>
                     </tr>
@@ -463,10 +486,17 @@ const PickingSheetPrint = () => {
 
                     {invPolicy.show_rec_date && <td style={{ ...td }}></td>}
                     {invPolicy.use_production_date && <td style={{ ...td }}></td>}
+                    {data.owner_code === "YUWELL" && (
+                      <td style={{ ...td }}></td>
+                    )}
                     {invPolicy.require_expiry_date && <td style={{ ...td }}></td>}
-                    {invPolicy.use_lot_no && <td style={{ ...td }}></td>}
 
-                    <td style={{ ...td, textAlign: "right" }}></td>
+                    {invPolicy.allocation_lot_by_order && <td style={{ ...td }}></td>}
+                    {invPolicy.allocation_case_by_order && <td style={{ ...td }}></td>}
+                    {invPolicy.allocation_carton_by_order && <td style={{ ...td }}></td>}
+                    {invPolicy.allocation_serial_by_order && <td style={{ ...td }}></td>}
+
+                    {/* <td style={{ ...td, textAlign: "right" }}></td> */}
                     <td style={{ ...td, textAlign: "right" }}>TOTAL</td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
                     <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td>
@@ -481,10 +511,17 @@ const PickingSheetPrint = () => {
 
               {invPolicy.show_rec_date && <td style={{ ...td }}></td>}
               {invPolicy.use_production_date && <td style={{ ...td }}></td>}
+              {data.owner_code === "YUWELL" && (
+                <td style={{ ...td }}></td>
+              )}
               {invPolicy.require_expiry_date && <td style={{ ...td }}></td>}
-              {invPolicy.use_lot_no && <td style={{ ...td }}></td>}
 
-              <td style={{ ...td, textAlign: "right" }}></td>
+              {invPolicy.allocation_lot_by_order && <td style={{ ...td }}></td>}
+              {invPolicy.allocation_case_by_order && <td style={{ ...td }}></td>}
+              {invPolicy.allocation_carton_by_order && <td style={{ ...td }}></td>}
+              {invPolicy.allocation_serial_by_order && <td style={{ ...td }}></td>}
+
+              {/* <td style={{ ...td, textAlign: "right" }}></td> */}
               <td style={{ ...td, textAlign: "right" }}>GRAND TOTAL</td>
               <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
               <td style={{ ...td, textAlign: "center" }}>{grandTotalCbm}</td>
@@ -527,23 +564,41 @@ const th: React.CSSProperties = {
   padding: "4px",
   backgroundColor: "#eee",
   textAlign: "center",
+  fontSize: "10px",
 };
 
 const td: React.CSSProperties = {
   borderBottom: "1px dashed #000",
   padding: "4px",
+  fontSize: "10px",
 };
 
+// const headerLabel: React.CSSProperties = {
+//   padding: "2px 6px",
+//   fontWeight: "bold",
+//   whiteSpace: "nowrap",
+//   width: "20%",
+// };
+
+// const headerValue: React.CSSProperties = {
+//   padding: "2px 6px",
+//   width: "30%",
+// };
+
 const headerLabel: React.CSSProperties = {
-  padding: "2px 6px",
+  padding: "1px 6px",
   fontWeight: "bold",
   whiteSpace: "nowrap",
-  width: "20%",
+  width: "35%",
+  lineHeight: "1.3",
+  verticalAlign: "top",
 };
 
 const headerValue: React.CSSProperties = {
-  padding: "2px 6px",
-  width: "30%",
+  padding: "1px 6px",
+  width: "65%",
+  lineHeight: "1.3",
+  verticalAlign: "top",
 };
 
 const signatureLine: React.CSSProperties = {

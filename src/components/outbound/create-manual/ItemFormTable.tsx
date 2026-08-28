@@ -289,6 +289,9 @@ export default function ItemFormTable({
         mode: "create",
         exp_date: "",
         lot_number: "",
+        serial_number: "",
+        carton_number: "",
+        case_number: "",
       };
 
       // Sisipkan hasil copy di posisi setelah item yang dicopy
@@ -323,6 +326,9 @@ export default function ItemFormTable({
         vas_id: vasOptions.find((item) => item.label === "NO")?.value,
         exp_date: "",
         lot_number: "",
+        serial_number: "",
+        carton_number: "",
+        case_number: "",
         division_code: headerForm.order_type === "B2C - Marketplace" ? "E-COMMERCE" : "REGULAR",
       }));
 
@@ -349,6 +355,15 @@ export default function ItemFormTable({
 
     setIsModalOpen(false);
   };
+
+  const outboundPolicyColCount = [
+    invPolicy?.use_vas,
+    invPolicy?.use_lot_no &&
+    (invPolicy?.allocation_lot_by_order || invPolicy?.require_lot_number),
+    invPolicy?.allocation_location_by_order,
+  ].filter(Boolean).length;
+
+  const footerColSpan = 2 + outboundPolicyColCount + 1; // Division + UoM + policy cols + Action
 
   return (
     <>
@@ -385,7 +400,7 @@ export default function ItemFormTable({
                 Qty
               </th>
               <th className="p-2 border" style={{ width: "100px" }}>
-                Qty Scan
+                Pack
               </th>
               {/* <th className="p-2 border" style={{ width: "55px" }}>
                 SN
@@ -406,14 +421,29 @@ export default function ItemFormTable({
                 <th className="p-2 border" style={{ width: "140px" }}>VAS</th>
               )}
 
-              {invPolicy?.use_lot_no &&
-                (invPolicy?.allocation_lot_by_order ||
-                  invPolicy?.require_lot_number) &&
-                (
-                  <th className="p-2 border" style={{ width: "140px" }}>
-                    Lot No.
-                  </th>
-                )}
+              {invPolicy?.allocation_lot_by_order && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Lot No.
+                </th>
+              )}
+
+              {invPolicy?.allocation_case_by_order && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Case No.
+                </th>
+              )}
+
+              {invPolicy?.allocation_carton_by_order && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Carton No.
+                </th>
+              )}
+
+              {invPolicy?.allocation_serial_by_order && (
+                <th className="p-2 border" style={{ width: "140px" }}>
+                  Serial No.
+                </th>
+              )}
 
               {invPolicy?.allocation_location_by_order && (
                 <th className="p-2 border" style={{ width: "140px" }}>
@@ -429,6 +459,7 @@ export default function ItemFormTable({
           </thead>
           <tbody>
             {muatan?.map((item, index) => {
+              const isEditableRow = headerForm.status === "open" || item.mode === "create" || modeForm === "copy";
               return (
                 <tr key={item.ID} className="border-t">
                   <td className="p-2 border text-center">{index + 1}</td>
@@ -499,7 +530,7 @@ export default function ItemFormTable({
                       value={item.barcode}
                     />
                   </td> */}
-                  <td className="p-2 border">
+                  {/* <td className="p-2 border">
                     <div>
                       <Input
                         // readOnly={headerForm.status != "open"}
@@ -516,6 +547,19 @@ export default function ItemFormTable({
                       <small className="text-red-500">
                         {errors[item.ID].item_code}
                       </small>
+                    )}
+                  </td> */}
+                  <td className="p-2 border">
+                    {isEditableRow ? (
+                      <Input
+                        style={{ fontSize: "12px", textAlign: "center" }}
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => handleChange(item.ID, "quantity", e.target.value)}
+                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                      />
+                    ) : (
+                      <div className="text-center">{item.quantity}</div>
                     )}
                   </td>
                   <td className="p-2 border">
@@ -567,25 +611,65 @@ export default function ItemFormTable({
 
 
 
-                  {invPolicy?.use_lot_no &&
-                    (invPolicy?.allocation_lot_by_order ||
-                      invPolicy?.require_lot_number) && (
-                      <td className="p-2 border">
-                        <Input
-                          style={{ fontSize: "12px" }}
-                          type="text"
-                          value={item.lot_number}
-                          onChange={(e) =>
-                            handleChange(item.ID, "lot_number", e.target.value)
-                          }
-                        />
-                        {errors[item.ID]?.remarks && (
-                          <small className="text-red-500">
-                            {errors[item.ID].lot_number}
-                          </small>
-                        )}
-                      </td>
-                    )}
+                  {invPolicy?.allocation_lot_by_order && (
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px" }}
+                        type="text"
+                        value={item.lot_number}
+                        onChange={(e) =>
+                          handleChange(item.ID, "lot_number", e.target.value)
+                        }
+                      />
+                      {errors[item.ID]?.remarks && (
+                        <small className="text-red-500">
+                          {errors[item.ID].lot_number}
+                        </small>
+                      )}
+                    </td>
+                  )}
+
+                  {invPolicy?.allocation_case_by_order && (
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px" }}
+                        type="text"
+                        value={item.case_number}
+                        onChange={(e) => handleChange(item.ID, "case_number", e.target.value)}
+                      />
+                      {errors[item.ID]?.case_number && (
+                        <small className="text-red-500">{errors[item.ID].case_number}</small>
+                      )}
+                    </td>
+                  )}
+
+                  {invPolicy?.allocation_carton_by_order && (
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px" }}
+                        type="text"
+                        value={item.carton_number}
+                        onChange={(e) => handleChange(item.ID, "carton_number", e.target.value)}
+                      />
+                      {errors[item.ID]?.carton_number && (
+                        <small className="text-red-500">{errors[item.ID].carton_number}</small>
+                      )}
+                    </td>
+                  )}
+
+                  {invPolicy?.allocation_serial_by_order && (
+                    <td className="p-2 border">
+                      <Input
+                        style={{ fontSize: "12px" }}
+                        type="text"
+                        value={item.serial_number}
+                        onChange={(e) => handleChange(item.ID, "serial_number", e.target.value)}
+                      />
+                      {errors[item.ID]?.serial_number && (
+                        <small className="text-red-500">{errors[item.ID].serial_number}</small>
+                      )}
+                    </td>
+                  )}
 
                   {invPolicy?.allocation_location_by_order && (
                     <td className="p-2 border">
@@ -651,15 +735,19 @@ export default function ItemFormTable({
                         >
                           <X size={14} />
                         </Button>
-                        {invPolicy?.use_lot_no && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleCopy(item.ID)}
-                          >
-                            <Copy size={14} />
-                          </Button>
-                        )}
+                        {(invPolicy?.allocation_lot_by_order ||
+                          invPolicy?.allocation_location_by_order ||
+                          invPolicy?.allocation_case_by_order ||
+                          invPolicy?.allocation_carton_by_order ||
+                          invPolicy?.allocation_serial_by_order) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCopy(item.ID)}
+                            >
+                              <Copy size={14} />
+                            </Button>
+                          )}
 
                       </>
                     ) : (
@@ -689,7 +777,7 @@ export default function ItemFormTable({
               <td className="p-2 border text-center">
                 {outboundScan.reduce((acc, item) => acc + item.scan_qty, 0)}
               </td>
-              <td className="p-2 border" colSpan={3}></td>
+              <td className="p-2 border" colSpan={footerColSpan}></td>
             </tr>
           </tfoot>
         </table>
