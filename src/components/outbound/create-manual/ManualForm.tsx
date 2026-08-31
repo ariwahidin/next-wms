@@ -222,9 +222,13 @@ export default function ManualForm() {
           });
           if (res.data.success) {
             let data = res.data.data.outbound;
+            const detailsWithSerial = res.data.data.details ?? [];
+
+            const serialMap = new Map<number, string[]>(
+              detailsWithSerial.map((d: any) => [d.ID, d.serial_numbers ?? []])
+            );
 
             if (mode === "copy") {
-              // reset ID biar dianggap data baru
               data = {
                 ...data,
                 ID: 0,
@@ -239,6 +243,7 @@ export default function ManualForm() {
               data.items.map((item) => ({
                 ...item,
                 item_name: item.product?.item_name || "",
+                serial_numbers: mode === "copy" ? [] : (serialMap.get(item.ID) ?? []),
               }))
             );
             setOutboundScan(res.data.data.barcodes);

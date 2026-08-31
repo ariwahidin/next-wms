@@ -18,6 +18,7 @@ import { useRouter } from "next/router";
 import { InventoryPolicy } from "@/types/inventory";
 import { UomConversion } from "@/types/uom";
 import { tr } from "date-fns/locale";
+import SerialNumberModal from "./SerialNumberModal";
 
 export default function ItemFormTable({
   muatan,
@@ -46,6 +47,9 @@ export default function ItemFormTable({
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
   const [uomConversion, setUomConversion] = useState<UomConversion>();
+  const [isSerialModalOpen, setIsSerialModalOpen] = useState(false);
+  const [serialModalItem, setSerialModalItem] = useState<ItemFormProps | null>(null);
+  const [savingSerial, setSavingSerial] = useState(false);
   const router = useRouter();
   const path = router.pathname;
   let modeForm: "add" | "edit" | "copy" = "add";
@@ -56,6 +60,38 @@ export default function ItemFormTable({
   } else if (path.includes("/add")) {
     modeForm = "add";
   }
+
+
+  const handleOpenSerialModal = (item: ItemFormProps) => {
+    setSerialModalItem(item);
+    setIsSerialModalOpen(true);
+  };
+
+  const handleSaveSerialNumbers = async (serials: string[]) => {
+    if (!serialModalItem) return;
+
+    setSavingSerial(true);
+    try {
+      const res = await api.post(
+        `/outbound/item/${serialModalItem.ID}/serial`,
+        { serial_numbers: serials },
+        { withCredentials: true }
+      );
+      if (res.data.success) {
+        setMuatan((prev) =>
+          prev.map((m) =>
+            m.ID === serialModalItem.ID ? { ...m, serial_numbers: serials } : m
+          )
+        );
+        setIsSerialModalOpen(false);
+        setSerialModalItem(null);
+      }
+    } catch (error) {
+      console.error("Error saving serial number:", error);
+    } finally {
+      setSavingSerial(false);
+    }
+  };
 
   const handleFocus = async (itemCode: string, itemId: string | number) => {
     if (!itemCode || itemCode.trim() === "") return;
@@ -374,7 +410,7 @@ export default function ItemFormTable({
             <div className="space-x-2">
               <Button
                 type="button"
-                disabled={headerForm.status === "picking" || headerForm.status === "cancel"}
+                disabled={headerForm.status === "picking" || headerForm.status === "cancel" || headerForm.status === "packed"}
                 onClick={handleAddItems}
               >
                 Add Item
@@ -759,7 +795,24 @@ export default function ItemFormTable({
                       >
                         <Trash size={14} />
                       </Button> */}
+
+                        {(headerForm.status === "picking" || headerForm.status === "packed")&& (
+                          <Button
+                            size="sm"
+                            variant={
+                              (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity
+                                ? "default"
+                                : "outline"
+                            }
+                            onClick={() => handleOpenSerialModal(item)}
+                            title="Isi Serial Number"
+                          >
+                            SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity}
+                          </Button>
+                        )}
                       </>
+
+
                     )}
                   </td>
                 </tr>
@@ -788,6 +841,17 @@ export default function ItemFormTable({
         products={products}
         onApply={handleModalApply}
         selectedItems={muatan}
+      />
+      <SerialNumberModal
+        isOpen={isSerialModalOpen}
+        onClose={() => {
+          setIsSerialModalOpen(false);
+          setSerialModalItem(null);
+        }}
+        onSave={handleSaveSerialNumbers}
+        quantity={Number(serialModalItem?.quantity) || 0}
+        initialValue={serialModalItem?.serial_numbers ?? []}
+        itemCode={serialModalItem?.item_code ?? ""}
       />
     </>
   );

@@ -253,6 +253,7 @@ const PickingSheetPrint = () => {
             {/* <th style={th}>EAN</th> */}
             <th style={th}>QTY</th>
             <th style={th}>UoM</th>
+            <th style={th}>REMARKS</th>
           </tr>
         </thead>
         <tbody>
@@ -307,6 +308,19 @@ const PickingSheetPrint = () => {
                       {/* QTY */}
                       <td style={{ textAlign: "center" }}>{item.qty_scan}</td>
                       <td style={{ textAlign: "center" }}>{item.uom_scan}</td>
+                      <td
+                        style={{
+                          textAlign: "left",
+                          fontSize: "10px",
+                          maxWidth: "100px",
+                          whiteSpace: "normal",
+                          wordBreak: "break-word",
+                          overflowWrap: "break-word",
+                          lineHeight: "1.3",
+                        }}
+                      >
+                        {item.serial_remarks || ""}
+                      </td>
                     </tr>
                   ))}
 
@@ -316,6 +330,7 @@ const PickingSheetPrint = () => {
                       TOTAL
                     </td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
+                    <td style={{ ...td, textAlign: "center" }}>{''}</td>
                     <td style={{ ...td, textAlign: "center" }}>{''}</td>
                   </tr>
                 </React.Fragment>
@@ -329,6 +344,7 @@ const PickingSheetPrint = () => {
               GRAND TOTAL
             </td>
             <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
+            <td style={{ ...td, textAlign: "center" }}>{''}</td>
             <td style={{ ...td, textAlign: "center" }}>{''}</td>
           </tr>
         </tbody>

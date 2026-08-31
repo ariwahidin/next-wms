@@ -54,6 +54,7 @@ export interface ItemFormProps {
   case_number?: string;
   carton_number?: string;
   division_code?: string;
+  serial_numbers?: string[];
 }
 
 export interface ItemFormTableProps {

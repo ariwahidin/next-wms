@@ -636,7 +636,51 @@ const OutboundTable = () => {
   const [arrangeModalOpen, setArrangeModalOpen] = useState(false);
   const [arrangeOrderSN, setArrangeOrderSN] = useState("");
   const [arrangeOutboundNo, setArrangeOutboundNo] = useState("");
+  const [isBulkCompleting, setIsBulkCompleting] = useState(false);
   const { can } = usePermission();
+
+  const HandleBulkComplete = () => {
+    const eligible = selectedRows.filter((r) => r.status === "packed");
+    if (eligible.length === 0) {
+      notify("Info", "No packed rows selected", "error");
+      return;
+    }
+    showAlert(
+      "Bulk Complete Confirmation",
+      `Complete ${eligible.length} packed outbound(s)? This action cannot be undone.`,
+      "error",
+      async () => {
+        eventBus.emit("loading", true);
+        setIsBulkCompleting(true);
+        const results = await Promise.allSettled(
+          eligible.map((row) =>
+            api.post(`/outbound/picking/complete/${row.ID}`, { outbound_id: row.ID }, { withCredentials: true })
+          )
+        );
+        const successCount = results.filter(
+          (r) => r.status === "fulfilled" && r.value.data.success
+        ).length;
+        const failCount = results.length - successCount;
+
+        eventBus.emit("loading", false);
+        setIsBulkCompleting(false);
+
+        if (failCount === 0) {
+          notify("Success", `${successCount} outbound(s) completed successfully`, "success");
+        } else {
+          notify(
+            failCount === results.length ? "Failed" : "Partial Success",
+            `${successCount} completed, ${failCount} failed`,
+            failCount === results.length ? "error" : "error"
+          );
+        }
+
+        mutate();
+        gridApiRef.current?.deselectAll();
+        setSelectedRows([]);
+      }
+    );
+  };
 
   const HandleEdit = (item: any) => {
     router.push(`/wms/outbound/edit/${item.outbound_no}`);
@@ -894,7 +938,7 @@ const OutboundTable = () => {
                 </DropdownMenuItem>
               )}
 
-              {!params.data.require_packing_scan && params.data.status != "packed" && params.data.status != "complete" && (
+              {!params.data.require_packing_scan && params.data.status != "packed" && params.data.status != "complete" && params.data.status != "open" && (
                 <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePackingWithoutScan(params.data.ID); }}>
                   <CheckCheck className="mr-2 h-4 w-4" /> Confirm Packing Without Scan
                 </DropdownMenuItem>
@@ -1027,6 +1071,17 @@ const OutboundTable = () => {
               🔄 Sync E-Commerce
             </Button>
           )}
+
+          {selectedRows.length > 0 && (
+            <Button
+              className="h-8 bg-purple-600 text-white hover:bg-purple-700"
+              disabled={isBulkCompleting}
+              onClick={HandleBulkComplete}
+            >
+              <CheckCheck className="mr-2 w-4" />
+              Complete ({selectedRows.length})
+            </Button>
+          )}
         </div>
 
         {/* Result count */}
@@ -1151,7 +1206,12 @@ const OutboundTable = () => {
             paginationPageSizeSelector={[10, 25, 50]}
             domLayout="autoHeight"
             onSelectionChanged={(e) => setSelectedRows(e.api.getSelectedRows())}
-            rowSelection={undefined}
+            rowSelection={{
+              mode: "multiRow",
+              checkboxes: true,
+              headerCheckbox: true,
+              isRowSelectable: (node) => node.data?.status === "packed",
+            }}
             overlayNoRowsTemplate='<span style="color:#94a3b8;font-size:13px">No outbound records found for the selected filters.</span>'
           />
         </div>
