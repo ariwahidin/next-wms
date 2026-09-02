@@ -140,7 +140,7 @@ export default function LocationForm({ editData, setEditData, onClose }) {
         is_active: true,
       });
     }
-  }, [editData, setValue, reset]);
+  }, [editData, setValue, reset, owners, warehouses]);
 
   const onSubmit = async (data) => {
     try {
