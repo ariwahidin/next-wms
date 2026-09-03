@@ -59,17 +59,24 @@ export default function ProfilePage() {
       })
       .catch((err) => console.log(err))
       .finally(() => {
-        // document.cookie = `wms-auth-token=; path=/; max-age=0; secure; samesite=None`;
-        document.cookie.split(";").forEach((cookie) => {
-          const eqPos = cookie.indexOf("=");
-          const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
-        });
+        document.cookie = `${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
         dispatch(logout());
         persistor.purge().then(() => {
           router.push("/auth/login");
         });
-      })
+      });
+    // .finally(() => {
+    //   // document.cookie = `wms-auth-token=; path=/; max-age=0; secure; samesite=None`;
+    //   document.cookie.split(";").forEach((cookie) => {
+    //     const eqPos = cookie.indexOf("=");
+    //     const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+    //     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+    //   });
+    //   dispatch(logout());
+    //   persistor.purge().then(() => {
+    //     router.push("/auth/login");
+    //   });
+    // })
   };
 
   return (
