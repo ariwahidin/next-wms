@@ -139,8 +139,8 @@ const AuthConflictPage = () => {
                         })
                     );
 
-                    document.cookie = `wms-auth-token=${res.data.x_token
-                        }; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+                    // document.cookie = `wms-auth-token=${res.data.x_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+                    document.cookie = `${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=${res.data.x_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
                     if (res.data.user.base_url === "/dashboard") {
                         router.push("/wms/dashboard");
                     } else {

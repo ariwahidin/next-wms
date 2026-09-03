@@ -64,9 +64,7 @@ export function LoginForm({
             })
           );
 
-          document.cookie = `next-auth-token=${res.data.x_token}; path=/; max-age=${
-            60 * 60 * 24
-          }; secure; samesite=None`;
+          document.cookie = `${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=${res.data.x_token}; path=/; max-age=${60 * 60 * 24}; secure; samesite=None`;
           if (res.data.user.base_url === "/dashboard") {
             router.push("/wms/dashboard");
           } else {

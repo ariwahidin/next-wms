@@ -35,7 +35,7 @@ export const itemPackagingAPI = {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${document.cookie
                         .split("; ")
-                        .find((row) => row.startsWith("wms-auth-token="))
+                        .find((row) => row.startsWith(`${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=`))
                         ?.split("=")[1] || ""}`,
                 },
             }
@@ -57,7 +57,7 @@ export const itemPackagingAPI = {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${document.cookie
                         .split("; ")
-                        .find((row) => row.startsWith("wms-auth-token="))
+                        .find((row) => row.startsWith(`${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=`))
                         ?.split("=")[1] || ""}`,
                 },
             }
@@ -79,7 +79,7 @@ export const itemPackagingAPI = {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${document.cookie
                         .split("; ")
-                        .find((row) => row.startsWith("wms-auth-token="))
+                        .find((row) => row.startsWith(`${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=`))
                         ?.split("=")[1] || ""}`,
                 },
             }
@@ -103,7 +103,7 @@ export const itemPackagingAPI = {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${document.cookie
                         .split("; ")
-                        .find((row) => row.startsWith("wms-auth-token="))
+                        .find((row) => row.startsWith(`${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=`))
                         ?.split("=")[1] || ""}`,
                 },
                 body: JSON.stringify(data),
@@ -129,7 +129,7 @@ export const itemPackagingAPI = {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${document.cookie
                         .split("; ")
-                        .find((row) => row.startsWith("wms-auth-token="))
+                        .find((row) => row.startsWith(`${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=`))
                         ?.split("=")[1] || ""}`,
                 },
                 body: JSON.stringify(data),
@@ -151,7 +151,7 @@ export const itemPackagingAPI = {
                 headers: {
                     "Authorization": `Bearer ${document.cookie
                         .split("; ")
-                        .find((row) => row.startsWith("wms-auth-token="))
+                        .find((row) => row.startsWith(`${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=`))
                         ?.split("=")[1] || ""}`,
                 },
             }

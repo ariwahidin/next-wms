@@ -113,7 +113,7 @@ export default function LoginPage() {
   useEffect(() => {
     const next_token = document.cookie
       .split("; ")
-      .find((row) => row.startsWith("wms-auth-token="))
+      .find((row) => row.startsWith(`${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=`))
       ?.split("=")[1];
     console.log("next token : ", next_token)
 

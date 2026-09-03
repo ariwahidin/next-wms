@@ -32,9 +32,15 @@ export default function LoginPage() {
 
   // ── Check existing session ────────────────────────────────────────────────
   useEffect(() => {
+    // const token = document.cookie
+    //   .split('; ')
+    //   .find((row) => row.startsWith('wms-auth-token='))
+    //   ?.split('=')[1];
+
+    // cek existing session
     const token = document.cookie
       .split('; ')
-      .find((row) => row.startsWith('wms-auth-token='))
+      .find((row) => row.startsWith(`${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=`))
       ?.split('=')[1];
 
     if (!token || token === 'undefined') return;
@@ -82,7 +88,9 @@ export default function LoginPage() {
               permissions: res.data.permissions,
             })
           );
-          document.cookie = `wms-auth-token=${res.data.x_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+          // document.cookie = `wms-auth-token=${res.data.x_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+          // pas set cookie setelah login
+          document.cookie = `${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=${res.data.x_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
           if (res.data.user.base_url === '/dashboard') {
             router.push('/wms/dashboard');
           } else {
