@@ -14,4 +14,5 @@ export interface Product {
     group?: string;
     category?: string;
     cbm?: number;
+    qty_available?: number;
 }

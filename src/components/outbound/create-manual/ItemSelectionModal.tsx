@@ -190,7 +190,7 @@ const ItemSelectionModal = ({
                   <th className="p-2 border w-12">No.</th>
                   <th className="p-2 border">Item Code</th>
                   <th className="p-2 border">Item Name</th>
-                  <th className="p-2 border">Barcode</th>
+                  <th className="p-2 border">Stock</th>
                   <th className="p-2 border w-20">UoM</th>
                   <th className="p-2 border w-20">SN</th>
                   <th className="p-2 border w-20">Adaptor</th>
@@ -227,7 +227,7 @@ const ItemSelectionModal = ({
                         {item.item_code}
                       </td>
                       <td className="p-2 border">{item.item_name}</td>
-                      <td className="p-2 border">{item.barcode}</td>
+                      <td className="p-2 border text-center">{item.qty_available}</td>
                       <td className="p-2 border text-center">{item.uom}</td>
                       <td className="p-2 border text-center">
                         <span

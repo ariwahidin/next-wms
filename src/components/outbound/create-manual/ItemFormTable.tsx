@@ -145,7 +145,7 @@ export default function ItemFormTable({
   const fetchData = async () => {
     try {
       const [products, uoms, vasPages, policies, divisions] = await Promise.all([
-        api.get("/products?owner=" + headerForm.owner_code),
+        api.get("/products/stock-available?owner=" + headerForm.owner_code),
         api.get("/uoms"),
         api.get("/vas/page"),
         api.get("/inventory/policy?owner=" + headerForm.owner_code),

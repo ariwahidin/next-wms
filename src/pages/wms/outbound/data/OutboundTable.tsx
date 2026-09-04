@@ -65,6 +65,7 @@ import SyncEcommerceModal from "@/components/outbound/SyncEcommerceModal";
 import ArrangeShipmentModal from "@/components/outbound/ArrangeShipmentModal.patch";
 import { usePermission } from "@/hooks/usePermission";
 import Select from "react-select";
+import { Textarea } from "@/components/ui/textarea";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -620,6 +621,8 @@ const OutboundTable = () => {
   const [isScannedItemDialog, setIsScannedItemDialog] = useState(false);
   const [scannedItemData, setScannedItemData] = useState<any>(null);
   const [tempLocationName, setTempLocationName] = useState("");
+  const [cancelReason, setCancelReason] = useState("")
+  const [actionReason, setActionReason] = useState("")
   const [showTempLocationInput, setShowTempLocationInput] = useState(false);
   const [changeStatus, setChangeStatus] = useState("open");
   const [isSubmit, setIsSubmit] = useState(false);
@@ -776,11 +779,13 @@ const OutboundTable = () => {
     setChangeStatus(status);
     try {
       eventBus.emit("loading", true);
-      api.post("/outbound/open", { outbound_no: rowData.outbound_no, status })
+      let url = "/outbound/open";
+      if (status === "cancel") url = "/outbound/cancel";
+      api.post(url, { outbound_id: rowData.ID, outbound_no: rowData.outbound_no, status })
         .then((response) => {
           eventBus.emit("loading", false);
           if (response.data.success) {
-            setScannedItemData({ outbound_no: rowData.outbound_no, scanned_items: rowData.scanned_items || [] });
+            setScannedItemData({ outbound_id: rowData.ID, outbound_no: rowData.outbound_no, scanned_items: rowData.scanned_items || [] });
             setIsScannedItemDialog(true);
           }
         })
@@ -797,10 +802,21 @@ const OutboundTable = () => {
 
   const processScannedItems = useCallback(
     (action: string, locationName: string | null = null) => {
-      const payload = { outbound_no: scannedItemData?.outbound_no, action, temp_location_name: locationName, status: changeStatus };
+      const payload = {
+        outbound_id: scannedItemData?.outbound_id,
+        outbound_no: scannedItemData?.outbound_no,
+        action,
+        temp_location_name: locationName,
+        status: changeStatus,
+        reason: actionReason,
+      };
       eventBus.emit("loading", true);
       setIsSubmit(true);
-      api.post("/outbound/open/process", payload, { withCredentials: true })
+
+      let url = "/outbound/open/process";
+      if (changeStatus === "cancel") url = "/outbound/cancel/process";
+
+      api.post(url, payload, { withCredentials: true })
         .then((response) => {
           eventBus.emit("loading", false);
           if (response.data.success) {
@@ -812,8 +828,9 @@ const OutboundTable = () => {
         .catch((error) => { eventBus.emit("loading", false); setIsSubmit(false); console.error(error); })
         .then(() => { eventBus.emit("loading", false); setIsSubmit(false); });
     },
-    [scannedItemData?.outbound_no, notify, mutate]
+    [scannedItemData?.outbound_id, scannedItemData?.outbound_no, notify, mutate, changeStatus, actionReason]
   );
+
 
   const handleTempLocationSubmit = useCallback(() => {
     const currentValue = inputRef.current?.value || tempLocationName;
@@ -826,6 +843,7 @@ const OutboundTable = () => {
     setScannedItemData(null);
     setTempLocationName("");
     setShowTempLocationInput(false);
+    setActionReason("");
   }, []);
 
   const handleBackToChoice = useCallback(() => setShowTempLocationInput(false), []);
@@ -867,41 +885,6 @@ const OutboundTable = () => {
     if (!isScannedItemDialog) { setScannedItemData(null); setTempLocationName(""); }
   }, [isScannedItemDialog]);
 
-  const ScannedItemDialog = () => (
-    <Dialog open={isScannedItemDialog} onOpenChange={closeScannedItemDialog}>
-      <DialogContent className="sm:max-w-md bg-white">
-        <DialogHeader>
-          <DialogTitle>Confirm to {changeStatus} this transaction</DialogTitle>
-          <DialogDescription>
-            Stock inventory has been picked for outbound number {scannedItemData?.outbound_no}. Select the action to perform:
-          </DialogDescription>
-        </DialogHeader>
-        {!showTempLocationInput ? (
-          <DialogFooter className="flex-col sm:flex-col gap-2">
-            <Button disabled={isSubmit} onClick={() => handleScannedItemChoice("return_to_rack")} variant="outline" className="w-full" type="button">
-              Return to origin location
-            </Button>
-            <Button disabled={isSubmit} onClick={() => handleScannedItemChoice("temp_location")} className="w-full" type="button">
-              Move to Temporary Location
-            </Button>
-          </DialogFooter>
-        ) : (
-          <form onSubmit={(e) => { e.preventDefault(); handleTempLocationSubmit(); }}>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="temp-location">Temporary Location Name</Label>
-                <Input ref={inputRef} id="temp-location" placeholder="Enter the name of the temporary location..." defaultValue="" autoComplete="off" autoFocus required />
-              </div>
-              <DialogFooter className="gap-2">
-                <Button disabled={isSubmit} variant="outline" onClick={handleBackToChoice} type="button">Back</Button>
-                <Button disabled={isSubmit} type="submit">Submit</Button>
-              </DialogFooter>
-            </div>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
 
   const [columnDefs] = useState<ColDef[]>([
     { field: "no", headerName: "No.", maxWidth: 70 },
@@ -938,11 +921,15 @@ const OutboundTable = () => {
                 </DropdownMenuItem>
               )}
 
-              {!params.data.require_packing_scan && params.data.status != "packed" && params.data.status != "complete" && params.data.status != "open" && (
-                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePackingWithoutScan(params.data.ID); }}>
-                  <CheckCheck className="mr-2 h-4 w-4" /> Confirm Packing Without Scan
-                </DropdownMenuItem>
-              )}
+              {(!params.data.require_packing_scan || params.data.order_type === "ADJUSTMENT") &&
+                params.data.status != "packed" &&
+                params.data.status != "complete" &&
+                params.data.status != "open" &&
+                params.data.status != "cancel" && (
+                  <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePackingWithoutScan(params.data.ID); }}>
+                    <CheckCheck className="mr-2 h-4 w-4" /> Confirm Packing Without Scan
+                  </DropdownMenuItem>
+                )}
 
               {(params.data.status === "packing" || params.data.status === "packed") && (
                 <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePickingComplete(params.data.ID); }}>
@@ -972,14 +959,23 @@ const OutboundTable = () => {
 
               {params.data.status !== "open" && params.data.status !== "cancel" && (
                 <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); handleOpenSingle(params.data, "open"); }}>
-                    <RefreshCcw className="mr-2 h-4 w-4" /> Change to Open
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); handleOpenSingle(params.data, "cancel"); }}>
-                    <X className="mr-2 h-4 w-4" /> Cancel
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                  {params.data.status !== "complete" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); handleOpenSingle(params.data, "open"); }}>
+                        <RefreshCcw className="mr-2 h-4 w-4" /> Change to Open
+                      </DropdownMenuItem>
+                    </>
+                  )}
+
+                  {params.data.status === "complete" && (
+                    <>
+                      <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); handleOpenSingle(params.data, "cancel"); }}>
+                        <X className="mr-2 h-4 w-4" /> Cancel Outbound
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                 </>
               )}
 
@@ -1218,7 +1214,66 @@ const OutboundTable = () => {
       </div>
 
       {/* ── Dialogs & Modals ── */}
-      <ScannedItemDialog />
+      {/* <ScannedItemDialog /> */}
+      <Dialog open={isScannedItemDialog} onOpenChange={closeScannedItemDialog}>
+        <DialogContent className="sm:max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle>Confirm to {changeStatus} this transaction</DialogTitle>
+            <DialogDescription>
+              Stock inventory has been picked for outbound number {scannedItemData?.outbound_no}. Select the action to perform:
+            </DialogDescription>
+          </DialogHeader>
+
+          {changeStatus === "cancel" && (
+            <div className="space-y-2">
+              <Label htmlFor="action-reason">Reason</Label>
+              <Textarea
+                id="action-reason"
+                value={actionReason}
+                onChange={(e) => setActionReason(e.target.value)}
+                placeholder="Enter the reason..."
+                required
+                autoFocus
+              />
+            </div>
+          )}
+
+          {!showTempLocationInput ? (
+            <DialogFooter className="flex-col sm:flex-col gap-2">
+              <Button
+                disabled={isSubmit || (changeStatus === "cancel" && !actionReason.trim())}
+                onClick={() => handleScannedItemChoice("return_to_rack")}
+                variant="outline"
+                className="w-full"
+                type="button"
+              >
+                Return to origin location
+              </Button>
+              <Button
+                disabled={isSubmit || (changeStatus === "cancel" && !actionReason.trim())}
+                onClick={() => handleScannedItemChoice("temp_location")}
+                className="w-full"
+                type="button"
+              >
+                Move to Temporary Location
+              </Button>
+            </DialogFooter>
+          ) : (
+            <form onSubmit={(e) => { e.preventDefault(); handleTempLocationSubmit(); }}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="temp-location">Temporary Location Name</Label>
+                  <Input ref={inputRef} id="temp-location" value="SHIPDOCK" readOnly placeholder="Enter the name of the temporary location..." defaultValue="" autoComplete="off" autoFocus required />
+                </div>
+                <DialogFooter className="gap-2">
+                  <Button disabled={isSubmit} variant="outline" onClick={handleBackToChoice} type="button">Back</Button>
+                  <Button disabled={isSubmit || (changeStatus === "cancel" && !actionReason.trim())} type="submit">Submit</Button>
+                </DialogFooter>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={openImportModal} onOpenChange={setOpenImportModal}>
         <DialogContent className="sm:max-w-md bg-white">
