@@ -25,6 +25,9 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 import OutboundPipeline from "./OutboundPipeline";
+import TopOutboundItems from "./TopOutboundItems";
+
+
 
 // ── Types ─────────────────────────────────────────────────────
 type TrendItem = { date: string; inbound: number; outbound: number };
@@ -63,6 +66,12 @@ function resolveDates(preset: FilterState["preset"]): { dateFrom: string; dateTo
   if (preset === "this_month") return { dateFrom: dayjs().startOf("month").format("YYYY-MM-DD"), dateTo: today };
   return { dateFrom: "", dateTo: "" }; // "all" dan "custom" — custom dihandle terpisah
 }
+
+type TopOutboundItem = {
+  item_code: string;
+  item_name: string;
+  quantity: number;
+};
 
 export default function Page() {
   // ── State ───────────────────────────────────────────────────
@@ -160,11 +169,52 @@ export default function Page() {
     }
   }, [buildParams]);
 
+
+  const [topOutboundItems, setTopOutboundItems] =
+  useState<TopOutboundItem[]>([]);
+
+
+  const fetchTopOutboundItems = useCallback(async (f: FilterState) => {
+  setLoadingTopItems(true);
+
+  try {
+    const res = await api.get("/dashboard/top-outbound-items", {
+      params: buildParams(f),
+      withCredentials: true,
+    });
+
+    if (res.data.success) {
+      setTopOutboundItems(res.data.data ?? []);
+    } else {
+      setTopOutboundItems([]);
+    }
+    } catch (err) {
+      console.error("Error fetching top outbound items:", err);
+      setTopOutboundItems([]);
+    } finally {
+      setLoadingTopItems(false);
+    }
+  }, [buildParams]);
+
+  const [loadingTopItems, setLoadingTopItems] =
+  useState(true);
+
   // ── Fetch semua saat filter berubah ────────────────────────
+  // useEffect(() => {
+  //   fetchTransactions(filter);
+  //   fetchChart(filter);
+  // }, [filter, fetchTransactions, fetchChart]);
+
   useEffect(() => {
-    fetchTransactions(filter);
-    fetchChart(filter);
-  }, [filter, fetchTransactions, fetchChart]);
+  fetchTransactions(filter);
+  fetchChart(filter);
+  fetchTopOutboundItems(filter);
+}, [
+  filter,
+  fetchTransactions,
+  fetchChart,
+  fetchTopOutboundItems,
+]);
 
   // ── Computed dari transactions ──────────────────────────────
   const inboundCount = transactions?.filter((t) => t.trans_type === "inbound").length ?? 0;
@@ -431,7 +481,8 @@ export default function Page() {
             </Card>
           </div>
 
-          <OutboundPipeline filter={filter} />
+          {/* <OutboundPipeline filter={filter} /> */}
+
 
           {/* ── Charts ─────────────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -529,6 +580,21 @@ export default function Page() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {/* Top 5 - 1/3 */}
+            <div className="lg:col-span-1">
+              <TopOutboundItems
+                items={topOutboundItems}
+                loading={loadingTopItems}
+              />
+            </div>
+
+            {/* Order Pipeline - 2/3 */}
+            <div className="lg:col-span-2">
+              <OutboundPipeline filter={filter} />
             </div>
           </div>
 
