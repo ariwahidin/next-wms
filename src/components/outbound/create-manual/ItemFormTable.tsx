@@ -17,7 +17,7 @@ import ItemSelectionModal from "@/components/outbound/create-manual/ItemSelectio
 import { useRouter } from "next/router";
 import { InventoryPolicy } from "@/types/inventory";
 import { UomConversion } from "@/types/uom";
-import { tr } from "date-fns/locale";
+import { he, tr } from "date-fns/locale";
 import SerialNumberModal from "./SerialNumberModal";
 
 export default function ItemFormTable({
@@ -67,30 +67,22 @@ export default function ItemFormTable({
     setIsSerialModalOpen(true);
   };
 
-  const handleSaveSerialNumbers = async (serials: string[]) => {
+  const handleSaveSerialNumbers = (serials: string[]) => {
     if (!serialModalItem) return;
 
-    setSavingSerial(true);
-    try {
-      const res = await api.post(
-        `/outbound/item/${serialModalItem.ID}/serial`,
-        { serial_numbers: serials },
-        { withCredentials: true }
-      );
-      if (res.data.success) {
-        setMuatan((prev) =>
-          prev.map((m) =>
-            m.ID === serialModalItem.ID ? { ...m, serial_numbers: serials } : m
-          )
-        );
-        setIsSerialModalOpen(false);
-        setSerialModalItem(null);
-      }
-    } catch (error) {
-      console.error("Error saving serial number:", error);
-    } finally {
-      setSavingSerial(false);
-    }
+    setMuatan((prev) =>
+      prev.map((m) =>
+        m.ID === serialModalItem.ID
+          ? {
+            ...m,
+            serial_numbers: serials,
+          }
+          : m
+      )
+    );
+
+    setIsSerialModalOpen(false);
+    setSerialModalItem(null);
   };
 
   const handleFocus = async (itemCode: string, itemId: string | number) => {
@@ -326,6 +318,7 @@ export default function ItemFormTable({
         exp_date: "",
         lot_number: "",
         serial_number: "",
+        serial_numbers: [],
         carton_number: "",
         case_number: "",
       };
@@ -363,6 +356,7 @@ export default function ItemFormTable({
         exp_date: "",
         lot_number: "",
         serial_number: "",
+        serial_numbers: [],
         carton_number: "",
         case_number: "",
         division_code: headerForm.order_type === "B2C - Marketplace" ? "E-COMMERCE" : "REGULAR",
@@ -784,7 +778,22 @@ export default function ItemFormTable({
                               <Copy size={14} />
                             </Button>
                           )}
-
+                        {(headerForm.status === "open" ||
+                          headerForm.status === "picking" ||
+                          headerForm.status === "packed") && (
+                            <Button
+                              size="sm"
+                              variant={
+                                (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity
+                                  ? "default"
+                                  : "outline"
+                              }
+                              onClick={() => handleOpenSerialModal(item)}
+                              title="Isi Serial Number"
+                            >
+                              SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity}
+                            </Button>
+                          )}
                       </>
                     ) : (
                       <>
@@ -796,20 +805,22 @@ export default function ItemFormTable({
                         <Trash size={14} />
                       </Button> */}
 
-                        {(headerForm.status === "picking" || headerForm.status === "packed")&& (
-                          <Button
-                            size="sm"
-                            variant={
-                              (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity
-                                ? "default"
-                                : "outline"
-                            }
-                            onClick={() => handleOpenSerialModal(item)}
-                            title="Isi Serial Number"
-                          >
-                            SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity}
-                          </Button>
-                        )}
+                        {(headerForm.status === "open" ||
+                          headerForm.status === "picking" ||
+                          headerForm.status === "packed") && (
+                            <Button
+                              size="sm"
+                              variant={
+                                (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity
+                                  ? "default"
+                                  : "outline"
+                              }
+                              onClick={() => handleOpenSerialModal(item)}
+                              title="Isi Serial Number"
+                            >
+                              SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity}
+                            </Button>
+                          )}
                       </>
 
 

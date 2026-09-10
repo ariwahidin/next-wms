@@ -37,6 +37,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store"; // Pastikan ini pointing ke konfigurasi store-mu
+import packageJson from "../../package.json";
 
 // helper untuk ambil icon berdasarkan nama
 function getIcon(name: string) {
@@ -423,10 +424,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavUser user={data.user} />
       </SidebarHeader>
       <SidebarContent>
-        {/* <NavMain items={data.navMain} /> */}
         <NavMain items={menus} />
       </SidebarContent>
-      <SidebarFooter />
+
+      <SidebarFooter>
+
+        <div className="mt-2 px-2 group-data-[collapsible=icon]:hidden">
+          <div className="border-t pt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-muted-foreground">
+                WMS
+              </span>
+              <span className="text-[12px] text-muted-foreground/70">
+                v{packageJson.version}
+              </span>
+            </div>
+          </div>
+        </div>
+      </SidebarFooter >
       <SidebarRail />
     </Sidebar>
   );

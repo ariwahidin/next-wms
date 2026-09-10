@@ -48,6 +48,7 @@ interface ItemReceivedFull {
     prod_date?: string;
     lot_number?: string;
     case_number?: string;
+    carton_number?: string;
     item_model?: string;
     scan_type?: string;
     scan_data?: string;
@@ -62,8 +63,16 @@ interface PalletSummary {
     in_stock_count: number;
 }
 
-interface CartonSummary {
+interface CaseSummary {
     case_number: string;
+    item_count: number;
+    carton_count: number;
+    total_qty: number;
+    all_in_stock: number;
+}
+
+interface CartonSummary {
+    carton_number: string;
     pallet: string;
     item_count: number;
     total_qty: number;
@@ -119,12 +128,13 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
-type TabKey = "byItem" | "byPallet" | "byCarton";
+type TabKey = "byItem" | "byPallet" | "byCarton" | "byCase";
 
 const TABS: { key: TabKey; label: string }[] = [
     { key: "byItem", label: "By Item" },
     { key: "byPallet", label: "By Pallet" },
     { key: "byCarton", label: "By Carton" },
+    { key: "byCase", label: "By Case" },
 ];
 
 const ITEM_LIMIT = 100;
@@ -149,6 +159,23 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
     const [loadingPallet, setLoadingPallet] = useState(false);
     const [loadingPalletItems, setLoadingPalletItems] = useState<Record<string, boolean>>({});
     const [expandedPallets, setExpandedPallets] = useState<Set<string>>(new Set());
+
+
+    // ─── By Case state ────────────────────────────────────────────────────────
+    const [caseSummaries, setCaseSummaries] = useState<CaseSummary[]>([]);
+    const [caseMeta, setCaseMeta] = useState<MetaPagination>({
+        page: 1,
+        limit: 50,
+        total: 0,
+        total_pages: 0,
+    });
+    const [casePage, setCasePage] = useState(1);
+
+    const [caseItems, setCaseItems] = useState<Record<string, ItemReceivedFull[]>>({});
+    const [expandedCases, setExpandedCases] = useState<Set<string>>(new Set());
+    const [loadingCase, setLoadingCase] = useState(false);
+    const [loadingCaseItems, setLoadingCaseItems] = useState<Record<string, boolean>>({});
+
 
     // ── By Carton state ────────────────────────────────────────────────────────
     const [cartonSummaries, setCartonSummaries] = useState<CartonSummary[]>([]);
@@ -220,6 +247,68 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
         }
     }, [inbound_no, palletItems]);
 
+
+    // ── Fetch By Case summary (paginated + search) ─────────────────────────────
+    const fetchCaseSummaries = useCallback(async (p: number, search?: string) => {
+        if (!inbound_no) return;
+
+        setLoadingCase(true);
+
+        try {
+            const params = new URLSearchParams({
+                page: String(p),
+                limit: "50",
+            });
+
+            if (search?.trim()) {
+                params.set("search", search.trim());
+            }
+
+            const res = await api.get(
+                `/inbound/${inbound_no}/received/case-summary?${params}`
+            );
+
+            if (res.data.success) {
+                setCaseSummaries(res.data.data ?? []);
+                setCaseMeta(res.data.meta);
+            }
+        } catch (err) {
+            console.error("Error fetching case summaries:", err);
+        } finally {
+            setLoadingCase(false);
+        }
+    }, [inbound_no]);
+
+    // ── Fetch items dalam 1 case saat expand ─────────────────────────────────
+    const fetchCaseItems = useCallback(async (caseNumber: string) => {
+        if (caseItems[caseNumber]) return;
+
+        setLoadingCaseItems((prev) => ({
+            ...prev,
+            [caseNumber]: true,
+        }));
+
+        try {
+            const res = await api.get(
+                `/inbound/${inbound_no}/received?case_number=${encodeURIComponent(caseNumber)}&limit=9999`
+            );
+
+            if (res.data.success) {
+                setCaseItems((prev) => ({
+                    ...prev,
+                    [caseNumber]: res.data.data ?? [],
+                }));
+            }
+        } catch (err) {
+            console.error("Error fetching case items:", err);
+        } finally {
+            setLoadingCaseItems((prev) => ({
+                ...prev,
+                [caseNumber]: false,
+            }));
+        }
+    }, [inbound_no, caseItems]);
+
     // ── Fetch By Carton summary (paginated + search) ───────────────────────────
     const fetchCartonSummaries = useCallback(async (p: number, search?: string) => {
         if (!inbound_no) return;
@@ -245,7 +334,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
         setLoadingCartonItems((prev) => ({ ...prev, [carton]: true }));
         try {
             const res = await api.get(
-                `/inbound/${inbound_no}/received?case_number=${encodeURIComponent(carton)}&limit=9999`
+                `/inbound/${inbound_no}/received?carton_number=${encodeURIComponent(carton)}&limit=9999`
             );
             if (res.data.success) {
                 setCartonItems((prev) => ({ ...prev, [carton]: res.data.data ?? [] }));
@@ -256,6 +345,8 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
             setLoadingCartonItems((prev) => ({ ...prev, [carton]: false }));
         }
     }, [inbound_no, cartonItems]);
+
+
 
     // ── Initial load ───────────────────────────────────────────────────────────
     useEffect(() => {
@@ -268,9 +359,15 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
         if (activeTab === "byPallet" && palletSummaries.length === 0) {
             fetchPalletSummaries();
         }
+
         if (activeTab === "byCarton" && cartonSummaries.length === 0) {
             fetchCartonSummaries(1);
         }
+
+        if (activeTab === "byCase" && caseSummaries.length === 0) {
+            fetchCaseSummaries(1);
+        }
+
         setSearchTerm("");
         setSelectedItems([]);
         setSelectAll(false);
@@ -284,6 +381,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
             setCartonItems({});
             if (activeTab === "byPallet") fetchPalletSummaries();
             if (activeTab === "byCarton") fetchCartonSummaries(cartonPage, searchTerm);
+            if (activeTab === "byCase") fetchCaseSummaries(casePage, searchTerm);
         };
         eventBus.on("refreshData", handleRefresh);
         return () => eventBus.off("refreshData", handleRefresh);
@@ -299,6 +397,13 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
             const t = setTimeout(() => { setCartonPage(1); fetchCartonSummaries(1, searchTerm); }, 400);
             return () => clearTimeout(t);
         }
+        if (activeTab === "byCase") {
+            const t = setTimeout(() => {
+                fetchCaseSummaries(1, searchTerm);
+            }, 400);
+
+            return () => clearTimeout(t);
+        }
     }, [searchTerm, activeTab]);
 
     // ── Toggle expand pallet ───────────────────────────────────────────────────
@@ -306,6 +411,22 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
         setExpandedPallets((prev) => {
             const next = new Set(prev);
             if (next.has(pallet)) { next.delete(pallet); } else { next.add(pallet); fetchPalletItems(pallet); }
+            return next;
+        });
+    };
+
+    // ── Toggle expand case ───────────────────────────────────────────────────
+    const toggleCase = (caseNumber: string) => {
+        setExpandedCases((prev) => {
+            const next = new Set(prev);
+
+            if (next.has(caseNumber)) {
+                next.delete(caseNumber);
+            } else {
+                next.add(caseNumber);
+                fetchCaseItems(caseNumber);
+            }
+
             return next;
         });
     };
@@ -448,9 +569,13 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                 <div className="flex border-b border-gray-200">
                     {TABS.map((tab) => {
                         const count =
-                            tab.key === "byItem" ? meta.total
-                                : tab.key === "byPallet" ? palletSummaries.length
-                                    : cartonMeta.total;
+                            tab.key === "byItem"
+                                ? meta.total
+                                : tab.key === "byPallet"
+                                    ? palletSummaries.length
+                                    : tab.key === "byCarton"
+                                        ? cartonMeta.total
+                                        : caseMeta.total;
                         return (
                             <button
                                 key={tab.key}
@@ -477,9 +602,13 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                     <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                         placeholder={
-                            activeTab === "byItem" ? "Search SKU, EAN, serial, pallet, carton..."
-                                : activeTab === "byPallet" ? "Search pallet..."
-                                    : "Search carton, pallet..."
+                            activeTab === "byItem"
+                                ? "Search SKU, EAN, serial, pallet, carton..."
+                                : activeTab === "byPallet"
+                                    ? "Search pallet..."
+                                    : activeTab === "byCarton"
+                                        ? "Search carton, pallet..."
+                                        : "Search case..."
                         }
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -519,8 +648,8 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                             {/* <TableHead>Barcode / EAN</TableHead> */}
                                             <TableHead>Serial Number</TableHead>
                                             <TableHead>Pallet</TableHead>
+                                            <TableHead>Case</TableHead>
                                             <TableHead>Carton</TableHead>
-                                            {/* <TableHead>Whs Code</TableHead> */}
                                             <TableHead>Status</TableHead>
                                             <TableHead>Qty</TableHead>
                                             {/* <TableHead>UoM</TableHead> */}
@@ -557,10 +686,11 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                                     </TableCell>
                                                     {/* <TableCell>{item.barcode}</TableCell> */}
                                                     <TableCell className="font-mono">
-                                                        {item.product?.has_serial === "Y" ? item.serial_number || "-" : "-"}
+                                                        {item.serial_number ? item.serial_number : "-"}
                                                     </TableCell>
                                                     <TableCell className="font-medium">{item.pallet || item.location || "-"}</TableCell>
                                                     <TableCell className="font-mono text-xs">{item.case_number || "-"}</TableCell>
+                                                    <TableCell className="font-mono text-xs">{item.carton_number || "-"}</TableCell>
                                                     {/* <TableCell>{item.whs_code}</TableCell> */}
                                                     <TableCell><StatusBadge status={item.status} /></TableCell>
                                                     <TableCell>{item.quantity}</TableCell>
@@ -583,10 +713,16 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                         </TableRow>
                                     </TableFooter>
                                 </Table>
-                                {renderPagination(page, meta.total_pages, meta.total, loadingItems, (p) => {
-                                    setPage(p);
-                                    fetchItems(p, searchTerm);
-                                })}
+                                {renderPagination(
+                                    casePage,
+                                    caseMeta.total_pages,
+                                    caseMeta.total,
+                                    loadingCase,
+                                    (p) => {
+                                        setCasePage(p);
+                                        fetchCaseSummaries(p, searchTerm);
+                                    }
+                                )}
                             </>
                         )}
                     </>
@@ -666,7 +802,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                                                     <td className="px-3 py-1.5 font-mono">{item.item_code}</td>
                                                                     <td className="px-3 py-1.5">{item.product?.item_name}</td>
                                                                     <td className="px-3 py-1.5 font-mono">{item.serial_number || "-"}</td>
-                                                                    <td className="px-3 py-1.5 font-mono text-gray-500">{item.case_number || "-"}</td>
+                                                                    <td className="px-3 py-1.5 font-mono text-gray-500">{item.carton_number || "-"}</td>
                                                                     <td className="px-3 py-1.5">{item.lot_number || "-"}</td>
                                                                     <td className="px-3 py-1.5">{formatDate(item.prod_date)}</td>
                                                                     <td className="px-3 py-1.5 text-center">{item.quantity}</td>
@@ -704,18 +840,18 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                         ) : (
                             <>
                                 {cartonSummaries.map((summary) => {
-                                    const isExpanded = expandedCartons.has(summary.case_number);
-                                    const isLoadingExpand = loadingCartonItems[summary.case_number];
-                                    const expandedData = cartonItems[summary.case_number];
+                                    const isExpanded = expandedCartons.has(summary.carton_number);
+                                    const isLoadingExpand = loadingCartonItems[summary.carton_number];
+                                    const expandedData = cartonItems[summary.carton_number];
                                     return (
                                         <div
-                                            key={summary.case_number}
+                                            key={summary.carton_number}
                                             className={`border rounded-lg overflow-hidden ${summary.all_in_stock === 1 ? "border-green-200" : "border-gray-200"}`}
                                         >
                                             {/* ── Card header / toggle button ── */}
                                             <button
                                                 type="button"
-                                                onClick={() => toggleCarton(summary.case_number)}
+                                                onClick={() => toggleCarton(summary.carton_number)}
                                                 className={`w-full flex items-center justify-between px-4 py-3 transition-colors text-left ${summary.all_in_stock === 1
                                                     ? "bg-green-50 hover:bg-green-100"
                                                     : "bg-gray-50 hover:bg-gray-100"
@@ -728,7 +864,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                                     }
                                                     <div>
                                                         <span className="font-semibold text-sm font-mono text-gray-800">
-                                                            {summary.case_number}
+                                                            {summary.carton_number}
                                                         </span>
                                                         <div className="text-xs text-gray-500 mt-0.5">
                                                             {summary.item_count} items · qty {summary.total_qty}
@@ -801,6 +937,242 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                     setCartonPage(p);
                                     fetchCartonSummaries(p, searchTerm);
                                 })}
+                            </>
+                        )}
+                    </div>
+                )}
+
+
+                {/* ══════════════════ BY CASE TAB ══════════════════ */}
+                {activeTab === "byCase" && (
+                    <div className="space-y-2">
+                        {loadingCase ? (
+                            Array.from({ length: 4 }).map((_, i) => (
+                                <SkeletonCard key={i} />
+                            ))
+                        ) : caseSummaries.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400 text-sm">
+                                No case data found.
+                            </div>
+                        ) : (
+                            <>
+                                {caseSummaries.map((summary) => {
+                                    const isExpanded = expandedCases.has(summary.case_number);
+                                    const isLoadingExpand =
+                                        loadingCaseItems[summary.case_number];
+                                    const expandedData =
+                                        caseItems[summary.case_number];
+
+                                    return (
+                                        <div
+                                            key={summary.case_number}
+                                            className={`border rounded-lg overflow-hidden ${summary.all_in_stock === 1
+                                                ? "border-green-200"
+                                                : "border-gray-200"
+                                                }`}
+                                        >
+                                            {/* ── Case header ── */}
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    toggleCase(summary.case_number)
+                                                }
+                                                className={`w-full flex items-center justify-between px-4 py-3 transition-colors text-left ${summary.all_in_stock === 1
+                                                    ? "bg-green-50 hover:bg-green-100"
+                                                    : "bg-gray-50 hover:bg-gray-100"
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {isExpanded ? (
+                                                        <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+                                                    ) : (
+                                                        <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
+                                                    )}
+
+                                                    <div>
+                                                        <span className="font-semibold text-sm font-mono text-gray-800">
+                                                            {summary.case_number}
+                                                        </span>
+
+                                                        <div className="text-xs text-gray-500 mt-0.5">
+                                                            {summary.item_count} items
+                                                            {" · "}
+                                                            {summary.carton_count} cartons
+                                                            {" · qty "}
+                                                            {summary.total_qty}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <span
+                                                    className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${summary.all_in_stock === 1
+                                                        ? "bg-green-100 text-green-700"
+                                                        : "bg-orange-100 text-orange-700"
+                                                        }`}
+                                                >
+                                                    {summary.all_in_stock === 1
+                                                        ? "In Stock"
+                                                        : "Pending"}
+                                                </span>
+                                            </button>
+
+                                            {/* ── Expanded Case detail ── */}
+                                            {isExpanded && (
+                                                <div className="overflow-x-auto">
+                                                    {isLoadingExpand ? (
+                                                        <div className="flex items-center justify-center py-6 gap-2 text-sm text-gray-500">
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                            Loading...
+                                                        </div>
+                                                    ) : (
+                                                        <table className="w-full text-xs border-t">
+                                                            <thead className="bg-white">
+                                                                <tr className="border-b">
+                                                                    <th className="px-3 py-2 text-left font-medium text-gray-500 w-8">
+                                                                        #
+                                                                    </th>
+                                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">
+                                                                        Serial
+                                                                    </th>
+                                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">
+                                                                        SKU
+                                                                    </th>
+                                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">
+                                                                        Item Name
+                                                                    </th>
+                                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">
+                                                                        Carton
+                                                                    </th>
+                                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">
+                                                                        Pallet
+                                                                    </th>
+                                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">
+                                                                        Lot No
+                                                                    </th>
+                                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">
+                                                                        Prod Date
+                                                                    </th>
+                                                                    <th className="px-3 py-2 text-center font-medium text-gray-500">
+                                                                        Qty
+                                                                    </th>
+                                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">
+                                                                        Status
+                                                                    </th>
+                                                                </tr>
+                                                            </thead>
+
+                                                            <tbody className="divide-y divide-gray-100">
+                                                                {(expandedData ?? []).map(
+                                                                    (item, idx) => (
+                                                                        <tr
+                                                                            key={item.ID}
+                                                                            className="hover:bg-gray-50"
+                                                                        >
+                                                                            <td className="px-3 py-1.5 text-gray-400">
+                                                                                {idx + 1}
+                                                                            </td>
+
+                                                                            <td className="px-3 py-1.5 font-mono">
+                                                                                {item.serial_number ||
+                                                                                    "-"}
+                                                                            </td>
+
+                                                                            <td className="px-3 py-1.5 font-mono">
+                                                                                {item.item_code}
+                                                                            </td>
+
+                                                                            <td className="px-3 py-1.5">
+                                                                                {
+                                                                                    item.product
+                                                                                        ?.item_name
+                                                                                }
+                                                                            </td>
+
+                                                                            <td className="px-3 py-1.5 font-mono text-gray-500">
+                                                                                {item.carton_number ||
+                                                                                    "-"}
+                                                                            </td>
+
+                                                                            <td className="px-3 py-1.5 font-medium">
+                                                                                {item.pallet ||
+                                                                                    item.location ||
+                                                                                    "-"}
+                                                                            </td>
+
+                                                                            <td className="px-3 py-1.5">
+                                                                                {item.lot_number ||
+                                                                                    "-"}
+                                                                            </td>
+
+                                                                            <td className="px-3 py-1.5">
+                                                                                {formatDate(
+                                                                                    item.prod_date
+                                                                                )}
+                                                                            </td>
+
+                                                                            <td className="px-3 py-1.5 text-center">
+                                                                                {item.quantity}
+                                                                            </td>
+
+                                                                            <td className="px-3 py-1.5">
+                                                                                <StatusBadge
+                                                                                    status={
+                                                                                        item.status
+                                                                                    }
+                                                                                />
+                                                                            </td>
+                                                                        </tr>
+                                                                    )
+                                                                )}
+                                                            </tbody>
+
+                                                            <tfoot>
+                                                                <tr className="border-t bg-gray-50">
+                                                                    <td
+                                                                        colSpan={8}
+                                                                        className="px-3 py-1.5 text-xs font-semibold text-gray-600"
+                                                                    >
+                                                                        Total
+                                                                    </td>
+
+                                                                    <td className="px-3 py-1.5 text-center text-xs font-bold">
+                                                                        {(
+                                                                            expandedData ?? []
+                                                                        ).reduce(
+                                                                            (s, i) =>
+                                                                                s +
+                                                                                Number(
+                                                                                    i.quantity
+                                                                                ),
+                                                                            0
+                                                                        )}
+                                                                    </td>
+
+                                                                    <td />
+                                                                </tr>
+                                                            </tfoot>
+                                                        </table>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+
+                                {/* ── Pagination By Case ── */}
+                                {renderPagination(
+                                    caseMeta.page,
+                                    caseMeta.total_pages,
+                                    caseMeta.total,
+                                    loadingCase,
+                                    (p) => {
+                                        fetchCaseSummaries(p, searchTerm);
+                                        setCaseMeta((prev) => ({
+                                            ...prev,
+                                            page: p,
+                                        }));
+                                    }
+                                )}
                             </>
                         )}
                     </div>

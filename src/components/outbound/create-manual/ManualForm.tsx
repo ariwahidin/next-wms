@@ -46,6 +46,7 @@ export default function ManualForm() {
     whs_code: "CKY",
     owner_code: "YUWELL",
     mode: "create",
+    status: "open",
     picker_name: "",
     cust_address: "",
     cust_city: "",

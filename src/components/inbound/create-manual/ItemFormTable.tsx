@@ -86,6 +86,7 @@ export default function ItemFormTable({
 
   const [searchTermMuatan, setSearchTermMuatan] = useState<string>("");
   const [filteredMuatan, setFilteredMuatan] = useState<ItemFormProps[]>([]);
+  const [showCheckingPending, setShowCheckingPending] = useState(false);
   const [divisionOptions, setDivisionOptions] = useState([]);
 
   const [isSerialModalOpen, setIsSerialModalOpen] = useState(false);
@@ -547,18 +548,64 @@ export default function ItemFormTable({
   const [loading, setLoading] = useState(false);
   const [selectStates, setSelectStates] = useState({});
 
+  // useEffect(() => {
+  //   if (searchTermMuatan) {
+  //     const filtered = muatan.filter((item) =>
+  //       item.item_code.toLowerCase().includes(searchTermMuatan.toLowerCase())
+  //       || item.lot_number.toLowerCase().includes(searchTermMuatan.toLowerCase())
+  //       || products.find((product) => product.item_code === item.item_code)?.item_name.toLowerCase().includes(searchTermMuatan.toLowerCase())
+  //     );
+  //     setFilteredMuatan(filtered);
+  //   } else {
+  //     setFilteredMuatan(muatan);
+  //   }
+  // }, [searchTermMuatan])
+
   useEffect(() => {
+    let filtered = muatan;
+
+    // Search
     if (searchTermMuatan) {
-      const filtered = muatan.filter((item) =>
-        item.item_code.toLowerCase().includes(searchTermMuatan.toLowerCase())
-        || item.lot_number.toLowerCase().includes(searchTermMuatan.toLowerCase())
-        || products.find((product) => product.item_code === item.item_code)?.item_name.toLowerCase().includes(searchTermMuatan.toLowerCase())
+      const search = searchTermMuatan.toLowerCase();
+
+      filtered = filtered.filter((item) =>
+        item.item_code.toLowerCase().includes(search) ||
+        item.lot_number.toLowerCase().includes(search) ||
+        products
+          .find((product) => product.item_code === item.item_code)
+          ?.item_name?.toLowerCase()
+          .includes(search)
       );
-      setFilteredMuatan(filtered);
-    } else {
-      setFilteredMuatan(muatan);
     }
-  }, [searchTermMuatan])
+
+    // Checking Pending
+    // if (headerForm.status === "checking" && showCheckingPending) {
+
+    if (
+      ["open", "checking"].includes(headerForm.status) &&
+      showCheckingPending
+    ) {
+      filtered = filtered.filter((item) => {
+        const detail = inboundDetails.find(
+          (d) => d.id === item.ID
+        );
+
+        const planQty = Number(item.quantity) || 0;
+        const scanQty = Number(detail?.qty_scan) || 0;
+
+        return planQty !== scanQty;
+      });
+    }
+
+    setFilteredMuatan(filtered);
+  }, [
+    muatan,
+    searchTermMuatan,
+    products,
+    headerForm.status,
+    showCheckingPending,
+    inboundDetails,
+  ]);
 
   const router = useRouter();
 
@@ -628,34 +675,54 @@ export default function ItemFormTable({
     <>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          {headerForm.status !== "complete" && (
-            <div className="flex space-x-2">
-              {(headerForm.status === "open" || headerForm.status === "draft") && (
-                <>
-                  {/* <Button
-                    variant="destructive"
-                    onClick={handleDeleteSelected}
-                    disabled={selectedIds.length === 0}
-                    className="flex items-center gap-2 w-auto"
-                  >
-                    Delete Selected
-                  </Button> */}
+          <div className="flex items-center gap-3">
 
+            {/* {headerForm.status === "checking" && ( */}
+            {["open", "checking"].includes(headerForm.status) && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
+                  {headerForm.status === "open"
+                    ? "Unreceived"
+                    : "Checking Pending"}
+                </span>
 
-                  <Button
-                    type="button"
-                    onClick={handleAddItems}
-                    className="flex items-center gap-2 w-auto"
-                  >
-                    Add Items
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowCheckingPending((prev) => !prev)
+                  }
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${showCheckingPending
+                    ? "bg-blue-600"
+                    : "bg-gray-300"
+                    }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showCheckingPending
+                      ? "translate-x-4"
+                      : "translate-x-0.5"
+                      }`}
+                  />
+                </button>
+              </div>
+            )}
+
+            {headerForm.status !== "complete" && (
+              <div className="flex space-x-2">
+                {(headerForm.status === "open" ||
+                  headerForm.status === "draft") && (
+                    <Button
+                      type="button"
+                      onClick={handleAddItems}
+                      className="flex items-center gap-2 w-auto"
+                    >
+                      Add Items
+                    </Button>
+                  )}
+              </div>
+            )}
+          </div>
 
           <div className="flex space-x-2">
-            {/* Input search */}
             <input
               type="text"
               placeholder="Search..."
@@ -1217,9 +1284,13 @@ export default function ItemFormTable({
 
 
                         <td className="p-2 border text-center">
+                          {/* {inboundDetails.find(
+                            (d) => d.id === item.ID
+                          ).qty_scan} */}
+
                           {inboundDetails.find(
                             (d) => d.id === item.ID
-                          ).qty_scan}
+                          )?.qty_scan ?? 0}
                         </td>
 
                         <td className="p-2 border text-center">
