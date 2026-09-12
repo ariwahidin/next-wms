@@ -1024,7 +1024,6 @@ const InboundTable = () => {
 
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [importTemplateDialogOpen, setImportTemplateDialogOpen] = useState(false);
 
   // FIX: kurang tanda "<" sebelum generic type di useState, sehingga
   // baris ini di-parse sebagai ekspresi biasa (bukan generic call),
@@ -1205,7 +1204,7 @@ const InboundTable = () => {
           </Button>
           <Button
             className="h-8 bg-green-500 text-slate-950 outline-green-600"
-            onClick={() => setImportTemplateDialogOpen(true)}
+            onClick={() => { router.push('/wms/inbound/import-excel') }}
           >
             <Upload className="mr-2 w-4" />
             Import Excel
@@ -1330,69 +1329,6 @@ const InboundTable = () => {
           />
         </div>
       </div>
-
-      <Dialog
-        open={importTemplateDialogOpen}
-        onOpenChange={setImportTemplateDialogOpen}
-      >
-        <DialogContent className="bg-white sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Choose Import Template</DialogTitle>
-            <DialogDescription>
-              Select the Excel template you want to import.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid grid-cols-1 gap-3 py-2 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => {
-                setImportTemplateDialogOpen(false);
-                router.push("/wms/inbound/import-excel");
-              }}
-              className="group rounded-xl border border-slate-200 bg-white p-5 text-left transition-all hover:border-slate-400 hover:bg-slate-50 hover:shadow-sm"
-            >
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                <Package2 className="h-5 w-5" />
-              </div>
-              <div className="text-sm font-semibold text-slate-900">
-                Default Template
-              </div>
-              <div className="mt-1 text-xs leading-5 text-slate-500">
-                Import using the standard inbound Excel template.
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setImportTemplateDialogOpen(false);
-                router.push("/wms/inbound/import-excel/import-inbound-furuno");
-              }}
-              className="group rounded-xl border border-blue-200 bg-blue-50/40 p-5 text-left transition-all hover:border-blue-400 hover:bg-blue-50 hover:shadow-sm"
-            >
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
-                <Upload className="h-5 w-5" />
-              </div>
-              <div className="text-sm font-semibold text-slate-900">
-                Furuno Template
-              </div>
-              <div className="mt-1 text-xs leading-5 text-slate-500">
-                Import using the dedicated Furuno inbound Excel template.
-              </div>
-            </button>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setImportTemplateDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="bg-white">

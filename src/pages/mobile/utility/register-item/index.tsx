@@ -47,6 +47,8 @@ interface Product {
   description: string;
   ean: string;
   uom: string;
+  location: string;
+  quantity: number;
   CreatedAt: string;
   created_by_name?: string;
 }
@@ -92,8 +94,8 @@ interface ClearableInputProps {
 const ClearableInput = ({
   id, label, value, onChange, placeholder, inputRef, onKeyDown, readOnly, autoFocus,
 }: ClearableInputProps) => (
-  <div className="space-y-1">
-    <label htmlFor={id} className="text-sm font-medium text-gray-700">{label}</label>
+  <div className="space-y-0">
+    <label htmlFor={id} className="text-[11px] leading-4 font-medium text-gray-600">{label}</label>
     <div className="relative">
       <Input
         id={id}
@@ -105,7 +107,7 @@ const ClearableInput = ({
         autoComplete="off"
         onChange={(e) => onChange(e.target.value.toUpperCase())}
         onKeyDown={onKeyDown}
-        className={readOnly ? "bg-gray-50 text-gray-500" : ""}
+        className={`h-9 text-sm ${readOnly ? "bg-gray-50 text-gray-500" : ""}`}
       />
       {value && !readOnly && (
         <button
@@ -127,11 +129,13 @@ const ITEMS_PER_PAGE = 10;
 export default function RegisterProductPage() {
   // ── Form states ─────────────────────────────────────────────────────────────
   const [ownerCode, setOwnerCode] = useState("");
+  const [location, setLocation] = useState("");
   const [sku, setSku] = useState("");
   const [unitModel, setUnitModel] = useState("");
-  const [description, setDescription] = useState("");
   const [ean, setEan] = useState("");
+  const [description, setDescription] = useState("");
   const [uom, setUom] = useState("");
+  const [quantity, setQuantity] = useState("1");
   const [loading, setLoading] = useState(false);
 
   // ── QR mode ─────────────────────────────────────────────────────────────────
@@ -155,18 +159,20 @@ export default function RegisterProductPage() {
 
   // ── Edit form states ─────────────────────────────────────────────────────────
   const [editOwnerCode, setEditOwnerCode] = useState("");
+  const [editLocation, setEditLocation] = useState("");
   const [editSku, setEditSku] = useState("");
   const [editUnitModel, setEditUnitModel] = useState("");
-  const [editDescription, setEditDescription] = useState("");
   const [editEan, setEditEan] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [editUom, setEditUom] = useState("");
   const [editLoading, setEditLoading] = useState(false);
 
   // ── Refs ─────────────────────────────────────────────────────────────────────
+  const locationRef = useRef<HTMLInputElement>(null);
   const skuRef = useRef<HTMLInputElement>(null);
   const unitModelRef = useRef<HTMLInputElement>(null);
-  const descriptionRef = useRef<HTMLInputElement>(null);
   const eanRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLInputElement>(null);
   const qrRef = useRef<HTMLInputElement>(null);
 
   // ── Fetch helpers ─────────────────────────────────────────────────────────────
@@ -221,7 +227,8 @@ export default function RegisterProductPage() {
           (p.description ?? "").toLowerCase().includes(q) ||
           p.ean.toLowerCase().includes(q) ||
           p.owner_code.toLowerCase().includes(q) ||
-          p.uom.toLowerCase().includes(q)
+          p.uom.toLowerCase().includes(q) ||
+          (p.location ?? "").toLowerCase().includes(q)
       )
     );
     setCurrentPage(1);
@@ -230,10 +237,13 @@ export default function RegisterProductPage() {
   // ── QR Helpers ────────────────────────────────────────────────────────────────
 
   const resetForm = () => {
+    // Location sengaja tidak di-reset agar scanner bisa register
+    // item berikutnya di lokasi yang sama.
     setSku("");
     setUnitModel("");
-    setDescription("");
     setEan("");
+    setDescription("");
+    setQuantity("1");
     setQrRawInput("");
     setParsedQR(null);
   };
@@ -258,7 +268,7 @@ export default function RegisterProductPage() {
     resetForm();
     setTimeout(() => {
       if (qr) qrRef.current?.focus();
-      else skuRef.current?.focus();
+      else locationRef.current?.focus();
     }, 50);
   };
 
@@ -273,18 +283,24 @@ export default function RegisterProductPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!ownerCode || !sku.trim() || !unitModel.trim() || !ean.trim() || !uom) {
-      eventBus.emit("showAlert", { title: "Error!", description: "All fields are required (Owner, UOM, SKU, Model, EAN)", type: "error" });
+    if (!ownerCode || !location.trim() || !sku.trim() || !unitModel.trim() || !ean.trim() || !uom) {
+      eventBus.emit("showAlert", {
+        title: "Error!",
+        description: "Owner, Location, Item, Model, EAN, and UOM are required",
+        type: "error",
+      });
       return;
     }
 
     const dataToPost = {
       owner_code: ownerCode,
+      location: location.toUpperCase().trim(),
       sku: sku.toUpperCase(),
       unit_model: unitModel.toUpperCase(),
-      description: description.toUpperCase(),
       ean: ean.toUpperCase(),
+      description: description.toUpperCase(),
       uom,
+      quantity: Math.max(1, Number(quantity) || 1),
     };
 
     try {
@@ -312,26 +328,32 @@ export default function RegisterProductPage() {
   const handleEdit = (product: Product) => {
     setSelectedProduct(product);
     setEditOwnerCode(product.owner_code);
+    setEditLocation(product.location ?? "");
     setEditSku(product.sku);
     setEditUnitModel(product.unit_model);
-    setEditDescription(product.description ?? "");
     setEditEan(product.ean);
+    setEditDescription(product.description ?? "");
     setEditUom(product.uom);
     setEditDialogOpen(true);
   };
 
   const handleUpdate = async () => {
-    if (!editOwnerCode || !editSku.trim() || !editUnitModel.trim() || !editEan.trim() || !editUom) {
-      eventBus.emit("showAlert", { title: "Error!", description: "All fields are required (Owner, UOM, SKU, Model, EAN)", type: "error" });
+    if (!editOwnerCode || !editLocation.trim() || !editSku.trim() || !editUnitModel.trim() || !editEan.trim() || !editUom) {
+      eventBus.emit("showAlert", {
+        title: "Error!",
+        description: "Owner, Location, Item, Model, EAN, and UOM are required",
+        type: "error",
+      });
       return;
     }
 
     const dataToUpdate = {
       owner_code: editOwnerCode,
+      location: editLocation.toUpperCase().trim(),
       sku: editSku.toUpperCase(),
       unit_model: editUnitModel.toUpperCase(),
-      description: editDescription.toUpperCase(),
       ean: editEan.toUpperCase(),
+      description: editDescription.toUpperCase(),
       uom: editUom,
     };
 
@@ -404,21 +426,21 @@ export default function RegisterProductPage() {
     <>
       <PageHeader title="Register Item" showBackButton />
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 text-[13px]">
 
         {/* ── Tab Navigation ── */}
-        <div className="sticky top-0 z-10 bg-white border-b shadow-sm">
+        <div className="sticky top-0 z-10 bg-white border-b">
           <div className="flex max-w-md mx-auto">
             <button
               onClick={() => setActiveTab("register")}
-              className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === "register" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+              className={`flex-1 py-2.5 text-xs font-medium transition-colors ${activeTab === "register" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
             >
               <Plus className="inline-block w-4 h-4 mr-1" />
               Register Item
             </button>
             <button
               onClick={() => setActiveTab("list")}
-              className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === "list" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+              className={`flex-1 py-2.5 text-xs font-medium transition-colors ${activeTab === "list" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
             >
               <Search className="inline-block w-4 h-4 mr-1" />
               Item List ({products.length})
@@ -428,10 +450,10 @@ export default function RegisterProductPage() {
 
         {/* ── Register Tab ── */}
         {activeTab === "register" && (
-          <div className="p-4 space-y-4 pb-24 max-w-md mx-auto">
+          <div className="px-2.5 py-2 space-y-2 pb-16 max-w-md mx-auto">
 
             {/* Mode Toggle */}
-            <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3">
+            <div className="flex items-center justify-between bg-white border border-gray-200 rounded-md px-2.5 py-1.5">
               <span className="text-sm font-medium text-gray-700">Input Mode</span>
               <ToggleSwitch
                 checked={isQrMode}
@@ -441,11 +463,11 @@ export default function RegisterProductPage() {
               />
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-2">
 
               {/* ── QR Mode ── */}
               {isQrMode && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="space-y-1">
                     <label htmlFor="qr-input" className="text-sm font-medium text-gray-700">
                       QR Code <span className="text-gray-400 font-normal">(scan here)</span>
@@ -456,14 +478,22 @@ export default function RegisterProductPage() {
                         ref={qrRef}
                         autoFocus
                         autoComplete="off"
-                        className="font-mono text-xs pr-8"
+                        className="h-9 font-mono text-xs pr-8"
                         placeholder="Arahkan scanner ke field ini..."
                         value={qrRawInput}
                         onChange={(e) => handleQrInputChange(e.target.value)}
                       />
                       {qrRawInput && (
                         <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          onClick={() => { setQrRawInput(""); setParsedQR(null); setSku(""); setUnitModel(""); setDescription(""); setEan(""); qrRef.current?.focus(); }}>
+                          onClick={() => {
+                            setQrRawInput("");
+                            setParsedQR(null);
+                            setSku("");
+                            setUnitModel("");
+                            setEan("");
+                            setDescription("");
+                            qrRef.current?.focus();
+                          }}>
                           <XCircle size={16} />
                         </button>
                       )}
@@ -471,9 +501,9 @@ export default function RegisterProductPage() {
 
                     {/* QR Preview */}
                     {parsedQR && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs font-mono space-y-1">
+                      <div className="bg-blue-50 border border-blue-200 rounded-md p-2 text-[11px] font-mono space-y-0.5">
                         <p className="text-blue-700 font-semibold text-xs mb-1">✓ QR berhasil dibaca</p>
-                        {parsedQR.sku && <div><span className="text-gray-500 w-20 inline-block">SKU:</span> <span className="font-semibold">{parsedQR.sku}</span></div>}
+                        {parsedQR.sku && <div><span className="text-gray-500 w-20 inline-block">ITEM:</span> <span className="font-semibold">{parsedQR.sku}</span></div>}
                         {parsedQR.ean && <div><span className="text-gray-500 w-20 inline-block">EAN:</span> <span className="font-semibold">{parsedQR.ean}</span></div>}
                         {parsedQR.model && <div><span className="text-gray-500 w-20 inline-block">Model:</span> <span className="font-semibold">{parsedQR.model}</span></div>}
                         {parsedQR.product && <div><span className="text-gray-500 w-20 inline-block">Product:</span> <span className="font-semibold">{parsedQR.product}</span></div>}
@@ -497,64 +527,94 @@ export default function RegisterProductPage() {
                 </div>
               )}
 
-              {/* ── Owner & UOM — selalu tampil ── */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">OWNER <span className="text-red-500">*</span></label>
-                <Select value={ownerCode} onValueChange={setOwnerCode}>
-                  <SelectTrigger><SelectValue placeholder="Select Owner" /></SelectTrigger>
-                  <SelectContent>
-                    {owners.map((owner) => (
-                      <SelectItem key={owner.id} value={owner.code}>{owner.code} — {owner.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* ── Owner + UOM ── */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-0">
+                  <label className="text-[11px] leading-4 font-medium text-gray-600">
+                    OWNER <span className="text-red-500">*</span>
+                  </label>
+                  <Select value={ownerCode} onValueChange={setOwnerCode}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Owner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {owners.map((owner) => (
+                        <SelectItem key={owner.id} value={owner.code}>
+                          {owner.code} — {owner.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-0">
+                  <label className="text-[11px] leading-4 font-medium text-gray-600">
+                    UOM <span className="text-red-500">*</span>
+                  </label>
+                  <Select value={uom} onValueChange={setUom}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="UOM" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uoms.map((u) => (
+                        <SelectItem key={u.id} value={u.code}>
+                          {u.code} — {u.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">UOM <span className="text-red-500">*</span></label>
-                <Select value={uom} onValueChange={setUom}>
-                  <SelectTrigger><SelectValue placeholder="Select UOM" /></SelectTrigger>
-                  <SelectContent>
-                    {uoms.map((u) => (
-                      <SelectItem key={u.id} value={u.code}>{u.code} — {u.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <ClearableInput
+                id="location"
+                label="LOCATION *"
+                value={location}
+                onChange={setLocation}
+                placeholder="Scan or enter Location"
+                inputRef={locationRef}
+                onKeyDown={focusNext(skuRef)}
+              />
 
-              {/* ── Manual fields — selalu tampil, read-only jika QR mode & sudah terisi ── */}
               <ClearableInput
                 id="sku"
-                label="SKU *"
+                label="ITEM *"
                 value={sku}
                 onChange={setSku}
-                placeholder="Scan or enter SKU"
+                placeholder="Scan or enter Item"
                 inputRef={skuRef}
                 readOnly={isQrMode && !!parsedQR?.sku}
                 onKeyDown={focusNext(unitModelRef)}
               />
 
-              <ClearableInput
-                id="unit_model"
-                label="MODEL *"
-                value={unitModel}
-                onChange={setUnitModel}
-                placeholder="Scan or enter Model"
-                inputRef={unitModelRef}
-                readOnly={isQrMode && !!parsedQR?.model}
-                onKeyDown={focusNext(descriptionRef)}
-              />
+              <div className="grid grid-cols-[1fr_88px] gap-2">
+                <ClearableInput
+                  id="unit_model"
+                  label="MODEL *"
+                  value={unitModel}
+                  onChange={setUnitModel}
+                  placeholder="Scan or enter Model"
+                  inputRef={unitModelRef}
+                  readOnly={isQrMode && !!parsedQR?.model}
+                  onKeyDown={focusNext(eanRef)}
+                />
 
-              <ClearableInput
-                id="description"
-                label="DESCRIPTION"
-                value={description}
-                onChange={setDescription}
-                placeholder="Product description (optional)"
-                inputRef={descriptionRef}
-                readOnly={isQrMode && !!parsedQR?.product}
-                onKeyDown={focusNext(eanRef)}
-              />
+                <div className="space-y-0">
+                  <label htmlFor="quantity" className="text-[11px] leading-4 font-medium text-gray-600">
+                    QTY *
+                  </label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min={1}
+                    step={1}
+                    inputMode="numeric"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
 
               <ClearableInput
                 id="ean"
@@ -564,10 +624,32 @@ export default function RegisterProductPage() {
                 placeholder="Scan or enter EAN"
                 inputRef={eanRef}
                 readOnly={isQrMode && !!parsedQR?.ean}
+                onKeyDown={focusNext(descriptionRef)}
               />
 
-              <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white" disabled={loading}>
-                {loading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />SAVING...</> : "SAVE ITEM"}
+              <ClearableInput
+                id="description"
+                label="DESCRIPTION"
+                value={description}
+                onChange={setDescription}
+                placeholder="Optional"
+                inputRef={descriptionRef}
+                readOnly={isQrMode && !!parsedQR?.product}
+              />
+
+              <Button
+                type="submit"
+                className="w-full h-9 bg-blue-500 hover:bg-blue-600 text-white text-sm"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    SAVING...
+                  </>
+                ) : (
+                  "SAVE ITEM"
+                )}
               </Button>
             </form>
           </div>
@@ -575,14 +657,14 @@ export default function RegisterProductPage() {
 
         {/* ── List Tab ── */}
         {activeTab === "list" && (
-          <div className="p-4 space-y-4 pb-24 max-w-4xl mx-auto">
+          <div className="px-2.5 py-2 space-y-2 pb-16 max-w-4xl mx-auto">
 
             {/* Search */}
             <div className="sticky top-[57px] z-10 bg-gray-50 pb-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Search by SKU, Model, Description, EAN, Owner, UOM..."
+                  placeholder="Search Item, Model, EAN, Location..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -603,13 +685,13 @@ export default function RegisterProductPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {currentProducts.map((product) => (
-                  <div key={product.ID} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                  <div key={product.ID} className="bg-white rounded-md shadow-sm border border-gray-200 p-2.5 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 text-base truncate">{product.sku}</h3>
-                        <p className="text-sm text-gray-600 mt-0.5">Model: {product.unit_model}</p>
+                        <h3 className="font-semibold text-gray-900 text-sm truncate">{product.sku}</h3>
+                        <p className="text-xs text-gray-600 mt-0.5">Model: {product.unit_model}</p>
                         {product.description && (
                           <p className="text-xs text-gray-400 mt-0.5 truncate">{product.description}</p>
                         )}
@@ -624,9 +706,13 @@ export default function RegisterProductPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <span className="text-gray-500 text-xs">EAN</span>
+                        <span className="text-gray-500">Location</span>
+                        <p className="font-medium text-gray-900">{product.location || "-"}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">EAN</span>
                         <p className="font-medium text-gray-900 font-mono text-xs">{product.ean}</p>
                       </div>
                       <div>
@@ -636,6 +722,10 @@ export default function RegisterProductPage() {
                       <div>
                         <span className="text-gray-500 text-xs">UOM</span>
                         <p className="font-medium text-gray-900">{product.uom}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 text-xs">Qty</span>
+                        <p className="font-medium text-gray-900">{product.quantity}</p>
                       </div>
                       <div>
                         <span className="text-gray-500 text-xs">Created</span>
@@ -684,42 +774,53 @@ export default function RegisterProductPage() {
       {/* ── Edit Dialog ── */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0 gap-0 bg-slate-50">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b">
+          <DialogHeader className="px-4 pt-4 pb-3 border-b">
             <DialogTitle>Edit Product</DialogTitle>
           </DialogHeader>
 
-          <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">OWNER *</label>
-              <Select value={editOwnerCode} onValueChange={setEditOwnerCode}>
-                <SelectTrigger><SelectValue placeholder="Select Owner" /></SelectTrigger>
-                <SelectContent>
-                  {owners.map((owner) => (
-                    <SelectItem key={owner.id} value={owner.code}>{owner.code} — {owner.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="overflow-y-auto flex-1 px-4 py-3 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-0">
+                <label className="text-[11px] leading-4 font-medium text-gray-600">OWNER *</label>
+                <Select value={editOwnerCode} onValueChange={setEditOwnerCode}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Owner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {owners.map((owner) => (
+                      <SelectItem key={owner.id} value={owner.code}>
+                        {owner.code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-0">
+                <label className="text-[11px] leading-4 font-medium text-gray-600">UOM *</label>
+                <Select value={editUom} onValueChange={setEditUom}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="UOM" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {uoms.map((u) => (
+                      <SelectItem key={u.id} value={u.code}>
+                        {u.code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">UOM *</label>
-              <Select value={editUom} onValueChange={setEditUom}>
-                <SelectTrigger><SelectValue placeholder="Select UOM" /></SelectTrigger>
-                <SelectContent>
-                  {uoms.map((u) => (
-                    <SelectItem key={u.id} value={u.code}>{u.code} — {u.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <ClearableInput id="edit-sku" label="SKU *" value={editSku} onChange={setEditSku} placeholder="Enter SKU" />
+            <ClearableInput id="edit-location" label="LOCATION *" value={editLocation} onChange={setEditLocation} placeholder="Enter Location" />
+            <ClearableInput id="edit-sku" label="ITEM *" value={editSku} onChange={setEditSku} placeholder="Enter Item" />
             <ClearableInput id="edit-model" label="MODEL *" value={editUnitModel} onChange={setEditUnitModel} placeholder="Enter Model" />
-            <ClearableInput id="edit-desc" label="DESCRIPTION" value={editDescription} onChange={setEditDescription} placeholder="Product description (optional)" />
             <ClearableInput id="edit-ean" label="EAN *" value={editEan} onChange={setEditEan} placeholder="Enter EAN" />
+            <ClearableInput id="edit-desc" label="DESCRIPTION" value={editDescription} onChange={setEditDescription} placeholder="Optional" />
           </div>
 
-          <DialogFooter className="px-6 py-4 border-t bg-gray-50 flex-row gap-2">
+          <DialogFooter className="px-4 py-3 border-t bg-gray-50 flex-row gap-2">
             <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={editLoading} className="flex-1">Cancel</Button>
             <Button onClick={handleUpdate} disabled={editLoading} className="bg-blue-500 hover:bg-blue-600 flex-1">
               {editLoading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Updating...</> : "Update Product"}
@@ -734,16 +835,18 @@ export default function RegisterProductPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Product</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <p>Are you sure you want to delete this product?</p>
                 <div className="p-3 bg-gray-100 rounded-lg space-y-1 text-sm">
-                  <p className="font-semibold text-gray-900">{selectedProduct?.sku}</p>
-                  <p className="text-gray-600">Model: {selectedProduct?.unit_model}</p>
+                  <p className="font-semibold text-gray-900">Item: {selectedProduct?.sku}</p>
+                  <p className="text-gray-600">Location: {selectedProduct?.location || "-"}</p>
+                   <p className="text-gray-600">Model: {selectedProduct?.unit_model}</p>
                   {selectedProduct?.description && (
                     <p className="text-gray-600">Desc: {selectedProduct.description}</p>
                   )}
                   <p className="text-gray-600">EAN: {selectedProduct?.ean}</p>
                   <p className="text-gray-600">Owner: {selectedProduct?.owner_code} | UOM: {selectedProduct?.uom}</p>
+                  <p className="text-gray-600">Qty: {selectedProduct?.quantity}</p>
                 </div>
                 <p className="text-sm text-red-600 font-medium">This action cannot be undone.</p>
               </div>

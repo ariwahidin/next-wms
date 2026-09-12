@@ -190,6 +190,8 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
     const [selectedItems, setSelectedItems] = useState<string[]>([]);
     const [selectAll, setSelectAll] = useState(false);
     const [showModal, setShowModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false);
     const [isPutawayLoading, setIsPutawayLoading] = useState(false);
     const [clicked, setClicked] = useState(false);
     const [showInventory, setShowInventory] = useState(false);
@@ -453,6 +455,45 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
         setSelectedItems((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
     };
 
+    const handleDeleteSelected = async () => {
+        if (selectedItems.length === 0) return;
+
+        setIsDeleteLoading(true);
+
+        try {
+            const res = await api.delete("/inbound/barcodes", {
+                data: {
+                    ids: selectedItems,
+                },
+                withCredentials: true,
+            });
+
+            if (res.data.success === true) {
+                eventBus.emit("showAlert", {
+                    title: "Success!",
+                    description: res.data.message,
+                    type: "success",
+                });
+
+                setShowDeleteModal(false);
+                setSelectedItems([]);
+                setSelectAll(false);
+
+                eventBus.emit("refreshData");
+            }
+        } catch (err: any) {
+            eventBus.emit("showAlert", {
+                title: "Error",
+                description:
+                    err.response?.data?.message ||
+                    "Failed to delete selected items",
+                type: "error",
+            });
+        } finally {
+            setIsDeleteLoading(false);
+        }
+    };
+
     const handleConfirm = async () => {
         if (clicked) return;
         setClicked(true);
@@ -552,13 +593,34 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                     </h2>
                     <div className="flex gap-2">
                         {selectedItems.length > 0 && (
-                            <Button onClick={() => setShowModal(true)} disabled={isPutawayLoading}>
-                                {isPutawayLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {isPutawayLoading ? "Processing..." : `Putaway Confirm (${selectedItems.length})`}
-                            </Button>
+                            <>
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => setShowDeleteModal(true)}
+                                    disabled={isPutawayLoading || isDeleteLoading}
+                                >
+                                    Delete Selected ({selectedItems.length})
+                                </Button>
+
+                                <Button
+                                    onClick={() => setShowModal(true)}
+                                    disabled={isPutawayLoading || isDeleteLoading}
+                                >
+                                    {isPutawayLoading && (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    )}
+                                    {isPutawayLoading
+                                        ? "Processing..."
+                                        : `Putaway Confirm (${selectedItems.length})`}
+                                </Button>
+                            </>
                         )}
+
                         {meta.total > 0 && (
-                            <Button variant="outline" onClick={() => setShowInventory(true)}>
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowInventory(true)}
+                            >
                                 View Inventory
                             </Button>
                         )}
@@ -1192,6 +1254,46 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                             <Button onClick={handleConfirm} disabled={isPutawayLoading}>
                                 {isPutawayLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {isPutawayLoading ? "Processing..." : "Confirm"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+
+                <Dialog
+                    open={showDeleteModal}
+                    onOpenChange={setShowDeleteModal}
+                >
+                    <DialogContent className="sm:max-w-md bg-white">
+                        <DialogHeader>
+                            <DialogTitle>Delete Confirmation</DialogTitle>
+                        </DialogHeader>
+
+                        <div className="text-sm text-muted-foreground">
+                            Are you sure you want to delete{" "}
+                            <strong>{selectedItems.length}</strong>{" "}
+                            selected item
+                            {selectedItems.length === 1 ? "" : "s"}?
+                        </div>
+
+                        <DialogFooter className="mt-4">
+                            <Button
+                                variant="secondary"
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={isDeleteLoading}
+                            >
+                                Cancel
+                            </Button>
+
+                            <Button
+                                variant="destructive"
+                                onClick={handleDeleteSelected}
+                                disabled={isDeleteLoading}
+                            >
+                                {isDeleteLoading && (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                {isDeleteLoading ? "Deleting..." : "Delete"}
                             </Button>
                         </DialogFooter>
                     </DialogContent>

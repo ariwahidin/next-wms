@@ -113,7 +113,6 @@ const CategoryTable = ({ setEditData }) => {
         </div>
       </div>
 
-      {rowData && rowData.length > 0 ? (
       <AgGridReact
         rowData={rowData}
         columnDefs={columnDefs}
@@ -123,8 +122,6 @@ const CategoryTable = ({ setEditData }) => {
         paginationPageSizeSelector={[10, 25, 50]}
         domLayout="autoHeight"
       />
-
-      ) : null}
     </div>
   );
 };

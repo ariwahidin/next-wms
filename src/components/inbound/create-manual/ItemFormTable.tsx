@@ -5,7 +5,7 @@ import { use, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from "react-select";
-import { Trash, Save, Pencil, X, Plus, Copy, RefreshCcw } from "lucide-react";
+import { Trash, Save, Pencil, X, Plus, Copy, RefreshCcw, ChevronDown, ChevronUp } from "lucide-react";
 import * as yup from "yup";
 import {
   CombinedInboundProps,
@@ -91,6 +91,8 @@ export default function ItemFormTable({
 
   const [isSerialModalOpen, setIsSerialModalOpen] = useState(false);
   const [serialModalItem, setSerialModalItem] = useState<ItemFormProps | null>(null);
+
+  const [isTableOpen, setIsTableOpen] = useState(true);
 
   const handleOpenSerialModal = (item: ItemFormProps) => {
     setSerialModalItem(item);
@@ -674,8 +676,19 @@ export default function ItemFormTable({
   return (
     <>
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center border-b pb-2">
           <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsTableOpen((prev) => !prev)}
+              className="px-2 gap-2"
+              title={isTableOpen ? "Close Table" : "Open Table"}
+            >
+              {isTableOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              <span className="font-semibold">{isTableOpen ? "Minimize" : "Maximize"}</span>
+            </Button>
 
             {/* {headerForm.status === "checking" && ( */}
             {["open", "checking"].includes(headerForm.status) && (
@@ -722,17 +735,21 @@ export default function ItemFormTable({
             )}
           </div>
 
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              placeholder="Search..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={searchTermMuatan}
-              onChange={(e) => setSearchTermMuatan(e.target.value)}
-            />
-          </div>
+          {isTableOpen && (
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Search..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={searchTermMuatan}
+                onChange={(e) => setSearchTermMuatan(e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
+        {isTableOpen && (
+        <div className="overflow-x-auto">
         <table
           className="w-full border font-normal text-sm"
           style={{ fontSize: "12px" }}
@@ -1392,6 +1409,8 @@ export default function ItemFormTable({
             </tr>
           </tfoot>
         </table>
+        </div>
+        )}
       </div >
       <ItemSelectionModal
         isOpen={isModalOpen}

@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, Download, RefreshCw, Package, MapPin, Grid3x3, CheckCircle2, XCircle, AlertCircle, Clock, ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Download, RefreshCw, Package, MapPin, Grid3x3, CheckCircle2, XCircle, AlertCircle, Clock, ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, Hash, X } from 'lucide-react';
 import api from "@/lib/api";
 import Layout from '@/components/layout';
 
@@ -23,6 +23,13 @@ interface InventoryGrouped {
     total_qty_onhand: number;
     total_qty_allocated: number;
     inventory_count: number;
+}
+
+interface InventorySerialDetail {
+    item_code: string;
+    item_name: string;
+    qty_available: number;
+    serial_number: string;
 }
 
 interface InventoryDetail {
@@ -134,7 +141,6 @@ const DETAIL_COLUMNS: ColumnDef<DetailColumnKey>[] = [
     { key: 'pallet', label: 'Pallet', align: 'center' },
     { key: 'carton_number', label: 'Carton No', align: 'center' },
     { key: 'case_number', label: 'Case No', align: 'center' },
-    { key: 'serial_number', label: 'Serial No', align: 'center' },
     { key: 'qty_onhand', label: 'Onhand', align: 'right', numeric: true },
     { key: 'qty_available', label: 'Available', align: 'right', numeric: true },
     { key: 'qty_allocated', label: 'Allocated', align: 'right', numeric: true },
@@ -298,6 +304,46 @@ const InventoryAvailablePage: React.FC = () => {
     const [detailColumnFilters, setDetailColumnFilters] = useState<Record<DetailColumnKey, string>>(emptyFilters(DETAIL_COLUMNS));
     const debouncedDetailColumnFilters = useDebouncedValue(detailColumnFilters, 400);
 
+    // ===== Serial modal state =====
+    const [serialModalOpen, setSerialModalOpen] = useState(false);
+    const [serialLoading, setSerialLoading] = useState(false);
+    const [serialError, setSerialError] = useState<string | null>(null);
+    const [serialData, setSerialData] = useState<InventorySerialDetail[]>([]);
+    const [selectedInventory, setSelectedInventory] = useState<InventoryDetail | null>(null);
+
+    const closeSerialModal = () => {
+        setSerialModalOpen(false);
+        setSerialLoading(false);
+        setSerialError(null);
+        setSerialData([]);
+        setSelectedInventory(null);
+    };
+
+    const fetchInventorySerials = async (inventory: InventoryDetail) => {
+        setSelectedInventory(inventory);
+        setSerialModalOpen(true);
+        setSerialLoading(true);
+        setSerialError(null);
+        setSerialData([]);
+
+        try {
+            const res = await api.get<{ success: boolean; message?: string; data: InventorySerialDetail[] }>(
+                `/inventory/available/detail/${encodeURIComponent(String(inventory.inventory_number))}/serials`,
+                { withCredentials: true }
+            );
+
+            if (res.data.success) {
+                setSerialData(res.data.data || []);
+            } else {
+                setSerialError(res.data.message || 'Failed to fetch serial numbers');
+            }
+        } catch (err: any) {
+            setSerialError(err.response?.data?.message || 'Failed to fetch serial numbers');
+        } finally {
+            setSerialLoading(false);
+        }
+    };
+
     const fetchDetailInventory = async () => {
         setDetailLoading(true);
         setDetailError(null);
@@ -397,8 +443,8 @@ const InventoryAvailablePage: React.FC = () => {
         downloadCSV(headers, rows, 'inventory_summary');
     };
     const exportDetailToCSV = () => {
-        const headers = ['Inv No', 'Location', 'Whs', 'Division', 'Owner', 'Item Code', 'Item Name', 'Barcode', 'QA Status', 'Lot/Batch', 'Pallet', 'Carton No', 'Case No', 'Serial No', 'UOM', 'Qty Origin', 'Qty Onhand', 'Qty Available', 'Qty Allocated', 'Qty Suspend', 'Qty Shipped'];
-        const rows = detailInventories.map(inv => [inv.inventory_number, inv.location, inv.whs_code, inv.division_code, inv.owner_code, inv.item_code, inv.item_name, inv.barcode, inv.qa_status, inv.lot_number, inv.pallet, inv.carton_number, inv.case_number, inv.serial_number, inv.uom, inv.qty_origin, inv.qty_onhand, inv.qty_available, inv.qty_allocated, inv.qty_suspend, inv.qty_shipped]);
+        const headers = ['Inv No', 'Location', 'Whs', 'Division', 'Owner', 'Item Code', 'Item Name', 'Barcode', 'QA Status', 'Lot/Batch', 'Pallet', 'Carton No', 'Case No', 'UOM', 'Qty Origin', 'Qty Onhand', 'Qty Available', 'Qty Allocated', 'Qty Suspend', 'Qty Shipped'];
+        const rows = detailInventories.map(inv => [inv.inventory_number, inv.location, inv.whs_code, inv.division_code, inv.owner_code, inv.item_code, inv.item_name, inv.barcode, inv.qa_status, inv.lot_number, inv.pallet, inv.carton_number, inv.case_number, inv.uom, inv.qty_origin, inv.qty_onhand, inv.qty_available, inv.qty_allocated, inv.qty_suspend, inv.qty_shipped]);
         downloadCSV(headers, rows, 'inventory_detail');
     };
 
@@ -624,6 +670,7 @@ const InventoryAvailablePage: React.FC = () => {
                                                     </button>
                                                 </th>
                                             ))}
+                                            <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-700 whitespace-nowrap">SN</th>
                                         </tr>
                                         <tr className="bg-white border-t border-slate-100">
                                             {DETAIL_COLUMNS.map(col => (
@@ -631,13 +678,14 @@ const InventoryAvailablePage: React.FC = () => {
                                                     <input type="text" value={detailColumnFilters[col.key]} onChange={(e) => handleDetailColumnFilterChange(col.key, e.target.value)} placeholder="Search..." className={`w-full min-w-[80px] px-1.5 py-1 text-xs border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'}`} />
                                                 </th>
                                             ))}
+                                            <th className="px-2 py-1.5"><div className="h-[26px]" /></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200" style={{ fontSize: "x-small" }}>
                                         {detailLoading ? (
-                                            <tr><td colSpan={DETAIL_COLUMNS.length} className="px-3 py-8 text-center text-sm text-slate-500"><RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-blue-600" />Loading detail data...</td></tr>
+                                            <tr><td colSpan={DETAIL_COLUMNS.length + 1} className="px-3 py-8 text-center text-sm text-slate-500"><RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-blue-600" />Loading detail data...</td></tr>
                                         ) : detailInventories.length === 0 ? (
-                                            <tr><td colSpan={DETAIL_COLUMNS.length} className="px-3 py-8 text-center text-sm text-slate-500">
+                                            <tr><td colSpan={DETAIL_COLUMNS.length + 1} className="px-3 py-8 text-center text-sm text-slate-500">
                                                 {detailError ? 'Failed to load data' : hasActiveDetailColumnFilters ? (
                                                     <span>No results match your column filters.{' '}<button onClick={clearDetailColumnFilters} className="text-blue-600 hover:text-blue-700 font-medium">Clear column filters</button></span>
                                                 ) : 'No detail records found'}
@@ -654,12 +702,22 @@ const InventoryAvailablePage: React.FC = () => {
                                                 <td className="px-3 py-2.5 text-center whitespace-nowrap"><span className="font-normal text-slate-900">{inv.pallet}</span></td>
                                                 <td className="px-3 py-2.5 text-center whitespace-nowrap"><span className="font-mono text-xs text-slate-900">{inv.carton_number}</span></td>
                                                 <td className="px-3 py-2.5 text-center whitespace-nowrap"><span className="font-mono text-xs text-slate-900">{inv.case_number}</span></td>
-                                                <td className="px-3 py-2.5 text-center whitespace-nowrap"><span className="font-mono text-xs text-slate-900">{inv.serial_number}</span></td>
                                                 <td className="px-3 py-2.5 text-right"><span className="text-slate-900">{inv.qty_onhand?.toLocaleString()}</span><span className="text-xs text-slate-500 ml-1">{inv.uom}</span></td>
                                                 <td className="px-3 py-2.5 text-right"><span className="font-semibold text-green-700">{inv.qty_available?.toLocaleString()}</span><span className="text-xs text-slate-500 ml-1">{inv.uom}</span></td>
                                                 <td className="px-3 py-2.5 text-right"><span className="text-slate-700">{inv.qty_allocated?.toLocaleString()}</span><span className="text-xs text-slate-500 ml-1">{inv.uom}</span></td>
                                                 <td className="px-3 py-2.5 text-right"><span className="text-slate-700">{inv.qty_suspend?.toLocaleString()}</span><span className="text-xs text-slate-500 ml-1">{inv.uom}</span></td>
                                                 <td className="px-3 py-2.5 text-right"><span className="text-slate-700">{inv.qty_shipped?.toLocaleString()}</span><span className="text-xs text-slate-500 ml-1">{inv.uom}</span></td>
+                                                <td className="px-3 py-2.5 text-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => fetchInventorySerials(inv)}
+                                                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-colors"
+                                                        title="View serial numbers"
+                                                    >
+                                                        <Hash className="w-3 h-3" />
+                                                        SN
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -670,6 +728,102 @@ const InventoryAvailablePage: React.FC = () => {
                     )}
                 </div>
             </div>
+            {/* Serial Number Modal */}
+            {serialModalOpen && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4"
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) closeSerialModal();
+                    }}
+                >
+                    <div className="w-full max-w-3xl bg-white rounded-xl shadow-2xl overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Hash className="w-4 h-4 text-blue-600" />
+                                    <h2 className="text-sm font-semibold text-slate-900">Serial Numbers</h2>
+                                </div>
+                                {selectedInventory && (
+                                    <div className="mt-1 text-xs text-slate-500">
+                                        Inventory #{selectedInventory.inventory_number}
+                                        <span className="mx-1.5">•</span>
+                                        {selectedInventory.item_code}
+                                        <span className="mx-1.5">•</span>
+                                        {selectedInventory.item_name}
+                                    </div>
+                                )}
+                            </div>
+                            <button type="button" onClick={closeSerialModal} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {selectedInventory && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-5 py-4 bg-slate-50 border-b border-slate-200">
+                                <div><div className="text-[11px] text-slate-500">Item Code</div><div className="text-xs font-semibold text-slate-900 font-mono mt-0.5">{selectedInventory.item_code || '-'}</div></div>
+                                <div><div className="text-[11px] text-slate-500">Item Name</div><div className="text-xs font-medium text-slate-900 mt-0.5 truncate">{selectedInventory.item_name || '-'}</div></div>
+                                <div><div className="text-[11px] text-slate-500">Available</div><div className="text-xs font-bold text-green-700 mt-0.5">{selectedInventory.qty_available?.toLocaleString()} {selectedInventory.uom}</div></div>
+                                <div><div className="text-[11px] text-slate-500">Location</div><div className="text-xs font-medium text-slate-900 mt-0.5">{selectedInventory.location || '-'}</div></div>
+                            </div>
+                        )}
+
+                        <div className="p-5">
+                            {serialLoading ? (
+                                <div className="py-12 text-center text-sm text-slate-500">
+                                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-blue-600" />
+                                    Loading serial numbers...
+                                </div>
+                            ) : serialError ? (
+                                <div className="py-8 text-center">
+                                    <XCircle className="w-6 h-6 mx-auto mb-2 text-red-500" />
+                                    <div className="text-sm font-medium text-red-900">Failed to load serial numbers</div>
+                                    <div className="text-xs text-red-600 mt-1">{serialError}</div>
+                                </div>
+                            ) : serialData.length === 0 ? (
+                                <div className="py-12 text-center">
+                                    <Hash className="w-7 h-7 mx-auto mb-2 text-slate-300" />
+                                    <div className="text-sm font-medium text-slate-700">No serial numbers found</div>
+                                    <div className="text-xs text-slate-500 mt-1">This inventory does not have serial records.</div>
+                                </div>
+                            ) : (
+                                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                    <div className="max-h-[420px] overflow-y-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
+                                                <tr>
+                                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700 w-16">#</th>
+                                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Item Code</th>
+                                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Item Name</th>
+                                                    <th className="px-3 py-2.5 text-right text-xs font-semibold text-slate-700">Available</th>
+                                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-700">Serial Number</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-200">
+                                                {serialData.map((serial, index) => (
+                                                    <tr key={`${serial.serial_number}-${index}`} className="hover:bg-slate-50">
+                                                        <td className="px-3 py-2.5 text-xs text-slate-500">{index + 1}</td>
+                                                        <td className="px-3 py-2.5 font-mono text-xs text-slate-900">{serial.item_code || '-'}</td>
+                                                        <td className="px-3 py-2.5 text-xs text-slate-700">{serial.item_name || '-'}</td>
+                                                        <td className="px-3 py-2.5 text-right text-xs font-semibold text-green-700">{serial.qty_available?.toLocaleString()}</td>
+                                                        <td className="px-3 py-2.5"><span className="inline-flex px-2 py-1 rounded bg-slate-100 text-slate-900 font-mono text-xs">{serial.serial_number || '-'}</span></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 text-xs text-slate-500">
+                                        {serialData.length.toLocaleString()} serial record{serialData.length === 1 ? '' : 's'}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end px-5 py-3 border-t border-slate-200 bg-slate-50">
+                            <button type="button" onClick={closeSerialModal} className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-100">Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Layout>
     );
 };
