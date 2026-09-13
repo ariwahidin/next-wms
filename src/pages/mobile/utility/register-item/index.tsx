@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import PageHeader from "@/components/mobile/PageHeader";
 import { Input } from "@/components/ui/input";
 import {
-  Loader2, X, Edit, Trash2, Search,
+  Loader2, X, Edit, Trash2, Search, Filter, CheckSquare, Square,
   Plus, ChevronLeft, ChevronRight, XCircle,
 } from "lucide-react";
 import api from "@/lib/api";
@@ -157,6 +157,15 @@ export default function RegisterProductPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ── Item List filter / selection states ─────────────────────────────────────
+  const [filterLocation, setFilterLocation] = useState("");
+  const [filterModel, setFilterModel] = useState("");
+  const [filterOwner, setFilterOwner] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+
   // ── Edit form states ─────────────────────────────────────────────────────────
   const [editOwnerCode, setEditOwnerCode] = useState("");
   const [editLocation, setEditLocation] = useState("");
@@ -198,7 +207,11 @@ export default function RegisterProductPage() {
   const fetchProducts = useCallback(async () => {
     try {
       const response = await api.get("/mobile/inventory/products/", { withCredentials: true });
-      setProducts(response.data.data ?? []);
+      const nextProducts = response.data.data ?? [];
+      setProducts(nextProducts);
+      setSelectedIds((prev) =>
+        prev.filter((id) => nextProducts.some((product: Product) => product.ID === id))
+      );
     } catch (error) {
       console.error("Error fetching products:", error);
       setProducts([]);
@@ -214,25 +227,89 @@ export default function RegisterProductPage() {
   }, []);
 
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredProducts(products);
-      return;
-    }
-    const q = searchQuery.toLowerCase();
-    setFilteredProducts(
-      products.filter(
-        (p) =>
-          p.sku.toLowerCase().includes(q) ||
-          p.unit_model.toLowerCase().includes(q) ||
-          (p.description ?? "").toLowerCase().includes(q) ||
-          p.ean.toLowerCase().includes(q) ||
-          p.owner_code.toLowerCase().includes(q) ||
-          p.uom.toLowerCase().includes(q) ||
-          (p.location ?? "").toLowerCase().includes(q)
-      )
-    );
+    const q = searchQuery.toLowerCase().trim();
+
+    const result = products.filter((p) => {
+      const matchesSearch =
+        !q ||
+        p.sku.toLowerCase().includes(q) ||
+        p.unit_model.toLowerCase().includes(q) ||
+        (p.description ?? "").toLowerCase().includes(q) ||
+        p.ean.toLowerCase().includes(q) ||
+        p.owner_code.toLowerCase().includes(q) ||
+        p.uom.toLowerCase().includes(q) ||
+        (p.location ?? "").toLowerCase().includes(q);
+
+      const matchesLocation =
+        !filterLocation || (p.location ?? "") === filterLocation;
+
+      const matchesModel =
+        !filterModel || p.unit_model === filterModel;
+
+      const matchesOwner =
+        !filterOwner || p.owner_code === filterOwner;
+
+      return matchesSearch && matchesLocation && matchesModel && matchesOwner;
+    });
+
+    setFilteredProducts(result);
     setCurrentPage(1);
-  }, [searchQuery, products]);
+  }, [searchQuery, products, filterLocation, filterModel, filterOwner]);
+
+  const locations = [...new Set(
+    products.map((p) => p.location).filter(Boolean)
+  )].sort();
+
+  const models = [...new Set(
+    products.map((p) => p.unit_model).filter(Boolean)
+  )].sort();
+
+  const ownerCodes = [...new Set(
+    products.map((p) => p.owner_code).filter(Boolean)
+  )].sort();
+
+  const activeFilterCount =
+    Number(!!filterLocation) +
+    Number(!!filterModel) +
+    Number(!!filterOwner);
+
+  const clearFilters = () => {
+    setFilterLocation("");
+    setFilterModel("");
+    setFilterOwner("");
+    setSelectedIds([]);
+    setCurrentPage(1);
+  };
+
+  const toggleProductSelection = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((selectedId) => selectedId !== id)
+        : [...prev, id]
+    );
+  };
+
+  const toggleCurrentPageSelection = () => {
+    const currentIds = currentProducts.map((p) => p.ID);
+    const allSelected = currentIds.length > 0 &&
+      currentIds.every((id) => selectedIds.includes(id));
+
+    if (allSelected) {
+      setSelectedIds((prev) =>
+        prev.filter((id) => !currentIds.includes(id))
+      );
+    } else {
+      setSelectedIds((prev) => [...new Set([...prev, ...currentIds])]);
+    }
+  };
+
+  const selectAllFiltered = () => {
+    setSelectedIds(filteredProducts.map((p) => p.ID));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds([]);
+  };
 
   // ── QR Helpers ────────────────────────────────────────────────────────────────
 
@@ -240,7 +317,7 @@ export default function RegisterProductPage() {
     // Location sengaja tidak di-reset agar scanner bisa register
     // item berikutnya di lokasi yang sama.
     setSku("");
-    setUnitModel("");
+    // setUnitModel("");
     setEan("");
     setDescription("");
     setQuantity("1");
@@ -283,10 +360,10 @@ export default function RegisterProductPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!ownerCode || !location.trim() || !sku.trim() || !unitModel.trim() || !ean.trim() || !uom) {
+    if (!ownerCode || !location.trim() || !sku.trim() || !unitModel.trim() || !uom) {
       eventBus.emit("showAlert", {
         title: "Error!",
-        description: "Owner, Location, Item, Model, EAN, and UOM are required",
+        description: "Owner, Location, Item, Model, and UOM are required",
         type: "error",
       });
       return;
@@ -397,6 +474,9 @@ export default function RegisterProductPage() {
       if (data.success) {
         eventBus.emit("showAlert", { title: "Success!", description: "Product deleted successfully", type: "success" });
         setDeleteDialogOpen(false);
+        if (selectedProduct) {
+          setSelectedIds((prev) => prev.filter((id) => id !== selectedProduct.ID));
+        }
         fetchProducts();
       }
     } catch (error: any) {
@@ -406,6 +486,57 @@ export default function RegisterProductPage() {
         description: error.response?.data?.message || "Failed to delete product",
         type: "error",
       });
+    }
+  };
+
+  const confirmBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+
+    try {
+      setBulkDeleteLoading(true);
+
+      // Reuse the existing per-item DELETE endpoint.
+      // No backend changes are required.
+      const results = await Promise.allSettled(
+        selectedIds.map((id) =>
+          api.delete(`/mobile/inventory/products/${id}`, {
+            withCredentials: true,
+          })
+        )
+      );
+
+      const failed = results.filter(
+        (result) => result.status === "rejected"
+      ).length;
+      const successCount = results.length - failed;
+
+      if (failed === 0) {
+        eventBus.emit("showAlert", {
+          title: "Success!",
+          description: `${successCount} products deleted successfully`,
+          type: "success",
+        });
+      } else {
+        eventBus.emit("showAlert", {
+          title: "Completed with errors",
+          description: `${successCount} deleted, ${failed} failed`,
+          type: "error",
+        });
+      }
+
+      setSelectedIds([]);
+      setBulkDeleteDialogOpen(false);
+      await fetchProducts();
+    } catch (error: any) {
+      console.error("Bulk delete error:", error);
+      eventBus.emit("showAlert", {
+        title: "Error!",
+        description:
+          error.response?.data?.message || "Failed to delete selected products",
+        type: "error",
+      });
+    } finally {
+      setBulkDeleteLoading(false);
     }
   };
 
@@ -479,7 +610,7 @@ export default function RegisterProductPage() {
                         autoFocus
                         autoComplete="off"
                         className="h-9 font-mono text-xs pr-8"
-                        placeholder="Arahkan scanner ke field ini..."
+                        placeholder="Scan QR Code here"
                         value={qrRawInput}
                         onChange={(e) => handleQrInputChange(e.target.value)}
                       />
@@ -540,7 +671,7 @@ export default function RegisterProductPage() {
                     <SelectContent>
                       {owners.map((owner) => (
                         <SelectItem key={owner.id} value={owner.code}>
-                          {owner.code} — {owner.name}
+                          {owner.code}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -558,7 +689,7 @@ export default function RegisterProductPage() {
                     <SelectContent>
                       {uoms.map((u) => (
                         <SelectItem key={u.id} value={u.code}>
-                          {u.code} — {u.name}
+                          {u.code}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -573,30 +704,31 @@ export default function RegisterProductPage() {
                 onChange={setLocation}
                 placeholder="Scan or enter Location"
                 inputRef={locationRef}
-                onKeyDown={focusNext(skuRef)}
-              />
-
-              <ClearableInput
-                id="sku"
-                label="ITEM *"
-                value={sku}
-                onChange={setSku}
-                placeholder="Scan or enter Item"
-                inputRef={skuRef}
-                readOnly={isQrMode && !!parsedQR?.sku}
                 onKeyDown={focusNext(unitModelRef)}
               />
 
+              <ClearableInput
+                id="unit_model"
+                label="MODEL *"
+                value={unitModel}
+                onChange={setUnitModel}
+                placeholder="Scan or enter Model"
+                inputRef={unitModelRef}
+                readOnly={isQrMode && !!parsedQR?.model}
+                onKeyDown={focusNext(skuRef)}
+              />
+
+
+
               <div className="grid grid-cols-[1fr_88px] gap-2">
                 <ClearableInput
-                  id="unit_model"
-                  label="MODEL *"
-                  value={unitModel}
-                  onChange={setUnitModel}
-                  placeholder="Scan or enter Model"
-                  inputRef={unitModelRef}
-                  readOnly={isQrMode && !!parsedQR?.model}
-                  onKeyDown={focusNext(eanRef)}
+                  id="sku"
+                  label="ITEM *"
+                  value={sku}
+                  onChange={setSku}
+                  placeholder="Scan or enter Item"
+                  inputRef={skuRef}
+                  readOnly={isQrMode && !!parsedQR?.sku}
                 />
 
                 <div className="space-y-0">
@@ -618,7 +750,7 @@ export default function RegisterProductPage() {
 
               <ClearableInput
                 id="ean"
-                label="EAN *"
+                label="EAN (Optional)"
                 value={ean}
                 onChange={setEan}
                 placeholder="Scan or enter EAN"
@@ -629,10 +761,10 @@ export default function RegisterProductPage() {
 
               <ClearableInput
                 id="description"
-                label="DESCRIPTION"
+                label="DESCRIPTION (Optional)"
                 value={description}
                 onChange={setDescription}
-                placeholder="Optional"
+                placeholder="Enter Description"
                 inputRef={descriptionRef}
                 readOnly={isQrMode && !!parsedQR?.product}
               />
@@ -659,86 +791,302 @@ export default function RegisterProductPage() {
         {activeTab === "list" && (
           <div className="px-2.5 py-2 space-y-2 pb-16 max-w-4xl mx-auto">
 
-            {/* Search */}
-            <div className="sticky top-[57px] z-10 bg-gray-50 pb-3">
+            {/* Search + Filters */}
+            <div className="sticky top-[57px] z-10 bg-gray-50 pb-2 space-y-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Search Item, Model, EAN, Location..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 pr-10 h-10 bg-white"
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
                     <X className="h-4 w-4" />
                   </button>
                 )}
               </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setFilterOpen((prev) => !prev)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">Filter</span>
+                    {activeFilterCount > 0 && (
+                      <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-400">
+                    {filterOpen ? "Hide" : "Show"}
+                  </span>
+                </button>
+
+                {filterOpen && (
+                  <div className="border-t px-3 py-3 space-y-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-gray-500">
+                          LOCATION
+                        </label>
+                        <Select value={filterLocation || "__all__"} onValueChange={(v) => setFilterLocation(v === "__all__" ? "" : v)}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue placeholder="All Location" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">All Location</SelectItem>
+                            {locations.map((value) => (
+                              <SelectItem key={value} value={value}>
+                                {value}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-gray-500">
+                          MODEL
+                        </label>
+                        <Select value={filterModel || "__all__"} onValueChange={(v) => setFilterModel(v === "__all__" ? "" : v)}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue placeholder="All Model" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">All Model</SelectItem>
+                            {models.map((value) => (
+                              <SelectItem key={value} value={value}>
+                                {value}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-gray-500">
+                          OWNER
+                        </label>
+                        <Select value={filterOwner || "__all__"} onValueChange={(v) => setFilterOwner(v === "__all__" ? "" : v)}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue placeholder="All Owner" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">All Owner</SelectItem>
+                            {ownerCodes.map((value) => (
+                              <SelectItem key={value} value={value}>
+                                {value}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {activeFilterCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="text-xs font-medium text-gray-500 hover:text-gray-800"
+                      >
+                        Clear filters
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between px-1 text-xs text-gray-500">
+                <span>
+                  Showing <span className="font-semibold text-gray-700">{filteredProducts.length}</span> items
+                  {activeFilterCount > 0 && " · filtered"}
+                </span>
+                {selectedIds.length > 0 && (
+                  <span className="font-semibold text-blue-600">
+                    {selectedIds.length} selected
+                  </span>
+                )}
+              </div>
+
+              {selectedIds.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <CheckSquare className="h-4 w-4 text-blue-600 shrink-0" />
+                      <span className="text-xs font-semibold text-blue-800 truncate">
+                        {selectedIds.length} item{selectedIds.length !== 1 ? "s" : ""} selected
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearSelection}
+                      className="text-xs text-gray-500 hover:text-gray-700 shrink-0"
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {selectedIds.length < filteredProducts.length && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={selectAllFiltered}
+                        className="flex-1 h-8 text-xs bg-white"
+                      >
+                        Select all filtered ({filteredProducts.length})
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setBulkDeleteDialogOpen(true)}
+                      className="h-8 text-xs bg-red-500 hover:bg-red-600 text-white"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                      Delete ({selectedIds.length})
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {filteredProducts.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={toggleCurrentPageSelection}
+                    className="flex items-center gap-2 text-xs font-medium text-gray-700"
+                  >
+                    {currentProducts.length > 0 &&
+                    currentProducts.every((p) => selectedIds.includes(p.ID)) ? (
+                      <CheckSquare className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <Square className="h-4 w-4 text-gray-400" />
+                    )}
+                    Select current page ({currentProducts.length})
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Product List */}
             {currentProducts.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg shadow">
                 <p className="text-gray-500">
-                  {searchQuery ? "No products found matching your search" : "No products registered yet"}
+                  {searchQuery || activeFilterCount > 0
+                    ? "No products found with the current search/filter"
+                    : "No products registered yet"}
                 </p>
               </div>
             ) : (
               <div className="space-y-2">
-                {currentProducts.map((product) => (
-                  <div key={product.ID} className="bg-white rounded-md shadow-sm border border-gray-200 p-2.5 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 text-sm truncate">{product.sku}</h3>
-                        <p className="text-xs text-gray-600 mt-0.5">Model: {product.unit_model}</p>
-                        {product.description && (
-                          <p className="text-xs text-gray-400 mt-0.5 truncate">{product.description}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-1 ml-2 shrink-0">
-                        <button onClick={() => handleEdit(product)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => handleDelete(product)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
+                {currentProducts.map((product) => {
+                  const isSelected = selectedIds.includes(product.ID);
 
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-gray-500">Location</span>
-                        <p className="font-medium text-gray-900">{product.location || "-"}</p>
+                  return (
+                    <div
+                      key={product.ID}
+                      className={`bg-white rounded-md shadow-sm border p-2.5 transition-shadow ${
+                        isSelected
+                          ? "border-blue-300 bg-blue-50/30"
+                          : "border-gray-200 hover:shadow-md"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-start gap-2 min-w-0 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => toggleProductSelection(product.ID)}
+                            className="mt-0.5 shrink-0 p-0.5 rounded hover:bg-blue-50"
+                            aria-label={isSelected ? "Deselect item" : "Select item"}
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="h-5 w-5 text-blue-600" />
+                            ) : (
+                              <Square className="h-5 w-5 text-gray-400" />
+                            )}
+                          </button>
+
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-semibold text-gray-900 text-sm truncate">
+                              {product.sku}
+                            </h3>
+                            <p className="text-xs text-gray-600 mt-0.5">
+                              Model: {product.unit_model}
+                            </p>
+                            {product.description && (
+                              <p className="text-xs text-gray-400 mt-0.5 truncate">
+                                {product.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-1 ml-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(product)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            aria-label="Edit product"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(product)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            aria-label="Delete product"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-gray-500">EAN</span>
-                        <p className="font-medium text-gray-900 font-mono text-xs">{product.ean}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500 text-xs">Owner</span>
-                        <p className="font-medium text-gray-900">{product.owner_code}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500 text-xs">UOM</span>
-                        <p className="font-medium text-gray-900">{product.uom}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500 text-xs">Qty</span>
-                        <p className="font-medium text-gray-900">{product.quantity}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500 text-xs">Created</span>
-                        <p className="font-medium text-gray-900 text-xs">
-                          {new Date(product.CreatedAt).toLocaleDateString("id-ID")}
-                          {product.created_by_name && (
-                            <span className="text-gray-400"> · {product.created_by_name}</span>
-                          )}
-                        </p>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-gray-500">Location</span>
+                          <p className="font-medium text-gray-900">{product.location || "-"}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">EAN</span>
+                          <p className="font-medium text-gray-900 font-mono text-xs">{product.ean}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 text-xs">Owner</span>
+                          <p className="font-medium text-gray-900">{product.owner_code}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 text-xs">UOM</span>
+                          <p className="font-medium text-gray-900">{product.uom}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 text-xs">Qty</span>
+                          <p className="font-medium text-gray-900">{product.quantity}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 text-xs">Created</span>
+                          <p className="font-medium text-gray-900 text-xs">
+                            {new Date(product.CreatedAt).toLocaleDateString("id-ID")}
+                            {product.created_by_name && (
+                              <span className="text-gray-400"> · {product.created_by_name}</span>
+                            )}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -840,7 +1188,7 @@ export default function RegisterProductPage() {
                 <div className="p-3 bg-gray-100 rounded-lg space-y-1 text-sm">
                   <p className="font-semibold text-gray-900">Item: {selectedProduct?.sku}</p>
                   <p className="text-gray-600">Location: {selectedProduct?.location || "-"}</p>
-                   <p className="text-gray-600">Model: {selectedProduct?.unit_model}</p>
+                  <p className="text-gray-600">Model: {selectedProduct?.unit_model}</p>
                   {selectedProduct?.description && (
                     <p className="text-gray-600">Desc: {selectedProduct.description}</p>
                   )}
@@ -856,6 +1204,77 @@ export default function RegisterProductPage() {
             <AlertDialogCancel className="w-full sm:w-auto mt-0">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600 w-full sm:w-auto">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Bulk Delete Confirmation ── */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md bg-slate-50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Selected Products</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-gray-900">
+                    {selectedIds.length} selected item{selectedIds.length !== 1 ? "s" : ""}
+                  </span>
+                  ?
+                </p>
+
+                <div className="p-3 bg-gray-100 rounded-lg text-sm space-y-1">
+                  {filterLocation && (
+                    <p className="text-gray-600">
+                      Location: <span className="font-medium text-gray-900">{filterLocation}</span>
+                    </p>
+                  )}
+                  {filterModel && (
+                    <p className="text-gray-600">
+                      Model: <span className="font-medium text-gray-900">{filterModel}</span>
+                    </p>
+                  )}
+                  {filterOwner && (
+                    <p className="text-gray-600">
+                      Owner: <span className="font-medium text-gray-900">{filterOwner}</span>
+                    </p>
+                  )}
+                  <p className="text-gray-600">
+                    Selected: <span className="font-medium text-gray-900">{selectedIds.length}</span>
+                  </p>
+                </div>
+
+                <p className="text-sm text-red-600 font-medium">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel
+              className="w-full sm:w-auto mt-0"
+              disabled={bulkDeleteLoading}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmBulkDelete();
+              }}
+              disabled={bulkDeleteLoading}
+              className="bg-red-500 hover:bg-red-600 w-full sm:w-auto"
+            >
+              {bulkDeleteLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                `Delete ${selectedIds.length} Items`
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
