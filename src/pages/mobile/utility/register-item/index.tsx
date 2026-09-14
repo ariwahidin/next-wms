@@ -7,7 +7,8 @@ import PageHeader from "@/components/mobile/PageHeader";
 import { Input } from "@/components/ui/input";
 import {
   Loader2, X, Edit, Trash2, Search, Filter, CheckSquare, Square,
-  Plus, ChevronLeft, ChevronRight, XCircle,
+  Plus, ChevronLeft, ChevronRight, XCircle, Camera,
+  CheckCircle2, AlertCircle, RotateCcw,
 } from "lucide-react";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ParsedQRData, parseQRCode } from "@/utils/qrParser";
+import CartonLabelOcrDialog, { type CartonOcrPayload } from "@/components/CartonLabelOcrDialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,6 +51,9 @@ interface Product {
   uom: string;
   location: string;
   quantity: number;
+  case_number?: string | null;
+  ctn_no?: number | null;
+  total_ctn?: number | null;
   CreatedAt: string;
   created_by_name?: string;
 }
@@ -142,6 +147,12 @@ export default function RegisterProductPage() {
   const [isQrMode, setIsQrMode] = useState(false);
   const [qrRawInput, setQrRawInput] = useState("");
   const [parsedQR, setParsedQR] = useState<ParsedQRData | null>(null);
+
+  // ── Optional Carton Label OCR ───────────────────────────────────────────────
+  const [cartonOcrOpen, setCartonOcrOpen] = useState(false);
+  const [caseNumber, setCaseNumber] = useState("");
+  const [ctnNo, setCtnNo] = useState<number | null>(null);
+  const [totalCtn, setTotalCtn] = useState<number | null>(null);
 
   // ── Data states ──────────────────────────────────────────────────────────────
   const [owners, setOwners] = useState<Owner[]>([]);
@@ -323,6 +334,22 @@ export default function RegisterProductPage() {
     setQuantity("1");
     setQrRawInput("");
     setParsedQR(null);
+    setCaseNumber("");
+    setCtnNo(null);
+    setTotalCtn(null);
+  };
+
+  const handleCartonOcrDetected = (payload: CartonOcrPayload) => {
+    setCaseNumber(payload.case_number ?? "");
+    setCtnNo(payload.ctn_no ?? null);
+    setTotalCtn(payload.total_ctn ?? null);
+    setCartonOcrOpen(false);
+  };
+
+  const clearCartonData = () => {
+    setCaseNumber("");
+    setCtnNo(null);
+    setTotalCtn(null);
   };
 
   const handleQrInputChange = (raw: string) => {
@@ -378,6 +405,11 @@ export default function RegisterProductPage() {
       description: description.toUpperCase(),
       uom,
       quantity: Math.max(1, Number(quantity) || 1),
+
+      // Optional carton label data from OCR.
+      case_number: caseNumber.trim() || null,
+      ctn_no: ctnNo,
+      total_ctn: totalCtn,
     };
 
     try {
@@ -748,6 +780,114 @@ export default function RegisterProductPage() {
                 </div>
               </div>
 
+              {/* ── Optional Carton Label ── */}
+              <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+                <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-gray-50">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-700">
+                      Carton Information
+                      <span className="ml-1 font-normal text-gray-400">(Optional)</span>
+                    </p>
+                    <p className="text-[10px] text-gray-400">
+                      Case Number &amp; Carton No
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCartonOcrOpen(true)}
+                    disabled={loading}
+                    title="Scan carton label"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-blue-600 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="p-3">
+                  <div className="space-y-2">
+                    <div>
+                      <label
+                        htmlFor="case-number"
+                        className="text-[11px] leading-4 font-medium text-gray-600"
+                      >
+                        CASE NUMBER
+                      </label>
+                      <Input
+                        id="case-number"
+                        value={caseNumber}
+                        onChange={(e) => setCaseNumber(e.target.value.toUpperCase())}
+                        placeholder="Enter case number"
+                        autoComplete="off"
+                        className="h-9 font-mono text-sm"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label
+                          htmlFor="ctn-no"
+                          className="text-[11px] leading-4 font-medium text-gray-600"
+                        >
+                          CTN NO
+                        </label>
+                        <Input
+                          id="ctn-no"
+                          type="number"
+                          min={1}
+                          step={1}
+                          inputMode="numeric"
+                          value={ctnNo ?? ""}
+                          onChange={(e) =>
+                            setCtnNo(e.target.value ? Number(e.target.value) : null)
+                          }
+                          placeholder=""
+                          className="h-9 font-mono text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="total-ctn"
+                          className="text-[11px] leading-4 font-medium text-gray-600"
+                        >
+                          TOTAL CTN
+                        </label>
+                        <Input
+                          id="total-ctn"
+                          type="number"
+                          min={1}
+                          step={1}
+                          inputMode="numeric"
+                          value={totalCtn ?? ""}
+                          onChange={(e) =>
+                            setTotalCtn(e.target.value ? Number(e.target.value) : null)
+                          }
+                          placeholder=""
+                          className="h-9 font-mono text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-0.5">
+                      <span className="text-[10px] text-gray-400">
+                        Enter manually or scan the carton label.
+                      </span>
+
+                      {(caseNumber || ctnNo !== null || totalCtn !== null) && (
+                        <button
+                          type="button"
+                          onClick={clearCartonData}
+                          className="text-[11px] font-medium text-gray-500 hover:text-red-600"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <ClearableInput
                 id="ean"
                 label="EAN (Optional)"
@@ -993,101 +1133,145 @@ export default function RegisterProductPage() {
               <div className="space-y-2">
                 {currentProducts.map((product) => {
                   const isSelected = selectedIds.includes(product.ID);
+                  const hasCarton = Boolean(
+                    product.case_number ||
+                    product.ctn_no !== null && product.ctn_no !== undefined ||
+                    product.total_ctn !== null && product.total_ctn !== undefined
+                  );
 
                   return (
                     <div
                       key={product.ID}
-                      className={`bg-white rounded-md shadow-sm border p-2.5 transition-shadow ${
+                      className={`bg-white rounded-md border px-2.5 py-2 transition-colors ${
                         isSelected
                           ? "border-blue-300 bg-blue-50/30"
-                          : "border-gray-200 hover:shadow-md"
+                          : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex items-start gap-2 min-w-0 flex-1">
-                          <button
-                            type="button"
-                            onClick={() => toggleProductSelection(product.ID)}
-                            className="mt-0.5 shrink-0 p-0.5 rounded hover:bg-blue-50"
-                            aria-label={isSelected ? "Deselect item" : "Select item"}
-                          >
-                            {isSelected ? (
-                              <CheckSquare className="h-5 w-5 text-blue-600" />
-                            ) : (
-                              <Square className="h-5 w-5 text-gray-400" />
-                            )}
-                          </button>
+                      {/* Header */}
+                      <div className="flex items-start gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleProductSelection(product.ID)}
+                          className="mt-0.5 shrink-0 rounded hover:bg-blue-50"
+                          aria-label={isSelected ? "Deselect item" : "Select item"}
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="h-4 w-4 text-blue-600" />
+                          ) : (
+                            <Square className="h-4 w-4 text-gray-400" />
+                          )}
+                        </button>
 
-                          <div className="min-w-0 flex-1">
-                            <h3 className="font-semibold text-gray-900 text-sm truncate">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <h3 className="min-w-0 flex-1 truncate text-[13px] font-semibold leading-4 text-gray-900">
                               {product.sku}
                             </h3>
-                            <p className="text-xs text-gray-600 mt-0.5">
-                              Model: {product.unit_model}
-                            </p>
-                            {product.description && (
-                              <p className="text-xs text-gray-400 mt-0.5 truncate">
-                                {product.description}
-                              </p>
-                            )}
+                            <div className="flex shrink-0 items-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => handleEdit(product)}
+                                className="rounded p-1 text-blue-600 hover:bg-blue-50"
+                                aria-label="Edit product"
+                              >
+                                <Edit className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(product)}
+                                className="rounded p-1 text-red-600 hover:bg-red-50"
+                                aria-label="Delete product"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="flex gap-1 ml-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleEdit(product)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            aria-label="Edit product"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(product)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            aria-label="Delete product"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <p className="mt-0.5 truncate text-[11px] leading-3.5 text-blue-700">
+                            Model: {product.unit_model}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-gray-500">Location</span>
-                          <p className="font-medium text-gray-900">{product.location || "-"}</p>
+                      {/* Compact details */}
+                      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-gray-100 pt-2">
+                        <div className="min-w-0">
+                          <span className="block text-[9px] leading-3 text-gray-400">LOCATION</span>
+                          <p className="truncate text-[11px] font-medium leading-4 text-gray-800">
+                            {product.location || "-"}
+                          </p>
                         </div>
-                        <div>
-                          <span className="text-gray-500">EAN</span>
-                          <p className="font-medium text-gray-900 font-mono text-xs">{product.ean}</p>
+
+                        <div className="min-w-0">
+                          <span className="block text-[9px] leading-3 text-gray-400">EAN</span>
+                          <p className="truncate font-mono text-[11px] font-medium leading-4 text-gray-800">
+                            {product.ean || "-"}
+                          </p>
                         </div>
-                        <div>
-                          <span className="text-gray-500 text-xs">Owner</span>
-                          <p className="font-medium text-gray-900">{product.owner_code}</p>
+
+                        <div className="min-w-0">
+                          <span className="block text-[9px] leading-3 text-gray-400">OWNER</span>
+                          <p className="truncate text-[11px] font-medium leading-4 text-gray-800">
+                            {product.owner_code || "-"}
+                          </p>
                         </div>
-                        <div>
-                          <span className="text-gray-500 text-xs">UOM</span>
-                          <p className="font-medium text-gray-900">{product.uom}</p>
+
+                        <div className="min-w-0">
+                          <span className="block text-[9px] leading-3 text-gray-400">UOM</span>
+                          <p className="truncate text-[11px] font-medium leading-4 text-gray-800">
+                            {product.uom || "-"}
+                          </p>
                         </div>
+
                         <div>
-                          <span className="text-gray-500 text-xs">Qty</span>
-                          <p className="font-medium text-gray-900">{product.quantity}</p>
+                          <span className="block text-[9px] leading-3 text-gray-400">QTY</span>
+                          <p className="text-[11px] font-medium leading-4 text-gray-800">
+                            {product.quantity}
+                          </p>
                         </div>
-                        <div>
-                          <span className="text-gray-500 text-xs">Created</span>
-                          <p className="font-medium text-gray-900 text-xs">
+
+                        <div className="min-w-0">
+                          <span className="block text-[9px] leading-3 text-gray-400">CREATED</span>
+                          <p className="truncate text-[11px] font-medium leading-4 text-gray-800">
                             {new Date(product.CreatedAt).toLocaleDateString("id-ID")}
                             {product.created_by_name && (
-                              <span className="text-gray-400"> · {product.created_by_name}</span>
+                              <span className="font-normal text-gray-400"> · {product.created_by_name}</span>
                             )}
                           </p>
                         </div>
                       </div>
+
+                      {/* Carton data from manual input / OCR */}
+                      {hasCarton && (
+                        <div className="mt-2 flex min-w-0 items-center gap-2 rounded-md bg-blue-50 px-2 py-1.5">
+                          <div className="min-w-0 flex-1">
+                            <span className="block text-[9px] leading-3 text-blue-500">CASE NUMBER</span>
+                            <p className="truncate font-mono text-[11px] font-semibold leading-4 text-blue-800">
+                              {product.case_number || "-"}
+                            </p>
+                          </div>
+
+                          <div className="shrink-0 border-l border-blue-100 pl-2 text-right">
+                            <span className="block text-[9px] leading-3 text-blue-500">CTN</span>
+                            <p className="text-[11px] font-semibold leading-4 text-blue-800">
+                              {product.ctn_no ?? "-"}
+                              {product.total_ctn !== null && product.total_ctn !== undefined && (
+                                <span className="font-normal text-blue-500"> / {product.total_ctn}</span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {product.description && (
+                        <p className="mt-1 truncate text-[10px] leading-3.5 text-gray-400">
+                          {product.description}
+                        </p>
+                      )}
                     </div>
                   );
-                })}
-              </div>
+                })}              </div>
             )}
 
             {/* Pagination */}
@@ -1118,6 +1302,13 @@ export default function RegisterProductPage() {
           </div>
         )}
       </div>
+
+      {/* ── Carton Label OCR Dialog ── */}
+      <CartonLabelOcrDialog
+        open={cartonOcrOpen}
+        onOpenChange={setCartonOcrOpen}
+        onDetected={handleCartonOcrDetected}
+      />
 
       {/* ── Edit Dialog ── */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
