@@ -191,6 +191,7 @@ export default function RegisterProductPage() {
   const locationRef = useRef<HTMLInputElement>(null);
   const skuRef = useRef<HTMLInputElement>(null);
   const unitModelRef = useRef<HTMLInputElement>(null);
+  const caseNumberRef = useRef<HTMLInputElement>(null);
   const eanRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
   const qrRef = useRef<HTMLInputElement>(null);
@@ -751,7 +752,6 @@ export default function RegisterProductPage() {
               />
 
 
-
               <div className="grid grid-cols-[1fr_88px] gap-2">
                 <ClearableInput
                   id="sku"
@@ -761,6 +761,7 @@ export default function RegisterProductPage() {
                   placeholder="Scan or enter Item"
                   inputRef={skuRef}
                   readOnly={isQrMode && !!parsedQR?.sku}
+                  onKeyDown={focusNext(caseNumberRef)}
                 />
 
                 <div className="space-y-0">
@@ -779,6 +780,7 @@ export default function RegisterProductPage() {
                   />
                 </div>
               </div>
+
 
               {/* ── Optional Carton Label ── */}
               <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
@@ -807,19 +809,28 @@ export default function RegisterProductPage() {
                 <div className="p-3">
                   <div className="space-y-2">
                     <div>
-                      <label
+                      {/* <label
                         htmlFor="case-number"
                         className="text-[11px] leading-4 font-medium text-gray-600"
                       >
                         CASE NUMBER
-                      </label>
-                      <Input
+                      </label> */}
+                      {/* <ClearableInput
                         id="case-number"
                         value={caseNumber}
-                        onChange={(e) => setCaseNumber(e.target.value.toUpperCase())}
+                        onChange={setCaseNumber}
                         placeholder="Enter case number"
-                        autoComplete="off"
-                        className="h-9 font-mono text-sm"
+                        inputRef={caseNumberRef}
+                      /> */}
+                      <ClearableInput
+                        id="case-number"
+                        label="CASE NUMBER"
+                        value={caseNumber}
+                        onChange={setCaseNumber}
+                        placeholder="Enter case number"
+                        inputRef={caseNumberRef}
+                        // readOnly={isQrMode && !!parsedQR?.model}
+                        // onKeyDown={focusNext(skuRef)}
                       />
                     </div>
 
@@ -887,6 +898,8 @@ export default function RegisterProductPage() {
                   </div>
                 </div>
               </div>
+
+
 
               <ClearableInput
                 id="ean"
@@ -1109,7 +1122,7 @@ export default function RegisterProductPage() {
                     className="flex items-center gap-2 text-xs font-medium text-gray-700"
                   >
                     {currentProducts.length > 0 &&
-                    currentProducts.every((p) => selectedIds.includes(p.ID)) ? (
+                      currentProducts.every((p) => selectedIds.includes(p.ID)) ? (
                       <CheckSquare className="h-4 w-4 text-blue-600" />
                     ) : (
                       <Square className="h-4 w-4 text-gray-400" />
@@ -1142,11 +1155,10 @@ export default function RegisterProductPage() {
                   return (
                     <div
                       key={product.ID}
-                      className={`bg-white rounded-md border px-2.5 py-2 transition-colors ${
-                        isSelected
-                          ? "border-blue-300 bg-blue-50/30"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
+                      className={`bg-white rounded-md border px-2.5 py-2 transition-colors ${isSelected
+                        ? "border-blue-300 bg-blue-50/30"
+                        : "border-gray-200 hover:border-gray-300"
+                        }`}
                     >
                       {/* Header */}
                       <div className="flex items-start gap-2">
