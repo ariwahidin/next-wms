@@ -96,6 +96,17 @@ function normalizeDigits(
 }
 
 /**
+ * Untuk prefix yang seharusnya berupa huruf (kode lokasi/negara),
+ * balik koreksi OCR confusion umum: angka yang mirip huruf.
+ */
+function normalizeAlphaToken(value: string) {
+  return value
+    .toUpperCase()
+    .replace(/0/g, "O")
+    .replace(/1/g, "I");
+}
+
+/**
  * ============================================================
  * OCR TEXT NORMALIZATION
  * ============================================================
@@ -158,27 +169,35 @@ function normalizeOcrText(
  * CASE NUMBER NORMALIZATION
  * ============================================================
  */
-function normalizeCaseNumber(
-  match: RegExpExecArray,
-) {
-  const prefix =
-    match[1].replace(
-      /\s+/g,
-      "",
-    );
 
-  const year =
-    normalizeDigits(
-      match[2],
-    );
-
-  const sequence =
-    normalizeDigits(
-      match[3],
-    );
+function normalizeCaseNumber(match: RegExpExecArray) {
+  const prefix = normalizeAlphaToken(match[1].replace(/\s+/g, ""));
+  const year = normalizeDigits(match[2]);
+  const sequence = normalizeDigits(match[3]);
 
   return `FID-${prefix}-${year}-${sequence}`;
 }
+// function normalizeCaseNumber(
+//   match: RegExpExecArray,
+// ) {
+//   const prefix =
+//     match[1].replace(
+//       /\s+/g,
+//       "",
+//     );
+
+//   const year =
+//     normalizeDigits(
+//       match[2],
+//     );
+
+//   const sequence =
+//     normalizeDigits(
+//       match[3],
+//     );
+
+//   return `FID-${prefix}-${year}-${sequence}`;
+// }
 
 /**
  * ============================================================

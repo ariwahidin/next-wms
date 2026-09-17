@@ -54,7 +54,7 @@ interface Product {
   case_number?: string | null;
   ctn_no?: number | null;
   total_ctn?: number | null;
-  CreatedAt: string;
+  created_at: string;
   created_by_name?: string;
 }
 
@@ -1246,7 +1246,7 @@ export default function RegisterProductPage() {
                         <div className="min-w-0">
                           <span className="block text-[9px] leading-3 text-gray-400">CREATED</span>
                           <p className="truncate text-[11px] font-medium leading-4 text-gray-800">
-                            {new Date(product.CreatedAt).toLocaleDateString("id-ID")}
+                            {new Date(product.created_at).toLocaleDateString("id-ID")}
                             {product.created_by_name && (
                               <span className="font-normal text-gray-400"> · {product.created_by_name}</span>
                             )}

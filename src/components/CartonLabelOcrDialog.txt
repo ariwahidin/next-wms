@@ -1,5 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -25,7 +23,6 @@ import {
   isCartonOcrComplete,
   parseCartonLabelOcr,
 } from "@/utils/cartonLabelOcr";
-import CartonCameraCapture from "./CartonCameraCapture";
 
 export interface CartonOcrPayload {
   case_number: string | null;
@@ -46,58 +43,20 @@ const AUTO_OCR_DELAY = 1000;
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const attempt = (useDataUrl: boolean, isRetry: boolean) => {
-      const image = new Image();
-      let objectUrl = "";
+    const url = URL.createObjectURL(file);
+    const image = new Image();
 
-      const cleanup = () => {
-        if (objectUrl) URL.revokeObjectURL(objectUrl);
-      };
-
-      image.onload = async () => {
-        try {
-          // Pastikan gambar benar-benar fully decoded,
-          // bukan cuma event onload yang fired.
-          if (typeof image.decode === "function") {
-            await image.decode();
-          }
-          cleanup();
-          resolve(image);
-        } catch (decodeError) {
-          cleanup();
-          if (!isRetry) {
-            // Retry sekali pakai FileReader (dataURL) sebagai fallback,
-            // lebih reliable di beberapa mobile browser / low-end device.
-            attempt(true, true);
-          } else {
-            reject(new Error("Failed to decode image."));
-          }
-        }
-      };
-
-      image.onerror = () => {
-        cleanup();
-        if (!isRetry) {
-          attempt(true, true);
-        } else {
-          reject(new Error("Failed to load image."));
-        }
-      };
-
-      if (useDataUrl) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          image.src = reader.result as string;
-        };
-        reader.onerror = () => reject(new Error("Failed to read image file."));
-        reader.readAsDataURL(file);
-      } else {
-        objectUrl = URL.createObjectURL(file);
-        image.src = objectUrl;
-      }
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
     };
 
-    attempt(false, false);
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Failed to load image."));
+    };
+
+    image.src = url;
   });
 }
 
@@ -388,9 +347,6 @@ export default function CartonLabelOcrDialog({
   const galleryInputRef =
     useRef<HTMLInputElement>(null);
 
-  // Dialog kamera custom (live preview + framing guide garis putus-putus).
-  const [customCameraOpen, setCustomCameraOpen] = useState(false);
-
   /**
    * Timer untuk auto OCR.
    *
@@ -583,7 +539,7 @@ export default function CartonLabelOcrDialog({
         firstResult.ctn_no === null ||
         firstResult.total_ctn === null ||
         firstResult.ctn_no >
-        firstResult.total_ctn
+          firstResult.total_ctn
       ) {
         setProgressMessage(
           "Reading carton number...",
@@ -735,7 +691,7 @@ export default function CartonLabelOcrDialog({
 
       setErrorMessage(
         error?.message ||
-        "Failed to read the carton label. Please retake the photo.",
+          "Failed to read the carton label. Please retake the photo.",
       );
     } finally {
       if (worker) {
@@ -752,14 +708,21 @@ export default function CartonLabelOcrDialog({
   };
 
   /**
-   * Proses File terpilih (dari sumber manapun: input Gallery,
-   * input Camera native, ATAU hasil capture dari CartonCameraCapture).
+   * Setelah file dipilih:
    *
    * 1. tampilkan preview
    * 2. tunggu 1 detik
    * 3. otomatis jalankan OCR
    */
-  const processFile = (file: File) => {
+  const handleFileSelected = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
     if (!file.type.startsWith("image/")) {
       setErrorMessage(
         "Please select an image file.",
@@ -817,18 +780,6 @@ export default function CartonLabelOcrDialog({
       }, AUTO_OCR_DELAY);
   };
 
-  const handleFileSelected = (
-    event: ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    processFile(file);
-  };
-
   return (
     <Dialog
       open={open}
@@ -867,7 +818,7 @@ export default function CartonLabelOcrDialog({
                     type="button"
                     className="h-10 bg-blue-500 text-sm hover:bg-blue-600"
                     onClick={() =>
-                      setCustomCameraOpen(true)
+                      cameraInputRef.current?.click()
                     }
                   >
                     <Camera className="mr-2 h-4 w-4" />
@@ -887,10 +838,6 @@ export default function CartonLabelOcrDialog({
                   </Button>
                 </div>
 
-                {/* Input kamera native dibiarkan tetap ada (tersembunyi)
-                    sebagai fallback kalau suatu saat dibutuhkan lagi;
-                    tombol Camera di atas sudah diarahkan ke
-                    CartonCameraCapture (custom camera + framing guide). */}
                 <input
                   ref={cameraInputRef}
                   type="file"
@@ -1076,13 +1023,6 @@ export default function CartonLabelOcrDialog({
             </div>
           )}
         </div>
-
-        {/* ── Custom camera (live preview + framing guide) ── */}
-        <CartonCameraCapture
-          open={customCameraOpen}
-          onOpenChange={setCustomCameraOpen}
-          onCapture={(file) => processFile(file)}
-        />
       </DialogContent>
     </Dialog>
   );
