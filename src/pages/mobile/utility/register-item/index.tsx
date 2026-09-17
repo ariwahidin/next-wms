@@ -185,6 +185,11 @@ export default function RegisterProductPage() {
   const [editEan, setEditEan] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editUom, setEditUom] = useState("");
+  const [editQuantity, setEditQuantity] = useState("1");
+  const [editCaseNumber, setEditCaseNumber] = useState("");
+  const [editCtnNo, setEditCtnNo] = useState<number | null>(null);
+  const [editTotalCtn, setEditTotalCtn] = useState<number | null>(null);
+  const [editCartonOcrOpen, setEditCartonOcrOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
 
   // ── Refs ─────────────────────────────────────────────────────────────────────
@@ -347,6 +352,13 @@ export default function RegisterProductPage() {
     setCartonOcrOpen(false);
   };
 
+  const handleEditCartonOcrDetected = (payload: CartonOcrPayload) => {
+    setEditCaseNumber(payload.case_number ?? "");
+    setEditCtnNo(payload.ctn_no ?? null);
+    setEditTotalCtn(payload.total_ctn ?? null);
+    setEditCartonOcrOpen(false);
+  };
+
   const clearCartonData = () => {
     setCaseNumber("");
     setCtnNo(null);
@@ -437,34 +449,64 @@ export default function RegisterProductPage() {
 
   const handleEdit = (product: Product) => {
     setSelectedProduct(product);
-    setEditOwnerCode(product.owner_code);
+    setEditOwnerCode(product.owner_code ?? "");
     setEditLocation(product.location ?? "");
-    setEditSku(product.sku);
-    setEditUnitModel(product.unit_model);
-    setEditEan(product.ean);
+    setEditSku(product.sku ?? "");
+    setEditUnitModel(product.unit_model ?? "");
+    setEditEan(product.ean ?? "");
     setEditDescription(product.description ?? "");
-    setEditUom(product.uom);
+    setEditUom(product.uom ?? "");
+    setEditQuantity(String(product.quantity > 0 ? product.quantity : 1));
+    setEditCaseNumber(product.case_number ?? "");
+    setEditCtnNo(product.ctn_no ?? null);
+    setEditTotalCtn(product.total_ctn ?? null);
     setEditDialogOpen(true);
   };
 
+  const clearEditCartonData = () => {
+    setEditCaseNumber("");
+    setEditCtnNo(null);
+    setEditTotalCtn(null);
+  };
+
   const handleUpdate = async () => {
-    if (!editOwnerCode || !editLocation.trim() || !editSku.trim() || !editUnitModel.trim() || !editEan.trim() || !editUom) {
+    // Keep the same required fields and default behavior as CreateRegisterProduct.
+    const normalizedOwnerCode = editOwnerCode.trim().toUpperCase();
+    const normalizedLocation = editLocation.trim().toUpperCase();
+    const normalizedSku = editSku.trim().toUpperCase();
+    const normalizedUnitModel = editUnitModel.trim().toUpperCase();
+    const normalizedEan = editEan.trim().toUpperCase();
+    const normalizedDescription = editDescription.trim().toUpperCase();
+    const normalizedUom = editUom.trim().toUpperCase();
+    const normalizedCaseNumber = editCaseNumber.trim().toUpperCase();
+
+    if (
+      !normalizedOwnerCode ||
+      !normalizedLocation ||
+      !normalizedSku ||
+      !normalizedUnitModel ||
+      !normalizedUom
+    ) {
       eventBus.emit("showAlert", {
         title: "Error!",
-        description: "Owner, Location, Item, Model, EAN, and UOM are required",
+        description: "Owner, Location, Item, Model, and UOM are required",
         type: "error",
       });
       return;
     }
 
     const dataToUpdate = {
-      owner_code: editOwnerCode,
-      location: editLocation.toUpperCase().trim(),
-      sku: editSku.toUpperCase(),
-      unit_model: editUnitModel.toUpperCase(),
-      ean: editEan.toUpperCase(),
-      description: editDescription.toUpperCase(),
-      uom: editUom,
+      owner_code: normalizedOwnerCode,
+      location: normalizedLocation,
+      sku: normalizedSku,
+      unit_model: normalizedUnitModel,
+      ean: normalizedEan,
+      description: normalizedDescription,
+      uom: normalizedUom,
+      quantity: Math.max(1, Number(editQuantity) || 1),
+      case_number: normalizedCaseNumber || null,
+      ctn_no: editCtnNo,
+      total_ctn: editTotalCtn,
     };
 
     try {
@@ -476,9 +518,13 @@ export default function RegisterProductPage() {
       );
       const data = await response.data;
       if (data.success) {
-        eventBus.emit("showAlert", { title: "Success!", description: "Product updated successfully", type: "success" });
+        eventBus.emit("showAlert", {
+          title: "Success!",
+          description: data.message || "Product updated successfully",
+          type: "success",
+        });
         setEditDialogOpen(false);
-        fetchProducts();
+        await fetchProducts();
       }
     } catch (error: any) {
       console.error("Error updating:", error);
@@ -1322,6 +1368,12 @@ export default function RegisterProductPage() {
         onDetected={handleCartonOcrDetected}
       />
 
+      <CartonLabelOcrDialog
+        open={editCartonOcrOpen}
+        onOpenChange={setEditCartonOcrOpen}
+        onDetected={handleEditCartonOcrDetected}
+      />
+
       {/* ── Edit Dialog ── */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0 gap-0 bg-slate-50">
@@ -1365,10 +1417,109 @@ export default function RegisterProductPage() {
             </div>
 
             <ClearableInput id="edit-location" label="LOCATION *" value={editLocation} onChange={setEditLocation} placeholder="Enter Location" />
-            <ClearableInput id="edit-sku" label="ITEM *" value={editSku} onChange={setEditSku} placeholder="Enter Item" />
             <ClearableInput id="edit-model" label="MODEL *" value={editUnitModel} onChange={setEditUnitModel} placeholder="Enter Model" />
-            <ClearableInput id="edit-ean" label="EAN *" value={editEan} onChange={setEditEan} placeholder="Enter EAN" />
-            <ClearableInput id="edit-desc" label="DESCRIPTION" value={editDescription} onChange={setEditDescription} placeholder="Optional" />
+
+            <div className="grid grid-cols-[1fr_88px] gap-2">
+              <ClearableInput id="edit-sku" label="ITEM *" value={editSku} onChange={setEditSku} placeholder="Enter Item" />
+
+              <div className="space-y-0">
+                <label htmlFor="edit-quantity" className="text-[11px] leading-4 font-medium text-gray-600">
+                  QTY *
+                </label>
+                <Input
+                  id="edit-quantity"
+                  type="number"
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  value={editQuantity}
+                  onChange={(e) => setEditQuantity(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Optional carton information */}
+            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-gray-50">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-gray-700">
+                    Carton Information
+                    <span className="ml-1 font-normal text-gray-400">(Optional)</span>
+                  </p>
+                  <p className="text-[10px] text-gray-400">Case Number &amp; Carton No</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setEditCartonOcrOpen(true)}
+                  disabled={editLoading}
+                  title="Scan carton label"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-blue-600 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Camera className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="p-3 space-y-2">
+                <ClearableInput
+                  id="edit-case-number"
+                  label="CASE NUMBER"
+                  value={editCaseNumber}
+                  onChange={setEditCaseNumber}
+                  placeholder="Enter case number"
+                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label htmlFor="edit-ctn-no" className="text-[11px] leading-4 font-medium text-gray-600">
+                      CTN NO
+                    </label>
+                    <Input
+                      id="edit-ctn-no"
+                      type="number"
+                      min={1}
+                      step={1}
+                      inputMode="numeric"
+                      value={editCtnNo ?? ""}
+                      onChange={(e) => setEditCtnNo(e.target.value ? Number(e.target.value) : null)}
+                      className="h-9 font-mono text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="edit-total-ctn" className="text-[11px] leading-4 font-medium text-gray-600">
+                      TOTAL CTN
+                    </label>
+                    <Input
+                      id="edit-total-ctn"
+                      type="number"
+                      min={1}
+                      step={1}
+                      inputMode="numeric"
+                      value={editTotalCtn ?? ""}
+                      onChange={(e) => setEditTotalCtn(e.target.value ? Number(e.target.value) : null)}
+                      className="h-9 font-mono text-sm"
+                    />
+                  </div>
+                </div>
+
+                {(editCaseNumber || editCtnNo !== null || editTotalCtn !== null) && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={clearEditCartonData}
+                      className="text-[11px] font-medium text-gray-500 hover:text-red-600"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <ClearableInput id="edit-ean" label="EAN (Optional)" value={editEan} onChange={setEditEan} placeholder="Enter EAN" />
+            <ClearableInput id="edit-desc" label="DESCRIPTION (Optional)" value={editDescription} onChange={setEditDescription} placeholder="Optional" />
           </div>
 
           <DialogFooter className="px-4 py-3 border-t bg-gray-50 flex-row gap-2">
