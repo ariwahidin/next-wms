@@ -46,50 +46,84 @@ const AUTO_OCR_DELAY = 1000;
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
+    if (!file || file.size <= 0) {
+      reject(new Error("Image file is empty."));
+      return;
+    }
+
     const attempt = (useDataUrl: boolean, isRetry: boolean) => {
       const image = new Image();
       let objectUrl = "";
+      let settled = false;
 
       const cleanup = () => {
-        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = "";
+        }
+      };
+
+      const fail = (message: string) => {
+        if (settled) return;
+        cleanup();
+
+        if (!isRetry) {
+          attempt(true, true);
+        } else {
+          reject(new Error(message));
+        }
       };
 
       image.onload = async () => {
+        if (settled) return;
+
         try {
-          // Pastikan gambar benar-benar fully decoded,
-          // bukan cuma event onload yang fired.
-          if (typeof image.decode === "function") {
-            await image.decode();
+          if (!image.naturalWidth || !image.naturalHeight) {
+            throw new Error("Image has invalid dimensions.");
           }
+
+          // decode() tidak selalu stabil pada browser Android lama.
+          // Jika decode gagal setelah onload, gambar tetap bisa dipakai.
+          if (typeof image.decode === "function") {
+            try {
+              await image.decode();
+            } catch (decodeError) {
+              console.warn("Image decode warning:", decodeError);
+            }
+          }
+
+          settled = true;
           cleanup();
           resolve(image);
-        } catch (decodeError) {
-          cleanup();
-          if (!isRetry) {
-            // Retry sekali pakai FileReader (dataURL) sebagai fallback,
-            // lebih reliable di beberapa mobile browser / low-end device.
-            attempt(true, true);
-          } else {
-            reject(new Error("Failed to decode image."));
-          }
+        } catch (error) {
+          fail(
+            error instanceof Error
+              ? error.message
+              : "Failed to decode image.",
+          );
         }
       };
 
       image.onerror = () => {
-        cleanup();
-        if (!isRetry) {
-          attempt(true, true);
-        } else {
-          reject(new Error("Failed to load image."));
-        }
+        fail("Failed to load image.");
       };
 
       if (useDataUrl) {
         const reader = new FileReader();
+
         reader.onload = () => {
-          image.src = reader.result as string;
+          if (typeof reader.result !== "string" || !reader.result) {
+            fail("Failed to read image data.");
+            return;
+          }
+
+          image.src = reader.result;
         };
-        reader.onerror = () => reject(new Error("Failed to read image file."));
+
+        reader.onerror = () => {
+          fail("Failed to read image file.");
+        };
+
         reader.readAsDataURL(file);
       } else {
         objectUrl = URL.createObjectURL(file);
@@ -481,6 +515,7 @@ export default function CartonLabelOcrDialog({
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && status !== "processing") {
+      setCustomCameraOpen(false);
       reset();
     }
 
@@ -1082,6 +1117,9 @@ export default function CartonLabelOcrDialog({
           open={customCameraOpen}
           onOpenChange={setCustomCameraOpen}
           onCapture={(file) => processFile(file)}
+          onFallback={() => {
+            galleryInputRef.current?.click();
+          }}
         />
       </DialogContent>
     </Dialog>

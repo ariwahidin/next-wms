@@ -1,37 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-/**
- * CartonCameraCapture.tsx
- *
- * Kamera custom (bukan native camera app lewat <input capture>) supaya
- * bisa menampilkan framing guide (garis putus-putus) di atas live preview,
- * membantu user memposisikan carton label sebelum foto diambil.
- *
- * File ini SENGAJA berdiri sendiri dan tidak mengubah
- * CartonLabelOcrDialog.tsx yang sudah ada. Untuk memakainya, tinggal
- * import komponen ini dan render ketika user menekan tombol "Camera",
- * lalu proses File hasil onCapture() persis seperti file dari
- * <input type="file"> yang lama (lihat catatan integrasi di bawah).
- *
- * ── Cara integrasi (tanpa ubah file lama) ──────────────────────────────
- * 1. Import di CartonLabelOcrDialog.tsx:
- *      import CartonCameraCapture from "./CartonCameraCapture";
- * 2. Tambah state: const [customCameraOpen, setCustomCameraOpen] = useState(false);
- * 3. Ganti onClick tombol "Camera" jadi: () => setCustomCameraOpen(true)
- *    (atau biarkan tombol lama sebagai fallback kalau getUserMedia gagal)
- * 4. Render:
- *      <CartonCameraCapture
- *        open={customCameraOpen}
- *        onOpenChange={setCustomCameraOpen}
- *        onCapture={(file) => handleFileSelected({ target: { files: [file] } } as any)}
- *      />
- *    Atau, lebih rapi, refactor handleFileSelected agar menerima File
- *    langsung (bukan cuma event) supaya tidak perlu "as any".
- * ------------------------------------------------------------------------
- */
-
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, RotateCcw, X, Zap, ZapOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,74 +15,155 @@ interface CartonCameraCaptureProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCapture: (file: File) => void;
+  onFallback?: () => void;
 }
 
-// Rasio bidang guide relatif terhadap frame video.
-// Carton label biasanya landscape (lebih lebar dari tinggi).
 const GUIDE_WIDTH_RATIO = 0.86;
 const GUIDE_HEIGHT_RATIO = 0.42;
+const CAMERA_TIMEOUT_MS = 12000;
 
 export default function CartonCameraCapture({
   open,
   onOpenChange,
   onCapture,
+  onFallback,
 }: CartonCameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const startRequestRef = useRef(0);
 
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
+  const [capturing, setCapturing] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
 
-  // ── Start / stop camera stream mengikuti buka-tutup dialog ──────────
+  const stopStream = useCallback(() => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.srcObject = null;
+    }
+
+    setReady(false);
+    setCapturing(false);
+    setTorchOn(false);
+    setTorchSupported(false);
+  }, []);
+
+  const getCameraErrorMessage = (err: any) => {
+    switch (err?.name) {
+      case "NotAllowedError":
+      case "PermissionDeniedError":
+        return "Izin kamera ditolak. Aktifkan permission kamera pada browser.";
+      case "NotFoundError":
+      case "DevicesNotFoundError":
+        return "Kamera tidak ditemukan pada device ini.";
+      case "NotReadableError":
+      case "TrackStartError":
+        return "Kamera sedang digunakan aplikasi lain.";
+      case "OverconstrainedError":
+        return "Konfigurasi kamera tidak didukung. Coba kamera belakang standar.";
+      case "SecurityError":
+        return "Kamera diblokir. Pastikan website dibuka melalui HTTPS.";
+      case "TypeError":
+        return "Browser ini tidak mendukung akses kamera langsung.";
+      default:
+        return "Tidak bisa mengakses kamera pada device ini.";
+    }
+  };
+
   useEffect(() => {
     if (!open) {
       stopStream();
       return;
     }
 
+    const requestId = ++startRequestRef.current;
     let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const start = async () => {
       setError("");
       setReady(false);
+      setCapturing(false);
+
+      if (
+        typeof navigator === "undefined" ||
+        !navigator.mediaDevices?.getUserMedia
+      ) {
+        setError(
+          "Browser ini tidak mendukung kamera langsung. Gunakan Gallery.",
+        );
+        return;
+      }
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
           video: {
             facingMode: { ideal: "environment" },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
+            width: { min: 640, ideal: 1280 },
+            height: { min: 480, ideal: 720 },
           },
-          audio: false,
         });
 
-        if (cancelled) {
+        if (cancelled || requestId !== startRequestRef.current) {
           stream.getTracks().forEach((track) => track.stop());
           return;
         }
 
         streamRef.current = stream;
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
+        const video = videoRef.current;
+        if (!video) {
+          stream.getTracks().forEach((track) => track.stop());
+          throw new Error("Video element is not available.");
         }
 
-        // Cek dukungan torch/flash (tidak semua device/browser support).
-        const [track] = stream.getVideoTracks();
-        const capabilities = track.getCapabilities?.() as any;
-        setTorchSupported(Boolean(capabilities?.torch));
+        video.srcObject = stream;
+        video.muted = true;
+        video.playsInline = true;
 
+        await new Promise<void>((resolve, reject) => {
+          const handleReady = () => resolve();
+          const handleError = () =>
+            reject(new Error("Video preview failed to load."));
+
+          video.addEventListener("loadedmetadata", handleReady, {
+            once: true,
+          });
+          video.addEventListener("error", handleError, { once: true });
+
+          timeoutId = setTimeout(() => {
+            reject(new Error("Camera preview timeout."));
+          }, CAMERA_TIMEOUT_MS);
+
+          void video.play().catch(reject);
+        });
+
+        if (timeoutId) clearTimeout(timeoutId);
+
+        if (cancelled || requestId !== startRequestRef.current) {
+          stopStream();
+          return;
+        }
+
+        const track = stream.getVideoTracks()[0];
+        const capabilities = track?.getCapabilities?.() as any;
+
+        setTorchSupported(Boolean(capabilities?.torch));
         setReady(true);
       } catch (err: any) {
-        console.error("Camera error:", err);
-        setError(
-          err?.name === "NotAllowedError"
-            ? "Izin kamera ditolak. Aktifkan izin kamera di browser untuk melanjutkan."
-            : "Tidak bisa mengakses kamera. Coba gunakan tombol Gallery sebagai alternatif.",
-        );
+        if (timeoutId) clearTimeout(timeoutId);
+
+        if (!cancelled && requestId === startRequestRef.current) {
+          console.error("Camera error:", err);
+          stopStream();
+          setError(getCameraErrorMessage(err));
+        }
       }
     };
 
@@ -120,19 +171,13 @@ export default function CartonCameraCapture({
 
     return () => {
       cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [open]);
-
-  const stopStream = () => {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    setReady(false);
-    setTorchOn(false);
-  };
+  }, [open, stopStream]);
 
   const toggleTorch = async () => {
     const track = streamRef.current?.getVideoTracks()[0];
-    if (!track) return;
+    if (!track || !torchSupported) return;
 
     try {
       const next = !torchOn;
@@ -145,56 +190,78 @@ export default function CartonCameraCapture({
     }
   };
 
-  // ── Capture: crop persis area yang ditunjukkan guide ─────────────────
   const handleCapture = () => {
     const video = videoRef.current;
-    if (!video || !ready) return;
+
+    if (!video || !ready || capturing) return;
 
     const videoWidth = video.videoWidth;
     const videoHeight = video.videoHeight;
 
-    if (!videoWidth || !videoHeight) return;
+    if (!videoWidth || !videoHeight) {
+      setError("Preview kamera belum siap. Tunggu sebentar lalu coba lagi.");
+      return;
+    }
 
-    // Guide dihitung terhadap "object-fit: cover" area video di layar.
-    // Karena video asli bisa punya rasio berbeda dari kotak preview,
-    // kita hitung crop langsung dari resolusi asli video memakai
-    // rasio yang sama seperti overlay (GUIDE_WIDTH_RATIO / HEIGHT_RATIO).
-    const cropWidth = Math.round(videoWidth * GUIDE_WIDTH_RATIO);
-    const cropHeight = Math.round(videoHeight * GUIDE_HEIGHT_RATIO);
-    const cropX = Math.round((videoWidth - cropWidth) / 2);
-    const cropY = Math.round((videoHeight - cropHeight) / 2);
+    setCapturing(true);
 
-    const canvas = document.createElement("canvas");
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
+    try {
+      const cropWidth = Math.max(
+        1,
+        Math.round(videoWidth * GUIDE_WIDTH_RATIO),
+      );
+      const cropHeight = Math.max(
+        1,
+        Math.round(videoHeight * GUIDE_HEIGHT_RATIO),
+      );
+      const cropX = Math.max(0, Math.round((videoWidth - cropWidth) / 2));
+      const cropY = Math.max(0, Math.round((videoHeight - cropHeight) / 2));
 
-    const context = canvas.getContext("2d");
-    if (!context) return;
+      const canvas = document.createElement("canvas");
+      canvas.width = cropWidth;
+      canvas.height = cropHeight;
 
-    context.drawImage(
-      video,
-      cropX,
-      cropY,
-      cropWidth,
-      cropHeight,
-      0,
-      0,
-      cropWidth,
-      cropHeight,
-    );
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Canvas tidak didukung browser ini.");
 
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
-        const file = new File([blob], `carton-label-${Date.now()}.jpg`, {
-          type: "image/jpeg",
-        });
-        onCapture(file);
-        onOpenChange(false);
-      },
-      "image/jpeg",
-      0.92,
-    );
+      context.drawImage(
+        video,
+        cropX,
+        cropY,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        cropWidth,
+        cropHeight,
+      );
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            setCapturing(false);
+            setError("Foto gagal dibuat. Silakan coba capture ulang.");
+            return;
+          }
+
+          const file = new File(
+            [blob],
+            `carton-label-${Date.now()}.jpg`,
+            { type: "image/jpeg" },
+          );
+
+          onCapture(file);
+          stopStream();
+          onOpenChange(false);
+        },
+        "image/jpeg",
+        0.92,
+      );
+    } catch (err) {
+      console.error("Capture error:", err);
+      setCapturing(false);
+      setError("Gagal mengambil foto. Silakan coba lagi.");
+    }
   };
 
   const handleClose = (nextOpen: boolean) => {
@@ -204,13 +271,16 @@ export default function CartonCameraCapture({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md max-h-[92vh] overflow-hidden bg-black p-0 gap-0 border-0">
-        <DialogHeader className="px-4 py-3 bg-black">
+      <DialogContent
+        className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-md flex-col gap-0 overflow-hidden border-0 bg-black p-0"
+      >
+        <DialogHeader className="shrink-0 bg-black px-4 py-3 text-white">
           <DialogTitle className="flex items-center justify-between text-sm text-white">
             <span className="flex items-center gap-2">
               <Camera className="h-4 w-4" />
               Scan Carton Label
             </span>
+
             <button
               type="button"
               onClick={() => handleClose(false)}
@@ -222,29 +292,47 @@ export default function CartonCameraCapture({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="relative aspect-[3/4] w-full bg-black">
+        <div className="relative min-h-0 flex-1 bg-black">
           {error ? (
             <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-              <p className="text-sm text-white/80">{error}</p>
-              <Button
-                type="button"
-                variant="outline"
-                className="border-white/30 text-white hover:bg-white/10"
-                onClick={() => handleClose(false)}
-              >
-                Close
-              </Button>
+              <p className="text-sm text-white/85">{error}</p>
+
+              <div className="flex flex-wrap justify-center gap-2">
+                {onFallback && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-white/30 text-white hover:bg-white/10"
+                    onClick={() => {
+                      stopStream();
+                      onOpenChange(false);
+                      onFallback();
+                    }}
+                  >
+                    Use Gallery
+                  </Button>
+                )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-white/10"
+                  onClick={() => handleClose(false)}
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           ) : (
             <>
               <video
                 ref={videoRef}
+                autoPlay
                 playsInline
                 muted
                 className="h-full w-full object-cover"
               />
 
-              {/* ── Framing guide (dashed) ── */}
               {ready && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div
@@ -255,7 +343,6 @@ export default function CartonCameraCapture({
                       boxShadow: "0 0 0 999px rgba(0,0,0,0.45)",
                     }}
                   >
-                    {/* Corner accents supaya guide terasa lebih presisi */}
                     {[
                       "top-0 left-0 border-t-2 border-l-2 rounded-tl-md",
                       "top-0 right-0 border-t-2 border-r-2 rounded-tr-md",
@@ -272,12 +359,12 @@ export default function CartonCameraCapture({
               )}
 
               {ready && (
-                <p className="pointer-events-none absolute bottom-24 left-0 right-0 text-center text-xs font-medium text-white/90 drop-shadow">
+                <p className="pointer-events-none absolute bottom-5 left-0 right-0 px-4 text-center text-xs font-medium text-white/90 drop-shadow">
                   Posisikan label carton di dalam kotak
                 </p>
               )}
 
-              {!ready && !error && (
+              {!ready && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <p className="text-xs text-white/70">Membuka kamera...</p>
                 </div>
@@ -287,12 +374,13 @@ export default function CartonCameraCapture({
         </div>
 
         {!error && (
-          <div className="flex items-center justify-center gap-6 bg-black px-4 py-4">
+          <div className="flex min-h-[96px] shrink-0 items-center justify-center gap-6 bg-black px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             {torchSupported ? (
               <button
                 type="button"
                 onClick={toggleTorch}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                disabled={!ready || capturing}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-40"
                 aria-label="Toggle flash"
               >
                 {torchOn ? (
@@ -308,8 +396,8 @@ export default function CartonCameraCapture({
             <button
               type="button"
               onClick={handleCapture}
-              disabled={!ready}
-              className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-white/20 disabled:opacity-40"
+              disabled={!ready || capturing}
+              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-white bg-white/20 disabled:opacity-40"
               aria-label="Capture photo"
             >
               <span className="h-12 w-12 rounded-full bg-white" />
@@ -318,7 +406,8 @@ export default function CartonCameraCapture({
             <button
               type="button"
               onClick={() => handleClose(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+              disabled={capturing}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-40"
               aria-label="Cancel"
             >
               <RotateCcw className="h-5 w-5" />
