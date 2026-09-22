@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import GenerateStockTakeSessionModal from "@/components/GenerateStockTakeSessionModal";
 
 type BatchStatus = "open" | "in_progress" | "completed" | "cancelled";
 type SessionStatus = "open" | "in_progress" | "closed" | "cancelled";
@@ -176,9 +177,9 @@ function normalizeSession(raw: any): Session {
 function extractBatch(payload: any) {
   return normalizeBatch(
     payload?.data?.batch ??
-      payload?.data?.stock_take_batch ??
-      payload?.data ??
-      {}
+    payload?.data?.stock_take_batch ??
+    payload?.data ??
+    {}
   );
 }
 
@@ -197,7 +198,7 @@ export default function StockTakeBatchDetailPage() {
 
   const rawCode = params?.code;
   const code = rawCode ? decodeURIComponent(rawCode) : "";
-//   const code = decodeURIComponent(params.code);
+  //   const code = decodeURIComponent(params.code);
 
   const [batch, setBatch] = useState<Batch | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -227,6 +228,7 @@ export default function StockTakeBatchDetailPage() {
   const [locationResults, setLocationResults] = useState<LocationLookup[]>([]);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationSearched, setLocationSearched] = useState(false);
+  const [generateModalOpen, setGenerateModalOpen] = useState(false);
 
   const fetchData = async (silent = false) => {
     if (silent) setRefetching(true);
@@ -250,18 +252,18 @@ export default function StockTakeBatchDetailPage() {
     }
   };
 
-//   useEffect(() => {
-//     fetchData();
-//     // eslint-disable-next-line react-hooks/exhaustive-deps
-//   }, [code]);
+  //   useEffect(() => {
+  //     fetchData();
+  //     // eslint-disable-next-line react-hooks/exhaustive-deps
+  //   }, [code]);
 
-useEffect(() => {
-  if (!code) return;
+  useEffect(() => {
+    if (!code) return;
 
-  fetchData();
+    fetchData();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [code]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code]);
 
   const findLocations = async () => {
     const search = locationSearch.trim();
@@ -413,7 +415,7 @@ useEffect(() => {
       if (!res.data?.success) {
         throw new Error(
           res.data?.message ||
-            `Failed to ${sessionAction} session`
+          `Failed to ${sessionAction} session`
         );
       }
 
@@ -423,8 +425,8 @@ useEffect(() => {
     } catch (err: any) {
       alert(
         err?.response?.data?.message ||
-          err?.message ||
-          `Failed to ${sessionAction} session`
+        err?.message ||
+        `Failed to ${sessionAction} session`
       );
     } finally {
       setActionLoading(false);
@@ -514,7 +516,8 @@ useEffect(() => {
 
               {canGenerateSession && (
                 <button
-                  onClick={() => router.push(`/wms/stock-take/batch/${batch.code}/generate`)}
+                  // onClick={() => router.push(`/wms/stock-take/batch/${batch.code}/generate`)}
+                  onClick={() => setGenerateModalOpen(true)}
                   className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
                 >
                   <Plus className="h-4 w-4" />
@@ -543,9 +546,8 @@ useEffect(() => {
                 </p>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
                   <div
-                    className={`h-full rounded-full ${
-                      progress >= 100 ? "bg-emerald-500" : "bg-amber-500"
-                    }`}
+                    className={`h-full rounded-full ${progress >= 100 ? "bg-emerald-500" : "bg-amber-500"
+                      }`}
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -572,13 +574,12 @@ useEffect(() => {
               <CardContent className="p-4">
                 <p className="text-xs font-medium text-slate-500">Difference</p>
                 <p
-                  className={`mt-1 text-xl font-semibold ${
-                    n(batch.total_difference) === 0
+                  className={`mt-1 text-xl font-semibold ${n(batch.total_difference) === 0
                       ? "text-slate-900"
                       : n(batch.total_difference) < 0
                         ? "text-red-600"
                         : "text-blue-600"
-                  }`}
+                    }`}
                 >
                   {n(batch.total_difference) > 0 ? "+" : ""}
                   {n(batch.total_difference).toLocaleString("id-ID")}
@@ -804,9 +805,11 @@ useEffect(() => {
                             </p>
                             {canGenerateSession && (
                               <button
-                                onClick={() =>
-                                  router.push(`/wms/stock-take/batch/${batch.code}/generate`)
-                                }
+                                // onClick={() =>
+                                //   router.push(`/wms/stock-take/batch/${batch.code}/generate`)
+                                // }
+
+                                onClick={() => setGenerateModalOpen(true)}
                                 className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
                               >
                                 <Plus className="h-4 w-4" />
@@ -824,9 +827,9 @@ useEffect(() => {
                         const pct =
                           locPlanned > 0
                             ? Math.min(
-                                100,
-                                Math.round((locCounted / locPlanned) * 1000) / 10
-                              )
+                              100,
+                              Math.round((locCounted / locPlanned) * 1000) / 10
+                            )
                             : 0;
 
                         return (
@@ -892,11 +895,10 @@ useEffect(() => {
                               </p>
                               {n(session.total_difference) !== 0 && (
                                 <p
-                                  className={`text-[11px] ${
-                                    n(session.total_difference) < 0
+                                  className={`text-[11px] ${n(session.total_difference) < 0
                                       ? "text-red-500"
                                       : "text-blue-500"
-                                  }`}
+                                    }`}
                                 >
                                   {n(session.total_difference) > 0 ? "+" : ""}
                                   {n(session.total_difference).toLocaleString("id-ID")}
@@ -1010,9 +1012,9 @@ useEffect(() => {
               actionLoading
                 ? undefined
                 : () => {
-                    setSessionAction(null);
-                    setSessionActionCode(null);
-                  }
+                  setSessionAction(null);
+                  setSessionActionCode(null);
+                }
             }
           />
 
@@ -1058,11 +1060,10 @@ useEffect(() => {
               <button
                 disabled={actionLoading}
                 onClick={runSessionAction}
-                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50 ${
-                  sessionAction === "close"
+                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50 ${sessionAction === "close"
                     ? "bg-slate-800 hover:bg-slate-900"
                     : "bg-red-600 hover:bg-red-700"
-                }`}
+                  }`}
               >
                 {actionLoading && (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1117,11 +1118,10 @@ useEffect(() => {
               <button
                 disabled={actionLoading || (action === "complete" && !canComplete)}
                 onClick={action === "complete" ? completeBatch : cancelBatch}
-                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white ${
-                  action === "complete"
+                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white ${action === "complete"
                     ? "bg-emerald-600 hover:bg-emerald-700"
                     : "bg-red-600 hover:bg-red-700"
-                } disabled:opacity-50`}
+                  } disabled:opacity-50`}
               >
                 {actionLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {action === "complete" ? "Complete Batch" : "Cancel Batch"}
@@ -1130,6 +1130,13 @@ useEffect(() => {
           </div>
         </div>
       )}
+
+      <GenerateStockTakeSessionModal
+        open={generateModalOpen}
+        batch={batch}
+        onClose={() => setGenerateModalOpen(false)}
+        onGenerated={() => fetchData(true)}
+      />
     </Layout>
   );
 }

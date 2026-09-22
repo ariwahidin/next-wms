@@ -83,6 +83,7 @@ interface OutboundDetail {
   uom?: string;
   owner_code?: string;
   is_serial?: boolean;
+  lot_number?: string;
 }
 
 interface ScannedItem {
@@ -109,6 +110,7 @@ interface ScannedItem {
   packing_no?: string;
   pack_ctn_no?: string;
   item_model?: string;
+  lot_number?: string;
 }
 
 // ─── QR Parser ────────────────────────────────────────────────────────────────
@@ -463,6 +465,7 @@ const CheckingPage = () => {
           uom: item.uom,
           owner_code: item.owner_code,
           is_serial: item.is_serial,
+          lot_number: item.lot_number,
         }));
         setOriginalListOutboundDetail(filtered);
       }
@@ -501,6 +504,7 @@ const CheckingPage = () => {
           packing_no: item.packing_no,
           pack_ctn_no: item.pack_ctn_no,
           item_model: item.item_model,
+          lot_number: item.lot_number,
         }));
         setListOutboundScanned(filtered);
         setSelectedCarton("all");
@@ -920,7 +924,8 @@ const CheckingPage = () => {
       item.item_code.toLowerCase().includes(searchOutboundDetail.toLowerCase()) ||
       item.barcode.toLowerCase().includes(searchOutboundDetail.toLowerCase()) ||
       item.quantity.toString().includes(searchOutboundDetail) ||
-      item.scan_qty?.toString().includes(searchOutboundDetail)
+      item.scan_qty?.toString().includes(searchOutboundDetail) ||
+      item.lot_number?.toLowerCase().includes(searchOutboundDetail.toLowerCase())
   );
 
   const filteredScannedItems = listOutboundScanned.filter((item) => {
@@ -1139,6 +1144,9 @@ const CheckingPage = () => {
                           {item.scan_qty ?? 0}
                         </span>
                         {" / "}{item.quantity} {item.uom}
+
+                        <strong className="ml-2">Lot :</strong>{" "}
+                        {item.lot_number}
                       </div>
                     </div>
                   </li>
@@ -1344,7 +1352,7 @@ const CheckingPage = () => {
                             {/* {item.is_serial && <div><strong>Serial:</strong> {item.serial_number}</div>} */}
                             <div><strong>UNIT SERIAL:</strong> {item.serial_number}</div>
                             <div><strong>CTN SERIAL:</strong> {item.case_number}</div>
-                            <div><strong>QTY:</strong> {item.qty_data_scan} {item.uom_scan}</div>
+                            <div><strong>QTY:</strong> {item.qty_data_scan} {item.uom_scan} <strong>Lot:</strong> {item.lot_number}</div>
                           </div>
                           <div className="flex justify-between items-center mt-2">
                             {item.status === "pending" && (
