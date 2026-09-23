@@ -50,6 +50,9 @@ type StockTake = {
   updated_at: string;
 };
 
+// Key localStorage buat inget preferensi "include lot number" di print modal
+const LOT_PRINT_PREF_KEY = "stocktake_print_include_lot";
+
 export default function StockTakeDetailPage() {
   const router = useRouter();
   const { id: code } = router.query; // route param sebenarnya "code" (mis. ST202607110001)
@@ -64,6 +67,8 @@ export default function StockTakeDetailPage() {
   const [availableRows, setAvailableRows] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [rowsLoading, setRowsLoading] = useState(false);
+  // Default true (tampilkan lot number), nanti di-override dari localStorage saat mount
+  const [includeLot, setIncludeLot] = useState(true);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -103,6 +108,18 @@ export default function StockTakeDetailPage() {
     fetchItems();
   }, [router.isReady, code]);
 
+  // Load preferensi "include lot number" dari localStorage sekali saat mount
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(LOT_PRINT_PREF_KEY);
+      if (saved !== null) {
+        setIncludeLot(saved === "true");
+      }
+    } catch (err) {
+      console.error("Failed to read print preference:", err);
+    }
+  }, []);
+
   useEffect(() => {
     const q = search.toLowerCase();
     setFiltered(
@@ -136,9 +153,25 @@ export default function StockTakeDetailPage() {
     );
   };
 
+  const toggleIncludeLot = () => {
+    setIncludeLot((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(LOT_PRINT_PREF_KEY, String(next));
+      } catch (err) {
+        console.error("Failed to save print preference:", err);
+      }
+      return next;
+    });
+  };
+
   const confirmPrint = () => {
     const rowsQuery = selectedRows.join(",");
-    const url = `/stock-take/print/${code}?rows=${encodeURIComponent(rowsQuery)}`;
+    // Division selalu ditampilkan seperti biasa; lot_number ikut toggle
+    const columns = includeLot ? "division,lot_number" : "division";
+    const url = `/stock-take/print/${code}?rows=${encodeURIComponent(
+      rowsQuery
+    )}&columns=${encodeURIComponent(columns)}`;
     window.open(url, "_blank", "noopener,noreferrer");
     setPrintModalOpen(false);
   };
@@ -304,35 +337,57 @@ export default function StockTakeDetailPage() {
         </Card>
       </div>
 
-      {/* Print by Row modal */}
+      {/* Print by Row & Column modal */}
       <Dialog open={printModalOpen} onOpenChange={setPrintModalOpen}>
         <DialogContent className="sm:max-w-md bg-slate-50">
           <DialogHeader>
-            <DialogTitle>Print by Row</DialogTitle>
+            <DialogTitle>Print Options</DialogTitle>
           </DialogHeader>
 
-          {rowsLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="animate-spin w-5 h-5 text-gray-400" />
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">Row</p>
+              {rowsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="animate-spin w-5 h-5 text-gray-400" />
+                </div>
+              ) : availableRows.length === 0 ? (
+                <p className="text-sm text-gray-500 py-4">No row found.</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 max-h-72 overflow-y-auto py-2">
+                  {availableRows.map((row) => (
+                    <label
+                      key={row}
+                      className="flex items-center gap-2 text-sm cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedRows.includes(row)}
+                        onCheckedChange={() => toggleRow(row)}
+                      />
+                      {row}
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
-          ) : availableRows.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4">No row found.</p>
-          ) : (
-            <div className="grid grid-cols-3 gap-3 max-h-72 overflow-y-auto py-2">
-              {availableRows.map((row) => (
-                <label
-                  key={row}
-                  className="flex items-center gap-2 text-sm cursor-pointer"
-                >
-                  <Checkbox
-                    checked={selectedRows.includes(row)}
-                    onCheckedChange={() => toggleRow(row)}
-                  />
-                  {row}
-                </label>
-              ))}
+
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                Columns
+              </p>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={includeLot}
+                  onCheckedChange={toggleIncludeLot}
+                />
+                Include Lot Number
+              </label>
+              <p className="text-xs text-gray-400 mt-1">
+                If unchecked, rows will be grouped automatically (rows that
+                only differ by lot number will be combined).
+              </p>
             </div>
-          )}
+          </div>
 
           <DialogFooter>
             <Button

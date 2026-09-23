@@ -17,7 +17,8 @@ type StockTakePrintItem = {
   location: string;
   item_code: string;
   item_name: string;
-  division: string;
+  division?: string;
+  lot_number?: string;
   system_qty: number;
   counted_qty: number;
   difference: number;
@@ -29,19 +30,21 @@ export default function StockTakePrintPage() {
 
   const id = params?.id ? String(params.id) : null;
   const rowsParam = searchParams.get("rows") || "";
+  const columnsParam = searchParams.get("columns") || "";
 
   const [stockTake, setStockTake] = useState<StockTake | null>(null);
   const [items, setItems] = useState<StockTakePrintItem[]>([]);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  // Fallback ke request kalau backend gak balikin "columns" (backward compat)
+  const [showDivision, setShowDivision] = useState(
+    columnsParam === "" || columnsParam.includes("division")
+  );
+  const [showLot, setShowLot] = useState(
+    columnsParam === "" || columnsParam.includes("lot_number")
+  );
   const [loading, setLoading] = useState(true);
 
   const barcodeRef = useRef<SVGSVGElement | null>(null);
-
-  const printDate = new Date().toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
 
   useEffect(() => {
     if (!id) return;
@@ -50,7 +53,10 @@ export default function StockTakePrintPage() {
       setLoading(true);
       try {
         const res = await api.get(`/stock-take/${id}/print`, {
-          params: rowsParam ? { rows: rowsParam } : {},
+          params: {
+            ...(rowsParam ? { rows: rowsParam } : {}),
+            ...(columnsParam ? { columns: columnsParam } : {}),
+          },
           withCredentials: true,
         });
 
@@ -58,6 +64,11 @@ export default function StockTakePrintPage() {
           setItems(Array.isArray(res.data.data) ? res.data.data : []);
           setSelectedRows(Array.isArray(res.data.rows) ? res.data.rows : []);
           setStockTake(res.data.stock_take);
+          // Backend mengonfirmasi kolom mana yang benar-benar dipakai untuk grouping
+          if (res.data.columns) {
+            setShowDivision(!!res.data.columns.division);
+            setShowLot(!!res.data.columns.lot_number);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch detail:", err);
@@ -67,7 +78,7 @@ export default function StockTakePrintPage() {
     };
 
     fetchItems();
-  }, [id, rowsParam]);
+  }, [id, rowsParam, columnsParam]);
 
   useEffect(() => {
     if (barcodeRef.current && id) {
@@ -105,6 +116,9 @@ export default function StockTakePrintPage() {
   const groupBorderStyle = (index: number): React.CSSProperties =>
     isNewLocationGroup(index) ? { borderTop: "2px solid black" } : {};
 
+  // Total kolom di table: No, Location, Item, Stock, Count, Diff = 6, + Lot kalau ditampilkan
+  const totalColSpan = 6 + (showLot ? 1 : 0);
+
   return (
     <div className="p-2 text-black text-sm relative">
 
@@ -112,8 +126,6 @@ export default function StockTakePrintPage() {
         <svg ref={barcodeRef}></svg>
       </div>
 
-
-      {/* <h1 className="text-md font-bold text-center mb-2">STOCK COUNT</h1> */}
       <p className="text-left" style={{ fontSize: "10px" }}>Cycle count ID : {id}</p>
       <p className="text-left" style={{ fontSize: "10px" }}>Total location : {totalLocation}</p>
       <p className="text-left" style={{ fontSize: "10px" }}>Location : {selectedRows.join(", ")}</p>
@@ -123,9 +135,10 @@ export default function StockTakePrintPage() {
           <tr className="bg-gray-200">
             <th className="border border-black   py-0">No.</th>
             <th className="border border-black px-2 py-0">Location</th>
-            {/* <th className="border border-black px-2 py-0">SKU</th> */}
             <th className="border border-black px-2 py-0">Item</th>
-            {/* <th className="border border-black px-2 py-0">Division</th> */}
+            {showLot && (
+              <th className="border border-black px-2 py-0">Lot/Batch</th>
+            )}
             <th className="border border-black px-2 py-0">Stock</th>
             <th className="border border-black px-2 py-0">Count</th>
             <th className="border border-black px-2 py-0">Diff</th>
@@ -134,7 +147,7 @@ export default function StockTakePrintPage() {
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={7} className="border border-black text-center py-3">
+              <td colSpan={totalColSpan} className="border border-black text-center py-3">
                 No item found.
               </td>
             </tr>
@@ -153,9 +166,6 @@ export default function StockTakePrintPage() {
                 >
                   <span style={{ fontSize: "10px" }}>{item.location}</span>
                 </td>
-                {/* <td className="border border-black px-2 py-0">
-                  <span style={{ fontSize: "10px" }}>{item.item_code}</span>
-                </td> */}
                 <td
                   className="border border-black"
                   style={{
@@ -163,7 +173,7 @@ export default function StockTakePrintPage() {
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     fontSize: "10px",
-                    lineHeight: "1.2",   // kunci utama: kecilin line-height
+                    lineHeight: "1.2",
                     padding: "1px 4px",
                     ...groupBorderStyle(index),
                   }}
@@ -174,13 +184,20 @@ export default function StockTakePrintPage() {
                   <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {item.item_code}
                   </div>
-                  <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {item.division}
-                  </div>
+                  {showDivision && (
+                    <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {item.division}
+                    </div>
+                  )}
                 </td>
-                {/* <td className="border border-black px-2 py-0" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  <span style={{ fontSize: "10px" }}>{item.division}</span>
-                </td> */}
+                {showLot && (
+                  <td
+                    className="border border-black px-2 py-0 w-12"
+                    style={{ fontSize: "10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...groupBorderStyle(index) }}
+                  >
+                    {item.lot_number}
+                  </td>
+                )}
                 <td
                   className="border border-black px-2 py-0 text-right w-10"
                   style={{ fontSize: "10px", ...groupBorderStyle(index) }}
@@ -203,31 +220,7 @@ export default function StockTakePrintPage() {
             ))
           )}
         </tbody>
-        {/* <tfoot>
-          <tr>
-            <td colSpan={3} className="border border-black px-2 py-0 text-right font-bold">
-              Total
-            </td>
-            <td className="border border-black px-2 py-0 text-right font-bold">
-              {items.reduce((acc, item) => acc + item.system_qty, 0)}
-            </td>
-            <td className="border border-black px-2 py-0 text-right font-bold">
-              {items.reduce((acc, item) => acc + item.counted_qty, 0)}
-            </td>
-            <td className="border border-black px-2 py-0 text-right font-bold">
-              {items.reduce((acc, item) => acc + item.difference, 0)}
-            </td>
-          </tr>
-        </tfoot> */}
       </table>
-
-      {/* <div className="mt-4 text-left">
-        <p>Total Stock System Row {selectedRows.length > 0 ? selectedRows.join(", ") : "All Rows"} : {items.reduce((acc, item) => acc + item.system_qty, 0)}</p>
-      </div> */}
-
-      {/* <div className="mt-4 text-right">
-        <p>Printed on: {printDate}</p>
-      </div> */}
 
       <div className="mt-10 flex justify-between">
         <div>
