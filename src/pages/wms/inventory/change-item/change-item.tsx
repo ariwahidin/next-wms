@@ -18,6 +18,7 @@ import {
     RefreshCw,
     Search,
     X,
+    AlertTriangle,
 } from "lucide-react";
 
 import api from "@/lib/api";
@@ -154,6 +155,9 @@ interface ApiListResponse {
     data?: {
         inventories?: Inventory[];
         total?: number;
+        page?: number;
+        page_size?: number;
+        total_pages?: number;
     };
 
     error?: string;
@@ -383,6 +387,21 @@ export default function ChangeItemPage() {
     const [loadingInventories, setLoadingInventories] =
         useState(false);
 
+    // Inventory is loaded only after the user explicitly searches.
+    const [hasSearched, setHasSearched] =
+        useState(false);
+
+    const [inventoryPage, setInventoryPage] =
+        useState(1);
+
+    const [inventoryTotal, setInventoryTotal] =
+        useState(0);
+
+    const [inventoryTotalPages, setInventoryTotalPages] =
+        useState(0);
+
+    const inventoryPageSize = 100;
+
     const [expandedId, setExpandedId] =
         useState<number | null>(null);
 
@@ -427,6 +446,13 @@ export default function ChangeItemPage() {
 
     const [success, setSuccess] =
         useState("");
+
+    // ------------------------------------------------------------------------
+    // CONFIRMATION MODAL
+    // ------------------------------------------------------------------------
+
+    const [showConfirmModal, setShowConfirmModal] =
+        useState(false);
 
     // ========================================================================
     // MASTER DATA
@@ -572,81 +598,79 @@ export default function ChangeItemPage() {
     // ========================================================================
 
     const fetchInventories = useCallback(
-        async () => {
+        async (page = 1) => {
+            // Never allow an accidental unfiltered inventory request.
+            const hasFilter = [
+                itemCode,
+                ownerCode,
+                sourceWhs,
+                sourceLocation,
+                sourceDivision,
+                sourceQa,
+                sourcePallet,
+                search,
+            ].some((value) => value.trim() !== "");
+
+            if (!hasFilter) {
+                setError(
+                    "Please select at least one filter before searching inventory.",
+                );
+                setInventories([]);
+                setInventoryTotal(0);
+                setInventoryTotalPages(0);
+                setHasSearched(false);
+                return;
+            }
+
             setLoadingInventories(true);
             setError("");
+            setExpandedId(null);
+            setSelectedInventory(null);
+            setSerials([]);
+            setSelectedSerials(new Set());
 
             try {
-                const params =
-                    new URLSearchParams();
+                const params = new URLSearchParams();
+                params.set("page", String(page));
+                params.set("page_size", String(inventoryPageSize));
 
                 if (itemCode.trim()) {
-                    params.set(
-                        "item_code",
-                        itemCode.trim(),
-                    );
+                    params.set("item_code", itemCode.trim());
                 }
 
                 if (ownerCode.trim()) {
-                    params.set(
-                        "owner_code",
-                        ownerCode.trim(),
-                    );
+                    params.set("owner_code", ownerCode.trim());
                 }
 
                 if (sourceWhs.trim()) {
-                    params.set(
-                        "whs_code",
-                        sourceWhs.trim(),
-                    );
+                    params.set("whs_code", sourceWhs.trim());
                 }
 
                 if (sourceLocation.trim()) {
-                    params.set(
-                        "location",
-                        sourceLocation.trim(),
-                    );
+                    params.set("location", sourceLocation.trim());
                 }
 
                 if (sourceDivision.trim()) {
-                    params.set(
-                        "division_code",
-                        sourceDivision.trim(),
-                    );
+                    params.set("division_code", sourceDivision.trim());
                 }
 
                 if (sourceQa.trim()) {
-                    params.set(
-                        "qa_status",
-                        sourceQa.trim(),
-                    );
+                    params.set("qa_status", sourceQa.trim());
                 }
 
                 if (sourcePallet.trim()) {
-                    params.set(
-                        "pallet",
-                        sourcePallet.trim(),
-                    );
+                    params.set("pallet", sourcePallet.trim());
                 }
 
                 if (search.trim()) {
-                    params.set(
-                        "search",
-                        search.trim(),
-                    );
+                    params.set("search", search.trim());
                 }
 
-                const response =
-                    await api.get<ApiListResponse>(
-                        `/inventory/change-item/inventories${params.toString()
-                            ? `?${params.toString()}`
-                            : ""
-                        }`,
-                    );
+                const response = await api.get<ApiListResponse>(
+                    `/inventory/change-item/inventories?${params.toString()}`,
+                );
 
-                if (
-                    !response.data?.success
-                ) {
+                if (!response.data?.success) {
                     throw new Error(
                         response.data?.error ||
                         response.data?.message ||
@@ -654,10 +678,13 @@ export default function ChangeItemPage() {
                     );
                 }
 
-                setInventories(
-                    response.data.data
-                        ?.inventories || [],
-                );
+                const data = response.data.data;
+
+                setInventories(data?.inventories || []);
+                setInventoryPage(data?.page || page);
+                setInventoryTotal(data?.total || 0);
+                setInventoryTotalPages(data?.total_pages || 0);
+                setHasSearched(true);
             } catch (err: any) {
                 console.error(
                     "Failed to fetch change item inventories:",
@@ -672,6 +699,8 @@ export default function ChangeItemPage() {
                 );
 
                 setInventories([]);
+                setInventoryTotal(0);
+                setInventoryTotalPages(0);
             } finally {
                 setLoadingInventories(false);
             }
@@ -805,10 +834,6 @@ export default function ChangeItemPage() {
     useEffect(() => {
         loadMasterData();
     }, [loadMasterData]);
-
-    useEffect(() => {
-        fetchInventories();
-    }, [fetchInventories]);
 
     // ========================================================================
     // OPTIONS
@@ -974,26 +999,6 @@ export default function ChangeItemPage() {
             [qaStatuses],
         );
 
-    const palletOptions =
-        useMemo<SelectOption[]>(
-            () =>
-                Array.from(
-                    new Set(
-                        inventories
-                            .map(
-                                (inventory) =>
-                                    inventory.pallet ||
-                                    "",
-                            )
-                            .filter(Boolean),
-                    ),
-                ).map((pallet) => ({
-                    value: pallet,
-                    label: pallet,
-                })),
-            [inventories],
-        );
-
     // ========================================================================
     // SELECTED TARGET PRODUCT
     // ========================================================================
@@ -1154,30 +1159,31 @@ export default function ChangeItemPage() {
                 return;
             }
 
-            const confirmed =
-                window.confirm(
-                    [
-                        "Confirm Change Item?",
-                        "",
-                        `Source : ${selectedInventory.item_code}`,
-                        `Target : ${selectedTargetProduct?.itemCode ||
-                        "-"
-                        }`,
-                        `Qty    : ${formatQty(
-                            quantity,
-                        )}`,
-                        "",
-                        "Physical location will remain the same.",
-                    ].join("\n"),
-                );
+            setShowConfirmModal(true);
+        };
 
-            if (!confirmed) {
-                return;
-            }
+    // ========================================================================
+    // EXECUTE CHANGE ITEM AFTER CUSTOM CONFIRMATION
+    // ========================================================================
 
-            setSubmitting(true);
+    const confirmChangeItem = async () => {
+        if (!selectedInventory || !targetItemId) {
+            setShowConfirmModal(false);
+            return;
+        }
 
-            try {
+        const isSerial =
+            selectedInventory.change_mode ===
+            "serial";
+
+        const quantity = isSerial
+            ? selectedSerials.size
+            : Number(qtyToChange);
+
+        setShowConfirmModal(false);
+        setSubmitting(true);
+
+        try {
                 const payload = {
                     inventory_id:
                         getId(
@@ -1252,7 +1258,9 @@ export default function ChangeItemPage() {
 
                 setReason("");
 
-                await fetchInventories();
+                if (hasSearched) {
+                    await fetchInventories(1);
+                }
             } catch (err: any) {
                 console.error(
                     "Change item failed:",
@@ -1269,6 +1277,16 @@ export default function ChangeItemPage() {
                 setSubmitting(false);
             }
         };
+
+    // ========================================================================
+    // CONFIRMATION DISPLAY DATA
+    // ========================================================================
+
+    const confirmationQuantity = selectedInventory
+        ? selectedInventory.change_mode === "serial"
+            ? selectedSerials.size
+            : Number(qtyToChange || 0)
+        : 0;
 
     // ========================================================================
     // RENDER
@@ -1321,11 +1339,9 @@ export default function ChangeItemPage() {
                                         </h2>
 
                                         <p className="mt-1 text-xs text-gray-500">
-                                            {
-                                                inventories.length
-                                            }{" "}
-                                            inventory record(s)
-                                            available
+                                            {!hasSearched
+                                                ? "Search inventory by filter to load stock"
+                                                : `${inventoryTotal.toLocaleString()} inventory record(s) found`}
                                         </p>
                                     </div>
 
@@ -1336,8 +1352,8 @@ export default function ChangeItemPage() {
 
                                         <button
                                             type="button"
-                                            onClick={
-                                                fetchInventories
+                                            onClick={() =>
+                                                fetchInventories(1)
                                             }
                                             disabled={
                                                 loadingInventories
@@ -1355,6 +1371,10 @@ export default function ChangeItemPage() {
                             {/* FILTER */}
 
                             <div className="border-b border-gray-100 bg-gray-50 p-3">
+                                <div className="mb-2 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-[11px] text-blue-700">
+                                    Stock is loaded only after you search. Use Item Code or another filter to avoid loading the entire inventory.
+                                </div>
+
                                 <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-4">
                                     {/* SEARCH */}
 
@@ -1683,41 +1703,24 @@ export default function ChangeItemPage() {
 
                                     <div>
                                         <label
-                                            className={
-                                                fieldClass
-                                            }
+                                            className={fieldClass}
                                         >
                                             Pallet
                                         </label>
 
-                                        <Select
-                                            options={
-                                                palletOptions
-                                            }
-                                            value={
-                                                palletOptions.find(
-                                                    (
-                                                        option,
-                                                    ) =>
-                                                        option.value ===
-                                                        sourcePallet,
-                                                ) ||
-                                                null
-                                            }
-                                            onChange={(
-                                                option,
-                                            ) =>
+                                        <input
+                                            value={sourcePallet}
+                                            onChange={(e) =>
                                                 setSourcePallet(
-                                                    option?.value ||
-                                                    "",
+                                                    e.target.value,
                                                 )
                                             }
-                                            isClearable
-                                            isSearchable
-                                            placeholder="All pallets"
-                                            styles={
-                                                selectStyles
+                                            onKeyDown={(e) =>
+                                                e.key === "Enter" &&
+                                                fetchInventories(1)
                                             }
+                                            className={inputClass}
+                                            placeholder="Pallet"
                                         />
                                     </div>
                                 </div>
@@ -1757,6 +1760,16 @@ export default function ChangeItemPage() {
                                             setSourcePallet(
                                                 "",
                                             );
+
+                                            setInventories([]);
+                                            setInventoryTotal(0);
+                                            setInventoryTotalPages(0);
+                                            setInventoryPage(1);
+                                            setHasSearched(false);
+                                            setExpandedId(null);
+                                            setSelectedInventory(null);
+                                            setSerials([]);
+                                            setSelectedSerials(new Set());
                                         }}
                                         className="h-8 rounded-md border border-gray-300 bg-white px-4 text-xs font-medium text-gray-700 hover:bg-gray-50"
                                     >
@@ -1765,8 +1778,8 @@ export default function ChangeItemPage() {
 
                                     <button
                                         type="button"
-                                        onClick={
-                                            fetchInventories
+                                        onClick={() =>
+                                            fetchInventories(1)
                                         }
                                         disabled={
                                             loadingInventories
@@ -1781,13 +1794,18 @@ export default function ChangeItemPage() {
                             {/* INVENTORY LIST */}
 
                             <div className="max-h-[calc(100vh-330px)] overflow-y-auto p-3">
-                                {!loadingInventories &&
-                                    inventories.length ===
-                                    0 ? (
+                                {!hasSearched && !loadingInventories ? (
+                                    <div className="py-16 text-center">
+                                        <div className="text-sm font-medium text-gray-600">
+                                            Inventory not loaded
+                                        </div>
+                                        <div className="mt-1 text-xs text-gray-400">
+                                            Select a filter above, then click Search Inventory.
+                                        </div>
+                                    </div>
+                                ) : !loadingInventories && inventories.length === 0 ? (
                                     <div className="py-16 text-center text-xs text-gray-400">
-                                        No available
-                                        inventory
-                                        found.
+                                        No available inventory found for the selected filter.
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
@@ -2059,6 +2077,44 @@ export default function ChangeItemPage() {
                                     </div>
                                 )}
                             </div>
+
+                            {hasSearched && inventoryTotalPages > 1 && (
+                                <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2">
+                                    <div className="text-[11px] text-gray-500">
+                                        Page {inventoryPage} of {inventoryTotalPages}
+                                    </div>
+
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                fetchInventories(inventoryPage - 1)
+                                            }
+                                            disabled={
+                                                loadingInventories ||
+                                                inventoryPage <= 1
+                                            }
+                                            className="h-7 rounded border border-gray-300 bg-white px-2.5 text-[11px] font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                            Previous
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                fetchInventories(inventoryPage + 1)
+                                            }
+                                            disabled={
+                                                loadingInventories ||
+                                                inventoryPage >= inventoryTotalPages
+                                            }
+                                            className="h-7 rounded border border-gray-300 bg-white px-2.5 text-[11px] font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -2527,6 +2583,183 @@ export default function ChangeItemPage() {
                     </div>
                 </div>
             </div>
+
+            {/* ============================================================ */}
+            {/* CUSTOM CONFIRMATION MODAL */}
+            {/* ============================================================ */}
+
+            {showConfirmModal && selectedInventory && (
+                <div
+                    className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[1px]"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="change-item-confirm-title"
+                >
+                    <div className="w-full max-w-md overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
+                        {/* MODAL HEADER */}
+                        <div className="flex items-start gap-3 border-b border-gray-100 px-5 py-4">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                                <AlertTriangle className="h-5 w-5" />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                                <h3
+                                    id="change-item-confirm-title"
+                                    className="text-sm font-semibold text-gray-900"
+                                >
+                                    Confirm Change Item
+                                </h3>
+                                <p className="mt-0.5 text-xs text-gray-500">
+                                    Please review the change before continuing.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmModal(false)}
+                                disabled={submitting}
+                                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        {/* SOURCE / TARGET */}
+                        <div className="space-y-3 px-5 py-4">
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                                <div className="min-w-0 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                                        Source
+                                    </div>
+                                    <div className="mt-1 truncate text-sm font-semibold text-gray-900">
+                                        {selectedInventory.item_code}
+                                    </div>
+                                    <div className="mt-0.5 truncate text-[11px] text-gray-500">
+                                        {selectedInventory.product?.item_name || "-"}
+                                    </div>
+                                </div>
+
+                                <div className="text-xs font-semibold text-gray-300">
+                                    →
+                                </div>
+
+                                <div className="min-w-0 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-blue-500">
+                                        Target
+                                    </div>
+                                    <div className="mt-1 truncate text-sm font-semibold text-gray-900">
+                                        {selectedTargetProduct?.itemCode || "-"}
+                                    </div>
+                                    <div className="mt-0.5 truncate text-[11px] text-gray-500">
+                                        {selectedTargetProduct?.itemName || "-"}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* DETAILS */}
+                            <div className="rounded-lg border border-gray-200 bg-white">
+                                <div className="grid grid-cols-2 divide-x divide-gray-200">
+                                    <div className="p-3">
+                                        <div className="text-[10px] text-gray-400">
+                                            Change Mode
+                                        </div>
+                                        <div className="mt-1 text-xs font-semibold uppercase text-gray-800">
+                                            {selectedInventory.change_mode}
+                                        </div>
+                                    </div>
+                                    <div className="p-3">
+                                        <div className="text-[10px] text-gray-400">
+                                            Quantity
+                                        </div>
+                                        <div className="mt-1 text-xs font-semibold text-gray-800">
+                                            {formatQty(confirmationQuantity)} {selectedInventory.uom}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-gray-200 px-3 py-2.5 text-[11px] text-gray-500">
+                                    <div className="flex justify-between gap-3">
+                                        <span>Warehouse</span>
+                                        <span className="font-medium text-gray-700">
+                                            {text(selectedInventory.whs_code)}
+                                        </span>
+                                    </div>
+                                    <div className="mt-1 flex justify-between gap-3">
+                                        <span>Location</span>
+                                        <span className="font-medium text-gray-700">
+                                            {text(selectedInventory.location)}
+                                        </span>
+                                    </div>
+                                    <div className="mt-1 flex justify-between gap-3">
+                                        <span>Pallet</span>
+                                        <span className="font-medium text-gray-700">
+                                            {text(selectedInventory.pallet)}
+                                        </span>
+                                    </div>
+                                    <div className="mt-1 flex justify-between gap-3">
+                                        <span>Lot</span>
+                                        <span className="font-medium text-gray-700">
+                                            {text(selectedInventory.lot_number)}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* WARNING */}
+                            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                                <div className="flex gap-2">
+                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                                    <div className="text-[11px] leading-4 text-amber-800">
+                                        This action will change the source item while keeping the physical warehouse location, pallet, lot, division and QA status unchanged.
+                                    </div>
+                                </div>
+                            </div>
+
+                            {reason.trim() && (
+                                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                                        Reason
+                                    </div>
+                                    <div className="mt-1 whitespace-pre-wrap text-[11px] leading-4 text-gray-700">
+                                        {reason.trim()}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* MODAL FOOTER */}
+                        <div className="flex items-center justify-end gap-2 border-t border-gray-100 bg-gray-50 px-5 py-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmModal(false)}
+                                disabled={submitting}
+                                className="h-9 rounded-md border border-gray-300 bg-white px-4 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={confirmChangeItem}
+                                disabled={submitting}
+                                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-gray-900 px-4 text-xs font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {submitting ? (
+                                    <>
+                                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="h-3.5 w-3.5" />
+                                        Confirm Change
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
                 .field {
