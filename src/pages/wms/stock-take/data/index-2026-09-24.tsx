@@ -9,15 +9,18 @@ import {
   Calendar,
   CheckCircle2,
   ChevronRight,
+  Clock3,
   Hash,
   Layers,
   Loader2,
+  MapPin,
   MoreVertical,
   Package,
   Plus,
   Search,
   SlidersHorizontal,
   X,
+  XCircle,
 } from "lucide-react";
 
 import api from "@/lib/api";
@@ -52,11 +55,16 @@ type Batch = {
   updated_at?: string;
   started_at?: string | null;
   closed_at?: string | null;
-  closed_by?: number | null;
-  cancel_at?: string | null;
-  cancel_by?: number | null;
-  created_by?: number;
-  updated_by?: number;
+  total_sessions?: number;
+  completed_sessions?: number;
+  in_progress_sessions?: number;
+  open_sessions?: number;
+  cancelled_sessions?: number;
+  total_locations?: number;
+  counted_locations?: number;
+  total_system_qty?: number;
+  total_counted_qty?: number;
+  total_difference?: number;
 };
 
 type FilterParams = {
@@ -134,14 +142,16 @@ function normalizeBatch(raw: any): Batch {
     description: raw?.description ?? "",
     status: raw?.status ?? "open",
     created_at: raw?.created_at ?? new Date().toISOString(),
-    updated_at: raw?.updated_at ?? null,
-    started_at: raw?.started_at ?? null,
-    closed_at: raw?.closed_at ?? null,
-    closed_by: raw?.closed_by ?? null,
-    cancel_at: raw?.cancel_at ?? null,
-    cancel_by: raw?.cancel_by ?? null,
-    created_by: raw?.created_by ?? 0,
-    updated_by: raw?.updated_by ?? 0,
+    total_sessions: numberValue(raw?.total_sessions),
+    completed_sessions: numberValue(raw?.completed_sessions),
+    in_progress_sessions: numberValue(raw?.in_progress_sessions),
+    open_sessions: numberValue(raw?.open_sessions),
+    cancelled_sessions: numberValue(raw?.cancelled_sessions),
+    total_locations: numberValue(raw?.total_locations),
+    counted_locations: numberValue(raw?.counted_locations),
+    total_system_qty: numberValue(raw?.total_system_qty),
+    total_counted_qty: numberValue(raw?.total_counted_qty),
+    total_difference: numberValue(raw?.total_difference),
   };
 }
 
@@ -679,6 +689,13 @@ export default function StockTakePage() {
     }
   };
 
+  const batchProgress = (batch: Batch) => {
+    const planned = numberValue(batch.total_locations);
+    const counted = numberValue(batch.counted_locations);
+    if (planned <= 0) return 0;
+    return Math.min(100, Math.round((counted / planned) * 1000) / 10);
+  };
+
   return (
     <Layout title="Cycle Count" subTitle="Cycle Count Activity" className="w-full">
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
@@ -705,6 +722,46 @@ export default function StockTakePage() {
             </button>
           </div>
 
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
+            {[
+              {
+                label: "Total Batches",
+                value: data.length,
+                icon: Layers,
+              },
+              {
+                label: "Open",
+                value: data.filter((x) => x.status === "open").length,
+                icon: Clock3,
+              },
+              {
+                label: "In Progress",
+                value: data.filter((x) => x.status === "in_progress").length,
+                icon: Loader2,
+              },
+              {
+                label: "Completed",
+                value: data.filter((x) => x.status === "completed").length,
+                icon: CheckCircle2,
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <Card key={item.label} className="border-0 bg-white/80 shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-slate-500">{item.label}</p>
+                        <p className="mt-1 text-xl font-semibold text-slate-900">{item.value}</p>
+                      </div>
+                      <Icon className="h-5 w-5 text-slate-400" />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
           <FilterBar filters={filters} onChange={changeFilters} />
 
           <Card className="relative overflow-hidden border-0 bg-white/80 shadow-sm">
@@ -722,31 +779,22 @@ export default function StockTakePage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-slate-100 bg-slate-50/70">
-                      <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                        #
-                      </TableHead>
-                      <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                        Batch
-                      </TableHead>
-                      <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                        Customer
-                      </TableHead>
-                      <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                        Status
-                      </TableHead>
-                      <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                        Created
-                      </TableHead>
-                      <TableHead className="py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">
-                        Actions
-                      </TableHead>
+                      <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">#</TableHead>
+                      <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Batch</TableHead>
+                      <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Customer</TableHead>
+                      <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Sessions</TableHead>
+                      <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Location Progress</TableHead>
+                      <TableHead className="py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-600">Qty</TableHead>
+                      <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</TableHead>
+                      <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Created</TableHead>
+                      <TableHead className="py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
 
                   <TableBody>
                     {loading ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-14">
+                        <TableCell colSpan={9} className="py-14">
                           <div className="flex flex-col items-center">
                             <Loader2 className="mb-2 h-6 w-6 animate-spin text-slate-400" />
                             <p className="text-sm font-medium text-slate-500">Loading batches...</p>
@@ -755,21 +803,20 @@ export default function StockTakePage() {
                       </TableRow>
                     ) : data.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-14">
+                        <TableCell colSpan={9} className="py-14">
                           <div className="flex flex-col items-center text-center">
                             <Layers className="mb-3 h-10 w-10 text-slate-300" />
-                            <p className="text-sm font-medium text-slate-600">
-                              No cycle count batches found
-                            </p>
-                            <p className="mt-1 text-xs text-slate-400">
-                              Create a new batch or adjust your filters.
-                            </p>
+                            <p className="text-sm font-medium text-slate-600">No cycle count batches found</p>
+                            <p className="mt-1 text-xs text-slate-400">Create a new batch or adjust your filters.</p>
                           </div>
                         </TableCell>
                       </TableRow>
                     ) : (
                       data.map((batch, index) => {
                         const meta = statusMeta(batch.status);
+                        const progress = batchProgress(batch);
+                        const sessions = numberValue(batch.total_sessions);
+                        const completedSessions = numberValue(batch.completed_sessions);
 
                         return (
                           <TableRow
@@ -789,11 +836,9 @@ export default function StockTakePage() {
                                   <Layers className="h-3.5 w-3.5 text-slate-600" />
                                 </div>
                                 <div>
-                                  <div className="text-sm font-semibold text-slate-900">
-                                    {batch.code}
-                                  </div>
+                                  <div className="text-sm font-semibold text-slate-900">{batch.code}</div>
                                   {batch.description && (
-                                    <div className="max-w-[280px] truncate text-[11px] text-slate-400">
+                                    <div className="max-w-[220px] truncate text-[11px] text-slate-400">
                                       {batch.description}
                                     </div>
                                   )}
@@ -809,10 +854,61 @@ export default function StockTakePage() {
                             </TableCell>
 
                             <TableCell className="py-3">
-                              {meta ? (
-                                <Badge
-                                  className={`${meta.color} border px-2 py-0.5 text-xs font-medium`}
+                              <div className="text-sm font-semibold text-slate-800">
+                                {completedSessions} / {sessions}
+                              </div>
+                              <div className="text-[11px] text-slate-400">closed / total</div>
+                            </TableCell>
+
+                            <TableCell className="min-w-[180px] py-3">
+                              <div className="flex items-center gap-2">
+                                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${
+                                      progress >= 100
+                                        ? "bg-emerald-500"
+                                        : progress >= 50
+                                          ? "bg-amber-500"
+                                          : "bg-slate-400"
+                                    }`}
+                                    style={{ width: `${progress}%` }}
+                                  />
+                                </div>
+                                <span className="w-10 text-right text-xs font-medium text-slate-600">
+                                  {progress}%
+                                </span>
+                              </div>
+                              <div className="mt-1 text-[11px] text-slate-400">
+                                {numberValue(batch.counted_locations).toLocaleString("id-ID")} /{" "}
+                                {numberValue(batch.total_locations).toLocaleString("id-ID")} locations
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="py-3 text-right">
+                              <div className="text-sm font-semibold text-slate-800">
+                                {numberValue(batch.total_counted_qty).toLocaleString("id-ID")}
+                                <span className="font-normal text-slate-400">
+                                  {" / "}
+                                  {numberValue(batch.total_system_qty).toLocaleString("id-ID")}
+                                </span>
+                              </div>
+                              {numberValue(batch.total_difference) !== 0 && (
+                                <div
+                                  className={`text-[11px] font-medium ${
+                                    numberValue(batch.total_difference) < 0
+                                      ? "text-red-500"
+                                      : "text-blue-500"
+                                  }`}
                                 >
+                                  {numberValue(batch.total_difference) > 0 ? "+" : ""}
+                                  {numberValue(batch.total_difference).toLocaleString("id-ID")}
+                                </div>
+                              )}
+                            </TableCell>
+
+                            <TableCell className="py-3">
+                              {meta ? (
+                                <Badge className={`${meta.color} border px-2 py-0.5 text-xs font-medium`}>
                                   {meta.label}
                                 </Badge>
                               ) : (
@@ -825,7 +921,7 @@ export default function StockTakePage() {
                                 <Calendar className="h-3 w-3 text-slate-400" />
                                 {format(new Date(batch.created_at), "dd MMM yyyy")}
                               </div>
-                              <div className="pl-4 text-[11px] text-slate-400">
+                              <div className="pl-4.5 text-[11px] text-slate-400">
                                 {format(new Date(batch.created_at), "HH:mm")}
                               </div>
                             </TableCell>
@@ -834,9 +930,7 @@ export default function StockTakePage() {
                               <div className="flex justify-center">
                                 <button
                                   title="Open batch"
-                                  onClick={() =>
-                                    router.push(`/wms/stock-take/batch/${batch.code}`)
-                                  }
+                                  onClick={() => router.push(`/wms/stock-take/batch/${batch.code}`)}
                                   className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800"
                                 >
                                   <MoreVertical className="h-3.5 w-3.5" />
