@@ -9,8 +9,19 @@ import api from "@/lib/api";
 import Layout from "@/components/layout";
 
 interface Product {
+    id?: number;
+    ID?: number;
+
+    product_number?: number;
+
+    owner_code?: string;
+
     item_code?: string;
     item_name?: string;
+    unit_model?: string;
+    barcode?: string;
+
+    uom?: string;
 }
 
 interface Inventory {
@@ -109,6 +120,13 @@ interface ApiSerialResponse {
     message?: string;
 }
 
+interface ProductOption extends SelectOption {
+    itemCode: string;
+    itemName: string;
+    unitModel: string;
+    barcode: string;
+}
+
 const selectStyles = {
     control: (base: any) => ({
         ...base,
@@ -145,6 +163,35 @@ function formatQty(value: number) {
     return new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 }).format(value || 0);
 }
 
+function ProductInfo({
+    product,
+    fallbackItemCode,
+    fallbackBarcode,
+}: {
+    product?: Product;
+    fallbackItemCode?: string;
+    fallbackBarcode?: string;
+}) {
+    return (
+        <div className="min-w-0">
+            <div className="truncate text-xs font-medium text-gray-700">
+                {product?.item_name || "-"}
+            </div>
+
+            <div className="mt-0.5 truncate text-[11px] text-gray-500">
+                Model: {product?.unit_model || "-"}
+            </div>
+
+            <div className="mt-0.5 truncate text-[10px] text-gray-400">
+                Barcode:{" "}
+                {product?.barcode ||
+                    fallbackBarcode ||
+                    "-"}
+            </div>
+        </div>
+    );
+}
+
 function Spinner() {
     return <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />;
 }
@@ -154,11 +201,10 @@ function Alert({ type, message }: { type: "error" | "success"; message: string }
 
     return (
         <div
-            className={`rounded-lg border px-3 py-2.5 text-xs ${
-                type === "error"
-                    ? "border-red-200 bg-red-50 text-red-700"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-700"
-            }`}
+            className={`rounded-lg border px-3 py-2.5 text-xs ${type === "error"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                }`}
         >
             {message}
         </div>
@@ -287,13 +333,64 @@ export default function InventoryInternalTransferPage() {
         fetchInventories();
     }, [loadMasterData, fetchInventories]);
 
-    const productOptions = useMemo<SelectOption[]>(() =>
-        products.map((product) => ({
-            value: product.item_code || "",
-            label: product.item_name ? `${product.item_code} — ${product.item_name}` : product.item_code || "",
-        })).filter((option) => option.value),
-        [products]
-    );
+
+
+    const productOptions =
+        useMemo<ProductOption[]>(
+            () =>
+                products
+                    .map((product) => ({
+                        value:
+                            product.item_code || "",
+                        label:
+                            product.item_name
+                                ? `${product.item_code} — ${product.item_name}`
+                                : product.item_code || "",
+
+                        itemCode:
+                            product.item_code || "",
+
+                        itemName:
+                            product.item_name || "",
+
+                        unitModel:
+                            product.unit_model || "",
+
+                        barcode:
+                            product.barcode || "",
+                    }))
+                    .filter(
+                        (option) =>
+                            option.value,
+                    ),
+            [products],
+        );
+
+    function ProductOptionLabel({
+        option,
+    }: {
+        option: ProductOption;
+    }) {
+        return (
+            <div className="min-w-0 py-1">
+                <div className="truncate text-xs font-semibold text-gray-900">
+                    {option.itemCode}
+                </div>
+
+                <div className="truncate text-[11px] text-gray-700">
+                    {option.itemName || "-"}
+                </div>
+
+                <div className="truncate text-[10px] text-gray-500">
+                    Model:{" "}
+                    {option.unitModel || "-"}
+                    {" · "}
+                    Barcode:{" "}
+                    {option.barcode || "-"}
+                </div>
+            </div>
+        );
+    }
 
     const ownerOptions = useMemo<SelectOption[]>(() =>
         owners.map((owner) => ({
@@ -547,8 +644,10 @@ export default function InventoryInternalTransferPage() {
     };
 
     return (
-        <Layout title="Inventory" subTitle="Internal Transfer">
-            <div className="mx-auto max-w-screen-2xl p-4 md:p-6">
+        <Layout title="Inventory"
+            subTitle="Internal Transfer">
+            {/* <div className="mx-auto max-w-screen-2xl p-4 md:p-6"> */}
+            <div className="space-y-4 p-4">
                 <div className="mb-4">
                     <div className="flex items-center justify-between gap-3">
                         <div>
@@ -600,7 +699,7 @@ export default function InventoryInternalTransferPage() {
                                                 onChange={(e) => setSearch(e.target.value)}
                                                 onKeyDown={(e) => e.key === "Enter" && fetchInventories()}
                                                 className={`${inputClass} pl-8`}
-                                                placeholder="Item / barcode / pallet..."
+                                                placeholder="Item / Model / Barcode / Pallet..."
                                             />
                                         </div>
                                     </div>
@@ -608,13 +707,30 @@ export default function InventoryInternalTransferPage() {
                                         <label className="field">Item Code</label>
                                         <Select
                                             options={productOptions}
-                                            value={productOptions.find((option) => option.value === itemCode) || null}
-                                            onChange={(option) => setItemCode(option?.value || "")}
+                                            value={
+                                                productOptions.find(
+                                                    (option) =>
+                                                        option.value ===
+                                                        itemCode,
+                                                ) || null
+                                            }
+                                            onChange={(option) =>
+                                                setItemCode(
+                                                    option?.value || "",
+                                                )
+                                            }
                                             isClearable
                                             isSearchable
                                             isLoading={loadingMaster}
                                             placeholder="All items"
                                             styles={selectStyles}
+                                            formatOptionLabel={(option) => (
+                                                <ProductOptionLabel
+                                                    option={
+                                                        option as ProductOption
+                                                    }
+                                                />
+                                            )}
                                         />
                                     </div>
                                     <div>
@@ -721,9 +837,8 @@ export default function InventoryInternalTransferPage() {
                                             return (
                                                 <div
                                                     key={id}
-                                                    className={`overflow-hidden rounded-lg border ${
-                                                        selected ? "border-emerald-400" : "border-gray-200"
-                                                    }`}
+                                                    className={`overflow-hidden rounded-lg border ${selected ? "border-emerald-400" : "border-gray-200"
+                                                        }`}
                                                 >
                                                     <button
                                                         type="button"
@@ -733,11 +848,40 @@ export default function InventoryInternalTransferPage() {
                                                         <div className="flex items-start justify-between gap-4">
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="flex items-center gap-2">
-                                                                    {open ? <ChevronDown className="h-4 w-4 text-emerald-600" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
-                                                                    <span className="truncate text-sm font-semibold text-gray-900">{inventory.item_code}</span>
-                                                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${serialMode ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
-                                                                        {serialMode ? "SERIAL" : "QUANTITY"}
+                                                                    {open ? (
+                                                                        <ChevronDown className="h-4 w-4 text-emerald-600" />
+                                                                    ) : (
+                                                                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                                                                    )}
+
+                                                                    <span className="truncate text-sm font-semibold text-gray-900">
+                                                                        {inventory.item_code}
                                                                     </span>
+
+                                                                    <span
+                                                                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${serialMode
+                                                                            ? "bg-emerald-100 text-emerald-700"
+                                                                            : "bg-gray-100 text-gray-600"
+                                                                            }`}
+                                                                    >
+                                                                        {serialMode
+                                                                            ? "SERIAL"
+                                                                            : "QUANTITY"}
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="mt-1 pl-6">
+                                                                    <ProductInfo
+                                                                        product={
+                                                                            inventory.product
+                                                                        }
+                                                                        fallbackItemCode={
+                                                                            inventory.item_code
+                                                                        }
+                                                                        fallbackBarcode={
+                                                                            inventory.barcode
+                                                                        }
+                                                                    />
                                                                 </div>
                                                                 <div className="mt-1 pl-6 text-xs text-gray-600">
                                                                     {inventory.product?.item_name || "-"}
@@ -804,13 +948,12 @@ export default function InventoryInternalTransferPage() {
                                                                             return (
                                                                                 <label
                                                                                     key={serial.serial_number}
-                                                                                    className={`flex items-center justify-between border-b border-gray-100 px-3 py-2 text-xs last:border-b-0 ${
-                                                                                        disabled
-                                                                                            ? "cursor-not-allowed bg-gray-50 text-gray-400"
-                                                                                            : checked
-                                                                                                ? "cursor-pointer bg-emerald-50"
-                                                                                                : "cursor-pointer hover:bg-gray-50"
-                                                                                    }`}
+                                                                                    className={`flex items-center justify-between border-b border-gray-100 px-3 py-2 text-xs last:border-b-0 ${disabled
+                                                                                        ? "cursor-not-allowed bg-gray-50 text-gray-400"
+                                                                                        : checked
+                                                                                            ? "cursor-pointer bg-emerald-50"
+                                                                                            : "cursor-pointer hover:bg-gray-50"
+                                                                                        }`}
                                                                                 >
                                                                                     <span className="flex min-w-0 items-center gap-2">
                                                                                         <input
@@ -880,15 +1023,48 @@ export default function InventoryInternalTransferPage() {
                                 {selectedInventory ? (
                                     <>
                                         <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs">
-                                            <div className="font-semibold text-blue-900">Source Inventory #{getId(selectedInventory)}</div>
-                                            <div className="mt-1 text-blue-800">
-                                                {selectedInventory.item_code} · {selectedInventory.owner_code}
+                                            <div className="font-semibold text-blue-900">
+                                                Source Inventory #{getId(selectedInventory)}
                                             </div>
-                                            <div className="mt-1 text-blue-700">
-                                                {selectedInventory.whs_code} / {selectedInventory.location}
+
+                                            <div className="mt-2 text-sm font-semibold text-blue-900">
+                                                {selectedInventory.item_code}
                                             </div>
+
+                                            <div className="mt-1 text-xs font-medium text-blue-800">
+                                                {selectedInventory.product?.item_name ||
+                                                    "-"}
+                                            </div>
+
+                                            <div className="mt-1 text-[11px] text-blue-700">
+                                                Model:{" "}
+                                                {selectedInventory.product?.unit_model ||
+                                                    "-"}
+                                            </div>
+
+                                            <div className="mt-1 text-[10px] text-blue-600">
+                                                Barcode:{" "}
+                                                {selectedInventory.product?.barcode ||
+                                                    selectedInventory.barcode ||
+                                                    "-"}
+                                            </div>
+
+                                            <div className="mt-2 text-blue-700">
+                                                {selectedInventory.owner_code} ·{" "}
+                                                {selectedInventory.whs_code} /{" "}
+                                                {selectedInventory.location}
+                                            </div>
+
                                             <div className="mt-1 text-blue-700">
-                                                {selectedInventory.qty_available} {selectedInventory.uom} available · {selectedInventory.transfer_mode === "serial" ? "Serial" : "Quantity"} mode
+                                                {formatQty(
+                                                    selectedInventory.qty_available,
+                                                )}{" "}
+                                                {selectedInventory.uom} available ·{" "}
+                                                {selectedInventory.transfer_mode ===
+                                                    "serial"
+                                                    ? "Serial"
+                                                    : "Quantity"}{" "}
+                                                mode
                                             </div>
                                         </div>
 

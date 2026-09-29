@@ -749,14 +749,14 @@ export default function ItemFormTable({
         </div>
 
         {isTableOpen && (
-        <div className="overflow-x-auto">
-        <table
-          className="w-full border font-normal text-sm"
-          style={{ fontSize: "12px" }}
-        >
-          <thead className="bg-gray-100">
-            <tr>
-              {/* <th className="p-2 border text-center w-8">
+          <div className="overflow-x-auto">
+            <table
+              className="w-full border font-normal text-sm"
+              style={{ fontSize: "12px" }}
+            >
+              <thead className="bg-gray-100">
+                <tr>
+                  {/* <th className="p-2 border text-center w-8">
                 {headerForm.status == "open" || headerForm.status == "draft" && (
                   <input
                     // disabled={headerForm.status === "complete"}
@@ -766,97 +766,97 @@ export default function ItemFormTable({
                   />
                 )}
               </th> */}
-              <th className="p-2 border w-12 text-center">No.</th>
-              <th className="p-2 border" style={{ width: "200px" }}>
-                Item
-              </th>
-              {/* <th className="p-2 border" style={{ width: "400px" }}>
+                  <th className="p-2 border w-12 text-center">No.</th>
+                  <th className="p-2 border" style={{ width: "200px" }}>
+                    Item
+                  </th>
+                  {/* <th className="p-2 border" style={{ width: "400px" }}>
                 Description
               </th> */}
-              {/* <th className="p-2 border" style={{ width: "50px" }}>
+                  {/* <th className="p-2 border" style={{ width: "50px" }}>
                 UoM
               </th> */}
-              <th className="p-2 border" style={{ width: "100px" }}>
-                Plan Qty
-              </th>
+                  <th className="p-2 border" style={{ width: "100px" }}>
+                    Plan Qty
+                  </th>
 
 
 
 
-              {!["open", "draft"].includes(headerForm.status) && (
-                <th className="p-2 border" style={{ width: "100px" }}>
-                  Qty Scan
-                </th>
-              )}
+                  {!["open", "draft"].includes(headerForm.status) && (
+                    <th className="p-2 border" style={{ width: "100px" }}>
+                      Qty Scan
+                    </th>
+                  )}
 
-              <th className="p-2 border" style={{ width: "30px" }}>
-                Division
-              </th>
+                  <th className="p-2 border" style={{ width: "30px" }}>
+                    Division
+                  </th>
 
-              <th className="p-2 border" style={{ width: "100px" }}>
-                Status
-              </th>
+                  <th className="p-2 border" style={{ width: "100px" }}>
+                    Status
+                  </th>
 
-              {invPolicy?.use_receive_location && (
-                <th className="p-2 border" style={{ width: "130px" }}>
-                  Rec Location
-                </th>
-              )}
+                  {invPolicy?.use_receive_location && (
+                    <th className="p-2 border" style={{ width: "130px" }}>
+                      Rec Location
+                    </th>
+                  )}
 
 
-              {invPolicy?.show_rec_date && (
-                <th className="p-2 border" style={{ width: "140px" }}>
-                  Rec Date
-                </th>
-              )}
+                  {invPolicy?.show_rec_date && (
+                    <th className="p-2 border" style={{ width: "140px" }}>
+                      Rec Date
+                    </th>
+                  )}
 
-              {invPolicy?.use_production_date && (
-                <th className="p-2 border" style={{ width: "140px" }}>
-                  Prod Date
-                </th>
-              )}
-              {invPolicy?.require_expiry_date && (
-                <th className="p-2 border" style={{ width: "140px" }}>
-                  Exp Date
-                </th>
-              )}
-              {invPolicy?.use_lot_no && (
-                <th className="p-2 border" style={{ width: "140px" }}>
-                  Lot No.
-                </th>
-              )}
+                  {invPolicy?.use_production_date && (
+                    <th className="p-2 border" style={{ width: "140px" }}>
+                      Prod Date
+                    </th>
+                  )}
+                  {invPolicy?.require_expiry_date && (
+                    <th className="p-2 border" style={{ width: "140px" }}>
+                      Exp Date
+                    </th>
+                  )}
+                  {invPolicy?.use_lot_no && (
+                    <th className="p-2 border" style={{ width: "140px" }}>
+                      Lot No.
+                    </th>
+                  )}
 
-              {invPolicy?.use_carton_number && (
-                <th className="p-2 border" style={{ width: "140px" }}>
-                  Carton No.
-                </th>
-              )}
+                  {invPolicy?.use_carton_number && (
+                    <th className="p-2 border" style={{ width: "140px" }}>
+                      Carton No.
+                    </th>
+                  )}
 
-              {invPolicy?.use_case_number && (
-                <th className="p-2 border" style={{ width: "140px" }}>
-                  Case No.
-                </th>
-              )}
+                  {invPolicy?.use_case_number && (
+                    <th className="p-2 border" style={{ width: "140px" }}>
+                      Case No.
+                    </th>
+                  )}
 
-              {/* {invPolicy?.inbound_can_input_serial && (
+                  {/* {invPolicy?.inbound_can_input_serial && (
                 <th className="p-2 border" style={{ width: "140px" }}>
                   Serial No.
                 </th>
               )} */}
 
-              <th className="p-2 border" style={{ width: "220px" }}>
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredMuatan
-              .filter((item) => item.ref_id === inboundReferences.ID)
-              .map((item, index) => {
-                const isEditing = editingId === item.ID;
-                return (
-                  <tr key={item.ID} className="border-t">
-                    {/* <td className="p-2 border text-center">
+                  <th className="p-2 border" style={{ width: "220px" }}>
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMuatan
+                  .filter((item) => item.ref_id === inboundReferences.ID)
+                  .map((item, index) => {
+                    const isEditing = editingId === item.ID;
+                    return (
+                      <tr key={item.ID} className="border-t">
+                        {/* <td className="p-2 border text-center">
                       {headerForm.status == "open" && (
                         <input
                           // disabled={headerForm.status === "complete"}
@@ -868,14 +868,14 @@ export default function ItemFormTable({
                         />
                       )}
                     </td> */}
-                    <td className="p-2 border text-center">{index + 1}</td>
+                        <td className="p-2 border text-center">{index + 1}</td>
 
-                    {headerForm.status == "open" || headerForm.status == "draft" ||
-                      headerForm.mode == "create" ? (
-                      <>
-                        <td className="p-2 border">
-                          <div className="flex items-center gap-2">
-                            {/* <Input
+                        {headerForm.status == "open" || headerForm.status == "draft" ||
+                          headerForm.mode == "create" ? (
+                          <>
+                            <td className="p-2 border">
+                              <div className="flex items-center gap-2">
+                                {/* <Input
                               style={{ fontSize: "12px" }}
                               type="text"
                               value={item.item_code}
@@ -883,13 +883,13 @@ export default function ItemFormTable({
                               className="flex-1"
                               placeholder="Click edit to select item..."
                             /> */}
-                            <span className="text-xs">SKU : {item.item_code} <br /> {products.find(
-                              (p) => p.item_code === item.item_code
-                            )?.item_name || ""}</span> <br />
-                            {/* <span>{products.find(
+                                <span className="text-xs">SKU : {item.item_code} <br /> {products.find(
+                                  (p) => p.item_code === item.item_code
+                                )?.item_name || ""}</span> <br />
+                                {/* <span>{products.find(
                               (p) => p.item_code === item.item_code
                             )?.item_name || ""}</span> */}
-                            {/* {['open', 'draft'].includes(headerForm.status) && (
+                                {/* {['open', 'draft'].includes(headerForm.status) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -899,14 +899,20 @@ export default function ItemFormTable({
                                 <RefreshCcw size={12} />
                               </Button>
                             )} */}
-                          </div>
-                          {errors[item.ID]?.item_code && (
-                            <small className="text-red-500">
-                              {errors[item.ID].item_code}
-                            </small>
-                          )}
-                        </td>
-                        {/* <td className="p-2 border">
+                              </div>
+                              {errors[item.ID]?.item_code && (
+                                <small className="text-red-500">
+                                  {errors[item.ID].item_code}
+                                </small>
+                              )}
+
+                              {item.bundle_product_code !== "" && (
+                                <span className="text-xs text-gray-400">
+                                  Bundling for item : {item.bundle_product_code || ""}
+                                </span>
+                              )}
+                            </td>
+                            {/* <td className="p-2 border">
                           <Input
                             style={{ fontSize: "12px" }}
                             readOnly
@@ -918,7 +924,7 @@ export default function ItemFormTable({
                             }
                           />
                         </td> */}
-                        {/* <td className="p-2 border">
+                            {/* <td className="p-2 border">
                           <Select
                             key={item.ID}
                             className="w-24"
@@ -935,241 +941,241 @@ export default function ItemFormTable({
                             }
                           />
                         </td> */}
-                        <td className="p-2 border">
-                          <div>
-                            <Input
-                              className="w-20"
-                              style={{ fontSize: "12px" }}
-                              type="number"
-                              value={item.quantity}
-                              onChange={(e) =>
-                                handleChange(
-                                  item.ID,
-                                  "quantity",
-                                  e.target.value
-                                )
-                              }
-                              onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                            />
-                          </div>
-                          {errors[item.ID]?.quantity && (
-                            <small className="text-red-500">
-                              {errors[item.ID].quantity}
-                            </small>
-                          )}
-                        </td>
-
-                        <td className="p-2 border">
-                          <Select
-                            className="w-40"
-                            key={item.ID}
-                            options={
-                              divisionOptions
-                            }
-                            value={divisionOptions.find((option) => option.value === item.division_code)}
-                            onChange={(value) =>
-                              handleChange(item.ID, "division_code", value?.value)
-                            }
-                          />
-                        </td>
-
-                        <td className="p-2 border">
-                          <Select
-                            key={item.ID}
-                            className="w-20"
-                            options={optionsStatus}
-                            onFocus={() => handleFocus(item.item_code, item.ID)}
-                            isLoading={selectStates[item.ID]?.loading ?? false}
-                            value={selectStates[item.ID]?.selectedOption ??
-                              optionsStatus.find(
-                                (option) => option.value === item.qa_status
-                              )}
-                            onChange={(value) =>
-                              handleChange(item.ID, "qa_status", value?.value)
-                            }
-                          />
-                        </td>
-
-                        {invPolicy?.use_receive_location && (
-                          <td className="p-2 border">
-                            <div>
-                              <Input
-                                style={{ fontSize: "12px", width: "120px" }}
-                                type="text"
-                                value={item.location}
-                                onChange={(e) =>
-                                  handleChange(
-                                    item.ID,
-                                    "location",
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </div>
-                          </td>
-                        )}
-
-
-
-                        {invPolicy?.show_rec_date && (
-                          <td className="p-2 border">
-                            <DatePicker
-                              selected={
-                                item.rec_date ? parseISO(item.rec_date) : null
-                              }
-                              onChange={(date: Date | null) => {
-                                if (date) {
-                                  handleChange(
-                                    item.ID,
-                                    "rec_date",
-                                    format(date, "yyyy-MM-dd")
-                                  );
-                                }
-                              }}
-                              dateFormat="dd/MM/yyyy"
-                              locale={id}
-                              customInput={
-                                <Input
-                                  className="w-[100px] cursor-pointer"
-                                  style={{ fontSize: "12px" }}
-                                />
-                              }
-                              placeholderText="Choose date"
-                              popperPlacement="bottom-start"
-                            />
-                            {errors[item.ID]?.rec_date && (
-                              <small className="text-red-500">
-                                {errors[item.ID].rec_date}
-                              </small>
-                            )}
-                          </td>
-                        )}
-
-                        {invPolicy?.use_production_date && (
-                          <td className="p-2 border">
-                            <DatePicker
-                              selected={
-                                item.prod_date ? parseISO(item.prod_date) : null
-                              }
-                              onChange={(date: Date | null) => {
-                                if (date) {
-                                  handleChange(
-                                    item.ID,
-                                    "prod_date",
-                                    format(date, "yyyy-MM-dd")
-                                  );
-                                }
-                              }}
-                              dateFormat="dd/MM/yyyy"
-                              locale={id}
-                              customInput={
-                                <Input
-                                  className="w-[100px] cursor-pointer"
-                                  style={{ fontSize: "12px" }}
-                                />
-                              }
-                              placeholderText="Choose date"
-                              popperPlacement="bottom-start"
-                            />
-                            {errors[item.ID]?.prod_date && (
-                              <small className="text-red-500">
-                                {errors[item.ID].prod_date}
-                              </small>
-                            )}
-                          </td>
-                        )}
-
-                        {invPolicy?.require_expiry_date && (
-                          <>
                             <td className="p-2 border">
-                              <DatePicker
-                                selected={
-                                  item.exp_date ? parseISO(item.exp_date) : null
-                                }
-                                onChange={(date: Date | null) => {
-                                  if (date) {
+                              <div>
+                                <Input
+                                  className="w-20"
+                                  style={{ fontSize: "12px" }}
+                                  type="number"
+                                  value={item.quantity}
+                                  onChange={(e) =>
                                     handleChange(
                                       item.ID,
-                                      "exp_date",
-                                      format(date, "yyyy-MM-dd")
-                                    );
+                                      "quantity",
+                                      e.target.value
+                                    )
                                   }
-                                }}
-                                dateFormat="dd/MM/yyyy"
-                                locale={id}
-                                customInput={
-                                  <Input
-                                    className="w-[100px] cursor-pointer"
-                                    style={{ fontSize: "12px" }}
-                                  />
-                                }
-                                placeholderText="Choose date"
-                                popperPlacement="bottom-start"
-                              />
-                              {errors[item.ID]?.rec_date && (
+                                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                                />
+                              </div>
+                              {errors[item.ID]?.quantity && (
                                 <small className="text-red-500">
-                                  {errors[item.ID].exp_date}
+                                  {errors[item.ID].quantity}
                                 </small>
                               )}
                             </td>
-                          </>
-                        )}
 
-                        {invPolicy?.use_lot_no && (
-                          <td className="p-2 border">
-                            <Input
-                              style={{ fontSize: "12px", width: "130px" }}
-                              type="text"
-                              value={item.lot_number}
-                              onChange={(e) =>
-                                handleChange(item.ID, "lot_number", e.target.value)
-                              }
-                            />
-                            {errors[item.ID]?.remarks && (
-                              <small className="text-red-500">
-                                {errors[item.ID].lot_number}
-                              </small>
+                            <td className="p-2 border">
+                              <Select
+                                className="w-40"
+                                key={item.ID}
+                                options={
+                                  divisionOptions
+                                }
+                                value={divisionOptions.find((option) => option.value === item.division_code)}
+                                onChange={(value) =>
+                                  handleChange(item.ID, "division_code", value?.value)
+                                }
+                              />
+                            </td>
+
+                            <td className="p-2 border">
+                              <Select
+                                key={item.ID}
+                                className="w-20"
+                                options={optionsStatus}
+                                onFocus={() => handleFocus(item.item_code, item.ID)}
+                                isLoading={selectStates[item.ID]?.loading ?? false}
+                                value={selectStates[item.ID]?.selectedOption ??
+                                  optionsStatus.find(
+                                    (option) => option.value === item.qa_status
+                                  )}
+                                onChange={(value) =>
+                                  handleChange(item.ID, "qa_status", value?.value)
+                                }
+                              />
+                            </td>
+
+                            {invPolicy?.use_receive_location && (
+                              <td className="p-2 border">
+                                <div>
+                                  <Input
+                                    style={{ fontSize: "12px", width: "120px" }}
+                                    type="text"
+                                    value={item.location}
+                                    onChange={(e) =>
+                                      handleChange(
+                                        item.ID,
+                                        "location",
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
+                              </td>
                             )}
-                          </td>
-                        )}
 
-                        {invPolicy?.use_carton_number && (
-                          <td className="p-2 border">
-                            <Input
-                              style={{ fontSize: "12px", width: "130px" }}
-                              type="text"
-                              value={item.carton_number}
-                              onChange={(e) =>
-                                handleChange(item.ID, "carton_number", e.target.value)
-                              }
-                            />
-                            {errors[item.ID]?.carton_number && (
-                              <small className="text-red-500">
-                                {errors[item.ID].carton_number}
-                              </small>
+
+
+                            {invPolicy?.show_rec_date && (
+                              <td className="p-2 border">
+                                <DatePicker
+                                  selected={
+                                    item.rec_date ? parseISO(item.rec_date) : null
+                                  }
+                                  onChange={(date: Date | null) => {
+                                    if (date) {
+                                      handleChange(
+                                        item.ID,
+                                        "rec_date",
+                                        format(date, "yyyy-MM-dd")
+                                      );
+                                    }
+                                  }}
+                                  dateFormat="dd/MM/yyyy"
+                                  locale={id}
+                                  customInput={
+                                    <Input
+                                      className="w-[100px] cursor-pointer"
+                                      style={{ fontSize: "12px" }}
+                                    />
+                                  }
+                                  placeholderText="Choose date"
+                                  popperPlacement="bottom-start"
+                                />
+                                {errors[item.ID]?.rec_date && (
+                                  <small className="text-red-500">
+                                    {errors[item.ID].rec_date}
+                                  </small>
+                                )}
+                              </td>
                             )}
-                          </td>
-                        )}
 
-                        {invPolicy?.use_case_number && (
-                          <td className="p-2 border">
-                            <Input
-                              style={{ fontSize: "12px", width: "130px" }}
-                              type="text"
-                              value={item.case_number}
-                              onChange={(e) =>
-                                handleChange(item.ID, "case_number", e.target.value)
-                              }
-                            />
-                            {errors[item.ID]?.case_number && (
-                              <small className="text-red-500">
-                                {errors[item.ID].case_number}
-                              </small>
+                            {invPolicy?.use_production_date && (
+                              <td className="p-2 border">
+                                <DatePicker
+                                  selected={
+                                    item.prod_date ? parseISO(item.prod_date) : null
+                                  }
+                                  onChange={(date: Date | null) => {
+                                    if (date) {
+                                      handleChange(
+                                        item.ID,
+                                        "prod_date",
+                                        format(date, "yyyy-MM-dd")
+                                      );
+                                    }
+                                  }}
+                                  dateFormat="dd/MM/yyyy"
+                                  locale={id}
+                                  customInput={
+                                    <Input
+                                      className="w-[100px] cursor-pointer"
+                                      style={{ fontSize: "12px" }}
+                                    />
+                                  }
+                                  placeholderText="Choose date"
+                                  popperPlacement="bottom-start"
+                                />
+                                {errors[item.ID]?.prod_date && (
+                                  <small className="text-red-500">
+                                    {errors[item.ID].prod_date}
+                                  </small>
+                                )}
+                              </td>
                             )}
-                          </td>
-                        )}
 
-                        {/* {invPolicy?.inbound_can_input_serial && (
+                            {invPolicy?.require_expiry_date && (
+                              <>
+                                <td className="p-2 border">
+                                  <DatePicker
+                                    selected={
+                                      item.exp_date ? parseISO(item.exp_date) : null
+                                    }
+                                    onChange={(date: Date | null) => {
+                                      if (date) {
+                                        handleChange(
+                                          item.ID,
+                                          "exp_date",
+                                          format(date, "yyyy-MM-dd")
+                                        );
+                                      }
+                                    }}
+                                    dateFormat="dd/MM/yyyy"
+                                    locale={id}
+                                    customInput={
+                                      <Input
+                                        className="w-[100px] cursor-pointer"
+                                        style={{ fontSize: "12px" }}
+                                      />
+                                    }
+                                    placeholderText="Choose date"
+                                    popperPlacement="bottom-start"
+                                  />
+                                  {errors[item.ID]?.rec_date && (
+                                    <small className="text-red-500">
+                                      {errors[item.ID].exp_date}
+                                    </small>
+                                  )}
+                                </td>
+                              </>
+                            )}
+
+                            {invPolicy?.use_lot_no && (
+                              <td className="p-2 border">
+                                <Input
+                                  style={{ fontSize: "12px", width: "130px" }}
+                                  type="text"
+                                  value={item.lot_number}
+                                  onChange={(e) =>
+                                    handleChange(item.ID, "lot_number", e.target.value)
+                                  }
+                                />
+                                {errors[item.ID]?.remarks && (
+                                  <small className="text-red-500">
+                                    {errors[item.ID].lot_number}
+                                  </small>
+                                )}
+                              </td>
+                            )}
+
+                            {invPolicy?.use_carton_number && (
+                              <td className="p-2 border">
+                                <Input
+                                  style={{ fontSize: "12px", width: "130px" }}
+                                  type="text"
+                                  value={item.carton_number}
+                                  onChange={(e) =>
+                                    handleChange(item.ID, "carton_number", e.target.value)
+                                  }
+                                />
+                                {errors[item.ID]?.carton_number && (
+                                  <small className="text-red-500">
+                                    {errors[item.ID].carton_number}
+                                  </small>
+                                )}
+                              </td>
+                            )}
+
+                            {invPolicy?.use_case_number && (
+                              <td className="p-2 border">
+                                <Input
+                                  style={{ fontSize: "12px", width: "130px" }}
+                                  type="text"
+                                  value={item.case_number}
+                                  onChange={(e) =>
+                                    handleChange(item.ID, "case_number", e.target.value)
+                                  }
+                                />
+                                {errors[item.ID]?.case_number && (
+                                  <small className="text-red-500">
+                                    {errors[item.ID].case_number}
+                                  </small>
+                                )}
+                              </td>
+                            )}
+
+                            {/* {invPolicy?.inbound_can_input_serial && (
                           <td className="p-2 border">
                             <Input
                               style={{ fontSize: "12px", width: "130px" }}
@@ -1191,225 +1197,225 @@ export default function ItemFormTable({
                           </td>
                         )} */}
 
-                        <td
-                          className="p-2 border space-x-2 text-center"
-                          style={{ width: "100px" }}
-                        >
-                          <div className="flex flex-wrap items-center justify-center gap-1">
-                            {item.mode == "create" ? (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    handleCancel(item);
-                                  }}
-                                >
-                                  <X size={14} />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleCopy(item.ID)}
-                                >
-                                  <Copy size={14} />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleGenerateQR(item)}
-                                  title="Generate QR"
-                                >
-                                  <QrCode size={14} />
-                                </Button>
-                                {invPolicy?.inbound_can_input_serial && (
-                                  <Button
-                                    size="sm"
-                                    variant={
-                                      (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity && item.quantity > 0
-                                        ? "default"
-                                        : "outline"
-                                    }
-                                    onClick={() => handleOpenSerialModal(item)}
-                                    title="Isi Serial Number"
-                                    className="min-w-[56px] justify-center"
-                                  >
-                                    SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity || 0}
-                                  </Button>
+                            <td
+                              className="p-2 border space-x-2 text-center"
+                              style={{ width: "100px" }}
+                            >
+                              <div className="flex flex-wrap items-center justify-center gap-1">
+                                {item.mode == "create" ? (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        handleCancel(item);
+                                      }}
+                                    >
+                                      <X size={14} />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleCopy(item.ID)}
+                                    >
+                                      <Copy size={14} />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleGenerateQR(item)}
+                                      title="Generate QR"
+                                    >
+                                      <QrCode size={14} />
+                                    </Button>
+                                    {invPolicy?.inbound_can_input_serial && (
+                                      <Button
+                                        size="sm"
+                                        variant={
+                                          (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity && item.quantity > 0
+                                            ? "default"
+                                            : "outline"
+                                        }
+                                        onClick={() => handleOpenSerialModal(item)}
+                                        title="Isi Serial Number"
+                                        className="min-w-[56px] justify-center"
+                                      >
+                                        SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity || 0}
+                                      </Button>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => handleDelete(item.ID)}
+                                    >
+                                      <Trash size={14} />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleCopy(item.ID)}
+                                    >
+                                      <Copy size={14} />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleGenerateQR(item)}
+                                      title="Generate QR"
+                                    >
+                                      <QrCode size={14} />
+                                    </Button>
+                                    {invPolicy?.inbound_can_input_serial && (
+                                      <Button
+                                        size="sm"
+                                        variant={
+                                          (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity && item.quantity > 0
+                                            ? "default"
+                                            : "outline"
+                                        }
+                                        onClick={() => handleOpenSerialModal(item)}
+                                        title="Isi Serial Number"
+                                        className="min-w-[56px] justify-center"
+                                      >
+                                        SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity || 0}
+                                      </Button>
+                                    )}
+                                  </>
                                 )}
-                              </>
-                            ) : (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => handleDelete(item.ID)}
-                                >
-                                  <Trash size={14} />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleCopy(item.ID)}
-                                >
-                                  <Copy size={14} />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleGenerateQR(item)}
-                                  title="Generate QR"
-                                >
-                                  <QrCode size={14} />
-                                </Button>
-                                {invPolicy?.inbound_can_input_serial && (
-                                  <Button
-                                    size="sm"
-                                    variant={
-                                      (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity && item.quantity > 0
-                                        ? "default"
-                                        : "outline"
-                                    }
-                                    onClick={() => handleOpenSerialModal(item)}
-                                    title="Isi Serial Number"
-                                    className="min-w-[56px] justify-center"
-                                  >
-                                    SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity || 0}
-                                  </Button>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="p-2 border"><span className="text-xs">SKU : {item.item_code} <br /> {products.find(
-                          (p) => p.item_code === item.item_code
-                        )?.item_name || ""}</span> <br /></td>
+                              </div>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="p-2 border"><span className="text-xs">SKU : {item.item_code} <br /> {products.find(
+                              (p) => p.item_code === item.item_code
+                            )?.item_name || ""}</span> <br /></td>
 
-                        {/* <td className="p-2 border text-center">
+                            {/* <td className="p-2 border text-center">
                           {
                             products.find((p) => p.item_code === item.item_code)
                               ?.item_name
                           }
                         </td> */}
-                        {/* <td className="p-2 border text-center">{item.uom}</td> */}
-                        <td className="p-2 border text-center">
-                          {item.quantity}
-                        </td>
+                            {/* <td className="p-2 border text-center">{item.uom}</td> */}
+                            <td className="p-2 border text-center">
+                              {item.quantity}
+                            </td>
 
 
-                        <td className="p-2 border text-center">
-                          {/* {inboundDetails.find(
+                            <td className="p-2 border text-center">
+                              {/* {inboundDetails.find(
                             (d) => d.id === item.ID
                           ).qty_scan} */}
 
-                          {inboundDetails.find(
-                            (d) => d.id === item.ID
-                          )?.qty_scan ?? 0}
-                        </td>
+                              {inboundDetails.find(
+                                (d) => d.id === item.ID
+                              )?.qty_scan ?? 0}
+                            </td>
 
-                        <td className="p-2 border text-center">
-                          {item.division_code}
-                        </td>
-
-
-                        <td className="p-2 border text-center">{item.qa_status}</td>
-
-                        {invPolicy?.use_receive_location && (
-                          <td className="p-2 border text-center">
-                            {item.location}
-                          </td>
-                        )}
-
-                        {invPolicy?.show_rec_date && (
-                          <td className="p-2 border text-center">
-                            {dayjs(item.rec_date).format("D MMM YYYY")}
-                          </td>
-                        )}
-                        {invPolicy?.use_production_date && (
-                          <td className="p-2 border text-center">
-                            {dayjs(item.prod_date).format("D MMM YYYY")}
-                          </td>
-                        )}
-
-                        {invPolicy?.require_expiry_date && (
-                          <td className="p-2 border text-center">
-                            {dayjs(item.exp_date).format("D MMM YYYY")}
-                          </td>
-                        )}
+                            <td className="p-2 border text-center">
+                              {item.division_code}
+                            </td>
 
 
-                        {invPolicy?.use_lot_no && (
-                          <td className="p-2 border text-center">
-                            {item.lot_number}
-                          </td>
-                        )}
+                            <td className="p-2 border text-center">{item.qa_status}</td>
+
+                            {invPolicy?.use_receive_location && (
+                              <td className="p-2 border text-center">
+                                {item.location}
+                              </td>
+                            )}
+
+                            {invPolicy?.show_rec_date && (
+                              <td className="p-2 border text-center">
+                                {dayjs(item.rec_date).format("D MMM YYYY")}
+                              </td>
+                            )}
+                            {invPolicy?.use_production_date && (
+                              <td className="p-2 border text-center">
+                                {dayjs(item.prod_date).format("D MMM YYYY")}
+                              </td>
+                            )}
+
+                            {invPolicy?.require_expiry_date && (
+                              <td className="p-2 border text-center">
+                                {dayjs(item.exp_date).format("D MMM YYYY")}
+                              </td>
+                            )}
 
 
-                        {invPolicy?.use_carton_number && (
-                          <td className="p-2 border text-center">
-                            {item.carton_number}
-                          </td>
-                        )}
+                            {invPolicy?.use_lot_no && (
+                              <td className="p-2 border text-center">
+                                {item.lot_number}
+                              </td>
+                            )}
 
-                        {invPolicy?.use_case_number && (
-                          <td className="p-2 border text-center">
-                            {item.case_number}
-                          </td>
-                        )}
 
-                        {/* {invPolicy?.inbound_can_input_serial && (
+                            {invPolicy?.use_carton_number && (
+                              <td className="p-2 border text-center">
+                                {item.carton_number}
+                              </td>
+                            )}
+
+                            {invPolicy?.use_case_number && (
+                              <td className="p-2 border text-center">
+                                {item.case_number}
+                              </td>
+                            )}
+
+                            {/* {invPolicy?.inbound_can_input_serial && (
                           <td className="p-2 border text-center">
                             {item.serial_number}
                           </td>
                         )} */}
 
-                        {invPolicy?.inbound_can_input_serial && (
-                          <td className="p-2 border text-center">
-                            {item.serial_numbers?.length ?? 0} SN
-                          </td>
-                        )}
+                            {invPolicy?.inbound_can_input_serial && (
+                              <td className="p-2 border text-center">
+                                {item.serial_numbers?.length ?? 0} SN
+                              </td>
+                            )}
 
-                        <td
-                          className="p-2 border space-x-2 text-center"
-                          style={{ width: "160px" }}
-                        >
-                          {headerForm.status !== "complete" && <></>}
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })}
-          </tbody>
-          <tfoot>
-            <tr className="bg-gray-100 font-semibold">
-              <td className="p-2 border" colSpan={2}>
-                Total
-              </td>
-              <td className="p-2 border text-center">
-                {/* {filteredMuatan.reduce((acc, item) => acc + item.quantity, 0)} */}
-                {filteredMuatan.reduce(
-                  (acc, item) => acc + ((item.quantity as unknown as string) === "" ? 0 : Number(item.quantity)),
-                  0
-                )
-                }
-              </td>
-              {!['open', 'draft'].includes(headerForm.status) && (
-                <td className="p-2 border text-center">
-                  {inboundDetails.reduce(
-                    (acc, item) => acc + item.qty_scan,
-                    0
+                            <td
+                              className="p-2 border space-x-2 text-center"
+                              style={{ width: "160px" }}
+                            >
+                              {headerForm.status !== "complete" && <></>}
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    );
+                  })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-gray-100 font-semibold">
+                  <td className="p-2 border" colSpan={2}>
+                    Total
+                  </td>
+                  <td className="p-2 border text-center">
+                    {/* {filteredMuatan.reduce((acc, item) => acc + item.quantity, 0)} */}
+                    {filteredMuatan.reduce(
+                      (acc, item) => acc + ((item.quantity as unknown as string) === "" ? 0 : Number(item.quantity)),
+                      0
+                    )
+                    }
+                  </td>
+                  {!['open', 'draft'].includes(headerForm.status) && (
+                    <td className="p-2 border text-center">
+                      {inboundDetails.reduce(
+                        (acc, item) => acc + item.qty_scan,
+                        0
+                      )}
+                    </td>
                   )}
-                </td>
-              )}
-              <td className="p-2 border" colSpan={footerColSpan}></td>
-            </tr>
-          </tfoot>
-        </table>
-        </div>
+                  <td className="p-2 border" colSpan={footerColSpan}></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         )}
       </div >
       <ItemSelectionModal

@@ -55,6 +55,7 @@ export interface ItemFormProps {
   serial_numbers?: string[];
   carton_number?: string;
   case_number?: string;
+  bundle_product_code?: string;
 }
 
 export interface InboundReference {

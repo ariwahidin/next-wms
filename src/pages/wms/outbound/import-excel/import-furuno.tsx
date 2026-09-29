@@ -32,9 +32,25 @@ type FurunoTemplate =
     | 'STANDARD'
     | 'CUSTOMER_NO_LAYOUT';
 
+// interface FurunoPreviewRow {
+//     excelRow: number;
+//     code: string;
+//     itemName: string;
+//     quantity: string;
+//     unit: string;
+//     number: string;
+//     date: string;
+//     customerNo: string;
+//     customer: string;
+//     serialNumber: string;
+//     warehouse: string;
+//     eligible: boolean;
+// }
+
 interface FurunoPreviewRow {
     excelRow: number;
     code: string;
+    partCode: string;
     itemName: string;
     quantity: string;
     unit: string;
@@ -116,8 +132,21 @@ const TARGET_SHEET_NAME = 'Delivery Order Detail';
 
 const TARGET_WAREHOUSE = 'Yusen WH';
 
+// const REQUIRED_HEADERS = [
+//     'Code#',
+//     'Item Name',
+//     'Quantity',
+//     'Unit',
+//     'Number',
+//     'Date',
+//     'Customer',
+//     'Serial/Production Number',
+//     'Name Warehouse',
+// ] as const;
+
 const REQUIRED_HEADERS = [
     'Code#',
+    'Part Code',
     'Item Name',
     'Quantity',
     'Unit',
@@ -146,8 +175,22 @@ const CUSTOMER_NO_ALIASES = [
     'Customer No Customer Delivery Order',
 ] as const;
 
+// const PREVIEW_HEADERS = [
+//     'Code#',
+//     'Item Name',
+//     'Qty',
+//     'Unit',
+//     'DO Number',
+//     'Date',
+//     'Customer No',
+//     'Customer',
+//     'Serial / Production Number',
+//     'Warehouse',
+// ] as const;
+
 const PREVIEW_HEADERS = [
     'Code#',
+    'Part Code',
     'Item Name',
     'Qty',
     'Unit',
@@ -254,7 +297,7 @@ const getCellString = (
                 typeof result === 'number' &&
                 headerName &&
                 normalizeHeader(headerName) ===
-                    normalizeHeader('Date')
+                normalizeHeader('Date')
             ) {
                 return excelSerialToDate(result);
             }
@@ -283,8 +326,8 @@ const getCellString = (
         if ('hyperlink' in value) {
             return String(
                 (value as any).text ??
-                    (value as any).hyperlink ??
-                    ''
+                (value as any).hyperlink ??
+                ''
             ).trim();
         }
     }
@@ -294,7 +337,7 @@ const getCellString = (
         typeof value === 'number' &&
         headerName &&
         normalizeHeader(headerName) ===
-            normalizeHeader('Date') &&
+        normalizeHeader('Date') &&
         value > 40000
     ) {
         return excelSerialToDate(value);
@@ -313,7 +356,7 @@ const getCellByHeader = (
 ): string => {
     const columnNumber =
         headerMap[
-            normalizeHeader(headerName)
+        normalizeHeader(headerName)
         ];
 
     if (!columnNumber) {
@@ -340,7 +383,7 @@ const getRawCellByHeader = (
 ): ExcelJS.CellValue => {
     const columnNumber =
         headerMap[
-            normalizeHeader(headerName)
+        normalizeHeader(headerName)
         ];
 
     if (!columnNumber) {
@@ -364,7 +407,7 @@ const getCellByHeaderAliases = (
     for (const alias of aliases) {
         const columnNumber =
             headerMap[
-                normalizeHeader(alias)
+            normalizeHeader(alias)
             ];
 
         if (columnNumber) {
@@ -477,14 +520,14 @@ const detectTemplate = (
 } => {
     const customerNoDeliveryOrder =
         headerMap[
-            normalizeHeader(
-                'Customer No Customer Delivery Order'
-            )
+        normalizeHeader(
+            'Customer No Customer Delivery Order'
+        )
         ];
 
     const customerNo =
         headerMap[
-            normalizeHeader('Customer No')
+        normalizeHeader('Customer No')
         ];
 
     if (
@@ -518,13 +561,14 @@ const isMeaningfulRow = (
 ): boolean => {
     return Boolean(
         row.code ||
-            row.itemName ||
-            row.quantity ||
-            row.number ||
-            row.customerNo ||
-            row.customer ||
-            row.serialNumber ||
-            row.warehouse
+        row.partCode ||
+        row.itemName ||
+        row.quantity ||
+        row.number ||
+        row.customerNo ||
+        row.customer ||
+        row.serialNumber ||
+        row.warehouse
     );
 };
 
@@ -588,13 +632,29 @@ const normalizeFurunoWorkbookForUpload = async (
             (alias) =>
                 Boolean(
                     headerMap[
-                        normalizeHeader(alias)
+                    normalizeHeader(alias)
                     ]
                 )
         );
 
+    // const outputHeaders = [
+    //     'Code#',
+    //     'Item Name',
+    //     'Quantity',
+    //     'Unit',
+    //     'Number',
+    //     'Date',
+    //     ...(customerNoResult
+    //         ? [customerNoResult]
+    //         : []),
+    //     'Customer',
+    //     'Serial/Production Number',
+    //     'Name Warehouse',
+    // ];
+
     const outputHeaders = [
         'Code#',
+        'Part Code',
         'Item Name',
         'Quantity',
         'Unit',
@@ -627,26 +687,37 @@ const normalizeFurunoWorkbookForUpload = async (
                 headerMap,
                 'Code#'
             ),
+
+            getRawCellByHeader(
+                row,
+                headerMap,
+                'Part Code'
+            ),
+
             getRawCellByHeader(
                 row,
                 headerMap,
                 'Item Name'
             ),
+
             getRawCellByHeader(
                 row,
                 headerMap,
                 'Quantity'
             ),
+
             getRawCellByHeader(
                 row,
                 headerMap,
                 'Unit'
             ),
+
             getRawCellByHeader(
                 row,
                 headerMap,
                 'Number'
             ),
+
             getRawCellByHeader(
                 row,
                 headerMap,
@@ -687,6 +758,8 @@ const normalizeFurunoWorkbookForUpload = async (
                 'Name Warehouse'
             )
         );
+
+
 
         const hasData = values.some(
             (value) =>
@@ -1169,9 +1242,9 @@ const FurunoExcelUpload: React.FC =
                                 required
                             ) =>
                                 !headerMap[
-                                    normalizeHeader(
-                                        required
-                                    )
+                                normalizeHeader(
+                                    required
+                                )
                                 ]
                         );
 
@@ -1195,15 +1268,15 @@ const FurunoExcelUpload: React.FC =
                                 .join(
                                     '\n'
                                 )}\n\nAvailable headers:\n${available
-                                .map(
-                                    (
-                                        header
-                                    ) =>
-                                        `• ${header}`
-                                )
-                                .join(
-                                    '\n'
-                                )}`
+                                    .map(
+                                        (
+                                            header
+                                        ) =>
+                                            `• ${header}`
+                                    )
+                                    .join(
+                                        '\n'
+                                    )}`
                         );
 
                         clearFile();
@@ -1324,22 +1397,27 @@ const FurunoExcelUpload: React.FC =
                                 'Name Warehouse'
                             );
 
-                        const previewRow: FurunoPreviewRow =
-                            {
-                                excelRow:
-                                    rowNumber,
-                                code,
-                                itemName,
-                                quantity,
-                                unit,
-                                number,
-                                date,
-                                customerNo,
-                                customer,
-                                serialNumber,
-                                warehouse,
-                                eligible: false,
-                            };
+                        const partCode = getCellByHeader(
+                            row,
+                            headerMap,
+                            'Part Code'
+                        );
+
+                        const previewRow: FurunoPreviewRow = {
+                            excelRow: rowNumber,
+                            code,
+                            partCode,
+                            itemName,
+                            quantity,
+                            unit,
+                            number,
+                            date,
+                            customerNo,
+                            customer,
+                            serialNumber,
+                            warehouse,
+                            eligible: false,
+                        };
 
                         // -----------------------------------------------------
                         // Empty Row
@@ -1644,7 +1722,7 @@ const FurunoExcelUpload: React.FC =
                                             ) =>
                                                 setSelectedOwner(
                                                     option?.value ||
-                                                        ''
+                                                    ''
                                                 )
                                             }
                                             isDisabled={
@@ -1687,7 +1765,7 @@ const FurunoExcelUpload: React.FC =
                                             ) =>
                                                 setSelectedWhs(
                                                     option?.value ||
-                                                        ''
+                                                    ''
                                                 )
                                             }
                                             isDisabled={
@@ -1799,10 +1877,9 @@ const FurunoExcelUpload: React.FC =
                                     className={`
                                         border-2 border-dashed rounded-lg p-8 text-center
                                         transition-all duration-200
-                                        ${
-                                            isDragging
-                                                ? 'border-blue-500 bg-blue-50 scale-[1.01]'
-                                                : 'border-gray-300 hover:border-blue-400'
+                                        ${isDragging
+                                            ? 'border-blue-500 bg-blue-50 scale-[1.01]'
+                                            : 'border-gray-300 hover:border-blue-400'
                                         }
                                     `}
                                     onDragEnter={
@@ -1838,10 +1915,9 @@ const FurunoExcelUpload: React.FC =
                                         <Upload
                                             className={`
                                                 w-12 h-12 mb-3
-                                                ${
-                                                    isDragging
-                                                        ? 'text-blue-600 animate-bounce'
-                                                        : 'text-gray-400'
+                                                ${isDragging
+                                                    ? 'text-blue-600 animate-bounce'
+                                                    : 'text-gray-400'
                                                 }
                                             `}
                                         />
@@ -1849,10 +1925,9 @@ const FurunoExcelUpload: React.FC =
                                         <span
                                             className={`
                                                 text-sm font-medium mb-1
-                                                ${
-                                                    isDragging
-                                                        ? 'text-blue-700'
-                                                        : 'text-gray-700'
+                                                ${isDragging
+                                                    ? 'text-blue-700'
+                                                    : 'text-gray-700'
                                                 }
                                             `}
                                         >
@@ -1931,7 +2006,7 @@ const FurunoExcelUpload: React.FC =
                                                 !selectedWhs ||
                                                 !preview ||
                                                 preview.yusenRows ===
-                                                    0
+                                                0
                                             }
                                             className="
                                                 flex-1 h-10
@@ -2121,40 +2196,40 @@ const FurunoExcelUpload: React.FC =
 
                                     {preview.skippedRows >
                                         0 && (
-                                        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
 
-                                            <div className="flex gap-2">
+                                                <div className="flex gap-2">
 
-                                                <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                                                    <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
 
-                                                <div className="text-xs text-yellow-800">
+                                                    <div className="text-xs text-yellow-800">
 
-                                                    <p className="font-semibold">
-                                                        Some rows will be skipped
-                                                    </p>
+                                                        <p className="font-semibold">
+                                                            Some rows will be skipped
+                                                        </p>
 
-                                                    <p className="mt-1">
-                                                        {
-                                                            preview.totalDataRows
-                                                        }{' '}
-                                                        data rows were detected.
-                                                        Only{' '}
-                                                        <strong>
+                                                        <p className="mt-1">
                                                             {
-                                                                preview.yusenRows
-                                                            }
-                                                        </strong>{' '}
-                                                        rows where{' '}
-                                                        <strong>
-                                                            Name Warehouse = Yusen WH
-                                                        </strong>{' '}
-                                                        will be imported.
-                                                    </p>
+                                                                preview.totalDataRows
+                                                            }{' '}
+                                                            data rows were detected.
+                                                            Only{' '}
+                                                            <strong>
+                                                                {
+                                                                    preview.yusenRows
+                                                                }
+                                                            </strong>{' '}
+                                                            rows where{' '}
+                                                            <strong>
+                                                                Name Warehouse = Yusen WH
+                                                            </strong>{' '}
+                                                            will be imported.
+                                                        </p>
 
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
                                     {/* =================================================
                                         No Eligible Data
@@ -2162,30 +2237,30 @@ const FurunoExcelUpload: React.FC =
 
                                     {preview.yusenRows ===
                                         0 && (
-                                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
 
-                                            <div className="flex gap-2">
+                                                <div className="flex gap-2">
 
-                                                <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                                                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
 
-                                                <div className="text-xs text-red-800">
+                                                    <div className="text-xs text-red-800">
 
-                                                    <p className="font-semibold">
-                                                        No eligible records found
-                                                    </p>
+                                                        <p className="font-semibold">
+                                                            No eligible records found
+                                                        </p>
 
-                                                    <p className="mt-1">
-                                                        No rows with{' '}
-                                                        <strong>
-                                                            Name Warehouse = Yusen WH
-                                                        </strong>{' '}
-                                                        were found. The file cannot be imported.
-                                                    </p>
+                                                        <p className="mt-1">
+                                                            No rows with{' '}
+                                                            <strong>
+                                                                Name Warehouse = Yusen WH
+                                                            </strong>{' '}
+                                                            were found. The file cannot be imported.
+                                                        </p>
 
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
                                     {/* =================================================
                                         Preview Table
@@ -2240,10 +2315,9 @@ const FurunoExcelUpload: React.FC =
                                                             key={`${row.excelRow}-${index}`}
                                                             className={`
                                                                 hover:bg-gray-50
-                                                                ${
-                                                                    row.eligible
-                                                                        ? ''
-                                                                        : 'bg-yellow-50'
+                                                                ${row.eligible
+                                                                    ? ''
+                                                                    : 'bg-yellow-50'
                                                                 }
                                                             `}
                                                         >
@@ -2261,6 +2335,11 @@ const FurunoExcelUpload: React.FC =
                                                             <td className="px-3 py-2 text-sm font-mono font-semibold text-blue-700 whitespace-nowrap">
                                                                 {row.code ||
                                                                     '—'}
+                                                            </td>
+
+                                                            {/* Part Code */}
+                                                            <td className="px-3 py-2 text-sm font-mono font-medium text-emerald-700 whitespace-nowrap">
+                                                                {row.partCode || '—'}
                                                             </td>
 
                                                             {/* Item */}
@@ -2344,10 +2423,9 @@ const FurunoExcelUpload: React.FC =
                                                                 <span
                                                                     className={`
                                                                         inline-flex px-2 py-1 rounded-md text-xs font-medium
-                                                                        ${
-                                                                            row.eligible
-                                                                                ? 'bg-green-100 text-green-800'
-                                                                                : 'bg-yellow-100 text-yellow-800'
+                                                                        ${row.eligible
+                                                                            ? 'bg-green-100 text-green-800'
+                                                                            : 'bg-yellow-100 text-yellow-800'
                                                                         }
                                                                     `}
                                                                 >
@@ -2388,7 +2466,7 @@ const FurunoExcelUpload: React.FC =
                                     {preview.rows.length ===
                                         MAX_PREVIEW_ROWS &&
                                         preview.totalDataRows >
-                                            MAX_PREVIEW_ROWS && (
+                                        MAX_PREVIEW_ROWS && (
                                             <p className="mt-2 text-xs text-gray-400">
                                                 Only the first{' '}
                                                 {
@@ -2415,10 +2493,9 @@ const FurunoExcelUpload: React.FC =
                                         <div
                                             className={`
                                                 rounded-lg p-4
-                                                ${
-                                                    uploadResult.success
-                                                        ? 'bg-green-50 border border-green-200'
-                                                        : 'bg-red-50 border border-red-200'
+                                                ${uploadResult.success
+                                                    ? 'bg-green-50 border border-green-200'
+                                                    : 'bg-red-50 border border-red-200'
                                                 }
                                             `}
                                         >
@@ -2443,10 +2520,9 @@ const FurunoExcelUpload: React.FC =
                                                     <h3
                                                         className={`
                                                             text-sm font-semibold
-                                                            ${
-                                                                uploadResult.success
-                                                                    ? 'text-green-800'
-                                                                    : 'text-red-800'
+                                                            ${uploadResult.success
+                                                                ? 'text-green-800'
+                                                                : 'text-red-800'
                                                             }
                                                         `}
                                                     >
@@ -2468,32 +2544,32 @@ const FurunoExcelUpload: React.FC =
 
                                                                 {uploadResult.total_rows !==
                                                                     undefined && (
-                                                                    <p>
-                                                                        Total Rows:{' '}
-                                                                        <strong>
-                                                                            {
-                                                                                uploadResult.total_rows
-                                                                            }
-                                                                        </strong>
-                                                                    </p>
-                                                                )}
+                                                                        <p>
+                                                                            Total Rows:{' '}
+                                                                            <strong>
+                                                                                {
+                                                                                    uploadResult.total_rows
+                                                                                }
+                                                                            </strong>
+                                                                        </p>
+                                                                    )}
 
                                                                 {uploadResult.success_count !==
                                                                     undefined && (
-                                                                    <p>
-                                                                        Successfully Processed:{' '}
-                                                                        <strong>
-                                                                            {
-                                                                                uploadResult.success_count
-                                                                            }
-                                                                        </strong>
-                                                                    </p>
-                                                                )}
+                                                                        <p>
+                                                                            Successfully Processed:{' '}
+                                                                            <strong>
+                                                                                {
+                                                                                    uploadResult.success_count
+                                                                                }
+                                                                            </strong>
+                                                                        </p>
+                                                                    )}
 
                                                                 {uploadResult.failed_count !==
                                                                     undefined &&
                                                                     uploadResult.failed_count >
-                                                                        0 && (
+                                                                    0 && (
                                                                         <p>
                                                                             Skipped / Failed:{' '}
                                                                             <strong>
@@ -2512,7 +2588,7 @@ const FurunoExcelUpload: React.FC =
                                                                 uploadResult
                                                                     .outbound_numbers
                                                                     .length >
-                                                                    0 && (
+                                                                0 && (
                                                                     <div>
 
                                                                         <p className="font-medium mb-2">
@@ -2555,7 +2631,7 @@ const FurunoExcelUpload: React.FC =
                                                                 uploadResult
                                                                     .unknown_customers
                                                                     .length >
-                                                                    0 && (
+                                                                0 && (
                                                                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
 
                                                                         <div className="flex items-start gap-2 mb-2">
@@ -2625,7 +2701,7 @@ const FurunoExcelUpload: React.FC =
                                                                 uploadResult
                                                                     .skipped_orders
                                                                     .length >
-                                                                    0 && (
+                                                                0 && (
                                                                     <div>
 
                                                                         <p className="font-medium mb-2 text-yellow-800">
@@ -2706,7 +2782,7 @@ const FurunoExcelUpload: React.FC =
                                                                 uploadResult
                                                                     .validation_errors
                                                                     .length >
-                                                                    0 && (
+                                                                0 && (
                                                                     <div>
 
                                                                         <p className="font-medium mb-2">
@@ -2774,7 +2850,7 @@ const FurunoExcelUpload: React.FC =
                                                                 uploadResult
                                                                     .errors
                                                                     .length >
-                                                                    0 && (
+                                                                0 && (
                                                                     <div>
 
                                                                         <p className="font-medium mb-2">
@@ -2839,7 +2915,7 @@ const FurunoExcelUpload: React.FC =
                                                                 uploadResult
                                                                     .skipped_orders
                                                                     .length >
-                                                                    0 && (
+                                                                0 && (
                                                                     <div>
 
                                                                         <p className="font-medium mb-2 text-yellow-800">

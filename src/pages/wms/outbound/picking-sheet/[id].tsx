@@ -211,7 +211,7 @@ const PickingSheetPrint = () => {
                     fontSize: "12px",
                     border: "1px solid black",
                     padding: "5px",
-                    width: "100px",
+                    width: "200px",
                   }}
                 >
                   <span style={{ fontWeight: "bold" }}>{data.shipment_id}</span>
@@ -301,7 +301,7 @@ const PickingSheetPrint = () => {
               {/* ── NO column ── */}
               <th style={{ ...th, width: "4%" }}>NO</th>
               <th style={{ ...th, width: "22%" }}>ITEM</th>
-              <th style={th}>EAN</th>
+              {/* <th style={th}>EAN</th> */}
 
               {invPolicy.show_rec_date && <th style={th}>REC DATE</th>}
               {invPolicy.use_production_date && <th style={th}>PROD DATE</th>}
@@ -382,7 +382,7 @@ const PickingSheetPrint = () => {
                         )}
                       </td>
 
-                      <td style={{ ...td, textAlign: "center" }}>
+                      {/* <td style={{ ...td, textAlign: "center" }}>
                         {j === 0 && (
                           <div
                             style={{
@@ -404,7 +404,7 @@ const PickingSheetPrint = () => {
                             />
                           </div>
                         )}
-                      </td>
+                      </td> */}
 
                       {invPolicy.show_rec_date && (
                         <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
@@ -430,7 +430,7 @@ const PickingSheetPrint = () => {
                       <td
                         style={{
                           ...td,
-                          // textAlign: "center",
+                          textAlign: "center",
                           // whiteSpace: "nowrap",
                           // fontWeight: "bold",
                           // fontSize: "12px",
@@ -482,7 +482,7 @@ const PickingSheetPrint = () => {
                   {/* Sub-total per item group */}
                   <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
                     {/* NO + ITEM + EAN = 3 cols always */}
-                    <td colSpan={3} style={{ ...td }}></td>
+                    <td colSpan={2} style={{ ...td }}></td>
 
                     {invPolicy.show_rec_date && <td style={{ ...td }}></td>}
                     {invPolicy.use_production_date && <td style={{ ...td }}></td>}
@@ -507,7 +507,7 @@ const PickingSheetPrint = () => {
 
             {/* Grand total */}
             <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
-              <td colSpan={3} style={{ ...td }}></td>
+              <td colSpan={2} style={{ ...td }}></td>
 
               {invPolicy.show_rec_date && <td style={{ ...td }}></td>}
               {invPolicy.use_production_date && <td style={{ ...td }}></td>}
