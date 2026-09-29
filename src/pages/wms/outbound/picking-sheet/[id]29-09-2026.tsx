@@ -301,7 +301,7 @@ const PickingSheetPrint = () => {
               {/* ── NO column ── */}
               <th style={{ ...th, width: "4%" }}>NO</th>
               <th style={{ ...th, width: "22%" }}>ITEM</th>
-              <th style={th}>IMD</th>
+              {/* <th style={th}>EAN</th> */}
 
               {invPolicy.show_rec_date && <th style={th}>REC DATE</th>}
               {invPolicy.use_production_date && <th style={th}>PROD DATE</th>}
@@ -382,29 +382,29 @@ const PickingSheetPrint = () => {
                         )}
                       </td>
 
-                      <td style={{ ...td, textAlign: "center" }}>
+                      {/* <td style={{ ...td, textAlign: "center" }}>
                         {j === 0 && (
                           <div
                             style={{
                               display: "flex",
                               flexDirection: "column",
-                              // alignItems: "center",
+                              alignItems: "center",
                             }}
                           >
-                            <div style={{ fontSize: "9px", marginBottom: "0px" }}>
-                              {item.product_bundling_code}
+                            <div style={{ fontSize: "10px", marginBottom: "0px" }}>
+                              {item.barcode}
                             </div>
-                            {/* <canvas
+                            <canvas
                               ref={(el: HTMLCanvasElement | null) => {
                                 if (el) {
                                   barcodeItemRef.current[`${itemCode}-0`] = el;
                                 }
                               }}
                               style={{ maxWidth: "100px", height: "20px" }}
-                            /> */}
+                            />
                           </div>
                         )}
-                      </td>
+                      </td> */}
 
                       {invPolicy.show_rec_date && (
                         <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
@@ -430,10 +430,10 @@ const PickingSheetPrint = () => {
                       <td
                         style={{
                           ...td,
-                          // textAlign: "center",
+                          textAlign: "center",
                           // whiteSpace: "nowrap",
                           // fontWeight: "bold",
-                          fontSize: "9px",
+                          // fontSize: "12px",
                         }}
                       >
                         {item.location}
@@ -456,29 +456,19 @@ const PickingSheetPrint = () => {
 
 
                       {invPolicy.allocation_case_by_order && (
-                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap", fontSize: "9px" }}>
+                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
                           {item.case_number}
                         </td>
                       )}
 
                       {invPolicy.allocation_carton_by_order && (
-                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap", fontSize: "9px" }}>
+                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
                           {item.carton_number}
                         </td>
                       )}
                       {invPolicy.allocation_serial_by_order && (
-                        <td
-                          style={{
-                            ...td,
-                            fontSize: "9px",
-                            textAlign: "center",
-                            whiteSpace: "pre-line",
-                          }}
-                        >
-                          {item.serial_number
-                            ?.split(",")
-                            .map((sn: string) => sn.trim())
-                            .join("\n")}
+                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>
+                          {item.serial_number}
                         </td>
                       )}
                       <td style={{ ...td, textAlign: "center" }}>
@@ -492,7 +482,7 @@ const PickingSheetPrint = () => {
                   {/* Sub-total per item group */}
                   <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
                     {/* NO + ITEM + EAN = 3 cols always */}
-                    <td colSpan={3} style={{ ...td }}></td>
+                    <td colSpan={2} style={{ ...td }}></td>
 
                     {invPolicy.show_rec_date && <td style={{ ...td }}></td>}
                     {invPolicy.use_production_date && <td style={{ ...td }}></td>}
@@ -517,7 +507,7 @@ const PickingSheetPrint = () => {
 
             {/* Grand total */}
             <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
-              <td colSpan={3} style={{ ...td }}></td>
+              <td colSpan={2} style={{ ...td }}></td>
 
               {invPolicy.show_rec_date && <td style={{ ...td }}></td>}
               {invPolicy.use_production_date && <td style={{ ...td }}></td>}
