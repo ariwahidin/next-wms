@@ -1,16 +1,19 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from "react-select";
 import { Copy, Pencil, X } from "lucide-react";
+
 import {
   CombinedOutboundProps,
   ItemFormProps,
   ItemOptions,
 } from "@/types/outbound";
+
 import { Product } from "@/types/item";
 import api from "@/lib/api";
 import ItemSelectionModal from "@/components/outbound/create-manual/ItemSelectionModal";
@@ -31,28 +34,40 @@ export default function ItemFormTable({
   const [vasPages, setVasPages] = useState<any[]>([]);
   const [vasOptions, setVasOptions] = useState<any[]>([]);
   const [itemCodeOptions, setItemCodeOptions] = useState<ItemOptions[]>([]);
+
   const [editingId, setEditingId] = useState<number | null>(null);
+
   const [errors, setErrors] = useState<{
     [id: number]: { [key: string]: string };
   }>({});
-  const [defaultUoms, setDefaultUoms] = useState([]);
-  const [defaultOptions, setDefaultOptions] = useState([]);
-  const [divisionOptions, setDivisionOptions] = useState([]);
-  const [selectStates, setSelectStates] = useState({});
+
+  const [defaultUoms, setDefaultUoms] = useState<any[]>([]);
+  const [defaultOptions, setDefaultOptions] = useState<any[]>([]);
+  const [divisionOptions, setDivisionOptions] = useState<any[]>([]);
+  const [selectStates, setSelectStates] = useState<any>({});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [editingItem, setEditingItem] = useState<ItemFormProps | null>(null);
+
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
   const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
   const [uomConversion, setUomConversion] = useState<UomConversion>();
+
   const [isSerialModalOpen, setIsSerialModalOpen] = useState(false);
-  const [serialModalItem, setSerialModalItem] = useState<ItemFormProps | null>(null);
+  const [serialModalItem, setSerialModalItem] =
+    useState<ItemFormProps | null>(null);
+
   const [savingSerial, setSavingSerial] = useState(false);
   const [isReloadingItems, setIsReloadingItems] = useState(false);
+
   const router = useRouter();
+
   const path = router.pathname;
+
   let modeForm: "add" | "edit" | "copy" = "add";
+
   if (path.includes("/copy/")) {
     modeForm = "copy";
   } else if (path.includes("/edit/")) {
@@ -61,22 +76,68 @@ export default function ItemFormTable({
     modeForm = "add";
   }
 
+  // =========================================================
+  // SERIAL NUMBER HELPER
+  // =========================================================
+  //
+  // Backend sekarang bisa mengirim:
+  //
+  // "SN001,SN002,SN003"
+  //
+  // atau kalau suatu saat berubah menjadi:
+  //
+  // ["SN001", "SN002", "SN003"]
+  //
+  // Di frontend kita selalu normalisasi menjadi string[].
+  // =========================================================
+
+  const normalizeSerialNumbers = (value: any): string[] => {
+    if (Array.isArray(value)) {
+      return value
+        .map((serial) => String(serial ?? "").trim())
+        .filter((serial) => serial !== "");
+    }
+
+    if (typeof value === "string") {
+      return value
+        .split(",")
+        .map((serial) => serial.trim())
+        .filter((serial) => serial !== "");
+    }
+
+    return [];
+  };
+
+  // =========================================================
+  // OPEN SERIAL MODAL
+  // =========================================================
 
   const handleOpenSerialModal = (item: ItemFormProps) => {
-    setSerialModalItem(item);
+    const normalizedItem = {
+      ...item,
+      serial_numbers: normalizeSerialNumbers(item.serial_numbers),
+    };
+
+    setSerialModalItem(normalizedItem);
     setIsSerialModalOpen(true);
   };
 
+  // =========================================================
+  // SAVE SERIAL NUMBER FROM MODAL
+  // =========================================================
+
   const handleSaveSerialNumbers = (serials: string[]) => {
     if (!serialModalItem) return;
+
+    const normalizedSerials = normalizeSerialNumbers(serials);
 
     setMuatan((prev) =>
       prev.map((m) =>
         m.ID === serialModalItem.ID
           ? {
-            ...m,
-            serial_numbers: serials,
-          }
+              ...m,
+              serial_numbers: normalizedSerials,
+            }
           : m
       )
     );
@@ -85,19 +146,18 @@ export default function ItemFormTable({
     setSerialModalItem(null);
   };
 
-  /**
-   * Ambil ulang item outbound langsung dari server.
-   *
-   * Ini sengaja menjadi single source of truth setelah operasi yang
-   * mengubah data detail outbound, terutama DELETE.
-   */
+  // =========================================================
+  // RELOAD ITEMS FROM SERVER
+  // =========================================================
+
   const reloadItemsFromServer = useCallback(async () => {
     const outboundNo =
       typeof router.query.no === "string"
         ? router.query.no
         : String(headerForm.outbound_no || "");
 
-    // Tidak ada outbound yang tersimpan di server pada mode add/copy.
+    // Tidak ada outbound yang tersimpan di server
+    // pada mode add/copy.
     if (
       !outboundNo ||
       outboundNo === "Auto Generate" ||
@@ -111,56 +171,101 @@ export default function ItemFormTable({
     setIsReloadingItems(true);
 
     try {
-      const res = await api.get(`/outbound/${encodeURIComponent(outboundNo)}`, {
-        withCredentials: true,
-      });
+      const res = await api.get(
+        `/outbound/${encodeURIComponent(outboundNo)}`,
+        {
+          withCredentials: true,
+        }
+      );
 
       if (!res.data?.success) {
-        throw new Error(res.data?.message || "Failed to reload outbound items");
+        throw new Error(
+          res.data?.message || "Failed to reload outbound items"
+        );
       }
 
       const data = res.data?.data?.outbound;
       const detailsWithSerial = res.data?.data?.details ?? [];
       const serverScans = res.data?.data?.barcodes ?? [];
 
-      const serialMap = new Map<number, string[]>(
-        detailsWithSerial.map((detail: any) => [
-          Number(detail.ID),
-          Array.isArray(detail.serial_numbers)
-            ? detail.serial_numbers
-            : [],
-        ])
-      );
+      // =====================================================
+      // BUILD SERIAL MAP
+      // =====================================================
+
+      const serialMap = new Map<number, string[]>();
+
+      if (Array.isArray(detailsWithSerial)) {
+        detailsWithSerial.forEach((detail: any) => {
+          const detailId = Number(detail?.ID);
+
+          if (!detailId) {
+            return;
+          }
+
+          const serials = normalizeSerialNumbers(
+            detail?.serial_numbers
+          );
+
+          serialMap.set(detailId, serials);
+        });
+      }
+
+      // =====================================================
+      // BUILD SERVER ITEMS
+      // =====================================================
 
       const serverItems: ItemFormProps[] = Array.isArray(data?.items)
-        ? data.items.map((serverItem: any) => ({
-            ...serverItem,
-            item_name: serverItem.product?.item_name || serverItem.item_name || "",
-            serial_numbers:
-              serialMap.get(Number(serverItem.ID)) ??
-              (Array.isArray(serverItem.serial_numbers)
-                ? serverItem.serial_numbers
-                : []),
-            mode: "edit",
-          }))
+        ? data.items.map((serverItem: any) => {
+            const serialNumbers = serialMap.get(
+              Number(serverItem.ID)
+            ) ?? normalizeSerialNumbers(serverItem.serial_numbers);
+
+            return {
+              ...serverItem,
+
+              item_name:
+                serverItem.product?.item_name ||
+                serverItem.item_name ||
+                "",
+
+              // PENTING:
+              // Selalu array di frontend.
+              serial_numbers: serialNumbers,
+
+              mode: "edit",
+            };
+          })
         : [];
 
-      // Replace, jangan merge dengan state lama.
-      // Dengan begitu item yang sudah dihapus dari DB pasti hilang dari UI.
-      setMuatan(serverItems);
-      setOutboundScan(Array.isArray(serverScans) ? serverScans : []);
+      // =====================================================
+      // REPLACE STATE
+      // =====================================================
 
-      // State sementara yang berkaitan dengan row lama juga harus dibersihkan.
+      setMuatan(serverItems);
+
+      setOutboundScan(
+        Array.isArray(serverScans) ? serverScans : []
+      );
+
+      // =====================================================
+      // RESET TEMPORARY STATE
+      // =====================================================
+
       setSelectedIds([]);
       setErrors({});
       setEditingId(null);
       setSelectStates({});
       setEditingItem(null);
+
       setIsModalOpen(false);
       setIsSerialModalOpen(false);
       setSerialModalItem(null);
     } catch (error) {
-      console.error("Failed to reload outbound items from server:", error);
+      console.error(
+        "Failed to reload outbound items from server:",
+        error
+      );
+
       throw error;
     } finally {
       setIsReloadingItems(false);
@@ -174,11 +279,19 @@ export default function ItemFormTable({
     setOutboundScan,
   ]);
 
-  const handleFocus = async (itemCode: string, itemId: string | number) => {
-    if (!itemCode || itemCode.trim() === "") return;
+  // =========================================================
+  // HANDLE UOM FOCUS
+  // =========================================================
 
-    // Set loading true untuk item tertentu
-    setSelectStates((prev) => ({
+  const handleFocus = async (
+    itemCode: string,
+    itemId: string | number
+  ) => {
+    if (!itemCode || itemCode.trim() === "") {
+      return;
+    }
+
+    setSelectStates((prev: any) => ({
       ...prev,
       [itemId]: {
         ...(prev[itemId] || {}),
@@ -187,16 +300,18 @@ export default function ItemFormTable({
     }));
 
     try {
-      const response = await api.post("/uoms/item", { item_code: itemCode });
+      const response = await api.post("/uoms/item", {
+        item_code: itemCode,
+      });
+
       const uoms = response?.data?.data || [];
 
-      const mappedOptions = uoms.map((item) => ({
+      const mappedOptions = uoms.map((item: any) => ({
         value: item.from_uom,
         label: item.from_uom,
       }));
 
-      // Update options hanya untuk item tersebut
-      setSelectStates((prev) => ({
+      setSelectStates((prev: any) => ({
         ...prev,
         [itemId]: {
           loading: false,
@@ -205,8 +320,8 @@ export default function ItemFormTable({
       }));
     } catch (error) {
       console.error("Failed to fetch UOMs:", error);
-      // Tetap kosongkan jika gagal
-      setSelectStates((prev) => ({
+
+      setSelectStates((prev: any) => ({
         ...prev,
         [itemId]: {
           loading: false,
@@ -216,64 +331,109 @@ export default function ItemFormTable({
     }
   };
 
-
-  // const handleSelect = (id: number, checked: boolean) => {
-  //   setSelectedIds((prev) =>
-  //     checked ? [...prev, id] : prev.filter((sid) => sid !== id)
-  //   );
-  // };
+  // =========================================================
+  // FETCH MASTER DATA
+  // =========================================================
 
   const fetchData = async () => {
     try {
-      const [products, uoms, vasPages, policies, divisions] = await Promise.all([
-        api.get("/products/stock-available?owner=" + headerForm.owner_code),
+      const [
+        productsResponse,
+        uomsResponse,
+        vasPagesResponse,
+        policiesResponse,
+        divisionsResponse,
+      ] = await Promise.all([
+        api.get(
+          "/products/stock-available?owner=" +
+            headerForm.owner_code
+        ),
         api.get("/uoms"),
         api.get("/vas/page"),
-        api.get("/inventory/policy?owner=" + headerForm.owner_code),
+        api.get(
+          "/inventory/policy?owner=" +
+            headerForm.owner_code
+        ),
         api.get("/divisions"),
       ]);
 
-      if (products.data.success
-        && uoms.data.success
-        && vasPages.data.success
-        && policies.data.success
-        && divisions.data.success
+      if (
+        productsResponse.data.success &&
+        uomsResponse.data.success &&
+        vasPagesResponse.data.success &&
+        policiesResponse.data.success &&
+        divisionsResponse.data.success
       ) {
-        setProducts(products.data.data);
+        // ===================================================
+        // PRODUCTS
+        // ===================================================
+
+        const productData = productsResponse.data.data || [];
+
+        setProducts(productData);
+
         setItemCodeOptions(
-          products.data.data.map((item: Product) => ({
+          productData.map((item: Product) => ({
             value: item.item_code,
             label: item.item_code,
           }))
         );
 
-        // const defaultUoms = uoms.data.data.map((item: any) => ({
-        //   value: item.code,
-        //   label: item.code,
-        // }));
-        // setDefaultUoms(defaultUoms);
+        // ===================================================
+        // VAS
+        // ===================================================
 
-        setVasPages(vasPages.data.data);
-        const vasOptions = vasPages.data.data.map((item: any) => ({
-          value: item.ID,
-          label: item.name,
-        }));
-        setVasOptions(vasOptions);
+        const vasData = vasPagesResponse.data.data || [];
 
-        // Set default UOM options
-        const defaultUoms = uoms.data.data.map((item: any) => ({
-          value: item.code,
-          label: item.code,
-        }));
+        setVasPages(vasData);
 
-        setDefaultOptions(defaultUoms);
-        setInvPolicy(policies.data.data.inventory_policy);
+        const mappedVasOptions = vasData.map(
+          (item: any) => ({
+            value: item.ID,
+            label: item.name,
+          })
+        );
 
-        const divisionOptions = divisions.data.data.map((item: any) => ({
-          value: item.code,
-          label: item.code,
-        }));
-        setDivisionOptions(divisionOptions);
+        setVasOptions(mappedVasOptions);
+
+        // ===================================================
+        // UOM
+        // ===================================================
+
+        const uomData = uomsResponse.data.data || [];
+
+        const mappedUomOptions = uomData.map(
+          (item: any) => ({
+            value: item.code,
+            label: item.code,
+          })
+        );
+
+        setDefaultOptions(mappedUomOptions);
+
+        // ===================================================
+        // INVENTORY POLICY
+        // ===================================================
+
+        setInvPolicy(
+          policiesResponse.data.data.inventory_policy
+        );
+
+        // ===================================================
+        // DIVISION
+        // ===================================================
+
+        const divisionData =
+          divisionsResponse.data.data || [];
+
+        const mappedDivisionOptions = divisionData.map(
+          (item: any) => ({
+            value: item.code,
+            label: item.code,
+          })
+        );
+
+        setDivisionOptions(mappedDivisionOptions);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -284,17 +444,29 @@ export default function ItemFormTable({
     fetchData();
   }, [headerForm.owner_code]);
 
+  // =========================================================
+  // ADD ITEM
+  // =========================================================
+
   const handleAddItems = () => {
     setModalMode("create");
     setEditingItem(null);
     setIsModalOpen(true);
   };
 
+  // =========================================================
+  // EDIT ITEM
+  // =========================================================
+
   const handleEditItem = (item: ItemFormProps) => {
     setModalMode("edit");
     setEditingItem(item);
     setIsModalOpen(true);
   };
+
+  // =========================================================
+  // HANDLE CHANGE
+  // =========================================================
 
   const handleChange = async (
     id: number,
@@ -305,29 +477,30 @@ export default function ItemFormTable({
     console.log("Field:", field);
     console.log("Value:", value);
 
+    // =====================================================
+    // UOM
+    // =====================================================
+
     if (field === "uom") {
-      console.log("UOM:", value);
-      console.log("ID:", id);
-      console.log("ITEM: ", muatan.find((item) => item.ID === id)?.item_code);
+      const currentItem = muatan.find(
+        (item) => item.ID === id
+      );
 
       try {
         const res = await api.post("/uoms/uom-item", {
-          item_code: muatan.find((item) => item.ID === id)?.item_code,
+          item_code: currentItem?.item_code,
           from_uom: value,
         });
-        if (res.data.success) {
-          console.log("Response:", res.data.data);
-          console.log("Ean:", res.data.data.ean);
 
+        if (res.data.success) {
           setMuatan((prev) =>
             prev.map((m) =>
               m.ID === id
                 ? {
-                  ...m,
-                  barcode: res.data.data.ean,
-                  uom: res.data.data.from_uom
-                  // uom: value,
-                }
+                    ...m,
+                    barcode: res.data.data.ean,
+                    uom: res.data.data.from_uom,
+                  }
                 : m
             )
           );
@@ -335,108 +508,167 @@ export default function ItemFormTable({
       } catch (error) {
         console.error("Error:", error);
       }
-    } else if (field === "item_code") {
+
+      return;
+    }
+
+    // =====================================================
+    // ITEM CODE
+    // =====================================================
+
+    if (field === "item_code") {
       const selectedProduct = products.find(
         (product) => product.item_code === value
       );
-      console.log("Produk yang dipilih:", selectedProduct);
+
       if (selectedProduct) {
         setMuatan((prev) =>
           prev.map((m) =>
             m.ID === id
               ? {
-                ...m,
-                item_code: selectedProduct.item_code,
-                uom: selectedProduct.uom,
-                item_name: selectedProduct.item_name,
-                barcode: selectedProduct.barcode,
-                sn: selectedProduct.has_serial,
-              }
+                  ...m,
+                  item_code: selectedProduct.item_code,
+                  uom: selectedProduct.uom,
+                  item_name: selectedProduct.item_name,
+                  barcode: selectedProduct.barcode,
+                  sn: selectedProduct.has_serial,
+
+                  // Jangan pernah mewariskan serial lama
+                  // ketika item diganti.
+                  serial_numbers: [],
+                  serial_number: "",
+                }
               : m
           )
         );
       }
-    } else {
-      setMuatan((prev) =>
-        prev.map((m) =>
-          m.ID === id
-            ? { ...m, [field]: field === "quantity" ? Number(value) : value }
-            : m
-        )
-      );
+
+      return;
     }
+
+    // =====================================================
+    // OTHER FIELD
+    // =====================================================
+
+    setMuatan((prev) =>
+      prev.map((m) =>
+        m.ID === id
+          ? {
+              ...m,
+              [field]:
+                field === "quantity"
+                  ? Number(value)
+                  : value,
+            }
+          : m
+      )
+    );
   };
 
-  /**
-   * Tombol X mempunyai dua behavior:
-   *
-   * 1. Row baru / mode copy -> hanya menghapus row lokal karena belum ada
-   *    record detail di server.
-   * 2. Row existing -> DELETE ke server, lalu GET ulang seluruh outbound.
-   *
-   * Jangan filter state lokal setelah DELETE existing. State harus berasal
-   * dari response GET terbaru agar UI benar-benar sama dengan database.
-   */
+  // =========================================================
+  // CANCEL / DELETE ITEM
+  // =========================================================
+
   const handleCancel = async (item: ItemFormProps) => {
     const isLocalOnly =
       item.mode === "create" || modeForm === "copy";
 
+    // =====================================================
+    // LOCAL ITEM
+    // =====================================================
+
     if (isLocalOnly) {
-      setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
-      setSelectedIds((prev) => prev.filter((sid) => sid !== item.ID));
+      setMuatan((prev) =>
+        prev.filter((m) => m.ID !== item.ID)
+      );
+
+      setSelectedIds((prev) =>
+        prev.filter((sid) => sid !== item.ID)
+      );
+
       setErrors((prev) => {
         const next = { ...prev };
         delete next[item.ID];
         return next;
       });
+
       return;
     }
 
-    if (isReloadingItems) return;
+    // =====================================================
+    // EXISTING ITEM
+    // =====================================================
+
+    if (isReloadingItems) {
+      return;
+    }
 
     try {
-      const res = await api.delete(`/outbound/item/${item.ID}`, {
-        withCredentials: true,
-      });
+      const res = await api.delete(
+        `/outbound/item/${item.ID}`,
+        {
+          withCredentials: true,
+        }
+      );
 
       if (!res.data?.success) {
-        throw new Error(res.data?.message || "Failed to delete outbound item");
+        throw new Error(
+          res.data?.message ||
+            "Failed to delete outbound item"
+        );
       }
 
-      // Penting:
-      // setelah DELETE berhasil, ambil ulang dari server.
-      // Tidak melakukan setMuatan(prev => prev.filter(...)) untuk existing row.
+      // Setelah delete, reload dari server.
       await reloadItemsFromServer();
     } catch (error) {
-      console.error("Failed to delete outbound item:", error);
+      console.error(
+        "Failed to delete outbound item:",
+        error
+      );
     } finally {
       setIsReloadingItems(false);
     }
   };
 
+  // =========================================================
+  // COPY ITEM
+  // =========================================================
+
   const handleCopy = (id: number) => {
     setMuatan((prevItems) => {
-      const index = prevItems.findIndex((item) => item.ID === id);
-      if (index === -1) return prevItems; // item tidak ditemukan
+      const index = prevItems.findIndex(
+        (item) => item.ID === id
+      );
+
+      if (index === -1) {
+        return prevItems;
+      }
 
       const itemToCopy = prevItems[index];
 
-      // Buat ID baru unik (bisa pakai UUID juga kalau mau)
-      const newID = Math.max(...prevItems.map((i) => i.ID), 0) + 1;
+      const newID =
+        Math.max(
+          ...prevItems.map((item) => item.ID),
+          0
+        ) + 1;
 
       const duplicatedItem = {
         ...itemToCopy,
+
         ID: newID,
+
         mode: "create",
+
         exp_date: "",
         lot_number: "",
+
         serial_number: "",
         serial_numbers: [],
+
         carton_number: "",
         case_number: "",
       };
 
-      // Sisipkan hasil copy di posisi setelah item yang dicopy
       const newItems = [
         ...prevItems.slice(0, index + 1),
         duplicatedItem,
@@ -447,50 +679,109 @@ export default function ItemFormTable({
     });
   };
 
-  // Handle apply dari modal
-  const handleModalApply = (selectedItems: Product[]) => {
+  // =========================================================
+  // APPLY ITEM SELECTION MODAL
+  // =========================================================
+
+  const handleModalApply = (
+    selectedItems: Product[]
+  ) => {
     console.log("Selected Items:", selectedItems);
-    // return;
+
+    // =====================================================
+    // CREATE
+    // =====================================================
 
     if (modalMode === "create") {
-      const newItems = selectedItems.map((product) => ({
-        ID: Date.now() * 1000 + Math.floor(Math.random() * 1000),
-        item_id: product.ID,
-        outbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
-        item_code: product.item_code,
-        quantity: 1,
-        location: "",
-        uom: product.uom,
-        barcode: product.barcode,
-        remarks: "",
-        mode: "create",
-        sn: product.has_serial,
-        vas_id: vasOptions.find((item) => item.label === "NO")?.value,
-        exp_date: "",
-        lot_number: "",
-        serial_number: "",
-        serial_numbers: [],
-        carton_number: "",
-        case_number: "",
-        division_code: headerForm.order_type === "B2C - Marketplace" ? "E-COMMERCE" : "REGULAR",
-      }));
+      const newItems = selectedItems.map(
+        (product) => ({
+          ID:
+            Date.now() * 1000 +
+            Math.floor(Math.random() * 1000),
 
-      setMuatan((prev) => [...prev, ...newItems]);
-    } else if (
+          item_id: product.ID,
+
+          outbound_id:
+            headerForm.ID > 0
+              ? headerForm.ID
+              : 0,
+
+          item_code: product.item_code,
+
+          quantity: 1,
+
+          location: "",
+
+          uom: product.uom,
+
+          barcode: product.barcode,
+
+          remarks: "",
+
+          mode: "create",
+
+          sn: product.has_serial,
+
+          vas_id: vasOptions.find(
+            (item) => item.label === "NO"
+          )?.value,
+
+          exp_date: "",
+
+          lot_number: "",
+
+          serial_number: "",
+
+          // Selalu array
+          serial_numbers: [],
+
+          carton_number: "",
+
+          case_number: "",
+
+          division_code:
+            headerForm.order_type ===
+            "B2C - Marketplace"
+              ? "E-COMMERCE"
+              : "REGULAR",
+        })
+      );
+
+      setMuatan((prev) => [
+        ...prev,
+        ...newItems,
+      ]);
+    }
+
+    // =====================================================
+    // EDIT
+    // =====================================================
+
+    else if (
       modalMode === "edit" &&
       editingItem &&
       selectedItems.length > 0
     ) {
-      const selectedProduct = selectedItems[0];
+      const selectedProduct =
+        selectedItems[0];
+
       setMuatan((prev) =>
         prev.map((m) =>
           m.ID === editingItem.ID
             ? {
-              ...m,
-              item_code: selectedProduct.item_code,
-              uom: selectedProduct.uom,
-              is_serial: selectedProduct.has_serial,
-            }
+                ...m,
+                item_code:
+                  selectedProduct.item_code,
+                uom:
+                  selectedProduct.uom,
+                is_serial:
+                  selectedProduct.has_serial,
+
+                // Item berubah,
+                // serial lama jangan ikut.
+                serial_numbers: [],
+                serial_number: "",
+              }
             : m
         )
       );
@@ -499,25 +790,45 @@ export default function ItemFormTable({
     setIsModalOpen(false);
   };
 
+  // =========================================================
+  // COLUMN COUNT
+  // =========================================================
+
   const outboundPolicyColCount = [
     invPolicy?.use_vas,
+
     invPolicy?.use_lot_no &&
-    (invPolicy?.allocation_lot_by_order || invPolicy?.require_lot_number),
+      (invPolicy?.allocation_lot_by_order ||
+        invPolicy?.require_lot_number),
+
     invPolicy?.allocation_location_by_order,
   ].filter(Boolean).length;
 
-  const footerColSpan = 2 + outboundPolicyColCount + 1; // Division + UoM + policy cols + Action
+  const footerColSpan =
+    2 + outboundPolicyColCount + 1;
+
+  // =========================================================
+  // RENDER
+  // =========================================================
 
   return (
     <>
       <div className="space-y-4">
+
+        {/* ================================================= */}
+        {/* HEADER / ADD ITEM */}
+        {/* ================================================= */}
+
         <div className="flex justify-between items-center">
-          {/* <h2 className="text-lg font-semibold">Requested Items</h2> */}
           {headerForm.status !== "complete" && (
             <div className="space-x-2">
               <Button
                 type="button"
-                disabled={headerForm.status === "picking" || headerForm.status === "cancel" || headerForm.status === "packed"}
+                disabled={
+                  headerForm.status === "picking" ||
+                  headerForm.status === "cancel" ||
+                  headerForm.status === "packed"
+                }
                 onClick={handleAddItems}
               >
                 Add Item
@@ -526,461 +837,729 @@ export default function ItemFormTable({
           )}
         </div>
 
+        {/* ================================================= */}
+        {/* TABLE */}
+        {/* ================================================= */}
+
         <table className="w-full border font-normal text-xs">
+
+          {/* ================================================= */}
+          {/* THEAD */}
+          {/* ================================================= */}
+
           <thead className="bg-gray-100">
             <tr>
-              <th className="p-2 border w-12 text-center">No.</th>
-              <th className="p-2 border" style={{ width: "300px" }}>
+
+              <th className="p-2 border w-12 text-center">
+                No.
+              </th>
+
+              <th
+                className="p-2 border"
+                style={{ width: "300px" }}
+              >
                 Item
               </th>
-              {/* <th className="p-2 border" style={{ width: "300px" }}>
-                  Item Name
-                </th> */}
-              {/* <th className="p-2 border" style={{ width: "150px" }}>
-                Barcode
-              </th> */}
-              <th className="p-2 border" style={{ width: "100px" }}>
+
+              <th
+                className="p-2 border"
+                style={{ width: "100px" }}
+              >
                 Qty
               </th>
-              <th className="p-2 border" style={{ width: "100px" }}>
+
+              <th
+                className="p-2 border"
+                style={{ width: "100px" }}
+              >
                 Pack
               </th>
-              {/* <th className="p-2 border" style={{ width: "55px" }}>
-                SN
-              </th> */}
-              {/* <th className="p-2 border" style={{ width: "120px" }}>
-              UoM
-            </th> */}
-              {/* <th className="p-2 border">Inv. Location</th> */}
 
-              <th className="p-2 border" style={{ width: "30px" }}>
+              <th
+                className="p-2 border"
+                style={{ width: "30px" }}
+              >
                 Division
               </th>
-              <th className="p-2 border" style={{ width: "30px" }}>
+
+              <th
+                className="p-2 border"
+                style={{ width: "30px" }}
+              >
                 UoM
               </th>
 
               {invPolicy?.use_vas && (
-                <th className="p-2 border" style={{ width: "140px" }}>VAS</th>
+                <th
+                  className="p-2 border"
+                  style={{ width: "140px" }}
+                >
+                  VAS
+                </th>
               )}
 
               {invPolicy?.allocation_lot_by_order && (
-                <th className="p-2 border" style={{ width: "140px" }}>
+                <th
+                  className="p-2 border"
+                  style={{ width: "140px" }}
+                >
                   Lot No.
                 </th>
               )}
 
               {invPolicy?.allocation_case_by_order && (
-                <th className="p-2 border" style={{ width: "140px" }}>
+                <th
+                  className="p-2 border"
+                  style={{ width: "140px" }}
+                >
                   Case No.
                 </th>
               )}
 
               {invPolicy?.allocation_carton_by_order && (
-                <th className="p-2 border" style={{ width: "140px" }}>
+                <th
+                  className="p-2 border"
+                  style={{ width: "140px" }}
+                >
                   Carton No.
                 </th>
               )}
 
               {invPolicy?.allocation_serial_by_order && (
-                <th className="p-2 border" style={{ width: "140px" }}>
+                <th
+                  className="p-2 border"
+                  style={{ width: "180px" }}
+                >
                   Serial No.
                 </th>
               )}
 
               {invPolicy?.allocation_location_by_order && (
-                <th className="p-2 border" style={{ width: "140px" }}>
+                <th
+                  className="p-2 border"
+                  style={{ width: "140px" }}
+                >
                   Location
                 </th>
               )}
 
-
-              <th className="p-2 border" style={{ width: "130px" }}>
+              <th
+                className="p-2 border"
+                style={{ width: "130px" }}
+              >
                 Action
               </th>
+
             </tr>
           </thead>
+
+          {/* ================================================= */}
+          {/* TBODY */}
+          {/* ================================================= */}
+
           <tbody>
             {muatan?.map((item, index) => {
-              const isEditableRow = headerForm.status === "open" || item.mode === "create" || modeForm === "copy";
+
+              const isEditableRow =
+                headerForm.status === "open" ||
+                item.mode === "create" ||
+                modeForm === "copy";
+
+              // =================================================
+              // SERIAL COUNT
+              // =================================================
+
+              const serialNumbers =
+                normalizeSerialNumbers(
+                  item.serial_numbers
+                );
+
+              const serialCount =
+                serialNumbers.length;
+
               return (
-                <tr key={item.ID} className="border-t">
-                  <td className="p-2 border text-center">{index + 1}</td>
-                  {/* <td className="p-2 border">
-                  <div key={item.ID}>
-                    <Select
-                      value={itemCodeOptions.find(
-                        (option) => option.value === item.item_code
-                      )}
-                      options={itemCodeOptions}
-                      onChange={(value) =>
-                        handleChange(item.ID, "item_code", value?.value)
-                      }
-                    />
-                  </div>
-                  {errors[item.ID]?.item_code && (
-                    <small className="text-red-500">
-                      {errors[item.ID].item_code}
-                    </small>
-                  )}
-                </td> */}
-                  {/* <td className="p-2 border">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        style={{ fontSize: "12px" }}
-                        type="text"
-                        value={item.item_code}
-                        readOnly
-                        className="flex-1"
-                        placeholder="Click edit to select item..."
-                      />
-                      {item.mode === "create" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditItem(item)}
-                          title="Select item"
-                        >
-                          <Pencil size={12} />
-                        </Button>
-                      )}
-                    </div>
-                    {errors[item.ID]?.item_code && (
-                      <small className="text-red-500">
-                        {errors[item.ID].item_code}
-                      </small>
-                    )}
+                <tr
+                  key={item.ID}
+                  className="border-t"
+                >
+
+                  {/* ========================================= */}
+                  {/* NO */}
+                  {/* ========================================= */}
+
+                  <td className="p-2 border text-center">
+                    {index + 1}
                   </td>
+
+                  {/* ========================================= */}
+                  {/* ITEM */}
+                  {/* ========================================= */}
+
                   <td className="p-2 border">
-                    <Input
-                      style={{ fontSize: "12px" }}
-                      readOnly
-                      type="text"
-                      value={
-                        products.find((p) => p.item_code === item.item_code)
-                          ?.item_name || ""
-                      }
-                    />
-                  </td> */}
-                  <td className="p-2 border">
+
                     <span className="text-xs">
                       SKU : {item.item_code}
                       <br />
+
                       {products.find(
-                        (p) => p.item_code === item.item_code
+                        (p) =>
+                          p.item_code ===
+                          item.item_code
                       )?.item_name || ""}
                     </span>
 
                     <br />
 
-                      {item.bundle_product_code !== "" && (
-                        <span className="text-xs text-gray-400">
-                          Bundling for item : {item.bundle_product_code || ""}
-                        </span>
-                      )}
+                    {item.bundle_product_code !== "" && (
+                      <span className="text-xs text-gray-400">
+                        Bundling for item :{" "}
+                        {item.bundle_product_code || ""}
+                      </span>
+                    )}
+
                   </td>
 
-                  {/* <td className="p-2 border">
-                    <Input
-                      style={{ fontSize: "12px" }}
-                      readOnly
-                      type="text"
-                      value={item.barcode}
-                    />
-                  </td> */}
-                  {/* <td className="p-2 border">
-                    <div>
+                  {/* ========================================= */}
+                  {/* QTY */}
+                  {/* ========================================= */}
+
+                  <td className="p-2 border">
+
+                    {isEditableRow ? (
                       <Input
-                        // readOnly={headerForm.status != "open"}
-                        style={{ fontSize: "12px", textAlign: "center" }}
+                        style={{
+                          fontSize: "12px",
+                          textAlign: "center",
+                        }}
                         type="number"
                         value={item.quantity}
                         onChange={(e) =>
-                          handleChange(item.ID, "quantity", e.target.value)
+                          handleChange(
+                            item.ID,
+                            "quantity",
+                            e.target.value
+                          )
                         }
-                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                      />
-                    </div>
-                    {errors[item.ID]?.item_code && (
-                      <small className="text-red-500">
-                        {errors[item.ID].item_code}
-                      </small>
-                    )}
-                  </td> */}
-                  <td className="p-2 border">
-                    {isEditableRow ? (
-                      <Input
-                        style={{ fontSize: "12px", textAlign: "center" }}
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => handleChange(item.ID, "quantity", e.target.value)}
-                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                        onWheel={(e) =>
+                          (
+                            e.target as HTMLInputElement
+                          ).blur()
+                        }
                       />
                     ) : (
-                      <div className="text-center">{item.quantity}</div>
+                      <div className="text-center">
+                        {item.quantity}
+                      </div>
                     )}
+
                   </td>
+
+                  {/* ========================================= */}
+                  {/* PACK */}
+                  {/* ========================================= */}
+
                   <td className="p-2 border">
+
                     <div>
                       <Input
                         readOnly={true}
-                        style={{ fontSize: "12px", textAlign: "center" }}
+                        style={{
+                          fontSize: "12px",
+                          textAlign: "center",
+                        }}
                         type="number"
-                        value={outboundScan?.find((scan) => scan.outbound_detail_id === item.ID)?.scan_qty || 0}
-                        // onChange={(e) =>
-                        //   handleChange(item.ID, "weight", e.target.value)
-                        // }
-                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                        value={
+                          outboundScan?.find(
+                            (scan) =>
+                              scan.outbound_detail_id ===
+                              item.ID
+                          )?.scan_qty || 0
+                        }
+                        onWheel={(e) =>
+                          (
+                            e.target as HTMLInputElement
+                          ).blur()
+                        }
                       />
                     </div>
+
                   </td>
+
+                  {/* ========================================= */}
+                  {/* DIVISION */}
+                  {/* ========================================= */}
+
                   <td className="p-2 border">
+
                     <Select
                       className="w-40"
                       key={item.ID}
-                      options={
-                        divisionOptions
-                      }
-                      // onFocus={() => handleFocus(item.item_code, item.ID)}
-                      // isLoading={selectStates[item.ID]?.loading ?? false}
-                      value={divisionOptions.find((option) => option.value === item.division_code)}
+                      options={divisionOptions}
+                      value={divisionOptions.find(
+                        (option) =>
+                          option.value ===
+                          item.division_code
+                      )}
                       onChange={(value) =>
-                        handleChange(item.ID, "division_code", value?.value)
+                        handleChange(
+                          item.ID,
+                          "division_code",
+                          value?.value
+                        )
                       }
                     />
+
                   </td>
+
+                  {/* ========================================= */}
+                  {/* UOM */}
+                  {/* ========================================= */}
+
                   <td className="p-2 border">
+
                     <Select
                       className="w-28"
                       key={item.ID}
                       options={
-                        selectStates[item.ID]?.options ?? defaultOptions
+                        selectStates[item.ID]
+                          ?.options ??
+                        defaultOptions
                       }
-                      onFocus={() => handleFocus(item.item_code, item.ID)}
-                      isLoading={selectStates[item.ID]?.loading ?? false}
+                      onFocus={() =>
+                        handleFocus(
+                          item.item_code,
+                          item.ID
+                        )
+                      }
+                      isLoading={
+                        selectStates[item.ID]
+                          ?.loading ?? false
+                      }
                       value={(
-                        selectStates[item.ID]?.options ?? defaultOptions
-                      ).find((option) => option.value === item.uom)}
+                        selectStates[item.ID]
+                          ?.options ??
+                        defaultOptions
+                      ).find(
+                        (option: any) =>
+                          option.value ===
+                          item.uom
+                      )}
                       onChange={(value) =>
-                        handleChange(item.ID, "uom", value?.value)
+                        handleChange(
+                          item.ID,
+                          "uom",
+                          value?.value
+                        )
                       }
                     />
+
                   </td>
 
-
-
-                  {invPolicy?.allocation_lot_by_order && (
-                    <td className="p-2 border">
-                      <Input
-                        style={{ fontSize: "12px" }}
-                        type="text"
-                        value={item.lot_number}
-                        onChange={(e) =>
-                          handleChange(item.ID, "lot_number", e.target.value)
-                        }
-                      />
-                      {errors[item.ID]?.remarks && (
-                        <small className="text-red-500">
-                          {errors[item.ID].lot_number}
-                        </small>
-                      )}
-                    </td>
-                  )}
-
-                  {invPolicy?.allocation_case_by_order && (
-                    <td className="p-2 border">
-                      <Input
-                        style={{ fontSize: "12px" }}
-                        type="text"
-                        value={item.case_number}
-                        onChange={(e) => handleChange(item.ID, "case_number", e.target.value)}
-                      />
-                      {errors[item.ID]?.case_number && (
-                        <small className="text-red-500">{errors[item.ID].case_number}</small>
-                      )}
-                    </td>
-                  )}
-
-                  {invPolicy?.allocation_carton_by_order && (
-                    <td className="p-2 border">
-                      <Input
-                        style={{ fontSize: "12px" }}
-                        type="text"
-                        value={item.carton_number}
-                        onChange={(e) => handleChange(item.ID, "carton_number", e.target.value)}
-                      />
-                      {errors[item.ID]?.carton_number && (
-                        <small className="text-red-500">{errors[item.ID].carton_number}</small>
-                      )}
-                    </td>
-                  )}
-
-                  {invPolicy?.allocation_serial_by_order && (
-                    <td className="p-2 border">
-                      <Input
-                        style={{ fontSize: "12px" }}
-                        type="text"
-                        value={item.serial_number}
-                        onChange={(e) => handleChange(item.ID, "serial_number", e.target.value)}
-                      />
-                      {errors[item.ID]?.serial_number && (
-                        <small className="text-red-500">{errors[item.ID].serial_number}</small>
-                      )}
-                    </td>
-                  )}
-
-                  {invPolicy?.allocation_location_by_order && (
-                    <td className="p-2 border">
-                      <Input
-                        style={{ fontSize: "12px" }}
-                        type="text"
-                        value={item.location}
-                        onChange={(e) =>
-                          handleChange(item.ID, "location", e.target.value)
-                        }
-                      />
-                      {errors[item.ID]?.remarks && (
-                        <small className="text-red-500">
-                          {errors[item.ID].location}
-                        </small>
-                      )}
-                    </td>
-                  )}
-
-
-                  {/* <td className="p-2 border">
-                    <Input
-                      style={{ fontSize: "12px" }}
-                      readOnly
-                      type="text"
-                      value={item.sn}
-                    />
-                  </td> */}
-
+                  {/* ========================================= */}
+                  {/* VAS */}
+                  {/* ========================================= */}
 
                   {invPolicy?.use_vas && (
                     <td
                       className="p-2 border space-x-2 text-center"
                       style={{ width: "130px" }}
                     >
+
                       <Select
-                        // isDisabled={headerForm.status == "complete"}
                         className="text-sm w-34"
                         isSearchable
                         value={vasOptions.find(
-                          (option) => option.value === item.vas_id
+                          (option) =>
+                            option.value ===
+                            item.vas_id
                         )}
                         options={vasOptions}
                         onChange={(value) =>
-                          handleChange(item.ID, "vas_id", value?.value)
+                          handleChange(
+                            item.ID,
+                            "vas_id",
+                            value?.value
+                          )
                         }
                       />
+
                     </td>
                   )}
 
+                  {/* ========================================= */}
+                  {/* LOT NUMBER */}
+                  {/* ========================================= */}
+
+                  {invPolicy?.allocation_lot_by_order && (
+                    <td className="p-2 border">
+
+                      <Input
+                        style={{
+                          fontSize: "12px",
+                        }}
+                        type="text"
+                        value={
+                          item.lot_number
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            item.ID,
+                            "lot_number",
+                            e.target.value
+                          )
+                        }
+                      />
+
+                      {errors[item.ID]?.lot_number && (
+                        <small className="text-red-500">
+                          {errors[item.ID].lot_number}
+                        </small>
+                      )}
+
+                    </td>
+                  )}
+
+                  {/* ========================================= */}
+                  {/* CASE NUMBER */}
+                  {/* ========================================= */}
+
+                  {invPolicy?.allocation_case_by_order && (
+                    <td className="p-2 border">
+
+                      <Input
+                        style={{
+                          fontSize: "12px",
+                        }}
+                        type="text"
+                        value={
+                          item.case_number
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            item.ID,
+                            "case_number",
+                            e.target.value
+                          )
+                        }
+                      />
+
+                      {errors[item.ID]?.case_number && (
+                        <small className="text-red-500">
+                          {
+                            errors[item.ID]
+                              .case_number
+                          }
+                        </small>
+                      )}
+
+                    </td>
+                  )}
+
+                  {/* ========================================= */}
+                  {/* CARTON NUMBER */}
+                  {/* ========================================= */}
+
+                  {invPolicy?.allocation_carton_by_order && (
+                    <td className="p-2 border">
+
+                      <Input
+                        style={{
+                          fontSize: "12px",
+                        }}
+                        type="text"
+                        value={
+                          item.carton_number
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            item.ID,
+                            "carton_number",
+                            e.target.value
+                          )
+                        }
+                      />
+
+                      {errors[item.ID]?.carton_number && (
+                        <small className="text-red-500">
+                          {
+                            errors[item.ID]
+                              .carton_number
+                          }
+                        </small>
+                      )}
+
+                    </td>
+                  )}
+
+                  {/* ========================================= */}
+                  {/* SERIAL NUMBER */}
+                  {/* ========================================= */}
+                  {/*
+                    PENTING:
+
+                    Tidak ada Input di sini.
+
+                    Data serial berasal dari:
+                    outbound_serials
+
+                    Backend mengirim:
+                    "SN001,SN002,SN003"
+
+                    frontend normalize menjadi:
+                    ["SN001", "SN002", "SN003"]
+
+                    Editing dilakukan lewat SerialNumberModal.
+                  */}
+
+                  {invPolicy?.allocation_serial_by_order && (
+                    <td className="p-2 border align-top">
+
+                      {serialNumbers.length > 0 ? (
+                        <div
+                          className="
+                            text-xs
+                            whitespace-normal
+                            break-all
+                            leading-5
+                          "
+                        >
+                          {serialNumbers.join(", ")}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">
+                          -
+                        </span>
+                      )}
+
+                    </td>
+                  )}
+
+                  {/* ========================================= */}
+                  {/* LOCATION */}
+                  {/* ========================================= */}
+
+                  {invPolicy?.allocation_location_by_order && (
+                    <td className="p-2 border">
+
+                      <Input
+                        style={{
+                          fontSize: "12px",
+                        }}
+                        type="text"
+                        value={
+                          item.location
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            item.ID,
+                            "location",
+                            e.target.value
+                          )
+                        }
+                      />
+
+                      {errors[item.ID]?.location && (
+                        <small className="text-red-500">
+                          {errors[item.ID].location}
+                        </small>
+                      )}
+
+                    </td>
+                  )}
+
+                  {/* ========================================= */}
+                  {/* ACTION */}
+                  {/* ========================================= */}
+
                   <td
-                    className="p-2 border space-x-2 text-center"
-                    style={{ width: "130px" }}
+                    className="
+                      p-2
+                      border
+                      space-x-2
+                      text-center
+                    "
+                    style={{
+                      width: "130px",
+                    }}
                   >
-                    {headerForm.status == "open" || item.mode == "create" || modeForm == "copy" ? (
+
+                    {/* ======================================= */}
+                    {/* EDITABLE ROW */}
+                    {/* ======================================= */}
+
+                    {headerForm.status === "open" ||
+                    item.mode === "create" ||
+                    modeForm === "copy" ? (
                       <>
+                        {/* DELETE */}
+
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            handleCancel(item);
-                          }}
+                          onClick={() =>
+                            handleCancel(item)
+                          }
+                          disabled={
+                            isReloadingItems
+                          }
+                          title="Delete item"
                         >
                           <X size={14} />
                         </Button>
+
+                        {/* COPY */}
+
                         {(invPolicy?.allocation_lot_by_order ||
                           invPolicy?.allocation_location_by_order ||
                           invPolicy?.allocation_case_by_order ||
                           invPolicy?.allocation_carton_by_order ||
                           invPolicy?.allocation_serial_by_order) && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleCopy(item.ID)}
-                            >
-                              <Copy size={14} />
-                            </Button>
-                          )}
-                        {(headerForm.status === "open" ||
-                          headerForm.status === "picking" ||
-                          headerForm.status === "packed") && (
-                            <Button
-                              size="sm"
-                              variant={
-                                (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity
-                                  ? "default"
-                                  : "outline"
-                              }
-                              onClick={() => handleOpenSerialModal(item)}
-                              title="Isi Serial Number"
-                            >
-                              SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity}
-                            </Button>
-                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              handleCopy(item.ID)
+                            }
+                            title="Copy item"
+                          >
+                            <Copy size={14} />
+                          </Button>
+                        )}
+
+                        {/* SERIAL MODAL */}
+
+                        {(headerForm.status ===
+                          "open" ||
+                          headerForm.status ===
+                            "picking" ||
+                          headerForm.status ===
+                            "packed") && (
+                          <Button
+                            size="sm"
+                            variant={
+                              serialCount ===
+                              Number(
+                                item.quantity
+                              )
+                                ? "default"
+                                : "outline"
+                            }
+                            onClick={() =>
+                              handleOpenSerialModal(
+                                item
+                              )
+                            }
+                            title="Isi Serial Number"
+                          >
+                            SN {serialCount}/
+                            {item.quantity}
+                          </Button>
+                        )}
                       </>
                     ) : (
+                      /* ===================================== */
+                      /* NON EDITABLE ROW */
+                      /* ===================================== */
+
                       <>
-                        {/* <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(item.ID)}
-                      >
-                        <Trash size={14} />
-                      </Button> */}
-
-                        {(headerForm.status === "open" ||
-                          headerForm.status === "picking" ||
-                          headerForm.status === "packed") && (
-                            <Button
-                              size="sm"
-                              variant={
-                                (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity
-                                  ? "default"
-                                  : "outline"
-                              }
-                              onClick={() => handleOpenSerialModal(item)}
-                              title="Isi Serial Number"
-                            >
-                              SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity}
-                            </Button>
-                          )}
+                        {(headerForm.status ===
+                          "open" ||
+                          headerForm.status ===
+                            "picking" ||
+                          headerForm.status ===
+                            "packed") && (
+                          <Button
+                            size="sm"
+                            variant={
+                              serialCount ===
+                              Number(
+                                item.quantity
+                              )
+                                ? "default"
+                                : "outline"
+                            }
+                            onClick={() =>
+                              handleOpenSerialModal(
+                                item
+                              )
+                            }
+                            title="Isi Serial Number"
+                          >
+                            SN {serialCount}/
+                            {item.quantity}
+                          </Button>
+                        )}
                       </>
-
-
                     )}
+
                   </td>
+
                 </tr>
               );
             })}
           </tbody>
+
+          {/* ================================================= */}
+          {/* TFOOT */}
+          {/* ================================================= */}
+
           <tfoot>
             <tr className="bg-gray-100 font-semibold">
-              <td className="p-2 border" colSpan={2}>
+
+              <td
+                className="p-2 border"
+                colSpan={2}
+              >
                 Total
               </td>
+
               <td className="p-2 border text-center">
-                {muatan.reduce((acc, item) => acc + item.quantity, 0)}
+                {muatan.reduce(
+                  (acc, item) =>
+                    acc +
+                    Number(item.quantity || 0),
+                  0
+                )}
               </td>
+
               <td className="p-2 border text-center">
-                {outboundScan.reduce((acc, item) => acc + item.scan_qty, 0)}
+                {outboundScan.reduce(
+                  (acc, item) =>
+                    acc +
+                    Number(item.scan_qty || 0),
+                  0
+                )}
               </td>
-              <td className="p-2 border" colSpan={footerColSpan}></td>
+
+              <td
+                className="p-2 border"
+                colSpan={footerColSpan}
+              />
+
             </tr>
           </tfoot>
+
         </table>
       </div>
+
+      {/* ===================================================== */}
+      {/* ITEM SELECTION MODAL */}
+      {/* ===================================================== */}
+
       <ItemSelectionModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() =>
+          setIsModalOpen(false)
+        }
         products={products}
         onApply={handleModalApply}
         selectedItems={muatan}
       />
+
+      {/* ===================================================== */}
+      {/* SERIAL NUMBER MODAL */}
+      {/* ===================================================== */}
+
       <SerialNumberModal
         isOpen={isSerialModalOpen}
         onClose={() => {
@@ -988,897 +1567,20 @@ export default function ItemFormTable({
           setSerialModalItem(null);
         }}
         onSave={handleSaveSerialNumbers}
-        quantity={Number(serialModalItem?.quantity) || 0}
-        initialValue={serialModalItem?.serial_numbers ?? []}
-        itemCode={serialModalItem?.item_code ?? ""}
+        quantity={
+          Number(
+            serialModalItem?.quantity
+          ) || 0
+        }
+        initialValue={
+          normalizeSerialNumbers(
+            serialModalItem?.serial_numbers
+          )
+        }
+        itemCode={
+          serialModalItem?.item_code ?? ""
+        }
       />
     </>
   );
 }
-
-
-
-// /* eslint-disable react-hooks/exhaustive-deps */
-// /* eslint-disable @typescript-eslint/no-explicit-any */
-// /* eslint-disable @typescript-eslint/no-unused-vars */
-// import { use, useEffect, useState } from "react";
-// import { Button } from "@/components/ui/button";
-// import { Input } from "@/components/ui/input";
-// import Select from "react-select";
-// import { Copy, Pencil, Trash, X } from "lucide-react";
-// import {
-//   CombinedOutboundProps,
-//   ItemFormProps,
-//   ItemOptions,
-// } from "@/types/outbound";
-// import { Product } from "@/types/item";
-// import api from "@/lib/api";
-// import ItemSelectionModal from "@/components/outbound/create-manual/ItemSelectionModal";
-// import { useRouter } from "next/router";
-// import { InventoryPolicy } from "@/types/inventory";
-// import { UomConversion } from "@/types/uom";
-// import { he, tr } from "date-fns/locale";
-// import SerialNumberModal from "./SerialNumberModal";
-
-// export default function ItemFormTable({
-//   muatan,
-//   setMuatan,
-//   headerForm,
-//   setHeaderForm,
-//   outboundScan,
-//   setOutboundScan,
-// }: CombinedOutboundProps) {
-//   const [products, setProducts] = useState<Product[]>([]);
-//   const [vasPages, setVasPages] = useState<any[]>([]);
-//   const [vasOptions, setVasOptions] = useState<any[]>([]);
-//   const [itemCodeOptions, setItemCodeOptions] = useState<ItemOptions[]>([]);
-//   const [editingId, setEditingId] = useState<number | null>(null);
-//   const [errors, setErrors] = useState<{
-//     [id: number]: { [key: string]: string };
-//   }>({});
-//   const [defaultUoms, setDefaultUoms] = useState([]);
-//   const [defaultOptions, setDefaultOptions] = useState([]);
-//   const [divisionOptions, setDivisionOptions] = useState([]);
-//   const [selectStates, setSelectStates] = useState({});
-
-//   const [isModalOpen, setIsModalOpen] = useState(false);
-//   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
-//   const [editingItem, setEditingItem] = useState<ItemFormProps | null>(null);
-//   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-//   const [invPolicy, setInvPolicy] = useState<InventoryPolicy>();
-//   const [uomConversion, setUomConversion] = useState<UomConversion>();
-//   const [isSerialModalOpen, setIsSerialModalOpen] = useState(false);
-//   const [serialModalItem, setSerialModalItem] = useState<ItemFormProps | null>(null);
-//   const [savingSerial, setSavingSerial] = useState(false);
-//   const router = useRouter();
-//   const path = router.pathname;
-//   let modeForm: "add" | "edit" | "copy" = "add";
-//   if (path.includes("/copy/")) {
-//     modeForm = "copy";
-//   } else if (path.includes("/edit/")) {
-//     modeForm = "edit";
-//   } else if (path.includes("/add")) {
-//     modeForm = "add";
-//   }
-
-
-//   const handleOpenSerialModal = (item: ItemFormProps) => {
-//     setSerialModalItem(item);
-//     setIsSerialModalOpen(true);
-//   };
-
-//   const handleSaveSerialNumbers = (serials: string[]) => {
-//     if (!serialModalItem) return;
-
-//     setMuatan((prev) =>
-//       prev.map((m) =>
-//         m.ID === serialModalItem.ID
-//           ? {
-//             ...m,
-//             serial_numbers: serials,
-//           }
-//           : m
-//       )
-//     );
-
-//     setIsSerialModalOpen(false);
-//     setSerialModalItem(null);
-//   };
-
-//   const handleFocus = async (itemCode: string, itemId: string | number) => {
-//     if (!itemCode || itemCode.trim() === "") return;
-
-//     // Set loading true untuk item tertentu
-//     setSelectStates((prev) => ({
-//       ...prev,
-//       [itemId]: {
-//         ...(prev[itemId] || {}),
-//         loading: true,
-//       },
-//     }));
-
-//     try {
-//       const response = await api.post("/uoms/item", { item_code: itemCode });
-//       const uoms = response?.data?.data || [];
-
-//       const mappedOptions = uoms.map((item) => ({
-//         value: item.from_uom,
-//         label: item.from_uom,
-//       }));
-
-//       // Update options hanya untuk item tersebut
-//       setSelectStates((prev) => ({
-//         ...prev,
-//         [itemId]: {
-//           loading: false,
-//           options: mappedOptions,
-//         },
-//       }));
-//     } catch (error) {
-//       console.error("Failed to fetch UOMs:", error);
-//       // Tetap kosongkan jika gagal
-//       setSelectStates((prev) => ({
-//         ...prev,
-//         [itemId]: {
-//           loading: false,
-//           options: [],
-//         },
-//       }));
-//     }
-//   };
-
-
-//   // const handleSelect = (id: number, checked: boolean) => {
-//   //   setSelectedIds((prev) =>
-//   //     checked ? [...prev, id] : prev.filter((sid) => sid !== id)
-//   //   );
-//   // };
-
-//   const fetchData = async () => {
-//     try {
-//       const [products, uoms, vasPages, policies, divisions] = await Promise.all([
-//         api.get("/products/stock-available?owner=" + headerForm.owner_code),
-//         api.get("/uoms"),
-//         api.get("/vas/page"),
-//         api.get("/inventory/policy?owner=" + headerForm.owner_code),
-//         api.get("/divisions"),
-//       ]);
-
-//       if (products.data.success
-//         && uoms.data.success
-//         && vasPages.data.success
-//         && policies.data.success
-//         && divisions.data.success
-//       ) {
-//         setProducts(products.data.data);
-//         setItemCodeOptions(
-//           products.data.data.map((item: Product) => ({
-//             value: item.item_code,
-//             label: item.item_code,
-//           }))
-//         );
-
-//         // const defaultUoms = uoms.data.data.map((item: any) => ({
-//         //   value: item.code,
-//         //   label: item.code,
-//         // }));
-//         // setDefaultUoms(defaultUoms);
-
-//         setVasPages(vasPages.data.data);
-//         const vasOptions = vasPages.data.data.map((item: any) => ({
-//           value: item.ID,
-//           label: item.name,
-//         }));
-//         setVasOptions(vasOptions);
-
-//         // Set default UOM options
-//         const defaultUoms = uoms.data.data.map((item: any) => ({
-//           value: item.code,
-//           label: item.code,
-//         }));
-
-//         setDefaultOptions(defaultUoms);
-//         setInvPolicy(policies.data.data.inventory_policy);
-
-//         const divisionOptions = divisions.data.data.map((item: any) => ({
-//           value: item.code,
-//           label: item.code,
-//         }));
-//         setDivisionOptions(divisionOptions);
-//       }
-//     } catch (error) {
-//       console.error("Error fetching data:", error);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchData();
-//   }, [headerForm.owner_code]);
-
-//   const handleAddItems = () => {
-//     setModalMode("create");
-//     setEditingItem(null);
-//     setIsModalOpen(true);
-//   };
-
-//   const handleEditItem = (item: ItemFormProps) => {
-//     setModalMode("edit");
-//     setEditingItem(item);
-//     setIsModalOpen(true);
-//   };
-
-//   const handleChange = async (
-//     id: number,
-//     field: keyof ItemFormProps,
-//     value: string | number
-//   ) => {
-//     console.log("ID:", id);
-//     console.log("Field:", field);
-//     console.log("Value:", value);
-
-//     if (field === "uom") {
-//       console.log("UOM:", value);
-//       console.log("ID:", id);
-//       console.log("ITEM: ", muatan.find((item) => item.ID === id)?.item_code);
-
-//       try {
-//         const res = await api.post("/uoms/uom-item", {
-//           item_code: muatan.find((item) => item.ID === id)?.item_code,
-//           from_uom: value,
-//         });
-//         if (res.data.success) {
-//           console.log("Response:", res.data.data);
-//           console.log("Ean:", res.data.data.ean);
-
-//           setMuatan((prev) =>
-//             prev.map((m) =>
-//               m.ID === id
-//                 ? {
-//                   ...m,
-//                   barcode: res.data.data.ean,
-//                   uom: res.data.data.from_uom
-//                   // uom: value,
-//                 }
-//                 : m
-//             )
-//           );
-//         }
-//       } catch (error) {
-//         console.error("Error:", error);
-//       }
-//     } else if (field === "item_code") {
-//       const selectedProduct = products.find(
-//         (product) => product.item_code === value
-//       );
-//       console.log("Produk yang dipilih:", selectedProduct);
-//       if (selectedProduct) {
-//         setMuatan((prev) =>
-//           prev.map((m) =>
-//             m.ID === id
-//               ? {
-//                 ...m,
-//                 item_code: selectedProduct.item_code,
-//                 uom: selectedProduct.uom,
-//                 item_name: selectedProduct.item_name,
-//                 barcode: selectedProduct.barcode,
-//                 sn: selectedProduct.has_serial,
-//               }
-//               : m
-//           )
-//         );
-//       }
-//     } else {
-//       setMuatan((prev) =>
-//         prev.map((m) =>
-//           m.ID === id
-//             ? { ...m, [field]: field === "quantity" ? Number(value) : value }
-//             : m
-//         )
-//       );
-//     }
-//   };
-
-//   const handleCancel = async (item: ItemFormProps) => {
-//     if (item.mode === "create" || modeForm === "copy") {
-//       setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
-//       setSelectedIds((prev) => prev.filter((sid) => sid !== item.ID));
-//     } else {
-//       try {
-//         const res = await api.delete(`/outbound/item/` + item.ID, {
-//           withCredentials: true,
-//         });
-
-//         console.log("Response dari server:", res);
-
-//         if (res.data.success) {
-//           setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
-//           setEditingId(null);
-//           setErrors({});
-//         }
-//       } catch (error) {
-//         console.error("Error fetching data:", error);
-//       }
-//     }
-//   };
-
-//   const handleCopy = (id: number) => {
-//     setMuatan((prevItems) => {
-//       const index = prevItems.findIndex((item) => item.ID === id);
-//       if (index === -1) return prevItems; // item tidak ditemukan
-
-//       const itemToCopy = prevItems[index];
-
-//       // Buat ID baru unik (bisa pakai UUID juga kalau mau)
-//       const newID = Math.max(...prevItems.map((i) => i.ID), 0) + 1;
-
-//       const duplicatedItem = {
-//         ...itemToCopy,
-//         ID: newID,
-//         mode: "create",
-//         exp_date: "",
-//         lot_number: "",
-//         serial_number: "",
-//         serial_numbers: [],
-//         carton_number: "",
-//         case_number: "",
-//       };
-
-//       // Sisipkan hasil copy di posisi setelah item yang dicopy
-//       const newItems = [
-//         ...prevItems.slice(0, index + 1),
-//         duplicatedItem,
-//         ...prevItems.slice(index + 1),
-//       ];
-
-//       return newItems;
-//     });
-//   };
-
-//   // Handle apply dari modal
-//   const handleModalApply = (selectedItems: Product[]) => {
-//     console.log("Selected Items:", selectedItems);
-//     // return;
-
-//     if (modalMode === "create") {
-//       const newItems = selectedItems.map((product) => ({
-//         ID: Date.now() * 1000 + Math.floor(Math.random() * 1000),
-//         item_id: product.ID,
-//         outbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
-//         item_code: product.item_code,
-//         quantity: 1,
-//         location: "",
-//         uom: product.uom,
-//         barcode: product.barcode,
-//         remarks: "",
-//         mode: "create",
-//         sn: product.has_serial,
-//         vas_id: vasOptions.find((item) => item.label === "NO")?.value,
-//         exp_date: "",
-//         lot_number: "",
-//         serial_number: "",
-//         serial_numbers: [],
-//         carton_number: "",
-//         case_number: "",
-//         division_code: headerForm.order_type === "B2C - Marketplace" ? "E-COMMERCE" : "REGULAR",
-//       }));
-
-//       setMuatan((prev) => [...prev, ...newItems]);
-//     } else if (
-//       modalMode === "edit" &&
-//       editingItem &&
-//       selectedItems.length > 0
-//     ) {
-//       const selectedProduct = selectedItems[0];
-//       setMuatan((prev) =>
-//         prev.map((m) =>
-//           m.ID === editingItem.ID
-//             ? {
-//               ...m,
-//               item_code: selectedProduct.item_code,
-//               uom: selectedProduct.uom,
-//               is_serial: selectedProduct.has_serial,
-//             }
-//             : m
-//         )
-//       );
-//     }
-
-//     setIsModalOpen(false);
-//   };
-
-//   const outboundPolicyColCount = [
-//     invPolicy?.use_vas,
-//     invPolicy?.use_lot_no &&
-//     (invPolicy?.allocation_lot_by_order || invPolicy?.require_lot_number),
-//     invPolicy?.allocation_location_by_order,
-//   ].filter(Boolean).length;
-
-//   const footerColSpan = 2 + outboundPolicyColCount + 1; // Division + UoM + policy cols + Action
-
-//   return (
-//     <>
-//       <div className="space-y-4">
-//         <div className="flex justify-between items-center">
-//           {/* <h2 className="text-lg font-semibold">Requested Items</h2> */}
-//           {headerForm.status !== "complete" && (
-//             <div className="space-x-2">
-//               <Button
-//                 type="button"
-//                 disabled={headerForm.status === "picking" || headerForm.status === "cancel" || headerForm.status === "packed"}
-//                 onClick={handleAddItems}
-//               >
-//                 Add Item
-//               </Button>
-//             </div>
-//           )}
-//         </div>
-
-//         <table className="w-full border font-normal text-xs">
-//           <thead className="bg-gray-100">
-//             <tr>
-//               <th className="p-2 border w-12 text-center">No.</th>
-//               <th className="p-2 border" style={{ width: "300px" }}>
-//                 Item
-//               </th>
-//               {/* <th className="p-2 border" style={{ width: "300px" }}>
-//                   Item Name
-//                 </th> */}
-//               {/* <th className="p-2 border" style={{ width: "150px" }}>
-//                 Barcode
-//               </th> */}
-//               <th className="p-2 border" style={{ width: "100px" }}>
-//                 Qty
-//               </th>
-//               <th className="p-2 border" style={{ width: "100px" }}>
-//                 Pack
-//               </th>
-//               {/* <th className="p-2 border" style={{ width: "55px" }}>
-//                 SN
-//               </th> */}
-//               {/* <th className="p-2 border" style={{ width: "120px" }}>
-//               UoM
-//             </th> */}
-//               {/* <th className="p-2 border">Inv. Location</th> */}
-
-//               <th className="p-2 border" style={{ width: "30px" }}>
-//                 Division
-//               </th>
-//               <th className="p-2 border" style={{ width: "30px" }}>
-//                 UoM
-//               </th>
-
-//               {invPolicy?.use_vas && (
-//                 <th className="p-2 border" style={{ width: "140px" }}>VAS</th>
-//               )}
-
-//               {invPolicy?.allocation_lot_by_order && (
-//                 <th className="p-2 border" style={{ width: "140px" }}>
-//                   Lot No.
-//                 </th>
-//               )}
-
-//               {invPolicy?.allocation_case_by_order && (
-//                 <th className="p-2 border" style={{ width: "140px" }}>
-//                   Case No.
-//                 </th>
-//               )}
-
-//               {invPolicy?.allocation_carton_by_order && (
-//                 <th className="p-2 border" style={{ width: "140px" }}>
-//                   Carton No.
-//                 </th>
-//               )}
-
-//               {invPolicy?.allocation_serial_by_order && (
-//                 <th className="p-2 border" style={{ width: "140px" }}>
-//                   Serial No.
-//                 </th>
-//               )}
-
-//               {invPolicy?.allocation_location_by_order && (
-//                 <th className="p-2 border" style={{ width: "140px" }}>
-//                   Location
-//                 </th>
-//               )}
-
-
-//               <th className="p-2 border" style={{ width: "130px" }}>
-//                 Action
-//               </th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {muatan?.map((item, index) => {
-//               const isEditableRow = headerForm.status === "open" || item.mode === "create" || modeForm === "copy";
-//               return (
-//                 <tr key={item.ID} className="border-t">
-//                   <td className="p-2 border text-center">{index + 1}</td>
-//                   {/* <td className="p-2 border">
-//                   <div key={item.ID}>
-//                     <Select
-//                       value={itemCodeOptions.find(
-//                         (option) => option.value === item.item_code
-//                       )}
-//                       options={itemCodeOptions}
-//                       onChange={(value) =>
-//                         handleChange(item.ID, "item_code", value?.value)
-//                       }
-//                     />
-//                   </div>
-//                   {errors[item.ID]?.item_code && (
-//                     <small className="text-red-500">
-//                       {errors[item.ID].item_code}
-//                     </small>
-//                   )}
-//                 </td> */}
-//                   {/* <td className="p-2 border">
-//                     <div className="flex items-center gap-2">
-//                       <Input
-//                         style={{ fontSize: "12px" }}
-//                         type="text"
-//                         value={item.item_code}
-//                         readOnly
-//                         className="flex-1"
-//                         placeholder="Click edit to select item..."
-//                       />
-//                       {item.mode === "create" && (
-//                         <Button
-//                           size="sm"
-//                           variant="outline"
-//                           onClick={() => handleEditItem(item)}
-//                           title="Select item"
-//                         >
-//                           <Pencil size={12} />
-//                         </Button>
-//                       )}
-//                     </div>
-//                     {errors[item.ID]?.item_code && (
-//                       <small className="text-red-500">
-//                         {errors[item.ID].item_code}
-//                       </small>
-//                     )}
-//                   </td>
-//                   <td className="p-2 border">
-//                     <Input
-//                       style={{ fontSize: "12px" }}
-//                       readOnly
-//                       type="text"
-//                       value={
-//                         products.find((p) => p.item_code === item.item_code)
-//                           ?.item_name || ""
-//                       }
-//                     />
-//                   </td> */}
-//                   <td className="p-2 border">
-//                     <span className="text-xs">
-//                       SKU : {item.item_code}
-//                       <br />
-//                       {products.find(
-//                         (p) => p.item_code === item.item_code
-//                       )?.item_name || ""}
-//                     </span>
-
-//                     <br />
-
-//                       {item.bundle_product_code !== "" && (
-//                         <span className="text-xs text-gray-400">
-//                           Bundling for item : {item.bundle_product_code || ""}
-//                         </span>
-//                       )}
-//                   </td>
-
-//                   {/* <td className="p-2 border">
-//                     <Input
-//                       style={{ fontSize: "12px" }}
-//                       readOnly
-//                       type="text"
-//                       value={item.barcode}
-//                     />
-//                   </td> */}
-//                   {/* <td className="p-2 border">
-//                     <div>
-//                       <Input
-//                         // readOnly={headerForm.status != "open"}
-//                         style={{ fontSize: "12px", textAlign: "center" }}
-//                         type="number"
-//                         value={item.quantity}
-//                         onChange={(e) =>
-//                           handleChange(item.ID, "quantity", e.target.value)
-//                         }
-//                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
-//                       />
-//                     </div>
-//                     {errors[item.ID]?.item_code && (
-//                       <small className="text-red-500">
-//                         {errors[item.ID].item_code}
-//                       </small>
-//                     )}
-//                   </td> */}
-//                   <td className="p-2 border">
-//                     {isEditableRow ? (
-//                       <Input
-//                         style={{ fontSize: "12px", textAlign: "center" }}
-//                         type="number"
-//                         value={item.quantity}
-//                         onChange={(e) => handleChange(item.ID, "quantity", e.target.value)}
-//                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
-//                       />
-//                     ) : (
-//                       <div className="text-center">{item.quantity}</div>
-//                     )}
-//                   </td>
-//                   <td className="p-2 border">
-//                     <div>
-//                       <Input
-//                         readOnly={true}
-//                         style={{ fontSize: "12px", textAlign: "center" }}
-//                         type="number"
-//                         value={outboundScan?.find((scan) => scan.outbound_detail_id === item.ID)?.scan_qty || 0}
-//                         // onChange={(e) =>
-//                         //   handleChange(item.ID, "weight", e.target.value)
-//                         // }
-//                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
-//                       />
-//                     </div>
-//                   </td>
-//                   <td className="p-2 border">
-//                     <Select
-//                       className="w-40"
-//                       key={item.ID}
-//                       options={
-//                         divisionOptions
-//                       }
-//                       // onFocus={() => handleFocus(item.item_code, item.ID)}
-//                       // isLoading={selectStates[item.ID]?.loading ?? false}
-//                       value={divisionOptions.find((option) => option.value === item.division_code)}
-//                       onChange={(value) =>
-//                         handleChange(item.ID, "division_code", value?.value)
-//                       }
-//                     />
-//                   </td>
-//                   <td className="p-2 border">
-//                     <Select
-//                       className="w-28"
-//                       key={item.ID}
-//                       options={
-//                         selectStates[item.ID]?.options ?? defaultOptions
-//                       }
-//                       onFocus={() => handleFocus(item.item_code, item.ID)}
-//                       isLoading={selectStates[item.ID]?.loading ?? false}
-//                       value={(
-//                         selectStates[item.ID]?.options ?? defaultOptions
-//                       ).find((option) => option.value === item.uom)}
-//                       onChange={(value) =>
-//                         handleChange(item.ID, "uom", value?.value)
-//                       }
-//                     />
-//                   </td>
-
-
-
-//                   {invPolicy?.allocation_lot_by_order && (
-//                     <td className="p-2 border">
-//                       <Input
-//                         style={{ fontSize: "12px" }}
-//                         type="text"
-//                         value={item.lot_number}
-//                         onChange={(e) =>
-//                           handleChange(item.ID, "lot_number", e.target.value)
-//                         }
-//                       />
-//                       {errors[item.ID]?.remarks && (
-//                         <small className="text-red-500">
-//                           {errors[item.ID].lot_number}
-//                         </small>
-//                       )}
-//                     </td>
-//                   )}
-
-//                   {invPolicy?.allocation_case_by_order && (
-//                     <td className="p-2 border">
-//                       <Input
-//                         style={{ fontSize: "12px" }}
-//                         type="text"
-//                         value={item.case_number}
-//                         onChange={(e) => handleChange(item.ID, "case_number", e.target.value)}
-//                       />
-//                       {errors[item.ID]?.case_number && (
-//                         <small className="text-red-500">{errors[item.ID].case_number}</small>
-//                       )}
-//                     </td>
-//                   )}
-
-//                   {invPolicy?.allocation_carton_by_order && (
-//                     <td className="p-2 border">
-//                       <Input
-//                         style={{ fontSize: "12px" }}
-//                         type="text"
-//                         value={item.carton_number}
-//                         onChange={(e) => handleChange(item.ID, "carton_number", e.target.value)}
-//                       />
-//                       {errors[item.ID]?.carton_number && (
-//                         <small className="text-red-500">{errors[item.ID].carton_number}</small>
-//                       )}
-//                     </td>
-//                   )}
-
-//                   {invPolicy?.allocation_serial_by_order && (
-//                     <td className="p-2 border">
-//                       <Input
-//                         style={{ fontSize: "12px" }}
-//                         type="text"
-//                         value={item.serial_number}
-//                         onChange={(e) => handleChange(item.ID, "serial_number", e.target.value)}
-//                       />
-//                       {errors[item.ID]?.serial_number && (
-//                         <small className="text-red-500">{errors[item.ID].serial_number}</small>
-//                       )}
-//                     </td>
-//                   )}
-
-//                   {invPolicy?.allocation_location_by_order && (
-//                     <td className="p-2 border">
-//                       <Input
-//                         style={{ fontSize: "12px" }}
-//                         type="text"
-//                         value={item.location}
-//                         onChange={(e) =>
-//                           handleChange(item.ID, "location", e.target.value)
-//                         }
-//                       />
-//                       {errors[item.ID]?.remarks && (
-//                         <small className="text-red-500">
-//                           {errors[item.ID].location}
-//                         </small>
-//                       )}
-//                     </td>
-//                   )}
-
-
-//                   {/* <td className="p-2 border">
-//                     <Input
-//                       style={{ fontSize: "12px" }}
-//                       readOnly
-//                       type="text"
-//                       value={item.sn}
-//                     />
-//                   </td> */}
-
-
-//                   {invPolicy?.use_vas && (
-//                     <td
-//                       className="p-2 border space-x-2 text-center"
-//                       style={{ width: "130px" }}
-//                     >
-//                       <Select
-//                         // isDisabled={headerForm.status == "complete"}
-//                         className="text-sm w-34"
-//                         isSearchable
-//                         value={vasOptions.find(
-//                           (option) => option.value === item.vas_id
-//                         )}
-//                         options={vasOptions}
-//                         onChange={(value) =>
-//                           handleChange(item.ID, "vas_id", value?.value)
-//                         }
-//                       />
-//                     </td>
-//                   )}
-
-//                   <td
-//                     className="p-2 border space-x-2 text-center"
-//                     style={{ width: "130px" }}
-//                   >
-//                     {headerForm.status == "open" || item.mode == "create" || modeForm == "copy" ? (
-//                       <>
-//                         <Button
-//                           size="sm"
-//                           variant="outline"
-//                           onClick={() => {
-//                             handleCancel(item);
-//                           }}
-//                         >
-//                           <X size={14} />
-//                         </Button>
-//                         {(invPolicy?.allocation_lot_by_order ||
-//                           invPolicy?.allocation_location_by_order ||
-//                           invPolicy?.allocation_case_by_order ||
-//                           invPolicy?.allocation_carton_by_order ||
-//                           invPolicy?.allocation_serial_by_order) && (
-//                             <Button
-//                               size="sm"
-//                               variant="outline"
-//                               onClick={() => handleCopy(item.ID)}
-//                             >
-//                               <Copy size={14} />
-//                             </Button>
-//                           )}
-//                         {(headerForm.status === "open" ||
-//                           headerForm.status === "picking" ||
-//                           headerForm.status === "packed") && (
-//                             <Button
-//                               size="sm"
-//                               variant={
-//                                 (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity
-//                                   ? "default"
-//                                   : "outline"
-//                               }
-//                               onClick={() => handleOpenSerialModal(item)}
-//                               title="Isi Serial Number"
-//                             >
-//                               SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity}
-//                             </Button>
-//                           )}
-//                       </>
-//                     ) : (
-//                       <>
-//                         {/* <Button
-//                         size="sm"
-//                         variant="destructive"
-//                         onClick={() => handleDelete(item.ID)}
-//                       >
-//                         <Trash size={14} />
-//                       </Button> */}
-
-//                         {(headerForm.status === "open" ||
-//                           headerForm.status === "picking" ||
-//                           headerForm.status === "packed") && (
-//                             <Button
-//                               size="sm"
-//                               variant={
-//                                 (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity
-//                                   ? "default"
-//                                   : "outline"
-//                               }
-//                               onClick={() => handleOpenSerialModal(item)}
-//                               title="Isi Serial Number"
-//                             >
-//                               SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity}
-//                             </Button>
-//                           )}
-//                       </>
-
-
-//                     )}
-//                   </td>
-//                 </tr>
-//               );
-//             })}
-//           </tbody>
-//           <tfoot>
-//             <tr className="bg-gray-100 font-semibold">
-//               <td className="p-2 border" colSpan={2}>
-//                 Total
-//               </td>
-//               <td className="p-2 border text-center">
-//                 {muatan.reduce((acc, item) => acc + item.quantity, 0)}
-//               </td>
-//               <td className="p-2 border text-center">
-//                 {outboundScan.reduce((acc, item) => acc + item.scan_qty, 0)}
-//               </td>
-//               <td className="p-2 border" colSpan={footerColSpan}></td>
-//             </tr>
-//           </tfoot>
-//         </table>
-//       </div>
-//       <ItemSelectionModal
-//         isOpen={isModalOpen}
-//         onClose={() => setIsModalOpen(false)}
-//         products={products}
-//         onApply={handleModalApply}
-//         selectedItems={muatan}
-//       />
-//       <SerialNumberModal
-//         isOpen={isSerialModalOpen}
-//         onClose={() => {
-//           setIsSerialModalOpen(false);
-//           setSerialModalItem(null);
-//         }}
-//         onSave={handleSaveSerialNumbers}
-//         quantity={Number(serialModalItem?.quantity) || 0}
-//         initialValue={serialModalItem?.serial_numbers ?? []}
-//         itemCode={serialModalItem?.item_code ?? ""}
-//       />
-//     </>
-//   );
-// }

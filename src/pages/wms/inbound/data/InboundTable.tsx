@@ -833,7 +833,7 @@ const InboundTable = () => {
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                {params.data.status === "open" && (
+                {/* {params.data.status === "open" && (
                   <DropdownMenuItem
                     className="cursor-pointer"
                     onClick={(e) => {
@@ -845,6 +845,38 @@ const InboundTable = () => {
                     <Blocks className="mr-2 h-4 w-4" />
                     Start Checking
                   </DropdownMenuItem>
+                )} */}
+
+                {params.data.status === "open" && (
+                  <>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmAction({
+                          type: "checking",
+                          inbound_no: params.data.inbound_no,
+                        });
+                      }}
+                    >
+                      <Blocks className="mr-2 h-4 w-4" />
+                      Start Checking
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmAction({
+                          type: "cancel",
+                          inbound_no: params.data.inbound_no,
+                        });
+                      }}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Cancel Inbound
+                    </DropdownMenuItem>
+                  </>
                 )}
 
                 {/* {(params.data.status === "checking" ||
@@ -1038,7 +1070,13 @@ const InboundTable = () => {
   const [selectedInbound, setSelectedInbound] = useState(null);
 
 
-  type ConfirmActionType = "checking" | "check_putaway" | "putaway" | "complete" | "open";
+  type ConfirmActionType =
+    | "checking"
+    | "check_putaway"
+    | "putaway"
+    | "complete"
+    | "open"
+    | "cancel";
 
   type ConfirmConfigItem = {
     title: string;
@@ -1052,25 +1090,40 @@ const InboundTable = () => {
       description: "This inbound will move to Checking status.",
       confirmText: "Start Checking",
     },
+
     check_putaway: {
       title: "Check All Items?",
-      description: "This will generate pallet ID and insert scanned items. You can still review before confirming putaway.",
+      description:
+        "This will generate pallet ID and insert scanned items. You can still review before confirming putaway.",
       confirmText: "Check All",
     },
+
     putaway: {
       title: "Confirm Putaway?",
-      description: "This will finalize putaway to the assigned locations.",
+      description:
+        "This will finalize putaway to the assigned locations.",
       confirmText: "Confirm Putaway",
     },
+
     complete: {
       title: "Confirm Complete?",
-      description: "This inbound will be marked as Complete.",
+      description:
+        "This inbound will be marked as Complete.",
       confirmText: "Confirm Complete",
     },
+
     open: {
       title: "Return to Open?",
-      description: "This inbound will be reverted back to Open status.",
+      description:
+        "This inbound will be reverted back to Open status.",
       confirmText: "Return to Open",
+    },
+
+    cancel: {
+      title: "Cancel Inbound?",
+      description:
+        "This inbound will be cancelled. Cancellation is only allowed when no items have been received.",
+      confirmText: "Cancel Inbound",
     },
   };
 
@@ -1083,6 +1136,7 @@ const InboundTable = () => {
     if (type === "putaway") handlePutaway(inbound_no);
     if (type === "complete") handleComplete(inbound_no);
     if (type === "open") handleOpen(inbound_no);
+    if (type === "cancel") handleCancel(inbound_no);
   };
 
   const [confirmAction, setConfirmAction] = useState<{
@@ -1178,6 +1232,43 @@ const InboundTable = () => {
       .catch((error) => {
         eventBus.emit("loading", false);
         console.error("Error completing inbound:", error);
+      });
+  };
+
+  const handleCancel = (inbound_no: string) => {
+    eventBus.emit("loading", true);
+
+    api
+      .post(`/inbound/cancel/${inbound_no}`)
+      .then((response) => {
+        eventBus.emit("loading", false);
+
+        if (response.data.success) {
+          notify(
+            "Success",
+            response.data.message || "Inbound cancelled successfully",
+            "success"
+          );
+
+          mutateData();
+        } else {
+          notify(
+            "Error",
+            response.data.message || "Failed to cancel inbound",
+            "error"
+          );
+        }
+      })
+      .catch((error) => {
+        eventBus.emit("loading", false);
+
+        notify(
+          "Error",
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to cancel inbound",
+          "error"
+        );
       });
   };
 

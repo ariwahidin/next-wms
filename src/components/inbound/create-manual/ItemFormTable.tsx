@@ -660,40 +660,51 @@ export default function ItemFormTable({
   const allSelected =
     muatan?.length > 0 && selectedIds.length === muatan.length;
 
-  const policyColCount = [
-    invPolicy?.use_receive_location,
-    invPolicy?.show_rec_date,
-    invPolicy?.use_production_date,
-    invPolicy?.require_expiry_date,
-    invPolicy?.use_lot_no,
-    invPolicy?.use_carton_number,
-    invPolicy?.use_case_number,
-    invPolicy?.inbound_can_input_serial,
-  ].filter(Boolean).length;
+  // Kolom utama dibuat fixed supaya layout konsisten seperti tabel outbound.
+  // Field policy tambahan tetap ditampilkan di bawah Item sebagai informasi compact,
+  // sehingga tabel utama tidak melebar ke kanan.
+  const filteredItems = filteredMuatan.filter(
+    (item) => item.ref_id === inboundReferences.ID
+  );
 
-  const footerColSpan = 2 + policyColCount + 1;
+  const getSerials = (item: ItemFormProps): string[] =>
+    (item.serial_numbers ?? [])
+      .map((serial) => serial?.trim())
+      .filter((serial): serial is string => Boolean(serial));
+
+  const isEditableRow = (item: ItemFormProps) =>
+    headerForm.status === "open" ||
+    headerForm.status === "draft" ||
+    headerForm.mode === "create" ||
+    item.mode === "create";
+
+  const footerColSpan = 9;
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center border-b pb-2">
-          <div className="flex items-center gap-3">
+      <div className="w-full space-y-3">
+        {/* =========================================================
+            TOOLBAR
+        ========================================================== */}
+        <div className="flex flex-col gap-3 border-b pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={() => setIsTableOpen((prev) => !prev)}
-              className="px-2 gap-2"
+              className="h-9 gap-2 px-2"
               title={isTableOpen ? "Close Table" : "Open Table"}
             >
-              {isTableOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              <span className="font-semibold">{isTableOpen ? "Minimize" : "Maximize"}</span>
+              {isTableOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+              <span className="font-semibold">
+                {isTableOpen ? "Minimize" : "Maximize"}
+              </span>
             </Button>
 
-            {/* {headerForm.status === "checking" && ( */}
-            {["open", "checking"].includes(headerForm.status) && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
+            {['open', 'checking'].includes(headerForm.status) && (
+              <div className="flex h-9 items-center gap-2 rounded-md px-1">
+                <span className="whitespace-nowrap text-sm font-medium">
                   {headerForm.status === "open"
                     ? "Unreceived"
                     : "Checking Pending"}
@@ -701,46 +712,39 @@ export default function ItemFormTable({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowCheckingPending((prev) => !prev)
-                  }
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${showCheckingPending
-                    ? "bg-blue-600"
-                    : "bg-gray-300"
-                    }`}
+                  onClick={() => setShowCheckingPending((prev) => !prev)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                    showCheckingPending ? "bg-blue-600" : "bg-gray-300"
+                  }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showCheckingPending
-                      ? "translate-x-4"
-                      : "translate-x-0.5"
-                      }`}
+                    className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                      showCheckingPending ? "translate-x-4" : "translate-x-0.5"
+                    }`}
                   />
                 </button>
               </div>
             )}
 
-            {headerForm.status !== "complete" && (
-              <div className="flex space-x-2">
-                {(headerForm.status === "open" ||
-                  headerForm.status === "draft") && (
-                    <Button
-                      type="button"
-                      onClick={handleAddItems}
-                      className="flex items-center gap-2 w-auto"
-                    >
-                      Add Items
-                    </Button>
-                  )}
-              </div>
-            )}
+            {headerForm.status !== "complete" &&
+              (headerForm.status === "open" ||
+                headerForm.status === "draft") && (
+                <Button
+                  type="button"
+                  onClick={handleAddItems}
+                  className="h-9 gap-2 rounded-md px-4"
+                >
+                  Add Items
+                </Button>
+              )}
           </div>
 
           {isTableOpen && (
-            <div className="flex space-x-2">
+            <div className="w-full sm:w-[220px] md:w-[260px]">
               <input
                 type="text"
                 placeholder="Search..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 value={searchTermMuatan}
                 onChange={(e) => setSearchTermMuatan(e.target.value)}
               />
@@ -748,676 +752,522 @@ export default function ItemFormTable({
           )}
         </div>
 
+        {/* =========================================================
+            TABLE
+        ========================================================== */}
         {isTableOpen && (
-          <div className="overflow-x-auto">
+          <div className="w-full overflow-x-auto rounded-md border border-gray-200 bg-white shadow-sm">
             <table
-              className="w-full border font-normal text-sm"
-              style={{ fontSize: "12px" }}
+              className="w-full min-w-[1180px] border-collapse text-[12px]"
+              style={{ tableLayout: "fixed" }}
             >
-              <thead className="bg-gray-100">
-                <tr>
-                  {/* <th className="p-2 border text-center w-8">
-                {headerForm.status == "open" || headerForm.status == "draft" && (
-                  <input
-                    // disabled={headerForm.status === "complete"}
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                  />
-                )}
-              </th> */}
-                  <th className="p-2 border w-12 text-center">No.</th>
-                  <th className="p-2 border" style={{ width: "200px" }}>
+              <colgroup>
+                <col style={{ width: "3.2%" }} />   {/* No */}
+                <col style={{ width: "24%" }} />    {/* Item */}
+                <col style={{ width: "7%" }} />     {/* Qty */}
+                <col style={{ width: "7%" }} />     {/* Pack */}
+                <col style={{ width: "11%" }} />    {/* Division */}
+                <col style={{ width: "9%" }} />     {/* UoM */}
+                <col style={{ width: "10%" }} />    {/* Case */}
+                <col style={{ width: "10%" }} />    {/* Carton */}
+                <col style={{ width: "11%" }} />    {/* Serial */}
+                <col style={{ width: "11.8%" }} />  {/* Action */}
+              </colgroup>
+
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border p-2 text-center font-semibold whitespace-nowrap">
+                    No.
+                  </th>
+                  <th className="border p-2 text-center font-semibold">
                     Item
                   </th>
-                  {/* <th className="p-2 border" style={{ width: "400px" }}>
-                Description
-              </th> */}
-                  {/* <th className="p-2 border" style={{ width: "50px" }}>
-                UoM
-              </th> */}
-                  <th className="p-2 border" style={{ width: "100px" }}>
-                    Plan Qty
+                  <th className="border p-2 text-center font-semibold whitespace-nowrap">
+                    Qty
                   </th>
-
-
-
-
-                  {!["open", "draft"].includes(headerForm.status) && (
-                    <th className="p-2 border" style={{ width: "100px" }}>
-                      Qty Scan
-                    </th>
-                  )}
-
-                  <th className="p-2 border" style={{ width: "30px" }}>
+                  <th className="border p-2 text-center font-semibold whitespace-nowrap">
+                    Pack
+                  </th>
+                  <th className="border p-2 text-center font-semibold whitespace-nowrap">
                     Division
                   </th>
-
-                  <th className="p-2 border" style={{ width: "100px" }}>
-                    Status
+                  <th className="border p-2 text-center font-semibold whitespace-nowrap">
+                    UoM
                   </th>
-
-                  {invPolicy?.use_receive_location && (
-                    <th className="p-2 border" style={{ width: "130px" }}>
-                      Rec Location
-                    </th>
-                  )}
-
-
-                  {invPolicy?.show_rec_date && (
-                    <th className="p-2 border" style={{ width: "140px" }}>
-                      Rec Date
-                    </th>
-                  )}
-
-                  {invPolicy?.use_production_date && (
-                    <th className="p-2 border" style={{ width: "140px" }}>
-                      Prod Date
-                    </th>
-                  )}
-                  {invPolicy?.require_expiry_date && (
-                    <th className="p-2 border" style={{ width: "140px" }}>
-                      Exp Date
-                    </th>
-                  )}
-                  {invPolicy?.use_lot_no && (
-                    <th className="p-2 border" style={{ width: "140px" }}>
-                      Lot No.
-                    </th>
-                  )}
-
-                  {invPolicy?.use_carton_number && (
-                    <th className="p-2 border" style={{ width: "140px" }}>
-                      Carton No.
-                    </th>
-                  )}
-
-                  {invPolicy?.use_case_number && (
-                    <th className="p-2 border" style={{ width: "140px" }}>
-                      Case No.
-                    </th>
-                  )}
-
-                  {/* {invPolicy?.inbound_can_input_serial && (
-                <th className="p-2 border" style={{ width: "140px" }}>
-                  Serial No.
-                </th>
-              )} */}
-
-                  <th className="p-2 border" style={{ width: "220px" }}>
+                  <th className="border p-2 text-center font-semibold whitespace-nowrap">
+                    Case No.
+                  </th>
+                  <th className="border p-2 text-center font-semibold whitespace-nowrap">
+                    Carton No.
+                  </th>
+                  <th className="border p-2 text-center font-semibold whitespace-nowrap">
+                    Serial No.
+                  </th>
+                  <th className="border p-2 text-center font-semibold whitespace-nowrap">
                     Action
                   </th>
                 </tr>
               </thead>
+
               <tbody>
-                {filteredMuatan
-                  .filter((item) => item.ref_id === inboundReferences.ID)
-                  .map((item, index) => {
-                    const isEditing = editingId === item.ID;
-                    return (
-                      <tr key={item.ID} className="border-t">
-                        {/* <td className="p-2 border text-center">
-                      {headerForm.status == "open" && (
-                        <input
-                          // disabled={headerForm.status === "complete"}
-                          type="checkbox"
-                          checked={selectedIds.includes(item.ID)}
-                          onChange={(e) =>
-                            handleSelect(item.ID, e.target.checked)
-                          }
-                        />
-                      )}
-                    </td> */}
-                        <td className="p-2 border text-center">{index + 1}</td>
+                {filteredItems.map((item, index) => {
+                  const isEditing = editingId === item.ID;
+                  const editable = isEditableRow(item);
+                  const serials = getSerials(item);
+                  const quantity = Number(item.quantity) || 0;
+                  const packQty = Number(
+                    inboundDetails.find((d) => d.id === item.ID)?.qty_scan ?? 0
+                  );
 
-                        {headerForm.status == "open" || headerForm.status == "draft" ||
-                          headerForm.mode == "create" ? (
-                          <>
-                            <td className="p-2 border">
-                              <div className="flex items-center gap-2">
-                                {/* <Input
-                              style={{ fontSize: "12px" }}
-                              type="text"
-                              value={item.item_code}
-                              readOnly
-                              className="flex-1"
-                              placeholder="Click edit to select item..."
-                            /> */}
-                                <span className="text-xs">SKU : {item.item_code} <br /> {products.find(
-                                  (p) => p.item_code === item.item_code
-                                )?.item_name || ""}</span> <br />
-                                {/* <span>{products.find(
-                              (p) => p.item_code === item.item_code
-                            )?.item_name || ""}</span> */}
-                                {/* {['open', 'draft'].includes(headerForm.status) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEditItem(item)}
-                                title="Select item"
-                              >
-                                <RefreshCcw size={12} />
-                              </Button>
-                            )} */}
-                              </div>
-                              {errors[item.ID]?.item_code && (
-                                <small className="text-red-500">
-                                  {errors[item.ID].item_code}
-                                </small>
-                              )}
+                  return (
+                    <tr
+                      key={item.ID}
+                      className="border-t transition-colors hover:bg-gray-50"
+                    >
+                      {/* NO */}
+                      <td className="border p-2 text-center align-middle">
+                        {index + 1}
+                      </td>
 
-                              {item.bundle_product_code !== "" && (
-                                <span className="text-xs text-gray-400">
-                                  Bundling for item : {item.bundle_product_code || ""}
-                                </span>
-                              )}
-                            </td>
-                            {/* <td className="p-2 border">
-                          <Input
-                            style={{ fontSize: "12px" }}
-                            readOnly
-                            type="text"
-                            value={
-                              products.find(
+                      {/* ITEM */}
+                      <td className="border p-2 align-middle">
+                        <div className="min-w-0">
+                          <div className="break-words leading-tight">
+                            <span className="font-medium text-gray-800">
+                              SKU : {item.item_code}
+                            </span>
+                            <br />
+                            <span className="text-gray-700">
+                              {products.find(
                                 (p) => p.item_code === item.item_code
-                              )?.item_name || ""
-                            }
-                          />
-                        </td> */}
-                            {/* <td className="p-2 border">
-                          <Select
-                            key={item.ID}
-                            className="w-24"
-                            options={
-                              selectStates[item.ID]?.options ?? defaultOptions
-                            }
-                            onFocus={() => handleFocus(item.item_code, item.ID)}
-                            isLoading={selectStates[item.ID]?.loading ?? false}
-                            value={(
-                              selectStates[item.ID]?.options ?? defaultOptions
-                            ).find((option) => option.value === item.uom)}
-                            onChange={(value) =>
-                              handleChange(item.ID, "uom", value?.value)
-                            }
-                          />
-                        </td> */}
-                            <td className="p-2 border">
-                              <div>
-                                <Input
-                                  className="w-20"
-                                  style={{ fontSize: "12px" }}
-                                  type="number"
-                                  value={item.quantity}
-                                  onChange={(e) =>
-                                    handleChange(
-                                      item.ID,
-                                      "quantity",
-                                      e.target.value
-                                    )
-                                  }
-                                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                                />
-                              </div>
-                              {errors[item.ID]?.quantity && (
-                                <small className="text-red-500">
-                                  {errors[item.ID].quantity}
-                                </small>
-                              )}
-                            </td>
+                              )?.item_name || ""}
+                            </span>
+                          </div>
 
-                            <td className="p-2 border">
-                              <Select
-                                className="w-40"
-                                key={item.ID}
-                                options={
-                                  divisionOptions
-                                }
-                                value={divisionOptions.find((option) => option.value === item.division_code)}
-                                onChange={(value) =>
-                                  handleChange(item.ID, "division_code", value?.value)
-                                }
-                              />
-                            </td>
+                          {item.bundle_product_code && (
+                            <div className="mt-0.5 break-words text-[11px] text-gray-400">
+                              Bundling for item : {item.bundle_product_code}
+                            </div>
+                          )}
 
-                            <td className="p-2 border">
-                              <Select
-                                key={item.ID}
-                                className="w-20"
-                                options={optionsStatus}
-                                onFocus={() => handleFocus(item.item_code, item.ID)}
-                                isLoading={selectStates[item.ID]?.loading ?? false}
-                                value={selectStates[item.ID]?.selectedOption ??
-                                  optionsStatus.find(
-                                    (option) => option.value === item.qa_status
-                                  )}
-                                onChange={(value) =>
-                                  handleChange(item.ID, "qa_status", value?.value)
-                                }
-                              />
-                            </td>
+                          {errors[item.ID]?.item_code && (
+                            <small className="mt-1 block text-red-500">
+                              {errors[item.ID].item_code}
+                            </small>
+                          )}
+                        </div>
+                      </td>
 
-                            {invPolicy?.use_receive_location && (
-                              <td className="p-2 border">
-                                <div>
-                                  <Input
-                                    style={{ fontSize: "12px", width: "120px" }}
-                                    type="text"
-                                    value={item.location}
-                                    onChange={(e) =>
-                                      handleChange(
-                                        item.ID,
-                                        "location",
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                </div>
-                              </td>
-                            )}
-
-
-
-                            {invPolicy?.show_rec_date && (
-                              <td className="p-2 border">
-                                <DatePicker
-                                  selected={
-                                    item.rec_date ? parseISO(item.rec_date) : null
-                                  }
-                                  onChange={(date: Date | null) => {
-                                    if (date) {
-                                      handleChange(
-                                        item.ID,
-                                        "rec_date",
-                                        format(date, "yyyy-MM-dd")
-                                      );
-                                    }
-                                  }}
-                                  dateFormat="dd/MM/yyyy"
-                                  locale={id}
-                                  customInput={
-                                    <Input
-                                      className="w-[100px] cursor-pointer"
-                                      style={{ fontSize: "12px" }}
-                                    />
-                                  }
-                                  placeholderText="Choose date"
-                                  popperPlacement="bottom-start"
-                                />
-                                {errors[item.ID]?.rec_date && (
-                                  <small className="text-red-500">
-                                    {errors[item.ID].rec_date}
-                                  </small>
-                                )}
-                              </td>
-                            )}
-
-                            {invPolicy?.use_production_date && (
-                              <td className="p-2 border">
-                                <DatePicker
-                                  selected={
-                                    item.prod_date ? parseISO(item.prod_date) : null
-                                  }
-                                  onChange={(date: Date | null) => {
-                                    if (date) {
-                                      handleChange(
-                                        item.ID,
-                                        "prod_date",
-                                        format(date, "yyyy-MM-dd")
-                                      );
-                                    }
-                                  }}
-                                  dateFormat="dd/MM/yyyy"
-                                  locale={id}
-                                  customInput={
-                                    <Input
-                                      className="w-[100px] cursor-pointer"
-                                      style={{ fontSize: "12px" }}
-                                    />
-                                  }
-                                  placeholderText="Choose date"
-                                  popperPlacement="bottom-start"
-                                />
-                                {errors[item.ID]?.prod_date && (
-                                  <small className="text-red-500">
-                                    {errors[item.ID].prod_date}
-                                  </small>
-                                )}
-                              </td>
-                            )}
-
-                            {invPolicy?.require_expiry_date && (
-                              <>
-                                <td className="p-2 border">
-                                  <DatePicker
-                                    selected={
-                                      item.exp_date ? parseISO(item.exp_date) : null
-                                    }
-                                    onChange={(date: Date | null) => {
-                                      if (date) {
-                                        handleChange(
-                                          item.ID,
-                                          "exp_date",
-                                          format(date, "yyyy-MM-dd")
-                                        );
-                                      }
-                                    }}
-                                    dateFormat="dd/MM/yyyy"
-                                    locale={id}
-                                    customInput={
-                                      <Input
-                                        className="w-[100px] cursor-pointer"
-                                        style={{ fontSize: "12px" }}
-                                      />
-                                    }
-                                    placeholderText="Choose date"
-                                    popperPlacement="bottom-start"
-                                  />
-                                  {errors[item.ID]?.rec_date && (
-                                    <small className="text-red-500">
-                                      {errors[item.ID].exp_date}
-                                    </small>
-                                  )}
-                                </td>
-                              </>
-                            )}
-
-                            {invPolicy?.use_lot_no && (
-                              <td className="p-2 border">
-                                <Input
-                                  style={{ fontSize: "12px", width: "130px" }}
-                                  type="text"
-                                  value={item.lot_number}
-                                  onChange={(e) =>
-                                    handleChange(item.ID, "lot_number", e.target.value)
-                                  }
-                                />
-                                {errors[item.ID]?.remarks && (
-                                  <small className="text-red-500">
-                                    {errors[item.ID].lot_number}
-                                  </small>
-                                )}
-                              </td>
-                            )}
-
-                            {invPolicy?.use_carton_number && (
-                              <td className="p-2 border">
-                                <Input
-                                  style={{ fontSize: "12px", width: "130px" }}
-                                  type="text"
-                                  value={item.carton_number}
-                                  onChange={(e) =>
-                                    handleChange(item.ID, "carton_number", e.target.value)
-                                  }
-                                />
-                                {errors[item.ID]?.carton_number && (
-                                  <small className="text-red-500">
-                                    {errors[item.ID].carton_number}
-                                  </small>
-                                )}
-                              </td>
-                            )}
-
-                            {invPolicy?.use_case_number && (
-                              <td className="p-2 border">
-                                <Input
-                                  style={{ fontSize: "12px", width: "130px" }}
-                                  type="text"
-                                  value={item.case_number}
-                                  onChange={(e) =>
-                                    handleChange(item.ID, "case_number", e.target.value)
-                                  }
-                                />
-                                {errors[item.ID]?.case_number && (
-                                  <small className="text-red-500">
-                                    {errors[item.ID].case_number}
-                                  </small>
-                                )}
-                              </td>
-                            )}
-
-                            {/* {invPolicy?.inbound_can_input_serial && (
-                          <td className="p-2 border">
+                      {/* QTY */}
+                      <td className="border p-2 align-middle">
+                        {editable ? (
+                          <>
                             <Input
-                              style={{ fontSize: "12px", width: "130px" }}
-                              type="text"
-                              value={item.serial_number}
+                              className="h-8 w-full min-w-0 text-center text-xs"
+                              type="number"
+                              value={item.quantity}
                               onChange={(e) =>
                                 handleChange(
                                   item.ID,
-                                  "serial_number",
+                                  "quantity",
+                                  e.target.value
+                                )
+                              }
+                              onWheel={(e) =>
+                                (e.target as HTMLInputElement).blur()
+                              }
+                            />
+                            {errors[item.ID]?.quantity && (
+                              <small className="mt-1 block text-red-500">
+                                {errors[item.ID].quantity}
+                              </small>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-center font-medium">
+                            {quantity}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* PACK / SCANNED */}
+                      <td className="border p-2 align-middle">
+                        <div className="text-center">
+                          <Input
+                            className="h-8 w-full min-w-0 text-center text-xs"
+                            type="number"
+                            value={packQty}
+                            readOnly
+                          />
+                        </div>
+                      </td>
+
+                      {/* DIVISION */}
+                      <td className="border p-2 align-middle">
+                        {editable ? (
+                          <Select
+                            key={`division-${item.ID}`}
+                            className="text-xs"
+                            classNamePrefix="wms-select"
+                            options={divisionOptions}
+                            value={divisionOptions.find(
+                              (option) =>
+                                option.value === item.division_code
+                            )}
+                            onChange={(value) =>
+                              handleChange(
+                                item.ID,
+                                "division_code",
+                                value?.value ?? ""
+                              )
+                            }
+                            menuPortalTarget={
+                              typeof document !== "undefined"
+                                ? document.body
+                                : undefined
+                            }
+                            styles={{
+                              control: (base) => ({
+                                ...base,
+                                minHeight: 32,
+                                height: 32,
+                                fontSize: 12,
+                                borderColor: "#d1d5db",
+                                boxShadow: "none",
+                              }),
+                              valueContainer: (base) => ({
+                                ...base,
+                                padding: "0 8px",
+                              }),
+                              indicatorsContainer: (base) => ({
+                                ...base,
+                                height: 30,
+                              }),
+                              menuPortal: (base) => ({
+                                ...base,
+                                zIndex: 9999,
+                              }),
+                            }}
+                          />
+                        ) : (
+                          <div className="text-center">
+                            {item.division_code || "-"}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* UOM */}
+                      <td className="border p-2 align-middle">
+                        {editable ? (
+                          <Select
+                            key={`uom-${item.ID}`}
+                            className="text-xs"
+                            classNamePrefix="wms-select"
+                            options={
+                              selectStates[item.ID]?.options ?? defaultOptions
+                            }
+                            onFocus={() =>
+                              handleFocus(item.item_code, item.ID)
+                            }
+                            isLoading={
+                              selectStates[item.ID]?.loading ?? false
+                            }
+                            value={(
+                              selectStates[item.ID]?.options ?? defaultOptions
+                            ).find(
+                              (option) => option.value === item.uom
+                            )}
+                            onChange={(value) =>
+                              handleChange(
+                                item.ID,
+                                "uom",
+                                value?.value ?? ""
+                              )
+                            }
+                            menuPortalTarget={
+                              typeof document !== "undefined"
+                                ? document.body
+                                : undefined
+                            }
+                            styles={{
+                              control: (base) => ({
+                                ...base,
+                                minHeight: 32,
+                                height: 32,
+                                fontSize: 12,
+                                borderColor: "#d1d5db",
+                                boxShadow: "none",
+                              }),
+                              valueContainer: (base) => ({
+                                ...base,
+                                padding: "0 8px",
+                              }),
+                              indicatorsContainer: (base) => ({
+                                ...base,
+                                height: 30,
+                              }),
+                              menuPortal: (base) => ({
+                                ...base,
+                                zIndex: 9999,
+                              }),
+                            }}
+                          />
+                        ) : (
+                          <div className="text-center">{item.uom || "-"}</div>
+                        )}
+                      </td>
+
+                      {/* CASE NUMBER */}
+                      <td className="border p-2 align-middle">
+                        {invPolicy?.use_case_number ? (
+                          editable ? (
+                            <Input
+                              className="h-8 w-full text-xs"
+                              type="text"
+                              value={item.case_number || ""}
+                              onChange={(e) =>
+                                handleChange(
+                                  item.ID,
+                                  "case_number",
                                   e.target.value
                                 )
                               }
                             />
-                            {errors[item.ID]?.serial_number && (
-                              <small className="text-red-500">
-                                {errors[item.ID].serial_number}
-                              </small>
-                            )}
-                          </td>
-                        )} */}
-
-                            <td
-                              className="p-2 border space-x-2 text-center"
-                              style={{ width: "100px" }}
-                            >
-                              <div className="flex flex-wrap items-center justify-center gap-1">
-                                {item.mode == "create" ? (
-                                  <>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => {
-                                        handleCancel(item);
-                                      }}
-                                    >
-                                      <X size={14} />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleCopy(item.ID)}
-                                    >
-                                      <Copy size={14} />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleGenerateQR(item)}
-                                      title="Generate QR"
-                                    >
-                                      <QrCode size={14} />
-                                    </Button>
-                                    {invPolicy?.inbound_can_input_serial && (
-                                      <Button
-                                        size="sm"
-                                        variant={
-                                          (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity && item.quantity > 0
-                                            ? "default"
-                                            : "outline"
-                                        }
-                                        onClick={() => handleOpenSerialModal(item)}
-                                        title="Isi Serial Number"
-                                        className="min-w-[56px] justify-center"
-                                      >
-                                        SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity || 0}
-                                      </Button>
-                                    )}
-                                  </>
-                                ) : (
-                                  <>
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={() => handleDelete(item.ID)}
-                                    >
-                                      <Trash size={14} />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleCopy(item.ID)}
-                                    >
-                                      <Copy size={14} />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleGenerateQR(item)}
-                                      title="Generate QR"
-                                    >
-                                      <QrCode size={14} />
-                                    </Button>
-                                    {invPolicy?.inbound_can_input_serial && (
-                                      <Button
-                                        size="sm"
-                                        variant={
-                                          (item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0) === item.quantity && item.quantity > 0
-                                            ? "default"
-                                            : "outline"
-                                        }
-                                        onClick={() => handleOpenSerialModal(item)}
-                                        title="Isi Serial Number"
-                                        className="min-w-[56px] justify-center"
-                                      >
-                                        SN {item.serial_numbers?.filter((s) => s.trim() !== "").length ?? 0}/{item.quantity || 0}
-                                      </Button>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          </>
+                          ) : (
+                            <div className="break-words text-center">
+                              {item.case_number || ""}
+                            </div>
+                          )
                         ) : (
-                          <>
-                            <td className="p-2 border"><span className="text-xs">SKU : {item.item_code} <br /> {products.find(
-                              (p) => p.item_code === item.item_code
-                            )?.item_name || ""}</span> <br /></td>
-
-                            {/* <td className="p-2 border text-center">
-                          {
-                            products.find((p) => p.item_code === item.item_code)
-                              ?.item_name
-                          }
-                        </td> */}
-                            {/* <td className="p-2 border text-center">{item.uom}</td> */}
-                            <td className="p-2 border text-center">
-                              {item.quantity}
-                            </td>
-
-
-                            <td className="p-2 border text-center">
-                              {/* {inboundDetails.find(
-                            (d) => d.id === item.ID
-                          ).qty_scan} */}
-
-                              {inboundDetails.find(
-                                (d) => d.id === item.ID
-                              )?.qty_scan ?? 0}
-                            </td>
-
-                            <td className="p-2 border text-center">
-                              {item.division_code}
-                            </td>
-
-
-                            <td className="p-2 border text-center">{item.qa_status}</td>
-
-                            {invPolicy?.use_receive_location && (
-                              <td className="p-2 border text-center">
-                                {item.location}
-                              </td>
-                            )}
-
-                            {invPolicy?.show_rec_date && (
-                              <td className="p-2 border text-center">
-                                {dayjs(item.rec_date).format("D MMM YYYY")}
-                              </td>
-                            )}
-                            {invPolicy?.use_production_date && (
-                              <td className="p-2 border text-center">
-                                {dayjs(item.prod_date).format("D MMM YYYY")}
-                              </td>
-                            )}
-
-                            {invPolicy?.require_expiry_date && (
-                              <td className="p-2 border text-center">
-                                {dayjs(item.exp_date).format("D MMM YYYY")}
-                              </td>
-                            )}
-
-
-                            {invPolicy?.use_lot_no && (
-                              <td className="p-2 border text-center">
-                                {item.lot_number}
-                              </td>
-                            )}
-
-
-                            {invPolicy?.use_carton_number && (
-                              <td className="p-2 border text-center">
-                                {item.carton_number}
-                              </td>
-                            )}
-
-                            {invPolicy?.use_case_number && (
-                              <td className="p-2 border text-center">
-                                {item.case_number}
-                              </td>
-                            )}
-
-                            {/* {invPolicy?.inbound_can_input_serial && (
-                          <td className="p-2 border text-center">
-                            {item.serial_number}
-                          </td>
-                        )} */}
-
-                            {invPolicy?.inbound_can_input_serial && (
-                              <td className="p-2 border text-center">
-                                {item.serial_numbers?.length ?? 0} SN
-                              </td>
-                            )}
-
-                            <td
-                              className="p-2 border space-x-2 text-center"
-                              style={{ width: "160px" }}
-                            >
-                              {headerForm.status !== "complete" && <></>}
-                            </td>
-                          </>
+                          <div className="text-center text-gray-300">-</div>
                         )}
-                      </tr>
-                    );
-                  })}
+                      </td>
+
+                      {/* CARTON NUMBER */}
+                      <td className="border p-2 align-middle">
+                        {invPolicy?.use_carton_number ? (
+                          editable ? (
+                            <Input
+                              className="h-8 w-full text-xs"
+                              type="text"
+                              value={item.carton_number || ""}
+                              onChange={(e) =>
+                                handleChange(
+                                  item.ID,
+                                  "carton_number",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          ) : (
+                            <div className="break-words text-center">
+                              {item.carton_number || ""}
+                            </div>
+                          )
+                        ) : (
+                          <div className="text-center text-gray-300">-</div>
+                        )}
+                      </td>
+
+                      {/* SERIAL NUMBER */}
+                      <td className="border p-2 align-middle">
+                        {invPolicy?.inbound_can_input_serial ? (
+                          serials.length > 0 ? (
+                            <div className="space-y-1 text-[11px] leading-tight">
+                              {serials.map((serial, serialIndex) => (
+                                <div
+                                  key={`${item.ID}-serial-${serialIndex}`}
+                                  className="break-all rounded border border-gray-200 bg-gray-50 px-1.5 py-1 text-gray-700"
+                                >
+                                  {serial}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center text-gray-300">-</div>
+                          )
+                        ) : (
+                          <div className="text-center text-gray-300">-</div>
+                        )}
+                      </td>
+
+                      {/* ACTION */}
+                      <td className="border p-2 align-middle">
+                        <div className="flex flex-wrap items-center justify-center gap-1">
+                          {editable ? (
+                            <>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleCancel(item)}
+                                title="Cancel"
+                                className="h-8 w-8 p-0"
+                              >
+                                <X size={14} />
+                              </Button>
+
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleCopy(item.ID)}
+                                title="Copy"
+                                className="h-8 w-8 p-0"
+                              >
+                                <Copy size={14} />
+                              </Button>
+
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleGenerateQR(item)}
+                                title="Generate QR"
+                                className="h-8 w-8 p-0"
+                              >
+                                <QrCode size={14} />
+                              </Button>
+
+                              {invPolicy?.inbound_can_input_serial && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={
+                                    serials.length === quantity &&
+                                    quantity > 0
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  onClick={() =>
+                                    handleOpenSerialModal(item)
+                                  }
+                                  title="Isi Serial Number"
+                                  className="h-8 min-w-[58px] px-2 text-[11px]"
+                                >
+                                  SN {serials.length}/{quantity}
+                                </Button>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {headerForm.status !== "complete" && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDelete(item.ID)}
+                                  title="Delete"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Trash size={14} />
+                                </Button>
+                              )}
+
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleCopy(item.ID)}
+                                title="Copy"
+                                className="h-8 w-8 p-0"
+                              >
+                                <Copy size={14} />
+                              </Button>
+
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleGenerateQR(item)}
+                                title="Generate QR"
+                                className="h-8 w-8 p-0"
+                              >
+                                <QrCode size={14} />
+                              </Button>
+
+                              {invPolicy?.inbound_can_input_serial && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={
+                                    serials.length === quantity &&
+                                    quantity > 0
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  onClick={() =>
+                                    handleOpenSerialModal(item)
+                                  }
+                                  title="Isi Serial Number"
+                                  className="h-8 min-w-[58px] px-2 text-[11px]"
+                                >
+                                  SN {serials.length}/{quantity}
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Informasi field inbound yang tidak ditaruh sebagai kolom
+                            supaya layout tetap compact seperti outbound. */}
+                        {editable && (
+                          <div className="mt-1 flex flex-wrap justify-center gap-x-2 gap-y-0.5 text-[9px] text-gray-400">
+                            {item.qa_status && <span>Status: {item.qa_status}</span>}
+                            {item.location && <span>Loc: {item.location}</span>}
+                            {item.lot_number && <span>Lot: {item.lot_number}</span>}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {filteredItems.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={footerColSpan}
+                      className="border p-6 text-center text-sm text-gray-400"
+                    >
+                      No items found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
+
               <tfoot>
                 <tr className="bg-gray-100 font-semibold">
-                  <td className="p-2 border" colSpan={2}>
+                  <td className="border p-2" colSpan={2}>
                     Total
                   </td>
-                  <td className="p-2 border text-center">
-                    {/* {filteredMuatan.reduce((acc, item) => acc + item.quantity, 0)} */}
-                    {filteredMuatan.reduce(
-                      (acc, item) => acc + ((item.quantity as unknown as string) === "" ? 0 : Number(item.quantity)),
+                  <td className="border p-2 text-center">
+                    {filteredItems.reduce(
+                      (acc, item) =>
+                        acc +
+                        (((item.quantity as unknown as string) === ""
+                          ? 0
+                          : Number(item.quantity)) || 0),
                       0
-                    )
-                    }
+                    )}
                   </td>
-                  {!['open', 'draft'].includes(headerForm.status) && (
-                    <td className="p-2 border text-center">
-                      {inboundDetails.reduce(
-                        (acc, item) => acc + item.qty_scan,
-                        0
-                      )}
-                    </td>
-                  )}
-                  <td className="p-2 border" colSpan={footerColSpan}></td>
+                  <td className="border p-2 text-center">
+                    {filteredItems.reduce(
+                      (acc, item) =>
+                        acc +
+                        Number(
+                          inboundDetails.find((d) => d.id === item.ID)
+                            ?.qty_scan ?? 0
+                        ),
+                      0
+                    )}
+                  </td>
+                  <td className="border p-2" colSpan={footerColSpan - 4}></td>
                 </tr>
               </tfoot>
             </table>
           </div>
         )}
-      </div >
+      </div>
       <ItemSelectionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
