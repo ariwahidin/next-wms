@@ -165,7 +165,9 @@ const PutawaySheetPrint = () => {
             Helvetica,
             sans-serif;
 
-          font-size: 9px;
+          /* FONT UTAMA DIBESARKAN */
+          font-size: 12px;
+
           color: #000;
           background: #fff;
         }
@@ -224,12 +226,14 @@ const PutawaySheetPrint = () => {
           margin-bottom: 5px;
 
           table-layout: fixed;
+
+          font-size: 12px;
         }
 
         .info-table td {
           padding: 2px 4px;
 
-          line-height: 1.1;
+          line-height: 1.15;
 
           vertical-align: middle;
         }
@@ -262,7 +266,8 @@ const PutawaySheetPrint = () => {
 
           table-layout: fixed;
 
-          font-size: 8px;
+          /* 8px -> 9px */
+          font-size: 11px;
         }
 
         .main-table th {
@@ -276,7 +281,7 @@ const PutawaySheetPrint = () => {
 
           font-weight: bold;
 
-          line-height: 1.1;
+          line-height: 1.15;
         }
 
         .main-table td {
@@ -286,7 +291,7 @@ const PutawaySheetPrint = () => {
 
           height: 28px;
 
-          line-height: 1.1;
+          line-height: 1.15;
 
           vertical-align: middle;
         }
@@ -306,13 +311,13 @@ const PutawaySheetPrint = () => {
         }
 
         .item {
-          width: 21%;
+          width: 15%;
 
           text-align: left;
         }
 
         .imd {
-          width: 9%;
+          width: 12%;
 
           text-align: center;
 
@@ -326,15 +331,18 @@ const PutawaySheetPrint = () => {
         }
 
         .serial-number {
-          width: 18%;
+          width: 13%;
 
           text-align: left;
 
-          font-size: 7.5px;
+          /* 7.5px -> 8.5px */
+          font-size: 11px;
 
           word-break: break-word;
 
           overflow-wrap: anywhere;
+
+          line-height: 1.15;
         }
 
         .case-no {
@@ -362,13 +370,15 @@ const PutawaySheetPrint = () => {
         .item-code {
           font-weight: bold;
 
-          font-size: 8px;
+          /* 8px -> 9px */
+          font-size: 11px;
 
           line-height: 1.1;
         }
 
         .item-name {
-          font-size: 7px;
+          /* 7px -> 8px */
+          font-size: 11px;
 
           margin-top: 1px;
 
@@ -395,6 +405,8 @@ const PutawaySheetPrint = () => {
           font-weight: bold;
 
           padding: 2px;
+
+          font-size: 11px;
         }
 
         /* =====================================================
@@ -427,7 +439,8 @@ const PutawaySheetPrint = () => {
         }
 
         .signature-name {
-          font-size: 8px;
+          /* 8px -> 9px */
+          font-size: 11px;
 
           font-weight: bold;
         }
@@ -499,7 +512,9 @@ const PutawaySheetPrint = () => {
 
         </div>
 
-        {/* TITLE */}
+        {/* =====================================================
+            TITLE
+        ===================================================== */}
 
         <div className="title">
           RECEIVING TALLY SHEET
@@ -510,7 +525,6 @@ const PutawaySheetPrint = () => {
         ===================================================== */}
 
         <table className="info-table">
-
           <tbody>
 
             <tr>
@@ -658,7 +672,6 @@ const PutawaySheetPrint = () => {
             </tr>
 
           </tbody>
-
         </table>
 
         {/* =====================================================
@@ -668,7 +681,6 @@ const PutawaySheetPrint = () => {
         <table className="main-table">
 
           <thead>
-
             <tr>
 
               <th className="no">
@@ -692,11 +704,11 @@ const PutawaySheetPrint = () => {
               </th>
 
               <th className="case-no">
-                CASE NO
+                CASE NO / FID
               </th>
 
               <th className="carton-no">
-                CARTON NO
+                CTN NO
               </th>
 
               <th className="location">
@@ -704,7 +716,6 @@ const PutawaySheetPrint = () => {
               </th>
 
             </tr>
-
           </thead>
 
           <tbody>

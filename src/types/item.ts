@@ -15,4 +15,5 @@ export interface Product {
     category?: string;
     cbm?: number;
     qty_available?: number;
+    unit_model?: string;
 }

@@ -310,11 +310,11 @@ const PickingSheetPrint = () => {
 
               <th style={th}>LOCATION</th>
               {data.owner_code === "YUWELL" && <th style={th}>PALLET</th>}
-              {invPolicy.allocation_case_by_order && <th style={th}>CASE NO</th>}
+              {invPolicy.allocation_case_by_order && <th style={th}>CASE NO / FID</th>}
               {invPolicy.allocation_carton_by_order && <th style={th}>CTN NO</th>}
               {invPolicy.allocation_serial_by_order && <th style={th}>SERIAL NO</th>}
               <th style={th}>QTY</th>
-              <th style={th}>CBM</th>
+              {/* <th style={th}>CBM</th> */}
             </tr>
           </thead>
           <tbody>
@@ -360,12 +360,12 @@ const PickingSheetPrint = () => {
                       >
                         {j === 0 && (
                           <>
-                            <span style={{ fontSize: "9px" }}>{item.item_code}</span>
+                            <span style={{ fontSize: "10px" }}>{item.item_code}</span>
                             <br />
                             <span
                               style={{
                                 fontWeight: "normal",
-                                fontSize: "9px",
+                                fontSize: "10px",
                                 display: "inline-block",
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
@@ -377,7 +377,7 @@ const PickingSheetPrint = () => {
 
                             </span>
                             <br />
-                            <span style={{ fontSize: "9px", fontWeight: "normal", color: "gray" }}>{item.unit_model}</span>
+                            <span style={{ fontSize: "10px", fontWeight: "normal", color: "gray" }}>{item.unit_model}</span>
                           </>
                         )}
                       </td>
@@ -391,7 +391,7 @@ const PickingSheetPrint = () => {
                               // alignItems: "center",
                             }}
                           >
-                            <div style={{ fontSize: "9px", marginBottom: "0px" }}>
+                            <div style={{ fontSize: "10px", marginBottom: "0px" }}>
                               {item.product_bundling_code}
                             </div>
                             {/* <canvas
@@ -433,7 +433,7 @@ const PickingSheetPrint = () => {
                           // textAlign: "center",
                           // whiteSpace: "nowrap",
                           // fontWeight: "bold",
-                          fontSize: "9px",
+                          fontSize: "10px",
                         }}
                       >
                         {item.location}
@@ -456,13 +456,13 @@ const PickingSheetPrint = () => {
 
 
                       {invPolicy.allocation_case_by_order && (
-                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap", fontSize: "9px" }}>
+                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap", fontSize: "10px" }}>
                           {item.case_number}
                         </td>
                       )}
 
                       {invPolicy.allocation_carton_by_order && (
-                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap", fontSize: "9px" }}>
+                        <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap", fontSize: "10px" }}>
                           {item.carton_number}
                         </td>
                       )}
@@ -470,7 +470,7 @@ const PickingSheetPrint = () => {
                         <td
                           style={{
                             ...td,
-                            fontSize: "9px",
+                            fontSize: "10px",
                             textAlign: "center",
                             whiteSpace: "pre-line",
                           }}
@@ -485,7 +485,7 @@ const PickingSheetPrint = () => {
                         {item.quantity}
                         {/* {item.uom} */}
                       </td>
-                      <td style={{ ...td, textAlign: "center" }}>{item.cbm}</td>
+                      {/* <td style={{ ...td, textAlign: "center" }}>{item.cbm}</td> */}
                     </tr>
                   ))}
 
@@ -509,7 +509,7 @@ const PickingSheetPrint = () => {
                     {/* <td style={{ ...td, textAlign: "right" }}></td> */}
                     <td style={{ ...td, textAlign: "right" }}>TOTAL</td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
-                    <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td>
+                    {/* <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td> */}
                   </tr>
                 </React.Fragment>
               );
@@ -534,7 +534,7 @@ const PickingSheetPrint = () => {
               {/* <td style={{ ...td, textAlign: "right" }}></td> */}
               <td style={{ ...td, textAlign: "right" }}>GRAND TOTAL</td>
               <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
-              <td style={{ ...td, textAlign: "center" }}>{grandTotalCbm}</td>
+              {/* <td style={{ ...td, textAlign: "center" }}>{grandTotalCbm}</td> */}
             </tr>
           </tbody>
         </table>

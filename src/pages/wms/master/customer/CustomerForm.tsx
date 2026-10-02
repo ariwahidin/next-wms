@@ -95,6 +95,11 @@ export default function CustomerForm({ editData, setEditData, open, setOpen }: C
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    if (!customer.owner_code || !customer.customer_code || !customer.customer_name || !customer.cust_addr1 || !customer.cust_city || !customer.cust_country || !customer.cust_phone || !customer.cust_email) {
+      setError("All fields are required.");
+      return;
+    }
+
     try {
       setError(null); // Reset error message jika form valid
 

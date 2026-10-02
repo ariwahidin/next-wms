@@ -1709,34 +1709,34 @@ const FurunoExcelUpload: React.FC =
                     return;
                 }
 
-                if (
-                    !handlingId
-                ) {
-                    alert(
-                        'Please enter Handling ID before uploading.'
-                    );
+                // if (
+                //     !handlingId
+                // ) {
+                //     alert(
+                //         'Please enter Handling ID before uploading.'
+                //     );
 
-                    return;
-                }
+                //     return;
+                // }
 
                 const parsedHandlingId =
                     Number(
                         handlingId
                     );
 
-                if (
-                    !Number.isInteger(
-                        parsedHandlingId
-                    ) ||
-                    parsedHandlingId <=
-                    0
-                ) {
-                    alert(
-                        'Handling ID must be a positive integer.'
-                    );
+                // if (
+                //     !Number.isInteger(
+                //         parsedHandlingId
+                //     ) ||
+                //     parsedHandlingId <=
+                //     0
+                // ) {
+                //     alert(
+                //         'Handling ID must be a positive integer.'
+                //     );
 
-                    return;
-                }
+                //     return;
+                // }
 
                 if (!preview) {
                     alert(
@@ -2038,7 +2038,7 @@ const FurunoExcelUpload: React.FC =
                                         HANDLING ID
                                     ================================================= */}
 
-                                    <div>
+                                    {/* <div>
 
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
 
@@ -2088,7 +2088,7 @@ const FurunoExcelUpload: React.FC =
                                             Handling master ID
                                         </p>
 
-                                    </div>
+                                    </div> */}
 
                                 </div>
 
@@ -2342,7 +2342,7 @@ const FurunoExcelUpload: React.FC =
                                                 loading ||
                                                 !selectedOwner ||
                                                 !selectedWhs ||
-                                                !handlingId ||
+                                                // !handlingId ||
                                                 !preview ||
                                                 preview.validRows ===
                                                 0
@@ -2412,7 +2412,7 @@ const FurunoExcelUpload: React.FC =
                                             <AlertTriangle className="w-4 h-4" />
 
                                             <span>
-                                                Select Owner, Warehouse, and Handling ID before uploading.
+                                                Select Owner, Warehouse before uploading.
                                             </span>
 
                                         </div>

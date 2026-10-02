@@ -713,14 +713,12 @@ export default function ItemFormTable({
                 <button
                   type="button"
                   onClick={() => setShowCheckingPending((prev) => !prev)}
-                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                    showCheckingPending ? "bg-blue-600" : "bg-gray-300"
-                  }`}
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${showCheckingPending ? "bg-blue-600" : "bg-gray-300"
+                    }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                      showCheckingPending ? "translate-x-4" : "translate-x-0.5"
-                    }`}
+                    className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${showCheckingPending ? "translate-x-4" : "translate-x-0.5"
+                      }`}
                   />
                 </button>
               </div>
@@ -763,13 +761,14 @@ export default function ItemFormTable({
             >
               <colgroup>
                 <col style={{ width: "3.2%" }} />   {/* No */}
-                <col style={{ width: "24%" }} />    {/* Item */}
-                <col style={{ width: "7%" }} />     {/* Qty */}
-                <col style={{ width: "7%" }} />     {/* Pack */}
-                <col style={{ width: "11%" }} />    {/* Division */}
-                <col style={{ width: "9%" }} />     {/* UoM */}
-                <col style={{ width: "10%" }} />    {/* Case */}
-                <col style={{ width: "10%" }} />    {/* Carton */}
+                <col style={{ width: "20%" }} />    {/* Item */}
+                <col style={{ width: "6%" }} />     {/* Qty */}
+                <col style={{ width: "6%" }} />     {/* Pack */}
+                <col style={{ width: "9%" }} />    {/* Division */}
+                <col style={{ width: "10%" }} />     {/* Rec Date */}
+                <col style={{ width: "15%" }} />    {/* Case */}
+                <col style={{ width: "7%" }} />    {/* Carton */}
+                <col style={{ width: "8%" }} />    {/* Location */}
                 <col style={{ width: "11%" }} />    {/* Serial */}
                 <col style={{ width: "11.8%" }} />  {/* Action */}
               </colgroup>
@@ -792,13 +791,16 @@ export default function ItemFormTable({
                     Division
                   </th>
                   <th className="border p-2 text-center font-semibold whitespace-nowrap">
-                    UoM
+                    Rec Date
                   </th>
                   <th className="border p-2 text-center font-semibold whitespace-nowrap">
                     Case No.
                   </th>
                   <th className="border p-2 text-center font-semibold whitespace-nowrap">
                     Carton No.
+                  </th>
+                  <th className="border p-2 text-center font-semibold whitespace-nowrap">
+                    Location
                   </th>
                   <th className="border p-2 text-center font-semibold whitespace-nowrap">
                     Serial No.
@@ -841,6 +843,11 @@ export default function ItemFormTable({
                               {products.find(
                                 (p) => p.item_code === item.item_code
                               )?.item_name || ""}
+                            </span>
+                            <span className="text-blue-700 ms-3 text-[11px]">
+                              {products.find(
+                                (p) => p.item_code === item.item_code
+                              )?.unit_model || ""}
                             </span>
                           </div>
 
@@ -956,8 +963,28 @@ export default function ItemFormTable({
                         )}
                       </td>
 
-                      {/* UOM */}
+                      {/* Rec Date */}
+
                       <td className="border p-2 align-middle">
+                        {editable ? (
+                          <Input
+                            className="h-8 w-full min-w-0 text-center text-xs"
+                            type="date"
+                            value={item.rec_date}
+                            onChange={(e) =>
+                              handleChange(item.ID, "rec_date", e.target.value)
+                            }
+                          />
+                        ) : (
+                          <div className="text-center">
+                            {item.rec_date || "-"}
+                          </div>
+                        )}
+                      </td>
+
+
+                      {/* UOM */}
+                      {/* <td className="border p-2 align-middle">
                         {editable ? (
                           <Select
                             key={`uom-${item.ID}`}
@@ -1015,10 +1042,10 @@ export default function ItemFormTable({
                         ) : (
                           <div className="text-center">{item.uom || "-"}</div>
                         )}
-                      </td>
+                      </td> */}
 
                       {/* CASE NUMBER */}
-                      <td className="border p-2 align-middle">
+                      <td className="border p-2 align-middle w-200">
                         {invPolicy?.use_case_number ? (
                           editable ? (
                             <Input
@@ -1029,7 +1056,7 @@ export default function ItemFormTable({
                                 handleChange(
                                   item.ID,
                                   "case_number",
-                                  e.target.value
+                                  e.target.value.toUpperCase()
                                 )
                               }
                             />
@@ -1068,6 +1095,30 @@ export default function ItemFormTable({
                           <div className="text-center text-gray-300">-</div>
                         )}
                       </td>
+
+                      {/* LOCATION */}
+                      <td className="border p-2 align-middle">
+                        {editable ? (
+                          <Input
+                            className="h-8 w-full text-xs"
+                            type="text"
+                            value={item.location || ""}
+                            onChange={(e) =>
+                              handleChange(
+                                item.ID,
+                                "location",
+                                e.target.value.toUpperCase()
+                              )
+                            }
+                          />
+                        ) : (
+                          <div className="break-words text-center">
+                            {item.location || ""}
+                          </div>
+                        )
+                        }
+                      </td>
+
 
                       {/* SERIAL NUMBER */}
                       <td className="border p-2 align-middle">
@@ -1118,7 +1169,7 @@ export default function ItemFormTable({
                                 <Copy size={14} />
                               </Button>
 
-                              <Button
+                              {/* <Button
                                 type="button"
                                 size="sm"
                                 variant="outline"
@@ -1127,27 +1178,25 @@ export default function ItemFormTable({
                                 className="h-8 w-8 p-0"
                               >
                                 <QrCode size={14} />
-                              </Button>
+                              </Button> */}
 
-                              {invPolicy?.inbound_can_input_serial && (
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant={
-                                    serials.length === quantity &&
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={
+                                  serials.length === quantity &&
                                     quantity > 0
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  onClick={() =>
-                                    handleOpenSerialModal(item)
-                                  }
-                                  title="Isi Serial Number"
-                                  className="h-8 min-w-[58px] px-2 text-[11px]"
-                                >
-                                  SN {serials.length}/{quantity}
-                                </Button>
-                              )}
+                                    ? "default"
+                                    : "outline"
+                                }
+                                onClick={() =>
+                                  handleOpenSerialModal(item)
+                                }
+                                title="Isi Serial Number"
+                                className="h-8 min-w-[58px] px-2 text-[11px]"
+                              >
+                                SN {serials.length}/{quantity}
+                              </Button>
                             </>
                           ) : (
                             <>
@@ -1175,7 +1224,7 @@ export default function ItemFormTable({
                                 <Copy size={14} />
                               </Button>
 
-                              <Button
+                              {/* <Button
                                 type="button"
                                 size="sm"
                                 variant="outline"
@@ -1184,7 +1233,7 @@ export default function ItemFormTable({
                                 className="h-8 w-8 p-0"
                               >
                                 <QrCode size={14} />
-                              </Button>
+                              </Button> */}
 
                               {invPolicy?.inbound_can_input_serial && (
                                 <Button
@@ -1192,7 +1241,7 @@ export default function ItemFormTable({
                                   size="sm"
                                   variant={
                                     serials.length === quantity &&
-                                    quantity > 0
+                                      quantity > 0
                                       ? "default"
                                       : "outline"
                                   }
@@ -1211,13 +1260,13 @@ export default function ItemFormTable({
 
                         {/* Informasi field inbound yang tidak ditaruh sebagai kolom
                             supaya layout tetap compact seperti outbound. */}
-                        {editable && (
+                        {/* {editable && (
                           <div className="mt-1 flex flex-wrap justify-center gap-x-2 gap-y-0.5 text-[9px] text-gray-400">
                             {item.qa_status && <span>Status: {item.qa_status}</span>}
                             {item.location && <span>Loc: {item.location}</span>}
                             {item.lot_number && <span>Lot: {item.lot_number}</span>}
                           </div>
-                        )}
+                        )} */}
                       </td>
                     </tr>
                   );
