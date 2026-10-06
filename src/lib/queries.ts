@@ -44,7 +44,8 @@ export async function getInboundDev(startDate: string, endDate: string) {
       p.cbm AS [M3_PCS],
       p.cbm * id.quantity AS [TOTAL_M3],
       ih.koli AS KOLI,
-      id.remarks AS REMARK
+      ih.remarks AS [REMARKS],
+      id.remarks AS [REMARKS_ITEM]
     FROM inbound_details id
     INNER JOIN inbound_headers ih ON id.inbound_no = ih.inbound_no
     LEFT JOIN products p ON p.item_code = id.item_code
