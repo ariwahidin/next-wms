@@ -89,7 +89,8 @@ export const createInboundSheet = (
     "M3 PCS",
     "TOTAL M3",
     "KOLI",
-    "REMARK"
+    "REMARKS",
+    "REMARKS ITEM",
   ];
   sheet.addRow(headers);
 
@@ -130,7 +131,8 @@ export const createInboundSheet = (
       obj.M3_PCS,
       obj.TOTAL_M3,
       obj.KOLI,
-      obj.REMARK
+      obj.REMARKS,
+      obj.REMARKS_ITEM,
     ]);
 
     row.height = 20;
