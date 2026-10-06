@@ -79,6 +79,17 @@ interface CartonSummary {
     all_in_stock: number;
 }
 
+interface LocationSummary {
+    location: string;
+    item_count: number;
+    pallet_count: number;
+    carton_count: number;
+    case_count: number;
+    total_qty: number;
+    pending_count: number;
+    in_stock_count: number;
+}
+
 interface MetaPagination {
     page: number;
     limit: number;
@@ -128,13 +139,15 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
-type TabKey = "byItem" | "byPallet" | "byCarton" | "byCase";
+// type TabKey = "byItem" | "byPallet" | "byCarton" | "byCase" | "byLocation";
+type TabKey = "byItem" | "byPallet" | "byCarton" | "byCase" | "byLocation";
 
 const TABS: { key: TabKey; label: string }[] = [
     { key: "byItem", label: "By Item" },
     { key: "byPallet", label: "By Pallet" },
     { key: "byCarton", label: "By Carton" },
     { key: "byCase", label: "By Case" },
+    { key: "byLocation", label: "By Location" },
 ];
 
 const ITEM_LIMIT = 100;
@@ -185,6 +198,15 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
     const [cartonItems, setCartonItems] = useState<Record<string, ItemReceivedFull[]>>({});
     const [loadingCartonItems, setLoadingCartonItems] = useState<Record<string, boolean>>({});
     const [expandedCartons, setExpandedCartons] = useState<Set<string>>(new Set());
+
+    // ── By Location state ─────────────────────────────────────────────────────
+    const [locationSummaries, setLocationSummaries] = useState<LocationSummary[]>([]);
+    const [locationItems, setLocationItems] = useState<Record<string, ItemReceivedFull[]>>({});
+    const [loadingLocation, setLoadingLocation] = useState(false);
+    const [loadingLocationItems, setLoadingLocationItems] = useState<Record<string, boolean>>({});
+    const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
+    const [locationPage, setLocationPage] = useState(1);
+    const [locationPageSize] = useState(50);
 
     // ── UI state ───────────────────────────────────────────────────────────────
     const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -350,6 +372,120 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
 
 
 
+    // ── Fetch By Location summary ─────────────────────────────────────────────
+    // Location summary is built from the existing received endpoint so this
+    // frontend does not require a new backend summary endpoint.
+    const fetchLocationSummaries = useCallback(async (search?: string) => {
+        if (!inbound_no) return;
+        setLoadingLocation(true);
+        try {
+            const res = await api.get(
+                `/inbound/${inbound_no}/received?limit=99999`
+            );
+
+            if (res.data.success) {
+                const rows: ItemReceivedFull[] = res.data.data ?? [];
+                const grouped = new Map<string, LocationSummary>();
+
+                rows.forEach((item) => {
+                    const location = (item.location || "Unassigned").trim() || "Unassigned";
+                    const current = grouped.get(location) ?? {
+                        location,
+                        item_count: 0,
+                        pallet_count: 0,
+                        carton_count: 0,
+                        case_count: 0,
+                        total_qty: 0,
+                        pending_count: 0,
+                        in_stock_count: 0,
+                    };
+
+                    current.item_count += 1;
+                    current.total_qty += Number(item.quantity) || 0;
+                    if (item.status === "pending") current.pending_count += 1;
+                    if (item.status === "in stock") current.in_stock_count += 1;
+
+                    grouped.set(location, current);
+                });
+
+                // Count distinct pallet/carton/case per location in one pass.
+                const distinctByLocation = new Map<
+                    string,
+                    {
+                        pallets: Set<string>;
+                        cartons: Set<string>;
+                        cases: Set<string>;
+                    }
+                >();
+
+                rows.forEach((item) => {
+                    const location = (item.location || "Unassigned").trim() || "Unassigned";
+                    const sets = distinctByLocation.get(location) ?? {
+                        pallets: new Set<string>(),
+                        cartons: new Set<string>(),
+                        cases: new Set<string>(),
+                    };
+
+                    if (item.pallet) sets.pallets.add(item.pallet);
+                    if (item.carton_number) sets.cartons.add(item.carton_number);
+                    if (item.case_number) sets.cases.add(item.case_number);
+
+                    distinctByLocation.set(location, sets);
+                });
+
+                grouped.forEach((summary, location) => {
+                    const sets = distinctByLocation.get(location);
+                    summary.pallet_count = sets?.pallets.size ?? 0;
+                    summary.carton_count = sets?.cartons.size ?? 0;
+                    summary.case_count = sets?.cases.size ?? 0;
+                });
+
+                const keyword = search?.trim().toLowerCase();
+                const result = Array.from(grouped.values())
+                    .filter((x) => !keyword || x.location.toLowerCase().includes(keyword))
+                    .sort((a, b) => a.location.localeCompare(b.location));
+
+                setLocationSummaries(result);
+            }
+        } catch (err) {
+            console.error("Error fetching location summaries:", err);
+        } finally {
+            setLoadingLocation(false);
+        }
+    }, [inbound_no]);
+
+    // ── Fetch items in 1 location when expanded ───────────────────────────────
+    const fetchLocationItems = useCallback(async (location: string) => {
+        if (locationItems[location]) return;
+
+        setLoadingLocationItems((prev) => ({ ...prev, [location]: true }));
+        try {
+            const res = await api.get(
+                `/inbound/${inbound_no}/received?limit=99999`
+            );
+
+            if (res.data.success) {
+                const rows: ItemReceivedFull[] = res.data.data ?? [];
+                const filtered =
+                    location === "Unassigned"
+                        ? rows.filter((item) => !item.location?.trim())
+                        : rows.filter(
+                              (item) =>
+                                  (item.location || "").trim() === location
+                          );
+
+                setLocationItems((prev) => ({
+                    ...prev,
+                    [location]: filtered,
+                }));
+            }
+        } catch (err) {
+            console.error("Error fetching location items:", err);
+        } finally {
+            setLoadingLocationItems((prev) => ({ ...prev, [location]: false }));
+        }
+    }, [inbound_no, locationItems]);
+
     // ── Initial load ───────────────────────────────────────────────────────────
     useEffect(() => {
         if (!inbound_no) return;
@@ -370,7 +506,12 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
             fetchCaseSummaries(1);
         }
 
+        if (activeTab === "byLocation" && locationSummaries.length === 0) {
+            fetchLocationSummaries();
+        }
+
         setSearchTerm("");
+        if (activeTab === "byLocation") setLocationPage(1);
         setSelectedItems([]);
         setSelectAll(false);
     }, [activeTab]);
@@ -384,10 +525,12 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
             if (activeTab === "byPallet") fetchPalletSummaries();
             if (activeTab === "byCarton") fetchCartonSummaries(cartonPage, searchTerm);
             if (activeTab === "byCase") fetchCaseSummaries(casePage, searchTerm);
+            if (activeTab === "byLocation") fetchLocationSummaries(searchTerm);
+            setLocationItems({});
         };
         eventBus.on("refreshData", handleRefresh);
         return () => eventBus.off("refreshData", handleRefresh);
-    }, [page, searchTerm, activeTab, cartonPage]);
+    }, [page, searchTerm, activeTab, cartonPage, casePage]);
 
     // ── Search debounce ────────────────────────────────────────────────────────
     useEffect(() => {
@@ -401,7 +544,17 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
         }
         if (activeTab === "byCase") {
             const t = setTimeout(() => {
+                setCasePage(1);
                 fetchCaseSummaries(1, searchTerm);
+            }, 400);
+
+            return () => clearTimeout(t);
+        }
+
+        if (activeTab === "byLocation") {
+            const t = setTimeout(() => {
+                setLocationPage(1);
+                fetchLocationSummaries(searchTerm);
             }, 400);
 
             return () => clearTimeout(t);
@@ -438,6 +591,20 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
         setExpandedCartons((prev) => {
             const next = new Set(prev);
             if (next.has(carton)) { next.delete(carton); } else { next.add(carton); fetchCartonItems(carton); }
+            return next;
+        });
+    };
+
+    // ── Toggle expand location ────────────────────────────────────────────────
+    const toggleLocation = (location: string) => {
+        setExpandedLocations((prev) => {
+            const next = new Set(prev);
+            if (next.has(location)) {
+                next.delete(location);
+            } else {
+                next.add(location);
+                fetchLocationItems(location);
+            }
             return next;
         });
     };
@@ -670,7 +837,9 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                     ? "Search pallet..."
                                     : activeTab === "byCarton"
                                         ? "Search carton, pallet..."
-                                        : "Search case..."
+                                        : activeTab === "byCase"
+                                            ? "Search case..."
+                                            : "Search location..."
                         }
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -685,13 +854,13 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                             <Table className="border rounded-md text-sm">
                                 <TableHeader>
                                     <TableRow>
-                                        {Array.from({ length: 16 }).map((_, i) => (
+                                        {Array.from({ length: 17 }).map((_, i) => (
                                             <TableHead key={i}><div className="h-3 bg-gray-200 rounded animate-pulse w-16" /></TableHead>
                                         ))}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} cols={16} />)}
+                                    {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} cols={17} />)}
                                 </TableBody>
                             </Table>
                         ) : (
@@ -712,6 +881,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                             <TableHead>Pallet</TableHead>
                                             <TableHead>Case</TableHead>
                                             <TableHead>Carton</TableHead>
+                                            <TableHead>Location</TableHead>
                                             <TableHead>Status</TableHead>
                                             <TableHead>Qty</TableHead>
                                             {/* <TableHead>UoM</TableHead> */}
@@ -724,7 +894,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                     <TableBody className="text-xs">
                                         {items.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={16} className="text-center py-8 text-gray-400">
+                                                <TableCell colSpan={17} className="text-center py-8 text-gray-400">
                                                     No items found.
                                                 </TableCell>
                                             </TableRow>
@@ -753,6 +923,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                                     <TableCell className="font-medium">{item.pallet || item.location || "-"}</TableCell>
                                                     <TableCell className="font-mono text-xs">{item.case_number || "-"}</TableCell>
                                                     <TableCell className="font-mono text-xs">{item.carton_number || "-"}</TableCell>
+                                                    <TableCell className="font-medium">{item.location || "-"}</TableCell>
                                                     {/* <TableCell>{item.whs_code}</TableCell> */}
                                                     <TableCell><StatusBadge status={item.status} /></TableCell>
                                                     <TableCell>{item.quantity}</TableCell>
@@ -767,7 +938,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                     </TableBody>
                                     <TableFooter>
                                         <TableRow>
-                                            <TableCell colSpan={10} className="text-left font-semibold">
+                                            <TableCell colSpan={11} className="text-left font-semibold">
                                                 Page {page} of {meta.total_pages} — {items.length} rows shown / {meta.total} total
                                             </TableCell>
                                             <TableCell className="font-bold">{totalQty}</TableCell>
@@ -776,13 +947,13 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                     </TableFooter>
                                 </Table>
                                 {renderPagination(
-                                    casePage,
-                                    caseMeta.total_pages,
-                                    caseMeta.total,
-                                    loadingCase,
+                                    page,
+                                    meta.total_pages,
+                                    meta.total,
+                                    loadingItems,
                                     (p) => {
-                                        setCasePage(p);
-                                        fetchCaseSummaries(p, searchTerm);
+                                        setPage(p);
+                                        fetchItems(p, searchTerm);
                                     }
                                 )}
                             </>
@@ -874,7 +1045,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                                         </tbody>
                                                         <tfoot>
                                                             <tr className="border-t bg-gray-50">
-                                                                <td colSpan={7} className="px-3 py-1.5 text-xs font-semibold text-gray-600">Total</td>
+                                                                <td colSpan={8} className="px-3 py-1.5 text-xs font-semibold text-gray-600">Total</td>
                                                                 <td className="px-3 py-1.5 text-center text-xs font-bold">
                                                                     {(expandedData ?? []).reduce((s, i) => s + Number(i.quantity), 0)}
                                                                 </td>
@@ -979,7 +1150,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                                             </tbody>
                                                             <tfoot>
                                                                 <tr className="border-t bg-gray-50">
-                                                                    <td colSpan={6} className="px-3 py-1.5 text-xs font-semibold text-gray-600">Total</td>
+                                                                    <td colSpan={7} className="px-3 py-1.5 text-xs font-semibold text-gray-600">Total</td>
                                                                     <td className="px-3 py-1.5 text-center text-xs font-bold">
                                                                         {(expandedData ?? []).reduce((s, i) => s + Number(i.quantity), 0)}
                                                                     </td>
@@ -1191,7 +1362,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                                             <tfoot>
                                                                 <tr className="border-t bg-gray-50">
                                                                     <td
-                                                                        colSpan={8}
+                                                                        colSpan={9}
                                                                         className="px-3 py-1.5 text-xs font-semibold text-gray-600"
                                                                     >
                                                                         Total
@@ -1234,6 +1405,143 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                             page: p,
                                         }));
                                     }
+                                )}
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* ══════════════════ BY LOCATION TAB ══════════════════ */}
+                {activeTab === "byLocation" && (
+                    <div className="space-y-2">
+                        {loadingLocation ? (
+                            Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+                        ) : locationSummaries.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400 text-sm">
+                                No location data found.
+                            </div>
+                        ) : (
+                            <>
+                                {locationSummaries
+                                    .slice(
+                                        (locationPage - 1) * locationPageSize,
+                                        locationPage * locationPageSize
+                                    )
+                                    .map((summary) => {
+                                        const isExpanded = expandedLocations.has(summary.location);
+                                        const isLoadingExpand = loadingLocationItems[summary.location];
+                                        const expandedData = locationItems[summary.location];
+
+                                        return (
+                                            <div
+                                                key={summary.location}
+                                                className={`border rounded-lg overflow-hidden ${summary.pending_count === 0
+                                                    ? "border-green-200"
+                                                    : "border-gray-200"
+                                                    }`}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleLocation(summary.location)}
+                                                    className={`w-full flex items-center justify-between px-4 py-3 transition-colors text-left ${summary.pending_count === 0
+                                                        ? "bg-green-50 hover:bg-green-100"
+                                                        : "bg-gray-50 hover:bg-gray-100"
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        {isExpanded ? (
+                                                            <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+                                                        ) : (
+                                                            <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <span className="font-semibold text-sm font-mono text-gray-800">
+                                                                Location: {summary.location}
+                                                            </span>
+                                                            <div className="text-xs text-gray-500 mt-0.5">
+                                                                {summary.item_count} items · {summary.pallet_count} pallets · {summary.carton_count} cartons · {summary.case_count} cases · qty {summary.total_qty}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        {summary.pending_count > 0 && (
+                                                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                                                                {summary.pending_count} pending
+                                                            </span>
+                                                        )}
+                                                        {summary.in_stock_count > 0 && (
+                                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                                                {summary.in_stock_count} in stock
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </button>
+
+                                                {isExpanded && (
+                                                    <div className="overflow-x-auto">
+                                                        {isLoadingExpand ? (
+                                                            <div className="flex items-center justify-center py-6 gap-2 text-sm text-gray-500">
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                Loading...
+                                                            </div>
+                                                        ) : (
+                                                            <table className="w-full text-xs border-t">
+                                                                <thead className="bg-white">
+                                                                    <tr className="border-b">
+                                                                        <th className="px-3 py-2 text-left font-medium text-gray-500 w-8">#</th>
+                                                                        <th className="px-3 py-2 text-left font-medium text-gray-500">SKU</th>
+                                                                        <th className="px-3 py-2 text-left font-medium text-gray-500">Item Name</th>
+                                                                        <th className="px-3 py-2 text-left font-medium text-gray-500">Serial</th>
+                                                                        <th className="px-3 py-2 text-left font-medium text-gray-500">Pallet</th>
+                                                                        <th className="px-3 py-2 text-left font-medium text-gray-500">Case</th>
+                                                                        <th className="px-3 py-2 text-left font-medium text-gray-500">Carton</th>
+                                                                        <th className="px-3 py-2 text-left font-medium text-gray-500">Location</th>
+                                                                        <th className="px-3 py-2 text-left font-medium text-gray-500">Lot No</th>
+                                                                        <th className="px-3 py-2 text-center font-medium text-gray-500">Qty</th>
+                                                                        <th className="px-3 py-2 text-left font-medium text-gray-500">Status</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-gray-100">
+                                                                    {(expandedData ?? []).map((item, idx) => (
+                                                                        <tr key={item.ID} className="hover:bg-gray-50">
+                                                                            <td className="px-3 py-1.5 text-gray-400">{idx + 1}</td>
+                                                                            <td className="px-3 py-1.5 font-mono">{item.item_code}</td>
+                                                                            <td className="px-3 py-1.5">{item.product?.item_name || "-"}</td>
+                                                                            <td className="px-3 py-1.5 font-mono">{item.serial_number || "-"}</td>
+                                                                            <td className="px-3 py-1.5 font-medium">{item.pallet || "-"}</td>
+                                                                            <td className="px-3 py-1.5 font-mono">{item.case_number || "-"}</td>
+                                                                            <td className="px-3 py-1.5 font-mono">{item.carton_number || "-"}</td>
+                                                                            <td className="px-3 py-1.5 font-medium">{item.location || "-"}</td>
+                                                                            <td className="px-3 py-1.5">{item.lot_number || "-"}</td>
+                                                                            <td className="px-3 py-1.5 text-center">{item.quantity}</td>
+                                                                            <td className="px-3 py-1.5"><StatusBadge status={item.status} /></td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr className="border-t bg-gray-50">
+                                                                        <td colSpan={9} className="px-3 py-1.5 text-xs font-semibold text-gray-600">Total</td>
+                                                                        <td className="px-3 py-1.5 text-center text-xs font-bold">
+                                                                            {(expandedData ?? []).reduce((s, i) => s + Number(i.quantity), 0)}
+                                                                        </td>
+                                                                        <td />
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+
+                                {renderPagination(
+                                    locationPage,
+                                    Math.ceil(locationSummaries.length / locationPageSize),
+                                    locationSummaries.length,
+                                    loadingLocation,
+                                    (p) => setLocationPage(p)
                                 )}
                             </>
                         )}
