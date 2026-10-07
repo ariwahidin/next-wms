@@ -5,7 +5,7 @@ import { use, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from "react-select";
-import { Trash, Save, Pencil, X, Plus, Copy, RefreshCcw, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash, Save, Pencil, X, Plus, Copy, RefreshCcw, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import * as yup from "yup";
 import {
   CombinedInboundProps,
@@ -1147,16 +1147,29 @@ export default function ItemFormTable({
                         <div className="flex flex-wrap items-center justify-center gap-1">
                           {editable ? (
                             <>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleCancel(item)}
-                                title="Cancel"
-                                className="h-8 w-8 p-0"
-                              >
-                                <X size={14} />
-                              </Button>
+                              {item.mode === "create" ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleCancel(item) }
+                                  title="Delete"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Trash2 size={14} />
+                                </Button>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDelete(item.ID)}
+                                  title="Delete"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Trash size={14} />
+                                </Button>
+                              )}
 
                               <Button
                                 type="button"
