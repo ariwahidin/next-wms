@@ -215,8 +215,27 @@ function buildQaStatusOptions<T>(
 // globally unique across items/warehouses/locations, so any selection Set
 // or React key that spans more than one item MUST use this instead of
 // carton_number alone. See MultiItemTab.
+// function cartonCompositeKey(c: CartonGroup): string {
+//     return `${c.item_code}|${c.carton_number}|${c.whs_code}|${c.location}`;
+// }
+
 function cartonCompositeKey(c: CartonGroup): string {
-    return `${c.item_code}|${c.carton_number}|${c.whs_code}|${c.location}`;
+    return JSON.stringify([
+        c.item_code ?? "",
+        c.owner_code ?? "",
+        c.whs_code ?? "",
+        c.location ?? "",
+        c.division_code ?? "",
+        c.qa_status ?? "",
+        c.lot_number ?? "",
+        c.rec_date ?? "",
+        c.prod_date ?? "",
+        c.exp_date ?? "",
+        c.pallet ?? "",
+        c.carton_number ?? "",
+        c.case_number ?? "",
+        c.uom ?? "",
+    ]);
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -349,6 +368,8 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
     const [success, setSuccess] = useState("");
     const [formData, setFormData] = useState<TransferFormData>(emptyForm);
 
+    const [filterLot, setFilterLot] = useState<SelectOption | null>(null);
+
     useEffect(() => {
         const load = async () => {
             setProductsLoading(true);
@@ -368,6 +389,7 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         setFilterLocation(null);
         setFilterPallet(null);
         setFilterQaStatus(null);
+        setFilterLot(null);
         setError("");
         setSuccess("");
     };
@@ -408,45 +430,73 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         if (filterLocation && g.location !== filterLocation.value) return false;
         if (filterPallet && g.pallet !== filterPallet.value) return false;
         if (filterQaStatus && g.qa_status !== filterQaStatus.value) return false;
+        if (filterLot && g.lot_number !== filterLot.value) return false;
         return true;
-    }), [inventories, filterOwner, filterLocation, filterPallet, filterQaStatus]);
+    }), [inventories, filterOwner, filterLocation, filterPallet, filterQaStatus, filterLot]);
 
     const forOwner = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterLocation && g.location !== filterLocation.value) return false;
         if (filterPallet && g.pallet !== filterPallet.value) return false;
         if (filterQaStatus && g.qa_status !== filterQaStatus.value) return false;
+        if (filterLot && g.lot_number !== filterLot.value) return false;
         return true;
-    }), [inventories, filterDivision, filterLocation, filterPallet, filterQaStatus]);
+    }), [inventories, filterDivision, filterLocation, filterPallet, filterQaStatus, filterLot]);
 
     const forLocation = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterOwner && g.owner_code !== filterOwner.value) return false;
         if (filterPallet && g.pallet !== filterPallet.value) return false;
         if (filterQaStatus && g.qa_status !== filterQaStatus.value) return false;
+        if (filterLot && g.lot_number !== filterLot.value) return false;
         return true;
-    }), [inventories, filterDivision, filterOwner, filterPallet, filterQaStatus]);
+    }), [inventories, filterDivision, filterOwner, filterPallet, filterQaStatus, filterLot]);
 
     const forPallet = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterOwner && g.owner_code !== filterOwner.value) return false;
         if (filterLocation && g.location !== filterLocation.value) return false;
         if (filterQaStatus && g.qa_status !== filterQaStatus.value) return false;
+        if (filterLot && g.lot_number !== filterLot.value) return false;
         return true;
-    }), [inventories, filterDivision, filterOwner, filterLocation, filterQaStatus]);
+    }), [inventories, filterDivision, filterOwner, filterLocation, filterQaStatus, filterLot]);
 
     const forQaStatus = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterOwner && g.owner_code !== filterOwner.value) return false;
         if (filterLocation && g.location !== filterLocation.value) return false;
         if (filterPallet && g.pallet !== filterPallet.value) return false;
+        if (filterLot && g.lot_number !== filterLot.value) return false;
         return true;
-    }), [inventories, filterDivision, filterOwner, filterLocation, filterPallet]);
+    }), [inventories, filterDivision, filterOwner, filterLocation, filterPallet, filterQaStatus, filterLot]);
 
     const divisionFilterOptions = useMemo(() => buildOptions(forDivision, (g) => g.division_code, (g) => g.qty_available), [forDivision]);
     const ownerFilterOptions = useMemo(() => buildOptions(forOwner, (g) => g.owner_code, (g) => g.qty_available), [forOwner]);
     const locationFilterOptions = useMemo(() => buildOptions(forLocation, (g) => g.location, (g) => g.qty_available), [forLocation]);
     const palletFilterOptions = useMemo(() => buildOptions(forPallet, (g) => g.pallet, (g) => g.qty_available), [forPallet]);
+
+    const forLot = useMemo(() => inventories.filter((g) => {
+        if (filterDivision && g.division_code !== filterDivision.value) return false;
+        if (filterOwner && g.owner_code !== filterOwner.value) return false;
+        if (filterLocation && g.location !== filterLocation.value) return false;
+        if (filterPallet && g.pallet !== filterPallet.value) return false;
+        if (filterQaStatus && g.qa_status !== filterQaStatus.value) return false;
+        return true;
+    }), [
+        inventories,
+        filterDivision,
+        filterOwner,
+        filterLocation,
+        filterPallet,
+        filterQaStatus,
+        filterLot
+    ]);
+
+    const lotFilterOptions = useMemo(
+        () => buildOptions(forLot, (g) => g.lot_number, (g) => g.qty_available),
+        [forLot]
+    );
+
     const qaStatusFilterOptions = useMemo(
         () => buildQaStatusOptions(forQaStatus, (g) => g.qa_status, (g) => g.qty_available, qaStatuses),
         [forQaStatus, qaStatuses]
@@ -482,14 +532,26 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         }
     }, [qaStatusFilterOptions]);
 
+    useEffect(() => {
+        if (
+            filterLot &&
+            !lotFilterOptions.some((o) => o.value === filterLot.value)
+        ) {
+            setFilterLot(null);
+            setSelectedGroup(null);
+            setFormData(emptyForm);
+        }
+    }, [lotFilterOptions]);
+
     const displayedInventories = useMemo(() => inventories.filter((g) => {
         if (filterDivision && g.division_code !== filterDivision.value) return false;
         if (filterOwner && g.owner_code !== filterOwner.value) return false;
         if (filterLocation && g.location !== filterLocation.value) return false;
         if (filterPallet && g.pallet !== filterPallet.value) return false;
         if (filterQaStatus && g.qa_status !== filterQaStatus.value) return false;
+        if (filterLot && g.lot_number !== filterLot.value) return false;
         return true;
-    }), [inventories, filterDivision, filterOwner, filterLocation, filterPallet, filterQaStatus]);
+    }), [inventories, filterDivision, filterOwner, filterLocation, filterPallet, filterQaStatus, filterLot]);
 
     const totalQtyDisplayed = useMemo(() => displayedInventories.reduce((sum, g) => sum + g.qty_available, 0), [displayedInventories]);
     const displayedUom = displayedInventories[0]?.uom ?? "";
@@ -545,8 +607,12 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
             setError(`Insufficient quantity. Available: ${selectedGroup.qty_available}, Requested: ${formData.qty_to_transfer}`);
             return false;
         }
-        if (formData.from_whs_code === formData.to_whs_code && formData.from_location === formData.to_location &&
-            formData.old_qa_status === formData.new_qa_status && formData.from_division_code === formData.division_code) {
+        if (formData.from_whs_code === formData.to_whs_code &&
+            formData.from_location === formData.to_location &&
+            formData.old_qa_status === formData.new_qa_status &&
+            formData.from_division_code === formData.division_code &&
+            formData.from_lot_number === formData.lot_number
+        ) {
             setError("Source and destination are the same. Please select different attributes.");
             return false;
         }
@@ -636,6 +702,23 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
                                         placeholder="All pallets" isClearable isSearchable styles={customSelectStyles} className="text-sm" />
                                 </div>
                                 <div>
+                                    <FieldLabel>Lot Number</FieldLabel>
+                                    <Select
+                                        options={lotFilterOptions}
+                                        value={filterLot}
+                                        onChange={(opt) => {
+                                            setFilterLot(opt);
+                                            setSelectedGroup(null);
+                                            setFormData(emptyForm);
+                                        }}
+                                        placeholder="All lot numbers"
+                                        isClearable
+                                        isSearchable
+                                        styles={customSelectStyles}
+                                        className="text-sm"
+                                    />
+                                </div>
+                                <div>
                                     <FieldLabel>QA Status</FieldLabel>
                                     <Select options={qaStatusFilterOptions} value={filterQaStatus}
                                         onChange={(opt) => { setFilterQaStatus(opt); setSelectedGroup(null); setFormData(emptyForm); }}
@@ -711,6 +794,10 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
                                     <InfoRow label="QA Status" value={`${selectedGroup.qa_status} - ${qaStatuses.find((q: QaStatus) => q.qa_status === selectedGroup.qa_status)?.description || "Unknown"}`} />
                                     <InfoRow label="Case Number" value={selectedGroup.case_number || "N/A"} />
                                     <InfoRow label="Records" value={`${selectedGroup.records?.length ?? 1} lot(s)`} />
+                                    <InfoRow
+                                        label="Source Lot Number"
+                                        value={selectedGroup.lot_number || "N/A"}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -772,7 +859,22 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
                                 )}
                             </div>
                             <ReadOnlyField label="Owner Code" value={formData.owner_code} />
-                            <ReadOnlyField label="Lot Number" value={formData.lot_number} />
+                            {/* <ReadOnlyField label="Lot Number" value={formData.lot_number} /> */}
+                            <div>
+                                <FieldLabel>Destination Lot Number</FieldLabel>
+                                <input
+                                    type="text"
+                                    name="lot_number"
+                                    value={formData.lot_number}
+                                    onChange={handleInputChange}
+                                    disabled={!selectedGroup}
+                                    placeholder="Enter destination lot number"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Leave unchanged to keep the source lot number.
+                                </p>
+                            </div>
                             <ReadOnlyField label="Pallet" value={formData.pallet} />
                             <ReadOnlyField label="Carton Number" value={formData.carton_number || ""} />
                             <ReadOnlyField label="Case Number" value={formData.case_number || ""} />
@@ -909,6 +1011,8 @@ function ByCartonTab({ qaStatuses, locations, ownerOptions, customSelectStyles, 
         fetch();
     }, [filterWhs, filterOwner, filterProduct, filterDivision, filterLocation, filterPallet, filterRecDate, filterLot, filterQaStatus]);
 
+
+
     const forDivision = useMemo(() => cartons.filter((c) => {
         if (filterLocation && c.location !== filterLocation.value) return false;
         if (filterPallet && c.pallet !== filterPallet.value) return false;
@@ -978,6 +1082,8 @@ function ByCartonTab({ qaStatuses, locations, ownerOptions, customSelectStyles, 
         if (filterQaStatus && !qaStatusFilterOptions.find((o) => o.value === filterQaStatus.value)) setFilterQaStatus(null);
     }, [qaStatusFilterOptions]);
 
+
+
     const displayedCartons = useMemo(() => cartons.filter((c) => {
         if (filterDivision && c.division_code !== filterDivision.value) return false;
         if (filterLocation && c.location !== filterLocation.value) return false;
@@ -991,17 +1097,46 @@ function ByCartonTab({ qaStatuses, locations, ownerOptions, customSelectStyles, 
     const productOptions: SelectOption[] = products.map((p) => ({ value: p.item_code, label: `${p.item_code} — ${p.item_name}` }));
     const divisionOptions: SelectOption[] = divisions.map((d) => ({ value: d.code, label: `${d.code} — ${d.name}` }));
 
-    const toggleCarton = (cartonNumber: string) => {
+    // const toggleCarton = (cartonNumber: string) => {
+    //     setSelectedCartons((prev) => {
+    //         const next = new Set(prev);
+    //         next.has(cartonNumber) ? next.delete(cartonNumber) : next.add(cartonNumber);
+    //         return next;
+    //     });
+    // };
+    // const selectAll = () => setSelectedCartons(new Set(displayedCartons.map((c) => c.carton_number)));
+    // const clearAll = () => setSelectedCartons(new Set());
+
+    // const selectedCartonData = displayedCartons.filter((c) => selectedCartons.has(c.carton_number));
+
+    const toggleCarton = (key: string) => {
         setSelectedCartons((prev) => {
             const next = new Set(prev);
-            next.has(cartonNumber) ? next.delete(cartonNumber) : next.add(cartonNumber);
+
+            if (next.has(key)) {
+                next.delete(key);
+            } else {
+                next.add(key);
+            }
+
             return next;
         });
     };
-    const selectAll = () => setSelectedCartons(new Set(displayedCartons.map((c) => c.carton_number)));
+
+    const selectAll = () => {
+        setSelectedCartons(
+            new Set(displayedCartons.map(cartonCompositeKey))
+        );
+    };
+
     const clearAll = () => setSelectedCartons(new Set());
 
-    const selectedCartonData = displayedCartons.filter((c) => selectedCartons.has(c.carton_number));
+    const selectedCartonData = displayedCartons.filter(
+        (c) => selectedCartons.has(cartonCompositeKey(c))
+    );
+
+
+
     const totalQty = selectedCartonData.reduce((sum, c) => sum + c.qty_available, 0);
     const totalQtyAll = useMemo(() => displayedCartons.reduce((sum, c) => sum + c.qty_available, 0), [displayedCartons]);
     const cartonsUom = displayedCartons[0]?.uom ?? "";
@@ -1021,6 +1156,8 @@ function ByCartonTab({ qaStatuses, locations, ownerOptions, customSelectStyles, 
     useEffect(() => {
         setToLocation("");
     }, [toWhsCode]);
+
+
 
     const trimmedNewLotNumber = newLotNumber.trim();
     const hasSelection = selectedCartonData.length > 0;
@@ -1243,12 +1380,21 @@ function ByCartonTab({ qaStatuses, locations, ownerOptions, customSelectStyles, 
                             ) : !canFetch || displayedCartons.length === 0 ? (
                                 <p className="col-span-full text-sm text-gray-400 text-center py-6">{emptyMessage}</p>
                             ) : displayedCartons.map((carton) => {
-                                const checked = selectedCartons.has(carton.carton_number);
+                                // const checked = selectedCartons.has(carton.carton_number);
+                                const selectionKey = cartonCompositeKey(carton);
+                                const checked = selectedCartons.has(selectionKey);
                                 const qaDesc = qaStatuses.find((q: QaStatus) => q.qa_status === carton.qa_status)?.description;
                                 return (
-                                    <label key={carton.carton_number + carton.item_code + carton.location + carton.whs_code + carton.pallet}
-                                        className={`flex flex-col gap-1.5 p-3 rounded-lg border cursor-pointer transition-all ${checked ? "border-blue-500 bg-blue-50 ring-1 ring-blue-300" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"}`}>
-                                        <div className="flex items-start justify-between gap-2">
+                                    // <label key={carton.carton_number + carton.item_code + carton.location + carton.whs_code + carton.pallet}
+                                    //     className={`flex flex-col gap-1.5 p-3 rounded-lg border cursor-pointer transition-all ${checked ? "border-blue-500 bg-blue-50 ring-1 ring-blue-300" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"}`}>
+                                    <label
+                                        key={selectionKey}
+                                        className={`flex flex-col gap-1.5 p-3 rounded-lg border cursor-pointer transition-all ${checked
+                                            ? "border-blue-500 bg-blue-50 ring-1 ring-blue-300"
+                                            : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                            }`}
+                                    >
+                                        {/* <div className="flex items-start justify-between gap-2">
                                             <div className="flex items-center gap-2 min-w-0">
                                                 <input type="checkbox" checked={checked} onChange={() => toggleCarton(carton.carton_number)} className="accent-blue-600 shrink-0" />
                                                 <span className="text-xs font-semibold text-gray-900 truncate">📦 {carton.carton_number}</span>
@@ -1257,6 +1403,20 @@ function ByCartonTab({ qaStatuses, locations, ownerOptions, customSelectStyles, 
                                             <span className={`text-xs px-2 py-0.5 rounded shrink-0 ${carton.qty_available > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                                                 {carton.qty_available} {carton.uom}
                                             </span>
+                                        </div> */}
+
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={checked}
+                                                    onChange={() => toggleCarton(selectionKey)}
+                                                    className="accent-blue-600 shrink-0"
+                                                />
+                                                <span className="text-xs font-semibold text-gray-900 truncate">
+                                                    📦 {carton.carton_number || "No Carton Number"}
+                                                </span>
+                                            </div>
                                         </div>
                                         <div className="text-xs text-gray-600 space-y-0.5 pl-6">
                                             <p className="truncate">
@@ -1304,8 +1464,19 @@ function ByCartonTab({ qaStatuses, locations, ownerOptions, customSelectStyles, 
                                 <div className="space-y-1 max-h-40 overflow-y-auto">
                                     {selectedCartonData.map((c: CartonGroup) => (
                                         <div key={c.carton_number} className="flex items-center justify-between text-xs text-gray-700 bg-white rounded px-2 py-1 border border-gray-100">
-                                            <span className="font-medium">{c.carton_number}</span>
-                                            <span className="text-gray-500">{c.item_code} | {c.whs_code} → {c.location}</span>
+                                            {/* <span className="font-medium">{c.carton_number}</span>
+                                            <span className="text-gray-500">{c.item_code} | {c.whs_code} → {c.location}</span> */}
+                                            <div className="min-w-0">
+                                                <p className="font-medium">
+                                                    {c.item_code} · Carton: {c.carton_number || "N/A"}
+                                                </p>
+                                                <p className="text-gray-500">
+                                                    Lot: {c.lot_number || "N/A"} · Case: {c.case_number || "N/A"}
+                                                </p>
+                                                <p className="text-gray-500">
+                                                    {c.whs_code} / {c.location} · Pallet: {c.pallet || "N/A"}
+                                                </p>
+                                            </div>
                                             <span className="font-semibold text-green-700">{c.qty_available} {c.uom}</span>
                                         </div>
                                     ))}
@@ -1604,6 +1775,20 @@ function MultiItemTab({ qaStatuses, locations, ownerOptions, customSelectStyles,
         return true;
     }), [cartons, filterDivision, filterLocation, filterPallet, filterLot, filterQaStatus]);
 
+    useEffect(() => {
+        const visibleKeys = new Set(
+            displayedCartons.map((carton) => cartonCompositeKey(carton))
+        );
+
+        setSelectedCartons((previous) => {
+            const next = new Set(
+                [...previous].filter((key) => visibleKeys.has(key))
+            );
+
+            return next.size === previous.size ? previous : next;
+        });
+    }, [displayedCartons]);
+
     // Group displayed cartons by item, purely for a clearer list UI.
     const cartonsByItem = useMemo(() => {
         const map = new Map<string, CartonGroup[]>();
@@ -1896,7 +2081,10 @@ function MultiItemTab({ qaStatuses, locations, ownerOptions, customSelectStyles,
                                                     <div className="flex items-start justify-between gap-2">
                                                         <div className="flex items-center gap-2 min-w-0">
                                                             <input type="checkbox" checked={checked} onChange={() => toggleCarton(key)} className="accent-blue-600 shrink-0" />
-                                                            <span className="text-xs font-semibold text-gray-900 truncate">📦 {carton.carton_number}</span>
+                                                            {/* <span className="text-xs font-semibold text-gray-900 truncate">📦 {carton.carton_number}</span> */}
+                                                            <span className="text-xs font-semibold text-gray-900 truncate">
+                                                                📦 {carton.carton_number || "No Carton Number"}
+                                                            </span>
                                                         </div>
                                                         <span className={`text-xs px-2 py-0.5 rounded shrink-0 ${carton.qty_available > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                                                             {carton.qty_available} {carton.uom}
@@ -1950,8 +2138,19 @@ function MultiItemTab({ qaStatuses, locations, ownerOptions, customSelectStyles,
                                 <div className="space-y-1 max-h-40 overflow-y-auto">
                                     {selectedCartonData.map((c: CartonGroup) => (
                                         <div key={cartonCompositeKey(c)} className="flex items-center justify-between text-xs text-gray-700 bg-white rounded px-2 py-1 border border-gray-100">
-                                            <span className="font-medium">{c.item_code} · {c.carton_number}</span>
-                                            <span className="text-gray-500">{c.whs_code} → {c.location}</span>
+                                            {/* <span className="font-medium">{c.item_code} · {c.carton_number}</span>
+                                            <span className="text-gray-500">{c.whs_code} → {c.location}</span> */}
+                                            <div className="min-w-0">
+                                                <p className="font-medium">
+                                                    {c.item_code} · Carton: {c.carton_number || "N/A"}
+                                                </p>
+                                                <p className="text-gray-500">
+                                                    Lot: {c.lot_number || "N/A"} · Case: {c.case_number || "N/A"}
+                                                </p>
+                                                <p className="text-gray-500">
+                                                    {c.whs_code} / {c.location} · Pallet: {c.pallet || "N/A"}
+                                                </p>
+                                            </div>
                                             <span className="font-semibold text-green-700">{c.qty_available} {c.uom}</span>
                                         </div>
                                     ))}

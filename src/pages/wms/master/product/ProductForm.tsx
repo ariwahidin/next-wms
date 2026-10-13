@@ -332,6 +332,7 @@ export default function ProductForm({
                   value={selectedOwner}
                   onChange={(opt: any) => setSelectedOwner(opt)}
                   isClearable
+                  isDisabled={!!editData}
                 />
               </div>
 
@@ -341,8 +342,10 @@ export default function ProductForm({
                 <Input
                   id="item-code"
                   value={itemCode}
-                  onChange={(e) => setItemCode(e.target.value.toUpperCase())}
+                  onChange={(e) => !editData && setItemCode(e.target.value.toUpperCase())}
                   placeholder="Entry ItemCode/SKU"
+                  readOnly={!!editData}
+                  className={editData ? "bg-muted cursor-not-allowed" : ""}
                 />
               </div>
 

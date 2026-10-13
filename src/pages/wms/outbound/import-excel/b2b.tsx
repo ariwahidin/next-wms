@@ -52,8 +52,8 @@ interface UploadResponse {
 // ─── Column config untuk preview (sesuai Template B2B) ────────────────────────
 // Col 0: No | Col 1: Date | Col 3: Memo PO | Col 4: SKU
 // Col 5: Customer | Col 6: Goods | Col 7: Qty | Col 9: Delivery Address | Col 10: Order Type
-const PREVIEW_COL_INDICES = [1, 3, 4, 5, 6, 7, 9, 10];
-const PREVIEW_COL_LABELS = ['Date', 'Memo PO', 'SKU', 'Customer', 'Goods', 'Qty', 'Delivery Address', 'Type'];
+const PREVIEW_COL_INDICES = [1, 3, 4, 5, 6, 7, 9, 10, 15];
+const PREVIEW_COL_LABELS = ['Date', 'Memo PO', 'SKU', 'Customer', 'Goods', 'Qty', 'Delivery Address', 'Type', 'Batch/Lot'];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
