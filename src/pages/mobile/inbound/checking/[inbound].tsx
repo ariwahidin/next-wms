@@ -419,10 +419,28 @@ const CheckingPage = () => {
         setIsLoading(true);
         setIsSubmit(true);
 
+        let skuSelected = parsedQR?.sku ?? "";
+
+        if (!skuSelected && resultCheckItems[0].item_code) {
+            skuSelected = resultCheckItems[0].item_code;
+        }
+
+        if (!skuSelected) {
+            eventBus.emit("showAlert", {
+                title: "Error!",
+                description: "Item code cannot be empty.",
+                type: "error",
+            });
+            setIsLoading(false);
+            setIsSubmit(false);
+            return;
+        }
+
+
         const newItem: ScanItem = {
             inboundNo: Array.isArray(inbound) ? inbound[0] : (inbound ?? ""),
             id: 0,
-            sku: parsedQR?.sku ?? "",
+            sku: skuSelected,
             location: scanLocation.trim(),
             barcode: scanBarcode.trim(),
             qaStatus: scanQa,
@@ -532,6 +550,7 @@ const CheckingPage = () => {
                     if (prodDates.length === 1 && !prodDate) setProdDate(prodDates[0]);
                     if (expDates.length === 1 && !expDate) setExpDate(expDates[0]);
                     if (lotNos.length === 1 && !lotNo) setLotNo(lotNos[0]);
+                    
                 }
 
                 setIsSerial(!!res.is_serial);
