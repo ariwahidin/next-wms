@@ -22,6 +22,7 @@ import eventBus from "@/utils/eventBus";
 import { InventoryPolicy } from "@/types/inventory";
 import { Product } from "@/types/item";
 import DateInputMobile from "@/components/mobile/DateInputMobile";
+import { ParsedQRData, parseQRCode } from "@/utils/qrParser";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ interface ScanItem {
     expDate?: string;
     lotNo?: string;
     caseNumber?: string;
+    cartonNumber?: string;
     itemModel?: string;
     qrRaw?: string;
     uploaded: boolean;
@@ -101,129 +103,6 @@ interface ScannedItem {
     product?: Product;
 }
 
-// ─── QR Code Parser ───────────────────────────────────────────────────────────
-
-/**
- * Parse QR code format: (1)SKU=30047334(2)EAN=6933257941045(3)PRODUCT=...
- * Returns null if format tidak cocok.
- */
-interface ParsedQRData {
-    sku?: string;       // item_code
-    ean?: string;       // barcode
-    product?: string;   // item_name
-    brand?: string;
-    model?: string;
-    serial?: string;
-    cartonSerial?: string; // case_number
-    batch?: string;        // lot_number
-    mfgDate?: string;      // prod_date (yyyyMMdd → yyyy-MM-dd)
-    qtyPerCarton?: number; // qty suggestion
-    labelType?: "UNIT" | "CARTON" | "UNKNOWN";
-    innerSerialStart?: string;
-    innerSerialEnd?: string;
-    innerSerials?: string[];
-    innerSerialRangeError?: string;
-}
-
-function parseQRCode(raw: string): ParsedQRData | null {
-    const pattern = /\((\d+)\)([A-Z_]+)=([^(]*)/g
-    const map: Record<string, string> = {}
-    let match: RegExpExecArray | null
-    let found = false
-
-    while ((match = pattern.exec(raw)) !== null) {
-        found = true
-        map[match[2].trim()] = match[3].trim()
-    }
-
-    if (!found) return null
-
-    let mfgDate: string | undefined
-    if (map["MFG_DATE"]?.length === 8) {
-        const d = map["MFG_DATE"]
-        mfgDate = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
-    }
-
-    const labelType = map["SERIAL"]
-        ? "UNIT"
-        : (map["CARTON_SERIAL"] || map["CARTON"])
-            ? "CARTON"
-            : "UNKNOWN"
-
-    // ── Generate inner serials dari range ──────────────────────────────
-    // ── Generate inner serials ─────────────────────────────────────────────
-    let innerSerials: string[] | undefined
-    let innerSerialRangeError: string | undefined
-    const start = map["INNER_SERIAL_START"]
-    const end = map["INNER_SERIAL_END"]
-    const qty = map["QTY_PER_CARTON"] ? Number(map["QTY_PER_CARTON"]) : undefined
-
-    if (start) {
-        const numMatch = start.match(/^(.*?)(\d+)$/)
-
-        if (numMatch) {
-            const prefix = numMatch[1]
-            const startNum = parseInt(numMatch[2], 10)
-            const padLen = numMatch[2].length
-
-            let endNum: number | undefined
-
-            if (end) {
-                // Prioritas 1: pakai INNER_SERIAL_END
-                endNum = parseInt(end.replace(prefix, ""), 10)
-            } else if (qty && qty > 0) {
-                // Prioritas 2: hitung dari QTY_PER_CARTON
-                endNum = startNum + qty - 1
-            }
-
-            if (endNum !== undefined && !isNaN(startNum) && !isNaN(endNum) && endNum >= startNum) {
-                innerSerials = []
-                for (let i = startNum; i <= endNum; i++) {
-                    innerSerials.push(prefix + String(i).padStart(padLen, "0"))
-                }
-
-                // ── Validasi silang ───────────────────────────────────────
-                const lastGenerated = innerSerials[innerSerials.length - 1]
-
-                // Cek END jika ada
-                if (end && lastGenerated !== end) {
-                    innerSerialRangeError = `Range tidak valid: last generated "${lastGenerated}" ≠ INNER_SERIAL_END "${end}"`
-                    innerSerials = undefined
-                }
-
-                // Cek QTY jika ada
-                if (!innerSerialRangeError && qty && innerSerials && innerSerials.length !== qty) {
-                    innerSerialRangeError = `Jumlah serial ${innerSerials.length} ≠ QTY_PER_CARTON ${qty}`
-                    innerSerials = undefined
-                }
-
-            } else if (start) {
-                innerSerialRangeError = "Cannot parse INNER_SERIAL_END / Invalid number format in INNER_SERIAL_START or END"
-            }
-        } else {
-            innerSerialRangeError = "Cannot parse INNER_SERIAL_START format (expecting prefix + number)"
-        }
-    }
-
-    return {
-        sku: map["SKU"],
-        ean: map["EAN"],
-        product: map["PRODUCT"],
-        brand: map["BRAND"],
-        model: map["MODEL"],
-        serial: map["SERIAL"],
-        cartonSerial: map["CARTON_SERIAL"] ?? map["CARTON"],
-        batch: map["BATCH"],
-        mfgDate,
-        qtyPerCarton: qty,
-        labelType,
-        innerSerialStart: start,
-        innerSerialEnd: end,
-        innerSerials,
-        innerSerialRangeError,
-    }
-}
-
 // ─── Toggle Component ────────────────────────────────────────────────────────
 
 interface ToggleSwitchProps {
@@ -279,6 +158,7 @@ const CheckingPage = () => {
     const [expDate, setExpDate] = useState("");
     const [lotNo, setLotNo] = useState("");
     const [caseNumber, setCaseNumber] = useState("");
+    const [cartonNumber, setCartonNumber] = useState("");
     const [uom, setUom] = useState("");
     const [scanQty, setScanQty] = useState<string | number>(1);
 
@@ -297,8 +177,20 @@ const CheckingPage = () => {
     const [listInboundScanned, setListInboundScanned] = useState<ScannedItem[]>([]);
     const [showAllInboundDetails, setShowAllInboundDetails] = useState(true);
     const [resultCheckItems, setResultCheckItems] = useState<ResultCheckItem[]>([]);
-    const [innerSerialError, setInnerSerialError] = useState(false)
+    const [innerSerialError, setInnerSerialError] = useState(false);
 
+    // ── Detail modal tab state ─────────────────────────────────────────────────
+    const [detailTab, setDetailTab] = useState<"byItem" | "byCarton">("byItem");
+
+    // ── Delete carton confirmation state ──────────────────────────────────────
+    const [showDeleteCartonModal, setShowDeleteCartonModal] = useState(false);
+    const [pendingDeleteCarton, setPendingDeleteCarton] = useState<string | null>(null);
+    const [isDeletingCarton, setIsDeletingCarton] = useState(false);
+
+    // ── Delete all pending items state ────────────────────────────────────────
+    const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+    const [isDeletingAll, setIsDeletingAll] = useState(false);
+    const [deleteProgress, setDeleteProgress] = useState(0);
 
     const handleQrInputChange = (raw: string) => {
         setQrRawInput(raw)
@@ -308,7 +200,7 @@ const CheckingPage = () => {
             setParsedQR(parsed)
 
             if (parsed.innerSerialRangeError) {
-                setInnerSerialError(true) // ← block submit
+                setInnerSerialError(true)
                 eventBus.emit("showAlert", {
                     title: "Serial Range Error!",
                     description: parsed.innerSerialRangeError,
@@ -317,7 +209,6 @@ const CheckingPage = () => {
                 return
             }
 
-            // Reset error jika QR valid
             setInnerSerialError(false)
 
             if (parsed.ean) {
@@ -335,6 +226,7 @@ const CheckingPage = () => {
 
             if (parsed.labelType === "CARTON") {
                 if (parsed.cartonSerial) setCaseNumber(parsed.cartonSerial)
+                if (parsed.cartonSerial) setCartonNumber(parsed.cartonSerial)
                 if (parsed.innerSerials && parsed.innerSerials.length > 0) {
                     setSerialInputs(parsed.innerSerials)
                     setScanQty(parsed.innerSerials.length)
@@ -349,7 +241,6 @@ const CheckingPage = () => {
         }
     }
 
-    // Reset QR state saat toggle mode
     const handleModeToggle = (qr: boolean) => {
         setIsQrMode(qr);
         setQrRawInput("");
@@ -358,6 +249,7 @@ const CheckingPage = () => {
         setProdDate("");
         setLotNo("");
         setCaseNumber("");
+        setCartonNumber("");
         setScanQty(1);
         setItemModel("");
         setInnerSerialError(false)
@@ -447,7 +339,6 @@ const CheckingPage = () => {
         if (inbound) fetchInboundDetail();
     }, [inbound]);
 
-    // Single unified filter effect — fix bug double useEffect + filter not applied
     useEffect(() => {
         let result = showAllInboundDetails
             ? listInboundDetailAll
@@ -477,7 +368,14 @@ const CheckingPage = () => {
         }
     }, [showModalDetail]);
 
-    // Auto-focus saat dialog terbuka
+    // Reset tab saat modal detail dibuka
+    useEffect(() => {
+        if (showModalDetail) {
+            setDetailTab("byItem");
+            setSearchTerm("");
+        }
+    }, [showModalDetail]);
+
     useEffect(() => {
         if (!showDialog) return;
         const timeoutId = setTimeout(() => {
@@ -493,6 +391,16 @@ const CheckingPage = () => {
     // ── Scan handlers ──────────────────────────────────────────────────────────
     const handleScan = async () => {
         if (!scanLocation.trim() || !scanBarcode.trim()) return;
+
+        if (lotNo.length > 15) {
+            eventBus.emit("showAlert", {
+                title: "Error!",
+                description: "Lot number cannot exceed 15 characters.",
+                type: "error",
+            });
+            return;
+        }
+
         if (isSerial && serialInputs.every((s) => s.trim() === "")) {
             eventBus.emit("showAlert", {
                 title: "Error!",
@@ -522,16 +430,19 @@ const CheckingPage = () => {
             qtyScan: scanQty as number,
             prodDate: prodDate,
             expDate: expDate,
-            lotNo: lotNo,
+            // lotNo: lotNo,
+            lotNo: parsedQR?.batch && !lotNo ? parsedQR.batch : lotNo,
             caseNumber: caseNumber,
+            cartonNumber: cartonNumber,
             qrRaw: isQrMode ? qrRawInput : undefined,
             itemModel: parsedQR?.model ?? "",
-            innerSerials: parsedQR?.innerSerials ?? [],
+            // innerSerials: parsedQR?.innerSerials ?? [],
+            innerSerials : invPolicy.use_serial_number ? serialInputs.filter((s) => s.trim() !== "") : parsedQR?.innerSerials ?? [],
+            // serialNumber: serialNumber,
             uploaded: false,
         };
 
         console.log("Submitting scan:", newItem);
-        // return; // <-- untuk testing, comment out saat sudah siap
 
         try {
             const response = await api.post("/mobile/inbound/scan", newItem);
@@ -576,8 +487,6 @@ const CheckingPage = () => {
 
         console.log("Checking SKU:", sku, "EAN:", scanBarcode, "Inbound:", inbound);
 
-        // return; // <-- untuk testing, comment out saat sudah siap
-
         const newItem = {
             inboundNo: Array.isArray(inbound) ? inbound[0] : (inbound ?? ""),
             id: 0,
@@ -620,13 +529,11 @@ const CheckingPage = () => {
 
                 if (data.length > 0) {
                     setUom(data[0].uom);
-                    // Auto-fill satu nilai unik
                     if (prodDates.length === 1 && !prodDate) setProdDate(prodDates[0]);
                     if (expDates.length === 1 && !expDate) setExpDate(expDates[0]);
                     if (lotNos.length === 1 && !lotNo) setLotNo(lotNos[0]);
                 }
 
-                // QR mode: field sudah di-fill dari parseQRCode, jangan overwrite kecuali kosong
                 setIsSerial(!!res.is_serial);
                 if (res.is_serial) setScanQty(1);
                 setShowDialog(true);
@@ -670,6 +577,139 @@ const CheckingPage = () => {
         }
     };
 
+    // ── Delete by carton ───────────────────────────────────────────────────────
+    const confirmDeleteCarton = (cartonNumber: string) => {
+        setPendingDeleteCarton(cartonNumber);
+        setShowDeleteCartonModal(true);
+    };
+
+    const handleDeleteCarton = async () => {
+        if (!pendingDeleteCarton || isDeletingCarton) return;
+
+        const itemsToDelete = listInboundScanned.filter(
+            (item) =>
+                item.case_number === pendingDeleteCarton &&
+                item.status === "pending" &&
+                item.id !== undefined
+        );
+
+        if (itemsToDelete.length === 0) {
+            setShowDeleteCartonModal(false);
+            setPendingDeleteCarton(null);
+            return;
+        }
+
+        setIsDeletingCarton(true);
+
+        // Ambil inbound_detail_id dari item pertama untuk refresh nanti
+        const inboundDetailId = itemsToDelete[0].inbound_detail_id;
+
+        try {
+            for (const item of itemsToDelete) {
+                await api.delete("/mobile/inbound/scan/" + item.id);
+            }
+            eventBus.emit("showAlert", {
+                title: "Success!",
+                description: `Carton ${pendingDeleteCarton} deleted (${itemsToDelete.length} items).`,
+                type: "success",
+            });
+            fetchScannedItems(inboundDetailId);
+            fetchInboundDetail();
+        } catch (error) {
+            console.error("Error deleting carton items:", error);
+            eventBus.emit("showAlert", {
+                title: "Error!",
+                description: "Failed to delete some items in carton.",
+                type: "error",
+            });
+        } finally {
+            setIsDeletingCarton(false);
+            setShowDeleteCartonModal(false);
+            setPendingDeleteCarton(null);
+        }
+    };
+
+    // ── Delete all pending items ──────────────────────────────────────────────
+    const confirmDeleteAllPending = () => {
+        const pendingCount = listInboundScanned.filter(
+            (item) => item.status === "pending" && item.id !== undefined
+        ).length;
+
+        if (pendingCount === 0) {
+            eventBus.emit("showAlert", {
+                title: "Info",
+                description: "No pending items to delete.",
+                type: "info",
+            });
+            return;
+        }
+
+        setShowDeleteAllModal(true);
+    };
+
+    const handleDeleteAllPending = async () => {
+        if (isDeletingAll) return;
+
+        const itemsToDelete = listInboundScanned.filter(
+            (item) => item.status === "pending" && item.id !== undefined
+        );
+
+        if (itemsToDelete.length === 0) {
+            setShowDeleteAllModal(false);
+            return;
+        }
+
+        setIsDeletingAll(true);
+        setDeleteProgress(0);
+
+        const total = itemsToDelete.length;
+        let deleted = 0;
+        let successCount = 0;
+
+        // Ambil inbound_detail_id untuk refresh
+        const inboundDetailId = itemsToDelete[0].inbound_detail_id;
+
+        try {
+            for (const item of itemsToDelete) {
+                try {
+                    await api.delete("/mobile/inbound/scan/" + item.id);
+                    successCount++;
+                } catch (error) {
+                    console.error(`Error deleting item ${item.id}:`, error);
+                }
+
+                deleted++;
+                // Update progress from 1% to 100%
+                const progress = Math.round((deleted / total) * 100);
+                setDeleteProgress(progress);
+
+                // Small delay to show progress
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+
+            eventBus.emit("showAlert", {
+                title: "Success!",
+                description: `Successfully deleted ${successCount} of ${total} pending items.`,
+                type: "success",
+            });
+
+            // Refresh data
+            fetchScannedItems(inboundDetailId);
+            fetchInboundDetail();
+        } catch (error) {
+            console.error("Error during bulk delete:", error);
+            eventBus.emit("showAlert", {
+                title: "Error!",
+                description: "Failed to delete some items.",
+                type: "error",
+            });
+        } finally {
+            setIsDeletingAll(false);
+            setShowDeleteAllModal(false);
+            setDeleteProgress(0);
+        }
+    };
+
     const handleConfirmPutaway = async (inbound_no: string) => {
         try {
             const response = await api.put(
@@ -699,6 +739,7 @@ const CheckingPage = () => {
         setExpDate("");
         setLotNo("");
         setCaseNumber("");
+        setCartonNumber("");
         setQrRawInput("");
         setParsedQR(null);
         setInnerSerialError(false);
@@ -717,11 +758,35 @@ const CheckingPage = () => {
             item.barcode.toLowerCase().includes(term) ||
             item.serial_number.toLowerCase().includes(term) ||
             item.location.toLowerCase().includes(term) ||
-            item.lot_number.toLowerCase().includes(term) ||
-            item.pallet.toLowerCase().includes(term) ||
-            item.case_number.toLowerCase().includes(term) ||
+            item.lot_number?.toLowerCase().includes(term) ||
+            item.pallet?.toLowerCase().includes(term) ||
+            item.case_number?.toLowerCase().includes(term) ||
             item.item_model?.toLowerCase().includes(term) ||
             (item.prod_date ?? "").toLowerCase().includes(term)
+        );
+    });
+
+    // Group by carton — hanya item yang punya case_number
+    const cartonGroups = listInboundScanned
+        .filter((item) => item.case_number && item.case_number.trim() !== "")
+        .reduce<Record<string, ScannedItem[]>>((acc, item) => {
+            const key = item.case_number!;
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(item);
+            return acc;
+        }, {});
+
+    const filteredCartonGroups = Object.entries(cartonGroups).filter(([cartonNo]) => {
+        if (!searchTerm.trim()) return true;
+        const term = searchTerm.toLowerCase();
+        return (
+            cartonNo.toLowerCase().includes(term) ||
+            cartonGroups[cartonNo].some(
+                (item) =>
+                    item.serial_number?.toLowerCase().includes(term) ||
+                    item.barcode?.toLowerCase().includes(term) ||
+                    item.location?.toLowerCase().includes(term)
+            )
         );
     });
 
@@ -739,7 +804,6 @@ const CheckingPage = () => {
                 {/* ── Scan Input Card ── */}
                 <Card className="mb-4">
                     <CardContent className="p-4 space-y-3">
-                        {/* Mode Toggle */}
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-700">Scan Mode</span>
                             <ToggleSwitch
@@ -843,7 +907,6 @@ const CheckingPage = () => {
                                         )}
                                     </div>
 
-                                    {/* Preview hasil parse QR */}
                                     {parsedQR && (
                                         <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs font-mono space-y-0.5">
                                             {parsedQR.labelType && (
@@ -858,7 +921,7 @@ const CheckingPage = () => {
                                             {parsedQR.ean && <div><span className="text-gray-500">EAN:</span> {parsedQR.ean}</div>}
                                             {parsedQR.product && <div><span className="text-gray-500">Product:</span> {parsedQR.product}</div>}
                                             {parsedQR.model && <div><span className="text-gray-500">Model:</span> {parsedQR.model}</div>}
-                                            {parsedQR.serial && <div><span className="text-gray-500">Serial:</span> {parsedQR.serial}</div>}        {/* ← tambah */}
+                                            {parsedQR.serial && <div><span className="text-gray-500">Serial:</span> {parsedQR.serial}</div>}
                                             {parsedQR.mfgDate && <div><span className="text-gray-500">MFG Date:</span> {parsedQR.mfgDate}</div>}
                                             {parsedQR.batch && <div><span className="text-gray-500">Batch:</span> {parsedQR.batch}</div>}
                                             {parsedQR.cartonSerial && <div><span className="text-gray-500">Carton:</span> {parsedQR.cartonSerial}</div>}
@@ -950,15 +1013,6 @@ const CheckingPage = () => {
                                                     <div><span className="text-gray-500">Item Name:</span> {item.item_name}</div>
                                                     <div><span className="text-gray-500">SKU:</span> {item.item_code}</div>
                                                     <div><span className="text-gray-500">EAN:</span> {item.barcode}</div>
-                                                    {/* {invPolicy?.use_production_date && item.prod_date && (
-                                                        <div><span className="text-gray-500">Prod Date:</span> {item.prod_date}</div>
-                                                    )}
-                                                    {invPolicy?.require_expiry_date && item.exp_date && (
-                                                        <div><span className="text-gray-500">Exp Date:</span> {item.exp_date}</div>
-                                                    )}
-                                                    {invPolicy?.use_lot_no && item.lot_number && (
-                                                        <div><span className="text-gray-500">Lot No:</span> {item.lot_number}</div>
-                                                    )} */}
                                                     <div>
                                                         <span className="text-gray-500">Scanned:</span>{" "}
                                                         <span className={item.scan_qty >= item.quantity ? "text-green-600 font-semibold" : "text-orange-500 font-semibold"}>
@@ -1009,71 +1063,318 @@ const CheckingPage = () => {
                             <DialogTitle>Detail Scanned Items</DialogTitle>
                         </DialogHeader>
 
+                        {/* ── Tabs ── */}
+                        <div className="flex border-b border-gray-200">
+                            <button
+                                type="button"
+                                onClick={() => { setDetailTab("byItem"); setSearchTerm(""); }}
+                                className={`flex-1 py-2 text-sm font-medium transition-colors ${detailTab === "byItem"
+                                    ? "border-b-2 border-blue-500 text-blue-600"
+                                    : "text-gray-500 hover:text-gray-700"
+                                    }`}
+                            >
+                                By Item
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setDetailTab("byCarton"); setSearchTerm(""); }}
+                                className={`flex-1 py-2 text-sm font-medium transition-colors ${detailTab === "byCarton"
+                                    ? "border-b-2 border-blue-500 text-blue-600"
+                                    : "text-gray-500 hover:text-gray-700"
+                                    }`}
+                            >
+                                By Carton
+                                {Object.keys(cartonGroups).length > 0 && (
+                                    <span className="ml-1.5 bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5 rounded-full">
+                                        {Object.keys(cartonGroups).length}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+
                         <Input
                             className="w-full"
-                            placeholder="Search items..."
+                            placeholder={detailTab === "byItem" ? "Search items..." : "Search carton, serial, location..."}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
 
-                        <div className="text-sm text-gray-500">
-                            Total Scanned: {filteredScannedItems.length}
-                        </div>
-
-                        <div className="max-h-60 overflow-y-auto space-y-2">
-                            {filteredScannedItems.length > 0 ? (
-                                filteredScannedItems.map((item, index) => (
-                                    <div
-                                        key={index}
-                                        className={`p-3 border rounded-lg transition-colors ${item.status === "in stock" ? "bg-green-50" : "bg-blue-50"
-                                            }`}
-                                    >
-                                        <div className="text-xs space-y-1">
-                                            <div><strong>SKU:</strong> {item.item_code}</div>
-                                            <div className="flex justify-between">
-                                                <span><strong>EAN:</strong> {item.barcode}</span>
-                                                <span className="text-gray-400 text-xs">{item.status}</span>
-                                            </div>
-                                            {/* {item.product?.has_serial === "Y" && ( */}
-                                            
-                                            {"Y" === "Y" && (
-                                                <div><strong>Carton:</strong> {item.case_number}</div>
-                                            )}
-                                            {"Y" === "Y" && (
-                                                <div><strong>Serial:</strong> {item.serial_number}</div>
-                                            )}
-                                            {/* {invPolicy?.use_production_date && item.prod_date && ( */}
-                                            {"Y" === "Y" && item.prod_date && (
-                                                <div><strong>Mfg Date:</strong> {item.prod_date}</div>
-                                            )}
-                                            <div><strong>Pallet ID:</strong> {item.location}</div>
-                                            <div><strong>Lot No:</strong> {item.lot_number}</div>
-                                            <div>
-                                                <strong>Qty / Unit:</strong> {item.quantity} {item.uom}
-                                            </div>
-                                        </div>
-
-                                        {item.status === "pending" && (
-                                            <div className="mt-2">
-                                                <Button
-                                                    className="h-6"
-                                                    disabled={isSubmit}
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={() => handleRemoveItem(item.id!, item.inbound_detail_id)}
-                                                >
-                                                    {isSubmit ? "Deleting..." : "Delete"}
-                                                </Button>
-                                            </div>
-                                        )}
+                        {/* ── By Item Tab ── */}
+                        {detailTab === "byItem" && (
+                            <>
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm text-gray-500">
+                                        Total Scanned: {filteredScannedItems.length}
                                     </div>
-                                ))
-                            ) : (
-                                <div className="text-gray-500 text-sm text-center py-4">No items found</div>
-                            )}
-                        </div>
+                                    {listInboundScanned.filter((item) => item.status === "pending").length > 0 && (
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            className="h-7 text-xs"
+                                            onClick={confirmDeleteAllPending}
+                                            disabled={isDeletingAll}
+                                        >
+                                            Delete All Pending
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="max-h-60 overflow-y-auto space-y-2">
+                                    {filteredScannedItems.length > 0 ? (
+                                        filteredScannedItems.map((item, index) => (
+                                            <div
+                                                key={index}
+                                                className={`p-3 border rounded-lg transition-colors ${item.status === "in stock" ? "bg-green-50" : "bg-blue-50"
+                                                    }`}
+                                            >
+                                                <div className="text-xs space-y-1">
+                                                    <div><strong>SKU:</strong> {item.item_code}</div>
+                                                    <div className="flex justify-between">
+                                                        <span><strong>EAN:</strong> {item.barcode}</span>
+                                                        <span className="text-gray-400 text-xs">{item.status}</span>
+                                                    </div>
+                                                    {"Y" === "Y" && (
+                                                        <div><strong>Carton:</strong> {item.case_number}</div>
+                                                    )}
+                                                    {"Y" === "Y" && (
+                                                        <div><strong>Serial:</strong> {item.serial_number}</div>
+                                                    )}
+                                                    {"Y" === "Y" && item.prod_date && (
+                                                        <div><strong>Mfg Date:</strong> {item.prod_date}</div>
+                                                    )}
+                                                    <div><strong>Pallet ID:</strong> {item.location}</div>
+                                                    <div><strong>Lot No:</strong> {item.lot_number}</div>
+                                                    <div>
+                                                        <strong>Qty / Unit:</strong> {item.quantity} {item.uom}
+                                                    </div>
+                                                </div>
+
+                                                {item.status === "pending" && (
+                                                    <div className="mt-2">
+                                                        <Button
+                                                            className="h-6"
+                                                            disabled={isSubmit}
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            onClick={() => handleRemoveItem(item.id!, item.inbound_detail_id)}
+                                                        >
+                                                            {isSubmit ? "Deleting..." : "Delete"}
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-gray-500 text-sm text-center py-4">No items found</div>
+                                    )}
+                                </div>
+                            </>
+                        )}
+
+                        {/* ── By Carton Tab ── */}
+                        {detailTab === "byCarton" && (
+                            <>
+                                <div className="text-sm text-gray-500">
+                                    Total Cartons: {filteredCartonGroups.length}
+                                </div>
+                                <div className="max-h-60 overflow-y-auto space-y-2">
+                                    {filteredCartonGroups.length > 0 ? (
+                                        filteredCartonGroups.map(([cartonNo, items]) => {
+                                            const hasPending = items.some((i) => i.status === "pending");
+                                            const allInStock = items.every((i) => i.status === "in stock");
+                                            const firstItem = items[0];
+
+                                            return (
+                                                <div
+                                                    key={cartonNo}
+                                                    className={`border rounded-lg overflow-hidden ${allInStock ? "border-green-200" : "border-blue-200"
+                                                        }`}
+                                                >
+                                                    {/* Carton Header */}
+                                                    <div
+                                                        className={`flex items-center justify-between px-3 py-2 ${allInStock ? "bg-green-50" : "bg-blue-50"
+                                                            }`}
+                                                    >
+                                                        <div className="space-y-0.5">
+                                                            <div className="text-xs font-semibold font-mono text-gray-800">
+                                                                {cartonNo}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500">
+                                                                {items.length} item{items.length !== 1 ? "s" : ""}
+                                                                {firstItem.location && (
+                                                                    <span> · Pallet: <span className="font-medium">{firstItem.location}</span></span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span
+                                                                className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${allInStock
+                                                                    ? "bg-green-100 text-green-700"
+                                                                    : "bg-orange-100 text-orange-700"
+                                                                    }`}
+                                                            >
+                                                                {allInStock ? "In Stock" : "Pending"}
+                                                            </span>
+                                                            {hasPending && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="destructive"
+                                                                    className="h-6 text-xs px-2"
+                                                                    onClick={() => confirmDeleteCarton(cartonNo)}
+                                                                >
+                                                                    Delete Carton
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Carton Items — collapsed list */}
+                                                    <div className="divide-y divide-gray-100">
+                                                        {items.map((item, i) => (
+                                                            <div key={i} className="px-3 py-1.5 text-xs font-mono text-gray-700 bg-white flex justify-between items-center">
+                                                                <span className="truncate max-w-[60%]">{item.serial_number || `—`}</span>
+                                                                <span className={`text-xs ${item.status === "in stock" ? "text-green-600" : "text-orange-500"}`}>
+                                                                    {item.status}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="text-gray-500 text-sm text-center py-4">
+                                            No cartons found
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
 
                         <DialogFooter />
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Delete Carton Confirmation Modal ── */}
+                <Dialog open={showDeleteCartonModal} onOpenChange={(open) => {
+                    if (!isDeletingCarton) {
+                        setShowDeleteCartonModal(open);
+                        if (!open) setPendingDeleteCarton(null);
+                    }
+                }}>
+                    <DialogContent className="bg-white">
+                        <DialogHeader>
+                            <DialogTitle>Delete Carton</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-2">
+                            <p className="text-sm text-gray-700">
+                                Are you sure you want to delete carton{" "}
+                                <strong className="font-mono">{pendingDeleteCarton}</strong>?
+                            </p>
+                            {pendingDeleteCarton && (
+                                <p className="text-xs text-gray-500">
+                                    This will delete{" "}
+                                    <strong>
+                                        {
+                                            listInboundScanned.filter(
+                                                (i) => i.case_number === pendingDeleteCarton && i.status === "pending"
+                                            ).length
+                                        }
+                                    </strong>{" "}
+                                    pending item(s) in this carton.
+                                </p>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                variant="ghost"
+                                disabled={isDeletingCarton}
+                                onClick={() => {
+                                    setShowDeleteCartonModal(false);
+                                    setPendingDeleteCarton(null);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                disabled={isDeletingCarton}
+                                onClick={handleDeleteCarton}
+                            >
+                                {isDeletingCarton ? (
+                                    <>
+                                        <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                                        Deleting...
+                                    </>
+                                ) : "Delete"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Delete All Pending Items Modal ── */}
+                <Dialog open={showDeleteAllModal} onOpenChange={(open) => {
+                    if (!isDeletingAll) {
+                        setShowDeleteAllModal(open);
+                    }
+                }}>
+                    <DialogContent className="bg-white">
+                        <DialogHeader>
+                            <DialogTitle>Delete All Pending Items</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                            <p className="text-sm text-gray-700">
+                                Are you sure you want to delete all pending items?
+                            </p>
+                            <p className="text-xs text-gray-500">
+                                This will delete{" "}
+                                <strong>
+                                    {listInboundScanned.filter((i) => i.status === "pending" && i.id !== undefined).length}
+                                </strong>{" "}
+                                pending item(s).
+                            </p>
+
+                            {/* Progress Bar */}
+                            {isDeletingAll && (
+                                <div className="space-y-2">
+                                    <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+                                        <div
+                                            className="bg-blue-500 h-6 rounded-full transition-all duration-300 flex items-center justify-center"
+                                            style={{ width: `${deleteProgress}%` }}
+                                        >
+                                            <span className="text-xs font-semibold text-white">
+                                                {deleteProgress}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-center text-gray-600">
+                                        Deleting items... Please wait.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                variant="ghost"
+                                disabled={isDeletingAll}
+                                onClick={() => {
+                                    setShowDeleteAllModal(false);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                disabled={isDeletingAll}
+                                onClick={handleDeleteAllPending}
+                            >
+                                {isDeletingAll ? (
+                                    <>
+                                        <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                                        Deleting...
+                                    </>
+                                ) : "Delete All"}
+                            </Button>
+                        </DialogFooter>
                     </DialogContent>
                 </Dialog>
             </div>
@@ -1115,16 +1416,26 @@ const CheckingPage = () => {
                                         Model : <span className="font-mono font-semibold">{parsedQR.model}</span>
                                     </p>
                                 )}
+                                {parsedQR?.batch && (
+                                    <p className="text-xs text-gray-600">
+                                        Batch : <span className="font-mono font-semibold">{parsedQR.batch}</span>
+                                    </p>
+                                )}
                                 {scanLocation && (
                                     <p className="text-xs text-gray-600">
                                         Pallet ID : <span className="font-mono font-semibold">{scanLocation}</span>
                                     </p>
                                 )}
-                                {caseNumber && (
+                                {/* {caseNumber && (
                                     <p className="text-xs text-gray-600">
                                         Carton : <span className="font-mono font-semibold">{caseNumber}</span>
                                     </p>
-                                )}
+                                )} */}
+                                {/* {cartonNumber && (
+                                    <p className="text-xs text-gray-600">
+                                        Carton : <span className="font-mono font-semibold">{cartonNumber}</span>
+                                    </p>
+                                )} */}
                                 {parsedQR?.innerSerials && (
                                     <p className="text-xs text-gray-600">
                                         Inner Serial : <span className="font-mono font-semibold">
@@ -1132,10 +1443,15 @@ const CheckingPage = () => {
                                         </span>
                                     </p>
                                 )}
+                                {parsedQR?.serial && (
+                                    <p className="text-xs text-gray-600">
+                                        Serial : <span className="font-mono font-semibold">{parsedQR.serial}</span>
+                                    </p>
+                                )}
                             </div>
 
                             {/* Serial Form */}
-                            {isSerial ? (
+                            {/* {isSerial ? (
                                 <form onSubmit={handleSerialSubmit} className="space-y-3">
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-gray-700">Serial Numbers :</label>
@@ -1205,7 +1521,6 @@ const CheckingPage = () => {
                                     </div>
                                 </form>
                             ) : (
-                                /* Quantity Form */
                                 <form onSubmit={handleQuantitySubmit} className="space-y-3">
 
                                     {invPolicy?.use_production_date && (
@@ -1239,10 +1554,11 @@ const CheckingPage = () => {
                                                     id="lot_no"
                                                     list="lotNoOptions"
                                                     className="w-full text-xs"
-                                                    value={lotNo}
+                                                    value={parsedQR?.batch && !lotNo ? parsedQR.batch : lotNo}
                                                     onChange={(e) => setLotNo(e.target.value)}
                                                     placeholder="Enter lot number..."
                                                     autoComplete="off"
+                                                    readOnly={parsedQR?.batch ? true : false}
                                                 />
                                                 <datalist id="lotNoOptions">
                                                     {uniqueLotNos.map((d, i) => <option key={i} value={d} />)}
@@ -1255,6 +1571,7 @@ const CheckingPage = () => {
                                                             setLotNo("");
                                                             document.getElementById("lot_no")?.focus();
                                                         }}
+                                                        disabled={parsedQR?.batch ? true : false}
                                                     >
                                                         <XCircle size={18} />
                                                     </button>
@@ -1263,7 +1580,98 @@ const CheckingPage = () => {
                                         </div>
                                     )}
 
-                                    {/* Qty + UoM */}
+                                    <div className="flex flex-col">
+                                        <label htmlFor="lot_no" className="text-sm font-bold text-gray-700">
+                                            Carton No. :
+                                        </label>
+                                        <div className="relative">
+                                            <Input
+                                                type="text"
+                                                id="carton_number"
+                                                // list="lotNoOptions"
+                                                className="w-full text-xs"
+                                                value={parsedQR?.cartonSerial ? parsedQR.cartonSerial : cartonNumber}
+                                                onChange={(e) => setCartonNumber(e.target.value)}
+                                                placeholder="Enter carton number..."
+                                                autoComplete="off"
+                                                readOnly={parsedQR?.cartonSerial ? true : false}
+                                            />
+                                            {cartonNumber && (
+                                                <button
+                                                    type="button"
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    onClick={() => {
+                                                        setCartonNumber("");
+                                                        document.getElementById("carton_number")?.focus();
+                                                    }}
+                                                    disabled={parsedQR?.cartonSerial ? true : false}
+                                                >
+                                                    <XCircle size={18} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {invPolicy?.use_serial_number && isSerial && (
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-700">Serial Numbers :</label>
+                                            {serialInputs.map((serial, index) => (
+                                                <div key={index} className="relative">
+                                                    <Input
+                                                        autoComplete="off"
+                                                        id={`serial-${index}`}
+                                                        className="w-full pr-10"
+                                                        value={serial}
+                                                        onChange={(e) => {
+                                                            const newSerials = [...serialInputs];
+                                                            newSerials[index] = e.target.value;
+                                                            setSerialInputs(newSerials);
+                                                        }}
+                                                    />
+                                                    {serial && (
+                                                        <button
+                                                            type="button"
+                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                            onClick={() => {
+                                                                const newSerials = [...serialInputs];
+                                                                newSerials[index] = "";
+                                                                setSerialInputs(newSerials);
+                                                                (document.getElementById(`serial-${index}`) as HTMLInputElement)?.focus();
+                                                            }}
+                                                        >
+                                                            <XCircle size={18} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+
+                                            <div className="flex gap-4">
+                                                <button
+                                                    type="button"
+                                                    className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                                                    onClick={() => setSerialInputs([...serialInputs, ""])}
+                                                >
+                                                    + Add Serial
+                                                </button>
+                                                {serialInputs.length > 1 && (
+                                                    <button
+                                                        type="button"
+                                                        className="text-red-600 hover:text-red-800 text-sm font-semibold"
+                                                        onClick={() => setSerialInputs(serialInputs.slice(0, -1))}
+                                                    >
+                                                        − Remove Last
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {serialInputs.length > 1 && (
+                                                <div className="text-xs text-gray-500 break-all">
+                                                    Combined: {serialInputs.filter((s) => s.trim() !== "").join("-")}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div className="flex flex-col">
                                         <label htmlFor="qty" className="text-sm font-bold text-gray-700">
                                             Qty / Unit :
@@ -1307,7 +1715,205 @@ const CheckingPage = () => {
                                         </Button>
                                     </div>
                                 </form>
-                            )}
+                            )} */}
+
+
+                            <form onSubmit={handleQuantitySubmit} className="space-y-3">
+
+                                {invPolicy?.use_production_date && (
+                                    <div className="flex flex-col">
+                                        <DateInputMobile
+                                            label="Prod Date :"
+                                            value={prodDate}
+                                            onChange={(e) => setProdDate(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+
+                                {invPolicy?.require_expiry_date && (
+                                    <div className="flex flex-col">
+                                        <DateInputMobile
+                                            label="Exp Date :"
+                                            value={expDate}
+                                            onChange={(e) => setExpDate(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+
+                                {invPolicy?.use_lot_no && (
+                                    <div className="flex flex-col">
+                                        <label htmlFor="lot_no" className="text-sm font-bold text-gray-700">
+                                            Lot No. / Batch No. :
+                                        </label>
+                                        <div className="relative">
+                                            <Input
+                                                type="text"
+                                                id="lot_no"
+                                                list="lotNoOptions"
+                                                className="w-full text-xs"
+                                                value={parsedQR?.batch && !lotNo ? parsedQR.batch : lotNo}
+                                                onChange={(e) => setLotNo(e.target.value)}
+                                                placeholder="Enter lot number..."
+                                                autoComplete="off"
+                                                readOnly={parsedQR?.batch ? true : false}
+                                            />
+                                            <datalist id="lotNoOptions">
+                                                {uniqueLotNos.map((d, i) => <option key={i} value={d} />)}
+                                            </datalist>
+                                            {lotNo && (
+                                                <button
+                                                    type="button"
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    onClick={() => {
+                                                        setLotNo("");
+                                                        document.getElementById("lot_no")?.focus();
+                                                    }}
+                                                    disabled={parsedQR?.batch ? true : false}
+                                                >
+                                                    <XCircle size={18} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col">
+                                    <label htmlFor="lot_no" className="text-sm font-bold text-gray-700">
+                                        Carton No. :
+                                    </label>
+                                    <div className="relative">
+                                        <Input
+                                            type="text"
+                                            id="carton_number"
+                                            // list="lotNoOptions"
+                                            className="w-full text-xs"
+                                            value={parsedQR?.cartonSerial ? parsedQR.cartonSerial : cartonNumber}
+                                            onChange={(e) => setCartonNumber(e.target.value)}
+                                            placeholder="Enter carton number..."
+                                            autoComplete="off"
+                                            readOnly={parsedQR?.cartonSerial ? true : false}
+                                        />
+                                        {cartonNumber && (
+                                            <button
+                                                type="button"
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                onClick={() => {
+                                                    setCartonNumber("");
+                                                    document.getElementById("carton_number")?.focus();
+                                                }}
+                                                disabled={parsedQR?.cartonSerial ? true : false}
+                                            >
+                                                <XCircle size={18} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {invPolicy?.use_serial_number && isSerial && (
+                                    <div className="space-y-0.5">
+                                        <label className="text-sm font-bold text-gray-700">Serial Numbers :</label>
+                                        {serialInputs.map((serial, index) => (
+                                            <div key={index} className="relative">
+                                                <Input
+                                                    autoComplete="off"
+                                                    id={`serial-${index}`}
+                                                    className="w-full pr-10"
+                                                    value={serial}
+                                                    placeholder="Enter serial number..."
+                                                    onChange={(e) => {
+                                                        const newSerials = [...serialInputs];
+                                                        newSerials[index] = e.target.value;
+                                                        setSerialInputs(newSerials);
+                                                    }}
+                                                />
+                                                {serial && (
+                                                    <button
+                                                        type="button"
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                        onClick={() => {
+                                                            const newSerials = [...serialInputs];
+                                                            newSerials[index] = "";
+                                                            setSerialInputs(newSerials);
+                                                            (document.getElementById(`serial-${index}`) as HTMLInputElement)?.focus();
+                                                        }}
+                                                    >
+                                                        <XCircle size={18} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+
+                                        <div className="flex gap-4">
+                                            <button
+                                                type="button"
+                                                className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                                                onClick={() => setSerialInputs([...serialInputs, ""])}
+                                            >
+                                                + Add Serial
+                                            </button>
+                                            {serialInputs.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    className="text-red-600 hover:text-red-800 text-sm font-semibold"
+                                                    onClick={() => setSerialInputs(serialInputs.slice(0, -1))}
+                                                >
+                                                    − Remove Last
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {serialInputs.length > 1 && (
+                                            <div className="text-xs text-gray-500 break-all">
+                                                Combined: {serialInputs.filter((s) => s.trim() !== "").join("-")}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col">
+                                    <label htmlFor="qty" className="text-sm font-bold text-gray-700">
+                                        Qty / Unit :
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            min={1}
+                                            type="number"
+                                            id="qty"
+                                            list="qtyOptions"
+                                            className="w-28 text-xs"
+                                            value={scanQty}
+                                            autoComplete="off"
+                                            placeholder="Qty"
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === "") { setScanQty(""); return; }
+                                                const num = Number(val);
+                                                setScanQty(num < 1 ? 1 : num);
+                                            }}
+                                            onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                                        />
+                                        <datalist id="qtyOptions">
+                                            {uniqueQtys.map((d, i) => <option key={i} value={d} />)}
+                                        </datalist>
+                                        <Input
+                                            type="text"
+                                            id="unit"
+                                            className="w-20 text-xs"
+                                            readOnly
+                                            value={uom}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <Button type="submit" className="w-full" disabled={isSubmit}>
+                                        {isSubmit ? <><Loader2 className="mr-2 w-4 h-4 animate-spin" />Loading...</> : "Submit"}
+                                    </Button>
+                                    <Button type="button" className="w-full" variant="outline" onClick={closeDialog}>
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>

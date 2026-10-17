@@ -60,6 +60,7 @@ interface ResultCheckItem {
     exp_date?: string;
     prod_date?: string;
     lot_number?: string;
+    product?: Product;
 }
 
 interface InboundDetail {
@@ -67,6 +68,7 @@ interface InboundDetail {
     inbound_no: string;
     inbound_detail_id: number;
     item_name?: string;
+    unit_model?: string;
     item_code: string;
     barcode: string;
     quantity: number;
@@ -98,6 +100,7 @@ interface ScannedItem {
     exp_date?: string;
     lot_number?: string;
     case_number?: string;
+    carton_number?: string;
     item_model?: string;
     uom?: string;
     product?: Product;
@@ -270,6 +273,7 @@ const CheckingPage = () => {
                     inbound_detail_id: item.ID,
                     item_code: item.item_code,
                     item_name: item.item_name,
+                    unit_model: item.unit_model,
                     barcode: item.barcode,
                     quantity: item.quantity,
                     scan_qty: item.scan_qty,
@@ -311,7 +315,8 @@ const CheckingPage = () => {
                     uom: item.uom,
                     product: item.product,
                     lot_number: item.lot_number,
-                    case_number: item.case_number,
+                    case_number: item.case_number ?? item.caseNumber,
+                    carton_number: item.carton_number ?? item.cartonNumber,
                     item_model: item.item_model,
                 }));
                 setListInboundScanned(filtered);
@@ -348,6 +353,7 @@ const CheckingPage = () => {
             const term = searchInboundDetail.toLowerCase();
             result = result.filter((item) =>
                 item.item_name.toLowerCase().includes(term) ||
+                item.unit_model.toLowerCase().includes(term) ||
                 item.item_code.toLowerCase().includes(term) ||
                 item.barcode.toLowerCase().includes(term)
             );
@@ -437,7 +443,7 @@ const CheckingPage = () => {
             qrRaw: isQrMode ? qrRawInput : undefined,
             itemModel: parsedQR?.model ?? "",
             // innerSerials: parsedQR?.innerSerials ?? [],
-            innerSerials : invPolicy.use_serial_number ? serialInputs.filter((s) => s.trim() !== "") : parsedQR?.innerSerials ?? [],
+            innerSerials: invPolicy.use_serial_number ? serialInputs.filter((s) => s.trim() !== "") : parsedQR?.innerSerials ?? [],
             // serialNumber: serialNumber,
             uploaded: false,
         };
@@ -476,6 +482,25 @@ const CheckingPage = () => {
 
         if (!scanBarcode.trim()) {
             document.getElementById(isQrMode ? "qr-input" : "barcode")?.focus();
+            return;
+        }
+        // Carton verification is an EAN-only flow. Keep the existing QR flow unchanged.
+        if (!isQrMode && !caseNumber.trim()) {
+            document.getElementById("case_number")?.focus();
+            eventBus.emit("showAlert", {
+                title: "Case Number required",
+                description: "Scan or enter Case Number before scanning an EAN.",
+                type: "info",
+            });
+            return;
+        }
+        if (!isQrMode && !cartonNumber.trim()) {
+            document.getElementById("carton_number_input")?.focus();
+            eventBus.emit("showAlert", {
+                title: "Carton Number required",
+                description: "Scan or enter Carton Number before scanning an EAN.",
+                type: "info",
+            });
             return;
         }
         if (!scanLocation.trim()) {
@@ -578,20 +603,20 @@ const CheckingPage = () => {
     };
 
     // ── Delete by carton ───────────────────────────────────────────────────────
-    const confirmDeleteCarton = (cartonNumber: string) => {
-        setPendingDeleteCarton(cartonNumber);
+    const confirmDeleteCarton = (groupKey: string) => {
+        setPendingDeleteCarton(groupKey);
         setShowDeleteCartonModal(true);
     };
 
     const handleDeleteCarton = async () => {
         if (!pendingDeleteCarton || isDeletingCarton) return;
+        const [targetCaseMark, targetCartonNo] = pendingDeleteCarton.split("|||");
 
-        const itemsToDelete = listInboundScanned.filter(
-            (item) =>
-                item.case_number === pendingDeleteCarton &&
-                item.status === "pending" &&
-                item.id !== undefined
-        );
+        const itemsToDelete = listInboundScanned.filter((item) => {
+            const caseMark = item.case_number?.trim() || "Unassigned CaseMark";
+            const cartonNo = item.carton_number?.trim() || item.case_number?.trim() || "Unassigned Carton";
+            return caseMark === targetCaseMark && cartonNo === targetCartonNo && item.status === "pending" && item.id !== undefined;
+        });
 
         if (itemsToDelete.length === 0) {
             setShowDeleteCartonModal(false);
@@ -610,7 +635,7 @@ const CheckingPage = () => {
             }
             eventBus.emit("showAlert", {
                 title: "Success!",
-                description: `Carton ${pendingDeleteCarton} deleted (${itemsToDelete.length} items).`,
+                description: `Carton ${targetCartonNo} under CaseMark ${targetCaseMark} deleted (${itemsToDelete.length} items).`,
                 type: "success",
             });
             fetchScannedItems(inboundDetailId);
@@ -738,8 +763,8 @@ const CheckingPage = () => {
         setProdDate("");
         setExpDate("");
         setLotNo("");
-        setCaseNumber("");
-        setCartonNumber("");
+        // setCaseNumber("");
+        // setCartonNumber("");
         setQrRawInput("");
         setParsedQR(null);
         setInnerSerialError(false);
@@ -766,26 +791,30 @@ const CheckingPage = () => {
         );
     });
 
-    // Group by carton — hanya item yang punya case_number
+    // Group hierarchy: CaseMark -> Carton Number. Fallback to legacy case_number
+    // only for records returned by older API responses that do not expose carton_number.
     const cartonGroups = listInboundScanned
-        .filter((item) => item.case_number && item.case_number.trim() !== "")
+        .filter((item) => (item.case_number && item.case_number.trim() !== "") || (item.carton_number && item.carton_number.trim() !== ""))
         .reduce<Record<string, ScannedItem[]>>((acc, item) => {
-            const key = item.case_number!;
+            const caseMark = item.case_number?.trim() || "Unassigned CaseMark";
+            const cartonNo = item.carton_number?.trim() || item.case_number?.trim() || "Unassigned Carton";
+            const key = `${caseMark}|||${cartonNo}`;
             if (!acc[key]) acc[key] = [];
             acc[key].push(item);
             return acc;
         }, {});
 
-    const filteredCartonGroups = Object.entries(cartonGroups).filter(([cartonNo]) => {
+    const filteredCartonGroups = Object.entries(cartonGroups).filter(([groupKey, items]) => {
         if (!searchTerm.trim()) return true;
         const term = searchTerm.toLowerCase();
+        const [caseMark, cartonNo] = groupKey.split("|||");
         return (
+            caseMark.toLowerCase().includes(term) ||
             cartonNo.toLowerCase().includes(term) ||
-            cartonGroups[cartonNo].some(
-                (item) =>
-                    item.serial_number?.toLowerCase().includes(term) ||
-                    item.barcode?.toLowerCase().includes(term) ||
-                    item.location?.toLowerCase().includes(term)
+            items.some((item) =>
+                item.serial_number?.toLowerCase().includes(term) ||
+                item.barcode?.toLowerCase().includes(term) ||
+                item.location?.toLowerCase().includes(term)
             )
         );
     });
@@ -793,6 +822,11 @@ const CheckingPage = () => {
     const totalScanQty = listInboundDetail.reduce((t, i) => t + i.scan_qty, 0);
     const totalPlanQty = listInboundDetail.reduce((t, i) => t + i.quantity, 0);
     const inboundNo = Array.isArray(inbound) ? inbound[0] : (inbound ?? "");
+
+    const formatSerialNumber = (serial: string) => {
+        const digits = serial.replace(/\D/g, "");
+        return digits.match(/.{1,4}/g)?.join("-") ?? "";
+    };
 
     // ── Render ─────────────────────────────────────────────────────────────────
     return (
@@ -847,18 +881,78 @@ const CheckingPage = () => {
                                 </div>
                             </div>
 
-                            {/* EAN Mode */}
+                            {/* EAN-only carton context. QR UI and QR workflow remain unchanged. */}
                             {!isQrMode && (
+                                <div className="space-y-3 rounded-md border border-blue-100 bg-blue-50/60 p-3">
+                                    {/* <div className="text-xs font-semibold uppercase tracking-wide text-blue-800">
+                                        Carton Verification
+                                    </div> */}
+                                    <div className="space-y-1">
+                                        <label htmlFor="case_number" className="text-sm text-gray-600">Case Number :</label>
+                                        <Input
+                                            autoComplete="off"
+                                            id="case_number"
+                                            className="w-full"
+                                            value={caseNumber}
+                                            onChange={(e) => setCaseNumber(e.target.value)}
+                                            placeholder="Scan or enter Case Number..."
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label htmlFor="carton_number_input" className="text-sm text-gray-600">Carton Number :</label>
+                                        <Input
+                                            autoComplete="off"
+                                            id="carton_number_input"
+                                            className="w-full"
+                                            value={cartonNumber}
+                                            onChange={(e) => setCartonNumber(e.target.value)}
+                                            placeholder="Scan or enter Carton Number..."
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* EAN Mode */}
+                            {!isQrMode && (<>
                                 <div className="relative">
                                     <label htmlFor="barcode" className="text-sm text-gray-600">
-                                        EAN :
+                                        Item :
                                     </label>
                                     <Input
                                         autoComplete="off"
                                         id="barcode"
                                         className="w-full mt-1 pr-10"
                                         value={scanBarcode}
-                                        onChange={(e) => setScanBarcode(e.target.value)}
+                                        // onChange={(e) => {
+                                        //     setScanBarcode(e.target.value);
+                                        //     let index = serialInputs.findIndex((s) => s.trim() === "");
+                                        //     const newSerials = [...serialInputs];
+                                        //     newSerials[index] = e.target.value;
+                                        //     setSerialInputs(newSerials);
+                                        // }}
+
+                                        onChange={(e) => {
+                                            const value = e.target.value.replace(/\D/g, "");
+
+                                            // 11 digit pertama adalah barcode utama
+                                            const barcode = value.slice(0, 11);
+
+                                            // Sisa digit adalah serial number
+                                            const serial = value.slice(11);
+
+                                            setScanBarcode(barcode);
+
+                                            const newSerials = [...serialInputs];
+                                            let index = 0;
+
+                                            if (index === -1) {
+                                                index = newSerials.length;
+                                                newSerials.push("");
+                                            }
+
+                                            newSerials[index] = formatSerialNumber(serial);
+                                            setSerialInputs(newSerials);
+                                        }}
                                     />
                                     {scanBarcode && (
                                         <button
@@ -873,6 +967,64 @@ const CheckingPage = () => {
                                         </button>
                                     )}
                                 </div>
+                                <div className="space-y-0.5">
+                                    <label className="text-sm font-bold text-gray-700">Serial Number :</label>
+                                    {serialInputs.map((serial, index) => (
+                                        <div key={index} className="relative">
+                                            <Input
+                                                autoComplete="off"
+                                                id={`serial-${index}`}
+                                                className="w-full pr-10"
+                                                value={serial}
+                                                placeholder="Enter serial number..."
+                                                onChange={(e) => {
+                                                    const newSerials = [...serialInputs];
+                                                    newSerials[index] = e.target.value;
+                                                    setSerialInputs(newSerials);
+                                                }}
+                                            />
+                                            {serial && (
+                                                <button
+                                                    type="button"
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    onClick={() => {
+                                                        const newSerials = [...serialInputs];
+                                                        newSerials[index] = "";
+                                                        setSerialInputs(newSerials);
+                                                        (document.getElementById(`serial-${index}`) as HTMLInputElement)?.focus();
+                                                    }}
+                                                >
+                                                    <XCircle size={18} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    {/* <div className="flex gap-4">
+                                        <button
+                                            type="button"
+                                            className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                                            onClick={() => setSerialInputs([...serialInputs, ""])}
+                                        >
+                                            + Add Serial
+                                        </button>
+                                        {serialInputs.length > 1 && (
+                                            <button
+                                                type="button"
+                                                className="text-red-600 hover:text-red-800 text-sm font-semibold"
+                                                onClick={() => setSerialInputs(serialInputs.slice(0, -1))}
+                                            >
+                                                − Remove Last
+                                            </button>
+                                        )}
+                                    </div> */}
+
+                                    {/* {serialInputs.length > 1 && (
+                                        <div className="text-xs text-gray-500 break-all">
+                                            Combined: {serialInputs.filter((s) => s.trim() !== "").join("-")}
+                                        </div>
+                                    )} */}
+                                </div>                            </>
                             )}
 
                             {/* QR Code Mode */}
@@ -917,8 +1069,8 @@ const CheckingPage = () => {
                                                     </span>
                                                 </div>
                                             )}
-                                            {parsedQR.sku && <div><span className="text-gray-500">SKU:</span> {parsedQR.sku}</div>}
-                                            {parsedQR.ean && <div><span className="text-gray-500">EAN:</span> {parsedQR.ean}</div>}
+                                            {parsedQR.sku && <div><span className="text-gray-500">ItemCode:</span> {parsedQR.sku}</div>}
+                                            {parsedQR.ean && <div><span className="text-gray-500">Item:</span> {parsedQR.ean}</div>}
                                             {parsedQR.product && <div><span className="text-gray-500">Product:</span> {parsedQR.product}</div>}
                                             {parsedQR.model && <div><span className="text-gray-500">Model:</span> {parsedQR.model}</div>}
                                             {parsedQR.serial && <div><span className="text-gray-500">Serial:</span> {parsedQR.serial}</div>}
@@ -991,7 +1143,7 @@ const CheckingPage = () => {
 
                         <Input
                             className="w-full"
-                            placeholder="Search item code, sku, ean..."
+                            placeholder="Search items..."
                             value={searchInboundDetail}
                             onChange={(e) => setSearchInboundDetail(e.target.value)}
                         />
@@ -1010,9 +1162,9 @@ const CheckingPage = () => {
                                         <div className="text-sm space-y-1">
                                             <div className="flex justify-between">
                                                 <div className="font-mono text-xs space-y-0.5">
-                                                    <div><span className="text-gray-500">Item Name:</span> {item.item_name}</div>
-                                                    <div><span className="text-gray-500">SKU:</span> {item.item_code}</div>
-                                                    <div><span className="text-gray-500">EAN:</span> {item.barcode}</div>
+                                                    <div> {item.item_name} | <span className="text-gray-500 italic">{item.unit_model}</span></div>
+                                                    <div><span className="text-gray-500">Item Code:</span> {item.item_code}</div>
+                                                    {/* <div><span className="text-gray-500">EAN:</span> {item.barcode}</div> */}
                                                     <div>
                                                         <span className="text-gray-500">Scanned:</span>{" "}
                                                         <span className={item.scan_qty >= item.quantity ? "text-green-600 font-semibold" : "text-orange-500 font-semibold"}>
@@ -1127,21 +1279,28 @@ const CheckingPage = () => {
                                                     }`}
                                             >
                                                 <div className="text-xs space-y-1">
-                                                    <div><strong>SKU:</strong> {item.item_code}</div>
+                                                    <div><strong>Pallet ID:</strong> {item.pallet}</div>
+                                                    {"Y" === "Y" && (
+                                                        <div><strong>Case:</strong> {item.case_number}</div>
+                                                    )}
+
+                                                    {"Y" === "Y" && (
+                                                        <div><strong>Carton:</strong> {item.carton_number}</div>
+                                                    )}
+
+                                                    <div><strong>Item Code:</strong> {item.item_code} </div>
                                                     <div className="flex justify-between">
-                                                        <span><strong>EAN:</strong> {item.barcode}</span>
+                                                        <span className="text-gray-500 italic">{item.product.item_name} | {item?.product.unit_model}</span>
                                                         <span className="text-gray-400 text-xs">{item.status}</span>
                                                     </div>
-                                                    {"Y" === "Y" && (
-                                                        <div><strong>Carton:</strong> {item.case_number}</div>
-                                                    )}
+
                                                     {"Y" === "Y" && (
                                                         <div><strong>Serial:</strong> {item.serial_number}</div>
                                                     )}
                                                     {"Y" === "Y" && item.prod_date && (
                                                         <div><strong>Mfg Date:</strong> {item.prod_date}</div>
                                                     )}
-                                                    <div><strong>Pallet ID:</strong> {item.location}</div>
+
                                                     <div><strong>Lot No:</strong> {item.lot_number}</div>
                                                     <div>
                                                         <strong>Qty / Unit:</strong> {item.quantity} {item.uom}
@@ -1178,14 +1337,15 @@ const CheckingPage = () => {
                                 </div>
                                 <div className="max-h-60 overflow-y-auto space-y-2">
                                     {filteredCartonGroups.length > 0 ? (
-                                        filteredCartonGroups.map(([cartonNo, items]) => {
+                                        filteredCartonGroups.map(([groupKey, items]) => {
+                                            const [caseMark, cartonNo] = groupKey.split("|||");
                                             const hasPending = items.some((i) => i.status === "pending");
                                             const allInStock = items.every((i) => i.status === "in stock");
                                             const firstItem = items[0];
 
                                             return (
                                                 <div
-                                                    key={cartonNo}
+                                                    key={groupKey}
                                                     className={`border rounded-lg overflow-hidden ${allInStock ? "border-green-200" : "border-blue-200"
                                                         }`}
                                                 >
@@ -1196,8 +1356,9 @@ const CheckingPage = () => {
                                                     >
                                                         <div className="space-y-0.5">
                                                             <div className="text-xs font-semibold font-mono text-gray-800">
-                                                                {cartonNo}
+                                                                Carton: {cartonNo}
                                                             </div>
+                                                            <div className="text-xs text-gray-500">CaseMark: <span className="font-mono">{caseMark}</span></div>
                                                             <div className="text-xs text-gray-500">
                                                                 {items.length} item{items.length !== 1 ? "s" : ""}
                                                                 {firstItem.location && (
@@ -1219,7 +1380,7 @@ const CheckingPage = () => {
                                                                     size="sm"
                                                                     variant="destructive"
                                                                     className="h-6 text-xs px-2"
-                                                                    onClick={() => confirmDeleteCarton(cartonNo)}
+                                                                    onClick={() => confirmDeleteCarton(groupKey)}
                                                                 >
                                                                     Delete Carton
                                                                 </Button>
@@ -1268,18 +1429,18 @@ const CheckingPage = () => {
                         <div className="space-y-2">
                             <p className="text-sm text-gray-700">
                                 Are you sure you want to delete carton{" "}
-                                <strong className="font-mono">{pendingDeleteCarton}</strong>?
+                                <strong className="font-mono">{pendingDeleteCarton?.split("|||")[1]}</strong> under CaseMark{" "}
+                                <strong className="font-mono">{pendingDeleteCarton?.split("|||")[0]}</strong>?
                             </p>
                             {pendingDeleteCarton && (
                                 <p className="text-xs text-gray-500">
                                     This will delete{" "}
-                                    <strong>
-                                        {
-                                            listInboundScanned.filter(
-                                                (i) => i.case_number === pendingDeleteCarton && i.status === "pending"
-                                            ).length
-                                        }
-                                    </strong>{" "}
+                                    <strong>{listInboundScanned.filter((i) => {
+                                        const [targetCase, targetCarton] = pendingDeleteCarton.split("|||");
+                                        const caseMark = i.case_number?.trim() || "Unassigned CaseMark";
+                                        const cartonNo = i.carton_number?.trim() || i.case_number?.trim() || "Unassigned Carton";
+                                        return caseMark === targetCase && cartonNo === targetCarton && i.status === "pending";
+                                    }).length}</strong>{" "}
                                     pending item(s) in this carton.
                                 </p>
                             )}
@@ -1398,14 +1559,32 @@ const CheckingPage = () => {
                         <div className="px-4 py-4 pb-6 space-y-4">
                             {/* Item Info */}
                             <div className="p-3 bg-gray-50 rounded-md space-y-1">
-                                {resultCheckItems[0]?.item_code && (
-                                    <p className="text-xs text-gray-600">
-                                        SKU : <span className="font-mono font-semibold">{resultCheckItems[0].item_code}</span>
-                                    </p>
+                                {scanLocation && (
+                                    <>
+                                        <p className="text-xs text-gray-600">
+                                            Pallet ID : <span className="font-mono font-semibold">{scanLocation}</span>
+                                        </p>
+                                        <p className="text-xs text-gray-600">
+                                            Case : <span className="font-mono font-semibold">{caseNumber}</span>
+                                        </p>
+                                        <p className="text-xs text-gray-600">
+                                            Carton : <span className="font-mono font-semibold">{cartonNumber}</span>
+                                        </p>
+                                    </>
                                 )}
-                                <p className="text-xs text-gray-600">
+                                {resultCheckItems[0]?.item_code && (
+                                    <>
+                                        <p className="text-xs text-gray-600">
+                                            <span className="font-mono font-semibold">{resultCheckItems[0].item_code} | {resultCheckItems[0].product?.item_name} | {resultCheckItems[0].product?.unit_model}</span>
+                                        </p>
+                                        <p className="text-xs text-gray-600">
+                                            Serial : <span className="font-mono font-semibold">{serialInputs}</span>
+                                        </p>
+                                    </>
+                                )}
+                                {/* <p className="text-xs text-gray-600">
                                     EAN : <span className="font-mono font-semibold">{scanBarcode}</span>
-                                </p>
+                                </p> */}
                                 {parsedQR?.product && (
                                     <p className="text-xs text-gray-600">
                                         Product : <span className="font-mono font-semibold">{parsedQR.product}</span>
@@ -1421,11 +1600,7 @@ const CheckingPage = () => {
                                         Batch : <span className="font-mono font-semibold">{parsedQR.batch}</span>
                                     </p>
                                 )}
-                                {scanLocation && (
-                                    <p className="text-xs text-gray-600">
-                                        Pallet ID : <span className="font-mono font-semibold">{scanLocation}</span>
-                                    </p>
-                                )}
+
                                 {/* {caseNumber && (
                                     <p className="text-xs text-gray-600">
                                         Carton : <span className="font-mono font-semibold">{caseNumber}</span>
@@ -1777,7 +1952,7 @@ const CheckingPage = () => {
                                     </div>
                                 )}
 
-                                <div className="flex flex-col">
+                                {/* <div className="flex flex-col">
                                     <label htmlFor="lot_no" className="text-sm font-bold text-gray-700">
                                         Carton No. :
                                     </label>
@@ -1807,7 +1982,7 @@ const CheckingPage = () => {
                                             </button>
                                         )}
                                     </div>
-                                </div>
+                                </div> */}
 
                                 {invPolicy?.use_serial_number && isSerial && (
                                     <div className="space-y-0.5">
