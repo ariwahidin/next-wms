@@ -782,10 +782,10 @@ export default function ItemFormTable({
                     Item
                   </th>
                   <th className="border p-2 text-center font-semibold whitespace-nowrap">
-                    Qty
+                    Plan Qty
                   </th>
                   <th className="border p-2 text-center font-semibold whitespace-nowrap">
-                    Pack
+                    Checked
                   </th>
                   <th className="border p-2 text-center font-semibold whitespace-nowrap">
                     Division
