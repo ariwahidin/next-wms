@@ -135,6 +135,7 @@ const DETAIL_COLUMNS: ColumnDef<DetailColumnKey>[] = [
     { key: 'location', label: 'Location', align: 'left' },
     { key: 'item_code', label: 'Item Code', align: 'left' },
     { key: 'item_name', label: 'Item Name', align: 'left' },
+    { key: 'rec_date', label: 'Rcv Date', align: 'center' },
     { key: 'division_code', label: 'Division', align: 'center' },
     { key: 'qa_status', label: 'QA Status', align: 'center' },
     { key: 'lot_number', label: 'Lot/Batch', align: 'center' },
@@ -696,6 +697,7 @@ const InventoryAvailablePage: React.FC = () => {
                                                 <td className="px-3 py-2.5"><div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400" /><span className="font-medium text-slate-900">{inv.location}</span></div></td>
                                                 <td className="px-3 py-2.5"><span className="font-mono text-xs text-slate-900">{inv.item_code}</span></td>
                                                 <td className="px-3 py-2.5" style={{ whiteSpace: 'nowrap' }}><div><div className="text-slate-900 font-medium">{inv.item_name}</div><div className="text-xs text-slate-500 font-mono">{inv.barcode}</div></div></td>
+                                                <td className="px-3 py-2.5 text-center whitespace-nowrap"><span className="font-normal text-slate-900">{inv.rec_date}</span></td>
                                                 <td className="px-3 py-2.5 text-center"><span className="text-slate-700">{inv.division_code}</span></td>
                                                 <td className="px-3 py-2.5"><div className="flex justify-center"><span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${getQaStatusClass(inv.qa_status)}`}>{getQaStatusIcon(inv.qa_status)}{inv.qa_status}</span></div></td>
                                                 <td className="px-3 py-2.5 text-center whitespace-nowrap"><span className="font-normal text-slate-900">{inv.lot_number}</span></td>

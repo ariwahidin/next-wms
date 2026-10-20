@@ -37,7 +37,7 @@ export default function ManualForm({
 
   let detectedMode: "add" | "edit" | "copy" = "add";
 
-  if (path.includes("/copy/")) {
+  if (path.includes("/copy-outbound/")) {
     detectedMode = "copy";
   } else if (path.includes("/edit/")) {
     detectedMode = "edit";

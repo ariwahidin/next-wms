@@ -3,6 +3,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/router";
+import { arrayMove } from "@dnd-kit/sortable";
 
 export type PageTab = {
   title: string;
@@ -19,11 +20,11 @@ type PageTabsContextValue = {
     targetTitle: string,
     targetUrl: string
   ) => void;
+  reorderTabs: (activeUrl: string, overUrl: string) => void;
 };
 
-const PageTabsContext = React.createContext<PageTabsContextValue | null>(
-  null
-);
+const PageTabsContext =
+  React.createContext<PageTabsContextValue | null>(null);
 
 const STORAGE_KEY = "wms-page-tabs";
 const MAX_TABS = 8;
@@ -36,7 +37,9 @@ const DEFAULT_TAB: PageTab = {
 const EXCLUDED_TAB_URLS = ["/auth/login"];
 
 function normalizeUrl(url: string): string {
-  return url.split("?")[0].split("#")[0].replace(/\/+$/, "") || "/";
+  return (
+    url.split("?")[0].split("#")[0].replace(/\/+$/, "") || "/"
+  );
 }
 
 function isExcludedTab(url: string): boolean {
@@ -48,10 +51,7 @@ function isExcludedTab(url: string): boolean {
 }
 
 function isValidInternalUrl(url: string): boolean {
-  return (
-    url.startsWith("/") &&
-    !url.startsWith("//")
-  );
+  return url.startsWith("/") && !url.startsWith("//");
 }
 
 function getFallbackTitle(url: string): string {
@@ -111,9 +111,7 @@ function notifyTabClosed(url: string) {
 
   window.dispatchEvent(
     new CustomEvent("wms-tab-closed", {
-      detail: {
-        url: normalizeUrl(url),
-      },
+      detail: { url: normalizeUrl(url) },
     })
   );
 }
@@ -138,10 +136,7 @@ export function PageTabsProvider({
   const [tabs, setTabs] = React.useState<PageTab[]>([DEFAULT_TAB]);
   const [hydrated, setHydrated] = React.useState(false);
 
-  const activeUrl = normalizeUrl(
-    router.asPath || DEFAULT_TAB.url
-  );
-
+  const activeUrl = normalizeUrl(router.asPath || DEFAULT_TAB.url);
   const isExcludedRoute = isExcludedTab(activeUrl);
 
   // Restore tabs from sessionStorage.
@@ -187,14 +182,13 @@ export function PageTabsProvider({
 
     setTabs((current) => {
       if (
-        current.some(
-          (tab) => normalizeUrl(tab.url) === activeUrl
-        )
+        current.some((tab) => normalizeUrl(tab.url) === activeUrl)
       ) {
         return current;
       }
 
       if (current.length >= MAX_TABS) {
+        notifyTabLimit();
         return current;
       }
 
@@ -208,7 +202,7 @@ export function PageTabsProvider({
     });
   }, [activeUrl, hydrated, isExcludedRoute, router.isReady]);
 
-  // Persist the current tab list.
+  // Persist the current tab list, including its order.
   React.useEffect(() => {
     if (!hydrated) return;
 
@@ -222,6 +216,7 @@ export function PageTabsProvider({
     }
   }, [tabs, hydrated]);
 
+  // Open an existing tab or create a new one.
   const openTab = React.useCallback(
     (title: string, url: string) => {
       if (!isValidInternalUrl(url)) return;
@@ -232,8 +227,6 @@ export function PageTabsProvider({
         void router.push(url);
         return;
       }
-
-      
 
       const existing = tabs.find(
         (tab) => normalizeUrl(tab.url) === normalizedUrl
@@ -274,6 +267,8 @@ export function PageTabsProvider({
           return current;
         }
 
+        notifyTabOpened(normalizedUrl);
+
         return [...current, { title, url: normalizedUrl }];
       });
 
@@ -284,22 +279,44 @@ export function PageTabsProvider({
     [tabs, activeUrl, router]
   );
 
+  // Reorder tabs without changing their URLs or page identities.
+  const reorderTabs = React.useCallback(
+    (activeTabUrl: string, overTabUrl: string) => {
+      setTabs((current) => {
+        const oldIndex = current.findIndex(
+          (tab) => tab.url === activeTabUrl
+        );
+
+        const newIndex = current.findIndex(
+          (tab) => tab.url === overTabUrl
+        );
+
+        if (
+          oldIndex < 0 ||
+          newIndex < 0 ||
+          oldIndex === newIndex
+        ) {
+          return current;
+        }
+
+        return arrayMove(current, oldIndex, newIndex);
+      });
+    },
+    []
+  );
+
+  // Close a tab and remove its Keep-Alive instance.
   const closeTab = React.useCallback(
     (url: string) => {
       const normalizedUrl = normalizeUrl(url);
 
-      const tabExists = tabs.some(
-        (tab) => normalizeUrl(tab.url) === normalizedUrl
-      );
-
-      if (!tabExists) return;
-
-      // Remove the page instance from the Keep-Alive cache.
-      notifyTabClosed(normalizedUrl);
-
       const index = tabs.findIndex(
         (tab) => normalizeUrl(tab.url) === normalizedUrl
       );
+
+      if (index < 0) return;
+
+      notifyTabClosed(normalizedUrl);
 
       const remaining = tabs.filter(
         (tab) => normalizeUrl(tab.url) !== normalizedUrl
@@ -319,6 +336,7 @@ export function PageTabsProvider({
     [tabs, activeUrl, router]
   );
 
+  // Close the source tab and navigate to a target tab.
   const closeTabAndNavigate = React.useCallback(
     (
       currentUrl: string,
@@ -335,7 +353,6 @@ export function PageTabsProvider({
       const normalizedCurrentUrl = normalizeUrl(currentUrl);
       const normalizedTargetUrl = normalizeUrl(targetUrl);
 
-      // Remove the source form page from Keep-Alive cache.
       notifyTabClosed(normalizedCurrentUrl);
 
       setTabs((current) => {
@@ -365,7 +382,6 @@ export function PageTabsProvider({
           },
         ];
 
-        // Keep the tab limit without dropping an unrelated tab.
         if (next.length > MAX_TABS) {
           notifyTabLimit();
           return remaining;
@@ -386,8 +402,16 @@ export function PageTabsProvider({
       openTab,
       closeTab,
       closeTabAndNavigate,
+      reorderTabs,
     }),
-    [tabs, activeUrl, openTab, closeTab, closeTabAndNavigate]
+    [
+      tabs,
+      activeUrl,
+      openTab,
+      closeTab,
+      closeTabAndNavigate,
+      reorderTabs,
+    ]
   );
 
   return (

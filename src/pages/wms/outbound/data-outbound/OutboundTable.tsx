@@ -152,7 +152,7 @@ const ownersFetcher = (url: string) =>
   });
 
 const HandleCopy = (item: any) => {
-  router.push(`/wms/outbound/copy/${item.outbound_no}`);
+  router.push(`/wms/outbound/copy-outbound/${item.outbound_no}`);
 };
 
 const HandleDelete = (id: number) => {
