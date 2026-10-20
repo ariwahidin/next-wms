@@ -788,7 +788,7 @@ const InboundTable = () => {
   const { data: rowData, error, mutate: mutateData, isValidating } = useSWR(swrKey, fetcher);
 
   const HandleEdit = (no: string) => {
-    router.push(`/wms/inbound/edit/${no}`);
+    router.push(`/wms/inbound/edit-inbound/${no}`);
   };
 
   const HandlePreviewPDF = (id: number) => {
@@ -1288,11 +1288,11 @@ const InboundTable = () => {
           <Button
             className="h-8"
             onClick={() => {
-              router.push("/wms/inbound/add");
+              router.push("/wms/inbound/add-inbound");
             }}
           >
             <Plus className="mr-1 h-4 w-4" />
-            Add
+            Add Inbound
           </Button>
           <Button
             className="h-8 bg-green-500 text-slate-950 outline-green-600"

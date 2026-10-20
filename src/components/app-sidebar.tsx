@@ -80,10 +80,6 @@ const data = {
           title: "Items",
           url: "/wms/master/product",
         },
-        // {
-        //   title: "Item & Handling",
-        //   url: "/wms/master/item-handling",
-        // },
         {
           title: "Supplier",
           url: "/wms/master/supplier",
@@ -108,14 +104,6 @@ const data = {
           title: "Location",
           url: "/wms/master/location",
         },
-        // {
-        //   title: "UoM Conversion",
-        //   url: "/wms/master/uom-conversion",
-        // },
-        // {
-        //   title: "Inventory Policy",
-        //   url: "/wms/master/inventory-policy",
-        // },
         {
           title: "Vas Main",
           url: "/wms/master/main-vas",
@@ -144,10 +132,6 @@ const data = {
       icon: Box,
       isActive: true,
       items: [
-        // {
-        //   title: "Data",
-        //   url: "/wms/inventory/data",
-        // },
         {
           title: "Inventory Stock",
           url: "/wms/inventory/data/inventory-management",
@@ -164,10 +148,6 @@ const data = {
           title: "Outbound Activity",
           url: "/wms/outbound/data",
         },
-        // {
-        //   title: "Outbound Handling",
-        //   url: "/wms/outbound/handling",
-        // },
       ],
     },
     {
@@ -216,36 +196,8 @@ const data = {
           title: "Stock Card",
           url: "/wms/stock-take/stock-card",
         },
-        // {
-        //   title: "List Stock Take",
-        //   url: "/stock-take/list",
-        // },
       ],
     },
-    // {
-    //   title: "Shipping",
-    //   url: "#",
-    //   icon: Truck,
-    //   isActive: true,
-    //   items: [
-    //     {
-    //       title: "Create DN Manual",
-    //       url: "/shipping/create-dn-manual",
-    //     },
-    //     {
-    //       title: "Combine DN",
-    //       url: "/shipping/combine-dn",
-    //     },
-    //     {
-    //       title: "Combine Existing Order",
-    //       url: "/shipping/combine-existing",
-    //     },
-    //     {
-    //       title: "List Order",
-    //       url: "/shipping/order-list",
-    //     },
-    //   ],
-    // },
     {
       title: "Mobile Scanner",
       url: "#",
@@ -290,87 +242,6 @@ const data = {
         },
       ],
     },
-
-    // {
-    //   title: "Settings",
-    //   url: "#",
-    //   icon: SettingsIcon,
-    //   isActive: true,
-    //   items: [
-    //     {
-    //       title: "User Manual",
-    //       url: "/wms/settings/user-manual",
-    //     },
-    //     {
-    //       title: "Users",
-    //       url: "/master/user",
-    //     },
-    //     {
-    //       title: "Roles",
-    //       url: "/master/role",
-    //     },
-    //     {
-    //       title: "Permissions",
-    //       url: "/configuration/permissions",
-    //     },
-    //     {
-    //       title: "Role Permissions",
-    //       url: "/master/role-permission",
-    //     },
-    //     {
-    //       title: "Menu",
-    //       url: "/menu",
-    //     },
-    //   ],
-    // },
-    // {
-    //   title: "Example Pages",
-    //   url: "#",
-    //   icon: Settings2,
-    //   isActive: true,
-    //   items: [
-    //     {
-    //       title: "Tanstack Table",
-    //       url: "/example/table/tanstack",
-    //     },
-    //     {
-    //       title: "New Inbound",
-    //       url: "/example/inbound/new",
-    //     },
-    //     {
-    //       title: "List Inbound",
-    //       url: "/example/inbound/list",
-    //     },
-    //     {
-    //       title: "Putaway",
-    //       url: "/example/putaway",
-    //     },
-    //     {
-    //       title: "Stock",
-    //       url: "/example/putaway/stock",
-    //     },
-    //     {
-    //       title: "Outbound",
-    //       url: "/example/outbound",
-    //     },
-    //     {
-    //       title: "New Outbound",
-    //       url: "/example/outbound/new",
-    //     },
-    //     {
-    //       title: "Picking",
-    //       url: "/example/picking",
-    //     },
-    //     {
-    //       title: "New BU",
-    //       url: "/example/create-bu",
-    //     },
-    //     {
-    //       title: "DB Migrate",
-    //       url: "/example/db-migrate",
-    //     },
-    //   ],
-    // },
   ],
   projects: [
     {
@@ -397,26 +268,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { setOpen } = useSidebar();
   const hasAutoCollapsed = React.useRef(false); // Flag biar cuma jalan sekali
 
-  // useEffect(() => {
-  //   const collapsedPaths = [
-  //     "/wms/inbound/add",
-  //     "/wms/outbound/add",
-  //     "/wms/outbound/edit",
-  //     "/wms/outbound/waranty",
-  //     "/wms/outbound/handling/edit",
-  //     "/wms/inbound/edit",
-  //   ];
-
-  //   if (
-  //     collapsedPaths.some((path) => pathname.startsWith(path)) &&
-  //     !hasAutoCollapsed.current
-  //   ) {
-  //     setOpen(false); // Tutup sekali saja
-  //     hasAutoCollapsed.current = true; // Tandai sudah auto collapse
-  //   } else if (!collapsedPaths.some((path) => pathname.startsWith(path))) {
-  //     hasAutoCollapsed.current = false; // Reset flag kalau keluar dari path itu
-  //   }
-  // }, [pathname, setOpen]);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -428,7 +279,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-
         <div className="mt-2 px-2 group-data-[collapsible=icon]:hidden">
           <div className="border-t pt-2">
             <div className="flex items-center justify-between">

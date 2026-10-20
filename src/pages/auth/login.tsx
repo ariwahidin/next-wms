@@ -10,8 +10,13 @@ import api from '@/lib/api';
 import router from 'next/router';
 import themes, { ThemeName } from '@/components/login-themes';
 import { LoginConfig, DEFAULT_CONFIG } from '@/types/company-config';
+import { NextPage } from 'next';
 
-export default function LoginPage() {
+type LoginPageType = NextPage & {
+  keepAlive?: boolean;
+};
+
+const LoginPage: LoginPageType = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [config, setConfig] = useState<LoginConfig>(DEFAULT_CONFIG);
@@ -125,3 +130,6 @@ export default function LoginPage() {
     />
   );
 }
+
+LoginPage.keepAlive = false;
+export default LoginPage;

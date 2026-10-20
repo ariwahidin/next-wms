@@ -687,7 +687,7 @@ const OutboundTable = () => {
   };
 
   const HandleEdit = (item: any) => {
-    router.push(`/wms/outbound/edit/${item.outbound_no}`);
+    router.push(`/wms/outbound/edit-outbound/${item.outbound_no}`);
     localStorage.setItem("outbound_page", currentPageRef.current.toString());
   };
 
@@ -1043,8 +1043,8 @@ const OutboundTable = () => {
       {/* ── Toolbar ── */}
       <div className="flex items-center justify-between pb-3">
         <div className="flex items-center gap-2">
-          <Button className="h-8" onClick={() => router.push("/wms/outbound/add")}>
-            <Plus className="mr-1 w-4" /> Add
+          <Button className="h-8" onClick={() => router.push("/wms/outbound/add-outbound")}>
+            <Plus className="mr-1 w-4" /> Add Outbound
           </Button>
           <Button
             className="h-8 bg-green-500 text-slate-950"

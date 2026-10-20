@@ -21,20 +21,33 @@ import "react-datepicker/dist/react-datepicker.css";
 import { Transporter } from "@/types/transporter";
 import ItemScannedTable from "./ItemScannedTable";
 
-export default function ManualForm() {
-  const router = useRouter();
-  const { no } = router.query;
-  const path = router.pathname; // "/wms/outbound/copy/[no]" atau "/wms/outbound/edit/[no]" atau "/wms/outbound/add"
+type ManualFormProps = {
+  mode?: "add" | "edit" | "copy";
+  outboundNo?: string;
+};
 
-  let mode: "add" | "edit" | "copy" = "add";
+export default function ManualForm({
+  mode: modeProp,
+  outboundNo,
+}: ManualFormProps) {
+  const router = useRouter();
+
+  const { no: routerNo } = router.query;
+  const path = router.pathname;
+
+  let detectedMode: "add" | "edit" | "copy" = "add";
 
   if (path.includes("/copy/")) {
-    mode = "copy";
+    detectedMode = "copy";
   } else if (path.includes("/edit/")) {
-    mode = "edit";
+    detectedMode = "edit";
   } else if (path.includes("/add")) {
-    mode = "add";
+    detectedMode = "add";
   }
+
+  // Gunakan mode dan nomor yang disimpan oleh halaman pemilik.
+  const mode = modeProp ?? detectedMode;
+  const no = outboundNo ?? routerNo;
   // console.log("outbound_no", no);
 
   const [formData, setFormData] = useState<HeaderFormProps>({
@@ -175,7 +188,7 @@ export default function ManualForm() {
             description: res.data.message,
             type: "success",
           });
-          router.push("/wms/outbound/data");
+          router.push("/wms/outbound/data-outbound");
         }
       } catch (error) {
         eventBus.emit("loading", false);
@@ -201,7 +214,7 @@ export default function ManualForm() {
             description: res.data.message,
             type: "success",
           });
-          router.push("/wms/outbound/data");
+          router.push("/wms/outbound/data-outbound");
         }
       } catch (error) {
         eventBus.emit("loading", false);
@@ -301,7 +314,7 @@ export default function ManualForm() {
             variant="outline"
             className="bg-black-500 text-black hover:bg-gray-200"
             onClick={() => {
-              router.push("/wms/outbound/data");
+              router.push("/wms/outbound/data-outbound");
             }}
           >
             <ArrowBigLeftIcon className="mr-0" />

@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ItemFormTable from "./ItemFormTable";
@@ -31,11 +31,24 @@ import "react-datepicker/dist/react-datepicker.css";
 import { parse } from "path";
 import { Origin } from "@/types/origin";
 import ItemScannedTable from "./ItemScannedTable";
+import { usePageTabs } from "@/contexts/page-tabs-context";
 
-export default function ManualForm() {
+type ManualFormProps = {
+  mode?: "create" | "edit";
+  inboundNo?: string;
+};
+
+export default function ManualForm({
+  mode,
+  inboundNo,
+}: ManualFormProps) {
   const router = useRouter();
-  const { no } = router.query;
-  console.log("inbound_no", no);
+
+  const no = inboundNo ?? (mode ? undefined : router.query.no);
+
+  const isEditMode = mode
+    ? mode === "edit"
+    : router.pathname.includes("/edit-inbound");
 
   const [formData, setFormData] = useState<HeaderFormProps>({
     ID: 0,
@@ -198,6 +211,8 @@ export default function ManualForm() {
     }
   };
 
+  const { closeTabAndNavigate } = usePageTabs();
+
   const handleSave = async () => {
     const newMuatan = muatan.map((m) => ({
       ...m,
@@ -238,7 +253,12 @@ export default function ManualForm() {
             description: res.data.message,
             type: "success",
           });
-          router.push("/wms/inbound/data");
+          router.push("/wms/inbound/data-inbound");
+          // closeTabAndNavigate(
+          //   "/wms/inbound/add-inbound",
+          //   "Inbound Order",
+          //   "/wms/inbound/data-inbound"
+          // );
         }
       } catch (error) {
         eventBus.emit("loading", false);
@@ -262,7 +282,12 @@ export default function ManualForm() {
             description: res.data.message,
             type: "success",
           });
-          router.push("/wms/inbound/data");
+          router.push("/wms/inbound/data-inbound");
+          // closeTabAndNavigate(
+          //   "/wms/inbound/add-inbound",
+          //   "Inbound Order",
+          //   "/wms/inbound/data-inbound"
+          // );
         } else {
           eventBus.emit("loading", false);
         }
@@ -279,58 +304,95 @@ export default function ManualForm() {
   }, []);
 
   useEffect(() => {
+    // ADD: pastikan tidak membawa data dari halaman Edit.
+    if (!isEditMode) {
+      // setFormData({
+      //   ID: 0,
+      //   inbound_no: "Auto Generate",
+      //   inbound_date: new Date().toISOString().split("T")[0],
+      //   receipt_id: "",
+      //   supplier: "",
+      //   po_number: "",
+      //   invoice: "",
+      //   transporter: "",
+      //   no_truck: "",
+      //   driver: "",
+      //   container: "",
+      //   status: "draft",
+      //   owner_code: "YUWELL",
+      //   whs_code: "WH-B",
+      //   type: "NORMAL",
+      //   mode: "create",
+      //   origin: "",
+      //   po_date: "",
+      //   arrival_time: "",
+      //   start_unloading: "",
+      //   end_unloading: "",
+      //   truck_size: "",
+      //   bl_no: "",
+      //   koli: 0,
+      // });
+
+      // setMuatan([]);
+      // setReferences([{ ID: Date.now(), inbound_id: 0, ref_no: "" }]);
+      // setItemsReceived([]);
+      // setInboundDetails([]);
+      return;
+    }
+
+    // EDIT: tunggu nomor inbound tersedia.
     if (!no) return;
 
-    // const fetchInbound = async () => {
-    //   eventBus.emit("loading", true);
-    //   try {
-    //     const res = await api.get(`/inbound/${no}`, {
-    //       withCredentials: true,
-    //     });
-    //     if (res.data.success) {
-    //       setFormData(res.data.data);
-    //       setReferences(res.data.data.references);
-    //       setMuatan(res.data.data.details);
-    //       setItemsReceived(res.data.data.received);
-    //       setInboundDetails(res.data.details);
-    //     }
-    //   } catch (error) {
-    //     console.error("Error fetching inbound:", error);
-    //   } finally {
-    //     eventBus.emit("loading", false);
-    //   }
-    // };
+    let cancelled = false;
 
     const fetchInbound = async () => {
       eventBus.emit("loading", true);
+
+      console.log("[fetchInbound] CALLED", {
+        no,
+        instanceId: instanceId.current,
+      });
+
       try {
         const res = await api.get(`/inbound/${no}`, {
           withCredentials: true,
         });
-        if (res.data.success) {
-          const detailsWithScan = res.data.details ?? [];
 
-          // buat lookup serial_numbers by detail ID
-          const serialMap = new Map<number, string[]>(
-            detailsWithScan.map((d: any) => [d.id, d.serial_numbers ?? []])
-          );
+        if (cancelled || !res.data.success) return;
 
-          // merge serial_numbers ke muatan (dari res.data.data.details)
-          const mergedDetails = (res.data.data.details ?? []).map((d: any) => ({
+        const detailsWithScan = res.data.details ?? [];
+
+        const serialMap = new Map<number, string[]>(
+          detailsWithScan.map((d: any) => [
+            d.id,
+            d.serial_numbers ?? [],
+          ])
+        );
+
+        const mergedDetails = (res.data.data.details ?? []).map(
+          (d: any) => ({
             ...d,
             serial_numbers: serialMap.get(d.ID) ?? [],
-          }));
+          })
+        );
 
-          setFormData(res.data.data);
-          setReferences(res.data.data.references);
-          setMuatan(mergedDetails);
-          setItemsReceived(res.data.data.received);
-          setInboundDetails(detailsWithScan);
-        }
+        setFormData(res.data.data);
+        setReferences(
+          res.data.data.references?.length
+            ? res.data.data.references
+            : [{ ID: Date.now(), inbound_id: 0, ref_no: "" }]
+        );
+        setMuatan(mergedDetails);
+        setItemsReceived(res.data.data.received ?? []);
+        setInboundDetails(detailsWithScan);
       } catch (error) {
-        console.error("Error fetching inbound:", error);
+        if (!cancelled) {
+          console.error("Error fetching inbound:", error);
+        }
       } finally {
-        eventBus.emit("loading", false);
+        if (!cancelled) {
+          eventBus.emit("loading", false);
+        }
       }
     };
 
@@ -339,12 +401,79 @@ export default function ManualForm() {
     const handleRefresh = () => {
       fetchInbound();
     };
+
     eventBus.on("refreshData", handleRefresh);
 
     return () => {
-      eventBus.off("refreshData", handleRefresh);
+      cancelled = true;
+      // eventBus.off("refreshData", handleRefresh);  
     };
-  }, [no]);
+  }, [isEditMode, no]);
+
+  useEffect(() => {
+    console.log("[EDIT FORM] MOUNT", no);
+
+    return () => {
+      console.log("[EDIT FORM] UNMOUNT", no);
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log("[EDIT FORM] FETCH EFFECT", {
+      no,
+      isEditMode,
+    });
+
+    // Pertahankan isi fetchInbound yang sekarang.
+  }, [isEditMode, no]);
+
+  // useEffect(() => {
+  //   if (!no) return;
+
+  //   const fetchInbound = async () => {
+  //     eventBus.emit("loading", true);
+  //     try {
+  //       const res = await api.get(`/inbound/${no}`, {
+  //         withCredentials: true,
+  //       });
+  //       if (res.data.success) {
+  //         const detailsWithScan = res.data.details ?? [];
+
+  //         // buat lookup serial_numbers by detail ID
+  //         const serialMap = new Map<number, string[]>(
+  //           detailsWithScan.map((d: any) => [d.id, d.serial_numbers ?? []])
+  //         );
+
+  //         // merge serial_numbers ke muatan (dari res.data.data.details)
+  //         const mergedDetails = (res.data.data.details ?? []).map((d: any) => ({
+  //           ...d,
+  //           serial_numbers: serialMap.get(d.ID) ?? [],
+  //         }));
+
+  //         setFormData(res.data.data);
+  //         setReferences(res.data.data.references);
+  //         setMuatan(mergedDetails);
+  //         setItemsReceived(res.data.data.received);
+  //         setInboundDetails(detailsWithScan);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching inbound:", error);
+  //     } finally {
+  //       eventBus.emit("loading", false);
+  //     }
+  //   };
+
+  //   fetchInbound();
+
+  //   const handleRefresh = () => {
+  //     fetchInbound();
+  //   };
+  //   eventBus.on("refreshData", handleRefresh);
+
+  //   return () => {
+  //     eventBus.off("refreshData", handleRefresh);
+  //   };
+  // }, [no]);
 
 
   useEffect(() => {
@@ -377,6 +506,25 @@ export default function ManualForm() {
     };
   }, [muatan, formData, references]);
 
+
+  const instanceId = useRef(
+    Math.random().toString(36).slice(2, 8)
+  );
+
+  console.log("[ManualForm] RENDER", {
+    instanceId: instanceId.current,
+    path: router.asPath,
+    no,
+  });
+
+  useEffect(() => {
+    console.log("[ManualForm] MOUNT", instanceId.current);
+
+    return () => {
+      console.log("[ManualForm] UNMOUNT", instanceId.current);
+    };
+  }, []);
+
   return (
     <div className="p-4" style={{ fontSize: "12px" }}>
       <div className="flex justify-between items-center mb-4">
@@ -385,7 +533,7 @@ export default function ManualForm() {
             variant="outline"
             className="bg-black-500 text-black hover:bg-gray-200"
             onClick={() => {
-              router.push("/wms/inbound/data");
+              router.push("/wms/inbound/data-inbound");
             }}
           >
             <ArrowBigLeft className="mr-0" />
