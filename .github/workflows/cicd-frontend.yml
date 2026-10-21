@@ -1,0 +1,236 @@
+name: WMS Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - prod-v3
+  pull_request:
+    branches:
+      - prod-v3
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Next.js Standalone
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Package standalone output
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          if (!(Test-Path ".next/standalone/server.js")) {
+            throw "Standalone server.js tidak ditemukan."
+          }
+
+          $stage = Join-Path $PWD "frontend-package"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+
+          Get-ChildItem ".next/standalone" -Force |
+            Copy-Item -Destination $stage -Recurse -Force
+
+          $staticTarget = Join-Path $stage ".next/static"
+          New-Item -ItemType Directory -Force -Path $staticTarget | Out-Null
+
+          if (Test-Path ".next/static") {
+            Get-ChildItem ".next/static" -Force |
+              Copy-Item -Destination $staticTarget -Recurse -Force
+          }
+
+          if (Test-Path "public") {
+            Copy-Item "public" (Join-Path $stage "public") -Recurse -Force
+          }
+
+          Compress-Archive `
+            -Path "$stage/*" `
+            -DestinationPath "$PWD/frontend-standalone.zip" `
+            -Force
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wms-frontend-standalone
+          path: frontend-standalone.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy Frontend to Production
+    needs: build
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/prod-v3'
+
+    runs-on: [self-hosted, Windows, X64, furuno-frontend-prod]
+
+    steps:
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wms-frontend-standalone
+          path: deploy-package
+
+      - name: Deploy with backup and rollback
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $appDir = "E:\aplikasi\WMS_FURUNO\frontend"
+          $backupDir = Join-Path $appDir "backups"
+          $serviceName = "NSSM-WMS-FE-FURUNO"
+          $zip = Join-Path $PWD "deploy-package\frontend-standalone.zip"
+          $stage = Join-Path $PWD "frontend-staged"
+          $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+          $backup = Join-Path $backupDir $timestamp
+
+          # Jangan hapus runner, konfigurasi lokal, atau backup.
+          $protected = @(
+            "action-runner",
+            "backups",
+            "logs",
+            ".env.local",
+            ".env",
+            ".env.production",
+            ".env.production.local"
+          )
+
+          if (!(Test-Path $zip)) {
+            throw "Artifact frontend tidak ditemukan."
+          }
+
+          if (!(Test-Path $appDir)) {
+            throw "Folder aplikasi tidak ditemukan: $appDir"
+          }
+
+          $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+          if (!$service) {
+            throw "Service $serviceName belum dibuat. Setup NSSM terlebih dahulu."
+          }
+
+          New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+
+          Expand-Archive -Path $zip -DestinationPath $stage -Force
+
+          if (!(Test-Path (Join-Path $stage "server.js"))) {
+            throw "Paket tidak berisi server.js."
+          }
+
+          $hadPreviousApp = Test-Path (Join-Path $appDir "server.js")
+
+          New-Item -ItemType Directory -Force -Path $backup | Out-Null
+
+          # Backup aplikasi lama tanpa file rahasia dan runner.
+          Get-ChildItem $appDir -Force |
+            Where-Object { $_.Name -notin $protected } |
+            ForEach-Object {
+              Copy-Item $_.FullName $backup -Recurse -Force
+            }
+
+          try {
+            if ((Get-Service $serviceName).Status -ne "Stopped") {
+              Stop-Service -Name $serviceName
+              (Get-Service $serviceName).WaitForStatus(
+                [System.ServiceProcess.ServiceControllerStatus]::Stopped,
+                [TimeSpan]::FromSeconds(45)
+              )
+            }
+
+            Get-ChildItem $appDir -Force |
+              Where-Object { $_.Name -notin $protected } |
+              Remove-Item -Recurse -Force
+
+            Get-ChildItem $stage -Force |
+              Copy-Item -Destination $appDir -Recurse -Force
+
+            Start-Service -Name $serviceName
+            (Get-Service $serviceName).WaitForStatus(
+              [System.ServiceProcess.ServiceControllerStatus]::Running,
+              [TimeSpan]::FromSeconds(45)
+            )
+
+            # Periksa apakah aplikasi sudah merespons HTTP.
+            $healthy = $false
+
+            for ($i = 0; $i -lt 12; $i++) {
+              Start-Sleep -Seconds 5
+
+              try {
+                $response = Invoke-WebRequest `
+                  -Uri "http://127.0.0.1:3000/" `
+                  -UseBasicParsing `
+                  -TimeoutSec 5
+
+                if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
+                  $healthy = $true
+                  break
+                }
+              }
+              catch {
+                # Ulangi pemeriksaan sampai batas waktu habis.
+              }
+            }
+
+            if (!$healthy) {
+              throw "Frontend tidak merespons HTTP setelah deployment."
+            }
+
+            Write-Host "Deployment frontend berhasil."
+          }
+          catch {
+            $deployError = $_.Exception.Message
+            Write-Host "Deployment gagal: $deployError"
+
+            try {
+              if ((Get-Service $serviceName).Status -ne "Stopped") {
+                Stop-Service -Name $serviceName -Force
+                (Get-Service $serviceName).WaitForStatus(
+                  [System.ServiceProcess.ServiceControllerStatus]::Stopped,
+                  [TimeSpan]::FromSeconds(45)
+                )
+              }
+
+              Get-ChildItem $appDir -Force |
+                Where-Object { $_.Name -notin $protected } |
+                Remove-Item -Recurse -Force
+
+              if ($hadPreviousApp) {
+                Get-ChildItem $backup -Force |
+                  Copy-Item -Destination $appDir -Recurse -Force
+
+                Start-Service -Name $serviceName
+                (Get-Service $serviceName).WaitForStatus(
+                  [System.ServiceProcess.ServiceControllerStatus]::Running,
+                  [TimeSpan]::FromSeconds(45)
+                )
+
+                Write-Host "Rollback selesai. Backup: $backup"
+              }
+              else {
+                Write-Host "Tidak ada aplikasi sebelumnya untuk dipulihkan."
+              }
+            }
+            catch {
+              Write-Host "Rollback gagal: $($_.Exception.Message)"
+              Write-Host "Periksa backup secara manual: $backup"
+            }
+
+            throw "Deployment gagal: $deployError"
+          }
