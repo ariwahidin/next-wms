@@ -240,7 +240,7 @@ export function PageTabs() {
         </DndContext>
       </div>
 
-      <button
+      {/* <button
         type="button"
         onClick={() => openTab("Dashboard", "/wms/dashboard")}
         className={cn(
@@ -251,7 +251,7 @@ export function PageTabs() {
         aria-label="Open Dashboard"
       >
         <PanelLeftClose className="size-4" />
-      </button>
+      </button> */}
     </div>
   );
 }

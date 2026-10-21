@@ -34,7 +34,7 @@ const DEFAULT_TAB: PageTab = {
   url: "/wms/dashboard",
 };
 
-const EXCLUDED_TAB_URLS = ["/auth/login"];
+const EXCLUDED_TAB_URLS = ["/auth/login", "/auth/conflict"];
 
 function normalizeUrl(url: string): string {
   return (

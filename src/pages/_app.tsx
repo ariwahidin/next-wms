@@ -62,15 +62,6 @@ type CachedPage = {
   pageProps: AppProps["pageProps"];
 };
 
-// function getPageKey(url: string): string {
-//   return url.split("?")[0].split("#")[0].replace(/\/+$/, "") || "/";
-// }
-
-// function getPageKey(asPath: string): string {
-//   const path = asPath.split("?")[0].split("#")[0];
-//   return path.replace(/\/+$/, "") || "/";
-// }
-
 function getPageKey(asPath: string): string {
   const [rawPath, rawQuery = ""] = asPath.split("#")[0].split("?");
   const path = rawPath.replace(/\/+$/, "") || "/";
