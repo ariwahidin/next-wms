@@ -174,7 +174,7 @@ jobs:
 
               try {
                 $response = Invoke-WebRequest `
-                  -Uri "http://127.0.0.1:3000/" `
+                  -Uri "http://127.0.0.1:4107/" `
                   -UseBasicParsing `
                   -TimeoutSec 5
 
