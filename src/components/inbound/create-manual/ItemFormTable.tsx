@@ -32,7 +32,8 @@ import { InventoryPolicy } from "@/types/inventory";
 import { useRouter } from "next/navigation";
 import { QrCode } from "lucide-react";
 import SerialNumberModal from "./SerialNumberModal";
-
+import BasicLoadingOverlay from "@/components/basicLoadingOverlay";
+// import BasicLoadingOverlay from "@/components/Loading/basicLoadingOverlay";
 
 // Skema validasi Yup
 const muatanSchema = yup.object().shape({
@@ -93,7 +94,7 @@ export default function ItemFormTable({
   const [serialModalItem, setSerialModalItem] = useState<ItemFormProps | null>(null);
 
   const [isTableOpen, setIsTableOpen] = useState(true);
-
+  const [isDeleting, setIsDeleting] = useState(false);
   const handleOpenSerialModal = (item: ItemFormProps) => {
     setSerialModalItem(item);
     setIsSerialModalOpen(true);
@@ -271,77 +272,6 @@ export default function ItemFormTable({
     setIsModalOpen(false);
   };
 
-  // const handleChange = (
-  //   id: number,
-  //   field: keyof ItemFormProps,
-  //   value: string | number
-  // ) => {
-  //   console.log("ID:", id);
-  //   console.log("Field:", field);
-  //   console.log("Value:", value);
-
-  //   setMuatan((prev) =>
-  //     prev.map((m) =>
-  //       m.ID === id
-  //         ? {
-  //           ...m,
-  //           [field]:
-  //             field === "quantity"
-  //               ? value === "" ? "" : Number(value)
-  //               : value,
-  //         }
-  //         : m
-  //     )
-  //   );
-
-  //   setFilteredMuatan((prev) =>
-  //     prev.map((m) =>
-  //       m.ID === id
-  //         ? {
-  //           ...m,
-  //           [field]:
-  //             field === "quantity"
-  //               ? value === "" ? "" : Number(value)
-  //               : value,
-  //         }
-  //         : m
-  //     )
-  //   );
-
-
-  // };
-
-  // const handleChange = (
-  //   id: number,
-  //   field: keyof ItemFormProps,
-  //   value: string | number
-  // ) => {
-  //   const applyUpdate = (m: ItemFormProps) => {
-  //     if (field === "quantity") {
-  //       const rawQty = value === "" ? "" : Number(value);
-  //       const qty = rawQty === "" ? "" : Math.floor(rawQty as number);
-
-  //       let nextSerials = m.serial_numbers ?? [];
-  //       if (m.is_serial && typeof qty === "number" && nextSerials.length > qty) {
-  //         const removed = nextSerials.length - qty;
-  //         nextSerials = nextSerials.slice(0, qty);
-  //         eventBus.emit("showAlert", {
-  //           title: "Perhatian",
-  //           description: `${removed} serial number dihapus karena qty diubah`,
-  //           type: "info",
-  //         });
-  //       }
-
-  //       return { ...m, quantity: qty, serial_numbers: nextSerials };
-  //     }
-
-  //     return { ...m, [field]: value };
-  //   };
-
-  //   setMuatan((prev) => prev.map((m) => (m.ID === id ? applyUpdate(m) : m)));
-  //   setFilteredMuatan((prev) => prev.map((m) => (m.ID === id ? applyUpdate(m) : m)));
-  // };
-
   const handleChange = (
     id: number,
     field: keyof ItemFormProps,
@@ -498,23 +428,61 @@ export default function ItemFormTable({
     });
   };
 
+  // const handleDelete = async (id: number) => {
+  //   console.log("Deleting item with ID:", id);
+
+  //   try {
+  //     const res = await api.delete(`/inbound/item/` + id, {
+  //       withCredentials: true,
+  //     });
+  //     if (res.data.success) {
+  //       setMuatan((prev) => prev.filter((m) => m.ID !== id));
+  //       setFilteredMuatan((prev) => prev.filter((m) => m.ID !== id));
+  //       setSelectedIds((prev) => prev.filter((sid) => sid !== id));
+  //       if (editingId === id) setEditingId(null);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error deleting item:", error);
+  //   }
+  // };
+
+
   const handleDelete = async (id: number) => {
-    console.log("Deleting item with ID:", id);
+    setIsDeleting(true);
 
     try {
-      const res = await api.delete(`/inbound/item/` + id, {
+      const res = await api.delete(`/inbound/item/${id}`, {
         withCredentials: true,
       });
+
       if (res.data.success) {
         setMuatan((prev) => prev.filter((m) => m.ID !== id));
         setFilteredMuatan((prev) => prev.filter((m) => m.ID !== id));
         setSelectedIds((prev) => prev.filter((sid) => sid !== id));
-        if (editingId === id) setEditingId(null);
+
+        if (editingId === id) {
+          setEditingId(null);
+        }
+      } else {
+        eventBus.emit("showAlert", {
+          title: "Gagal",
+          description: res.data.message || "Gagal menghapus item.",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Error deleting item:", error);
+
+      eventBus.emit("showAlert", {
+        title: "Gagal",
+        description: "Terjadi kesalahan saat menghapus item.",
+        type: "error",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
+
 
   const handleSelect = (id: number, checked: boolean) => {
     setSelectedIds((prev) =>
@@ -682,6 +650,10 @@ export default function ItemFormTable({
 
   return (
     <>
+      <BasicLoadingOverlay
+        isLoading={isDeleting}
+        message="Deleting..."
+      />
       <div className="w-full space-y-3">
         {/* =========================================================
             TOOLBAR
@@ -1152,7 +1124,7 @@ export default function ItemFormTable({
                                   type="button"
                                   size="sm"
                                   variant="destructive"
-                                  onClick={() => handleCancel(item) }
+                                  onClick={() => handleCancel(item)}
                                   title="Delete"
                                   className="h-8 w-8 p-0"
                                 >

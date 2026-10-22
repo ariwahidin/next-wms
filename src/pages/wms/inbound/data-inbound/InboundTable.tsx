@@ -1281,6 +1281,33 @@ const InboundTable = () => {
   const isLoading = !rowData && !error;
   const isRefetching = isValidating && !!rowData;
 
+
+
+  useEffect(() => {
+    const handlePageReload = (event: Event) => {
+      const customEvent = event as CustomEvent<{ url: string }>;
+      const targetUrl = customEvent.detail?.url;
+
+      const currentUrl =
+        router.asPath.split("?")[0].split("#")[0].replace(/\/+$/, "") || "/";
+
+      if (currentUrl !== targetUrl) return;
+
+      // Ambil ulang data menggunakan SWR key dan filter yang aktif.
+      void mutateData();
+    };
+
+    window.addEventListener("wms-page-reload", handlePageReload);
+
+    return () => {
+      window.removeEventListener(
+        "wms-page-reload",
+        handlePageReload
+      );
+    };
+  }, [router.asPath, mutateData]);
+
+
   return (
     <div>
       <div className="flex items-center justify-between pb-3">

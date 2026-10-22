@@ -253,12 +253,13 @@ export default function ManualForm({
             description: res.data.message,
             type: "success",
           });
-          router.push("/wms/inbound/data-inbound");
-          // closeTabAndNavigate(
-          //   "/wms/inbound/add-inbound",
-          //   "Inbound Order",
-          //   "/wms/inbound/data-inbound"
-          // );
+          // router.push("/wms/inbound/data-inbound");
+          closeTabAndNavigate(
+            "/wms/inbound/add-inbound",
+            "Inbound Order",
+            "/wms/inbound/data-inbound",
+            true
+          );
         }
       } catch (error) {
         eventBus.emit("loading", false);
@@ -282,12 +283,13 @@ export default function ManualForm({
             description: res.data.message,
             type: "success",
           });
-          router.push("/wms/inbound/data-inbound");
-          // closeTabAndNavigate(
-          //   "/wms/inbound/add-inbound",
-          //   "Inbound Order",
-          //   "/wms/inbound/data-inbound"
-          // );
+          // router.push("/wms/inbound/data-inbound");
+          closeTabAndNavigate(
+            `/wms/inbound/edit-inbound/${formData.inbound_no}`,
+            "Inbound Order",
+            "/wms/inbound/data-inbound",
+            true
+          );
         } else {
           eventBus.emit("loading", false);
         }

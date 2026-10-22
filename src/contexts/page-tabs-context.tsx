@@ -18,8 +18,9 @@ type PageTabsContextValue = {
   closeTabAndNavigate: (
     currentUrl: string,
     targetTitle: string,
-    targetUrl: string
-  ) => void;
+    targetUrl: string,
+    reload?: boolean
+  ) => Promise<void>;
   reorderTabs: (activeUrl: string, overUrl: string) => void;
 };
 
@@ -337,11 +338,13 @@ export function PageTabsProvider({
   );
 
   // Close the source tab and navigate to a target tab.
+
   const closeTabAndNavigate = React.useCallback(
-    (
+    async (
       currentUrl: string,
       targetTitle: string,
-      targetUrl: string
+      targetUrl: string,
+      reload: boolean = false
     ) => {
       if (
         !isValidInternalUrl(targetUrl) ||
@@ -357,13 +360,11 @@ export function PageTabsProvider({
 
       setTabs((current) => {
         const remaining = current.filter(
-          (tab) =>
-            normalizeUrl(tab.url) !== normalizedCurrentUrl
+          (tab) => normalizeUrl(tab.url) !== normalizedCurrentUrl
         );
 
         const targetExists = remaining.some(
-          (tab) =>
-            normalizeUrl(tab.url) === normalizedTargetUrl
+          (tab) => normalizeUrl(tab.url) === normalizedTargetUrl
         );
 
         if (targetExists) {
@@ -376,10 +377,7 @@ export function PageTabsProvider({
 
         const next = [
           ...remaining,
-          {
-            title: targetTitle,
-            url: normalizedTargetUrl,
-          },
+          { title: targetTitle, url: normalizedTargetUrl },
         ];
 
         if (next.length > MAX_TABS) {
@@ -390,10 +388,150 @@ export function PageTabsProvider({
         return next;
       });
 
-      void router.push(targetUrl);
+      // const navigated = await router.push(targetUrl);
+
+      // if (navigated && reload) {
+      //   window.dispatchEvent(
+      //     new CustomEvent("wms-page-reload", {
+      //       detail: { url: normalizedTargetUrl },
+      //     })
+      //   );
+      // }
+
+      const navigated = await router.push(targetUrl);
+
+      if (navigated && reload) {
+        window.dispatchEvent(
+          new CustomEvent("wms-page-reload", {
+            detail: { url: normalizedTargetUrl },
+          })
+        );
+      }
     },
     [router]
   );
+
+  // const closeTabAndNavigate = React.useCallback(
+  //   async (
+  //     currentUrl: string,
+  //     targetTitle: string,
+  //     targetUrl: string,
+  //     reload: boolean = false
+  //   ) => {
+  //     if (
+  //       !isValidInternalUrl(targetUrl) ||
+  //       isExcludedTab(targetUrl)
+  //     ) {
+  //       return;
+  //     }
+
+  //     const normalizedCurrentUrl = normalizeUrl(currentUrl);
+  //     const normalizedTargetUrl = normalizeUrl(targetUrl);
+
+  //     notifyTabClosed(normalizedCurrentUrl);
+
+  //     setTabs((current) => {
+  //       const remaining = current.filter(
+  //         (tab) =>
+  //           normalizeUrl(tab.url) !== normalizedCurrentUrl
+  //       );
+
+  //       const targetExists = remaining.some(
+  //         (tab) =>
+  //           normalizeUrl(tab.url) === normalizedTargetUrl
+  //       );
+
+  //       if (targetExists) {
+  //         return remaining.map((tab) =>
+  //           normalizeUrl(tab.url) === normalizedTargetUrl
+  //             ? { ...tab, title: targetTitle }
+  //             : tab
+  //         );
+  //       }
+
+  //       const next = [
+  //         ...remaining,
+  //         {
+  //           title: targetTitle,
+  //           url: normalizedTargetUrl,
+  //         },
+  //       ];
+
+  //       if (next.length > MAX_TABS) {
+  //         notifyTabLimit();
+  //         return remaining;
+  //       }
+
+  //       return next;
+  //     });
+
+  //     const navigated = await router.push(targetUrl);
+
+  //     if (navigated && reload) {
+  //       router.reload();
+  //     }
+  //   },
+  //   [router]
+  // );
+
+
+  // const closeTabAndNavigate = React.useCallback(
+  //   (
+  //     currentUrl: string,
+  //     targetTitle: string,
+  //     targetUrl: string
+  //   ) => {
+  //     if (
+  //       !isValidInternalUrl(targetUrl) ||
+  //       isExcludedTab(targetUrl)
+  //     ) {
+  //       return;
+  //     }
+
+  //     const normalizedCurrentUrl = normalizeUrl(currentUrl);
+  //     const normalizedTargetUrl = normalizeUrl(targetUrl);
+
+  //     notifyTabClosed(normalizedCurrentUrl);
+
+  //     setTabs((current) => {
+  //       const remaining = current.filter(
+  //         (tab) =>
+  //           normalizeUrl(tab.url) !== normalizedCurrentUrl
+  //       );
+
+  //       const targetExists = remaining.some(
+  //         (tab) =>
+  //           normalizeUrl(tab.url) === normalizedTargetUrl
+  //       );
+
+  //       if (targetExists) {
+  //         return remaining.map((tab) =>
+  //           normalizeUrl(tab.url) === normalizedTargetUrl
+  //             ? { ...tab, title: targetTitle }
+  //             : tab
+  //         );
+  //       }
+
+  //       const next = [
+  //         ...remaining,
+  //         {
+  //           title: targetTitle,
+  //           url: normalizedTargetUrl,
+  //         },
+  //       ];
+
+  //       if (next.length > MAX_TABS) {
+  //         notifyTabLimit();
+  //         return remaining;
+  //       }
+
+  //       return next;
+  //     });
+
+  //     void router.push(targetUrl);
+  //   },
+  //   [router]
+  // );
 
   const value = React.useMemo(
     () => ({
