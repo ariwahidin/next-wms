@@ -5,6 +5,7 @@ import Select from "react-select";
 import Layout from "@/components/layout";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { Button } from "@/components/ui/button";
 
 // =========================================================
 // TYPES
@@ -376,7 +377,7 @@ export default function Page() {
       ) {
         toast.success(
           response.data.message ||
-            "Checking Excel uploaded successfully"
+          "Checking Excel uploaded successfully"
         );
 
         console.log(
@@ -458,8 +459,8 @@ export default function Page() {
         state.isSelected
           ? "#2563eb"
           : state.isFocused
-          ? "#eff6ff"
-          : "white",
+            ? "#eff6ff"
+            : "white",
 
       color:
         state.isSelected
@@ -543,6 +544,8 @@ export default function Page() {
                 checking result, then upload it back
                 to the system.
               </p>
+
+
             </div>
 
             {/* ================================================= */}
@@ -614,6 +617,14 @@ export default function Page() {
 
                 className="text-sm"
               />
+
+              <Button
+                className="h-9 mt-3"
+                variant="outline"
+                onClick={() => loadInboundOptions("")}
+              >
+                🔄 Refresh Options
+              </Button>
 
             </div>
 
@@ -904,7 +915,7 @@ export default function Page() {
 
               <li>
                 Fill only Qty Received, Case No,
-                Carton No, and Location.
+                Carton No, Location, and Packing Type.
               </li>
 
               <li>
