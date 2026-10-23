@@ -74,6 +74,7 @@ interface ScannedItem {
     owner_code?: string;
     item_code?: string;
     item_name?: string;
+    carton_number?: string;
 }
 
 interface DestPallet {
@@ -713,6 +714,7 @@ const TransferPage = () => {
         setFilterRecDate("all");
         setFilterItem("all");
         setFilterPallet("all");
+        setSearchTerm("");
         setSelectedKeys(new Set());
     };
 
@@ -749,9 +751,20 @@ const TransferPage = () => {
     }, [afterRecDate, filterItem]);
 
     const filteredScannedItems = useMemo(() => {
-        if (filterPallet === "all") return afterItem;
-        return afterItem.filter((i) => i.pallet === filterPallet);
-    }, [afterItem, filterPallet]);
+        // Terapkan filter dropdown terlebih dahulu.
+        const filteredByPallet = filterPallet === "all"
+            ? afterItem
+            : afterItem.filter((i) => i.pallet === filterPallet);
+
+        // Search tambahan: ItemCode, ItemName, CartonNumber, dan Pallet.
+        const keyword = searchTerm.trim().toLocaleLowerCase();
+        if (!keyword) return filteredByPallet;
+
+        return filteredByPallet.filter((item) =>
+            [item.item_code, item.item_name, item.carton_number, item.pallet]
+                .some((value) => String(value ?? "").toLocaleLowerCase().includes(keyword))
+        );
+    }, [afterItem, filterPallet, searchTerm]);
 
     // ── Dropdown options (cascade-aware) ─────────────────────────────────────────
 
@@ -959,6 +972,7 @@ const TransferPage = () => {
                     item_code: item.item_code,
                     item_name: item.item_name,
                     division_code: item.division_code,
+                    carton_number: item.carton_number
                 }));
 
                 if (filtered.length === 0) { setListInboundScanned([]); return; }
@@ -1476,6 +1490,39 @@ const TransferPage = () => {
                             </Card>
                         )}
 
+                        {/* ── Search within filtered inventory ── */}
+                        <div className="space-y-1.5">
+                            <label htmlFor="inventory-result-search" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                Search Items
+                            </label>
+                            <div className="relative">
+                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <Input
+                                    id="inventory-result-search"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Search ItemCode, ItemName, CartonNumber, Pallet..."
+                                    autoComplete="off"
+                                    className="pl-9 pr-9 bg-white"
+                                />
+                                {searchTerm && (
+                                    <button
+                                        type="button"
+                                        aria-label="Clear item search"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        onClick={() => setSearchTerm("")}
+                                    >
+                                        <XCircle size={17} />
+                                    </button>
+                                )}
+                            </div>
+                            {searchTerm.trim() && (
+                                <p className="text-xs text-gray-500">
+                                    {filteredScannedItems.length} item(s) match “{searchTerm.trim()}”
+                                </p>
+                            )}
+                        </div>
+
                         {/* ── Result Card ── */}
                         <Card>
                             <CardContent className="p-4 space-y-3">
@@ -1547,8 +1594,8 @@ const TransferPage = () => {
                                                     <div className="flex justify-between items-start text-sm">
                                                         <div className="space-y-0.5">
                                                             <div className="text-xs font-mono">
-                                                                <span className="text-gray-500">Location:</span> {item.location}<br />
-                                                                <span className="text-gray-500">Pallet:</span> {item.pallet}<br />
+                                                                <span className="text-gray-500">Loc:</span> {item.location}<br />
+                                                                <span className="text-gray-500">Pal:</span> {item.pallet}<br />
                                                                 <span className="text-gray-500">SKU:</span> {item.item_code}<br />
                                                                 <span className="text-gray-500">EAN:</span> {item.ean_display}<br />
                                                                 <span className="text-gray-500">Name:</span> {item.item_name}<br />
@@ -1562,12 +1609,13 @@ const TransferPage = () => {
                                                                 <><span className="text-gray-500">Lot:</span> {item.lot_number}<br /></>
                                                             )}
                                                             <span className="text-gray-500">Whs:</span> {item.whs_code}<br />
-                                                            <span className="text-gray-500">Division:</span> {item.division_code}<br />
-                                                            <span className="text-gray-500">Available:</span>{" "}
+                                                            <span className="text-gray-500">Div:</span> {item.division_code}<br />
+                                                            <span className="text-gray-500">Avail:</span>{" "}
                                                             <span className="font-semibold">{item.qty_display}</span> {item.uom_display}<br />
                                                             {invPolicy?.show_rec_date && (
                                                                 <><span className="text-gray-500">Rcv:</span> {formatRecDate(item.rec_date)}<br /></>
                                                             )}
+                                                            <span className="text-gray-500">Ctn:</span> {item.carton_number}<br />
                                                         </div>
                                                     </div>
 
@@ -1700,9 +1748,9 @@ const TransferPage = () => {
                         <p className="text-sm text-gray-700">
                             <strong>{transferAllLabel}</strong> will be moved to destination location?
                         </p>
-                        {activeFilterCount > 0 && (
+                        {(activeFilterCount > 0 || searchTerm.trim()) && (
                             <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded px-2 py-1.5">
-                                ⚠ Active filter applied — only {filteredScannedItems.length} record(s), qty {totalQty} will be transferred.
+                                ⚠ Filter/search applied — only {filteredScannedItems.length} record(s), qty {totalQty} will be transferred.
                             </div>
                         )}
 
