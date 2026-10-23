@@ -314,7 +314,7 @@ const PickingSheetPrint = () => {
               {invPolicy.allocation_carton_by_order && <th style={th}>CTN NO</th>}
               {invPolicy.allocation_serial_by_order && <th style={th}>SERIAL NO</th>}
               <th style={th}>QTY</th>
-              {/* <th style={th}>CBM</th> */}
+              <th style={th}>REMARKS</th>
             </tr>
           </thead>
           <tbody>
@@ -485,7 +485,7 @@ const PickingSheetPrint = () => {
                         {item.quantity}
                         {/* {item.uom} */}
                       </td>
-                      {/* <td style={{ ...td, textAlign: "center" }}>{item.cbm}</td> */}
+                      <td style={{ ...td, textAlign: "center" }}>{item.remarks_item}</td>
                     </tr>
                   ))}
 
@@ -510,6 +510,7 @@ const PickingSheetPrint = () => {
                     <td style={{ ...td, textAlign: "right" }}>TOTAL</td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
                     {/* <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td> */}
+                    <td style={{ ...td, textAlign: "center" }}></td>
                   </tr>
                 </React.Fragment>
               );
@@ -535,6 +536,7 @@ const PickingSheetPrint = () => {
               <td style={{ ...td, textAlign: "right" }}>GRAND TOTAL</td>
               <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
               {/* <td style={{ ...td, textAlign: "center" }}>{grandTotalCbm}</td> */}
+              <td style={{ ...td, textAlign: "center" }}></td>
             </tr>
           </tbody>
         </table>
