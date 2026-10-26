@@ -20,6 +20,7 @@ import { id } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
 import { Transporter } from "@/types/transporter";
 import ItemScannedTable from "./ItemScannedTable";
+import { usePageTabs } from "@/contexts/page-tabs-context";
 
 type ManualFormProps = {
   mode?: "add" | "edit" | "copy";
@@ -147,6 +148,9 @@ export default function ManualForm({
     }
   };
 
+
+  const { closeTabAndNavigate } = usePageTabs();
+
   const handleSave = async () => {
     console.log("Data outbound yang akan disimpan:", formData, muatan);
     // return;
@@ -188,7 +192,13 @@ export default function ManualForm({
             description: res.data.message,
             type: "success",
           });
-          router.push("/wms/outbound/data-outbound");
+          // router.push("/wms/outbound/data-outbound");
+          closeTabAndNavigate(
+            "/wms/outbound/add-outbound",
+            "Outbound Order",
+            "/wms/outbound/data-outbound",
+            true
+          );
         }
       } catch (error) {
         eventBus.emit("loading", false);
@@ -214,7 +224,13 @@ export default function ManualForm({
             description: res.data.message,
             type: "success",
           });
-          router.push("/wms/outbound/data-outbound");
+          // router.push("/wms/outbound/data-outbound");
+          closeTabAndNavigate(
+            `/wms/outbound/edit-outbound/${formData.outbound_no}`,
+            "Outbound Order",
+            "/wms/outbound/data-outbound",
+            true
+          );
         }
       } catch (error) {
         eventBus.emit("loading", false);
@@ -1102,9 +1118,6 @@ export default function ManualForm({
     </div>
   );
 }
-
-
-
 
 
 // /* eslint-disable @typescript-eslint/no-unused-vars */

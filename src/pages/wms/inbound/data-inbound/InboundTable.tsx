@@ -1282,7 +1282,7 @@ const InboundTable = () => {
   const isRefetching = isValidating && !!rowData;
 
 
-
+  // Memuat ulang data jika ada perubahan di URL
   useEffect(() => {
     const handlePageReload = (event: Event) => {
       const customEvent = event as CustomEvent<{ url: string }>;

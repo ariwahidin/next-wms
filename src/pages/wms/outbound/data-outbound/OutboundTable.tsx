@@ -1038,6 +1038,32 @@ const OutboundTable = () => {
   const isLoading = !rowData && !error;
   const isRefetching = isValidating && !!rowData;
 
+
+  // Memuat ulang data jika ada perubahan di URL
+  useEffect(() => {
+    const handlePageReload = (event: Event) => {
+      const customEvent = event as CustomEvent<{ url: string }>;
+      const targetUrl = customEvent.detail?.url;
+
+      const currentUrl =
+        router.asPath.split("?")[0].split("#")[0].replace(/\/+$/, "") || "/";
+
+      if (currentUrl !== targetUrl) return;
+
+      // Ambil ulang data menggunakan SWR key dan filter yang aktif.
+      void mutate();
+    };
+
+    window.addEventListener("wms-page-reload", handlePageReload);
+
+    return () => {
+      window.removeEventListener(
+        "wms-page-reload",
+        handlePageReload
+      );
+    };
+  }, [router.asPath, mutate]);
+
   return (
     <>
       {/* ── Toolbar ── */}
@@ -1276,73 +1302,73 @@ const OutboundTable = () => {
         </DialogContent>
       </Dialog>
 
-  <Dialog open={openImportModal} onOpenChange={setOpenImportModal}>
-    <DialogContent className="sm:max-w-md bg-white">
-      <DialogHeader>
-        <DialogTitle>Select the type of import</DialogTitle>
-      </DialogHeader>
+      <Dialog open={openImportModal} onOpenChange={setOpenImportModal}>
+        <DialogContent className="sm:max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle>Select the type of import</DialogTitle>
+          </DialogHeader>
 
-      <div className="grid grid-cols-2 gap-4 py-4">
+          <div className="grid grid-cols-2 gap-4 py-4">
 
-        {/* DEFAULT */}
-        <button
-          onClick={() => {
-            setOpenImportModal(false);
-            router.push("/wms/outbound/import-excel");
-          }}
-          className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-green-500 hover:bg-green-50"
-        >
-          <Package className="h-10 w-10 text-slate-600" />
-          <span className="text-sm font-semibold text-slate-700">
-            Default
-          </span>
-        </button>
+            {/* DEFAULT */}
+            <button
+              onClick={() => {
+                setOpenImportModal(false);
+                router.push("/wms/outbound/import-excel");
+              }}
+              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-green-500 hover:bg-green-50"
+            >
+              <Package className="h-10 w-10 text-slate-600" />
+              <span className="text-sm font-semibold text-slate-700">
+                Default
+              </span>
+            </button>
 
-        {/* E-COMMERCE */}
-        <button
-          onClick={() => {
-            setOpenImportModal(false);
-            router.push("/wms/outbound/import-excel/ecom");
-          }}
-          className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-blue-500 hover:bg-blue-50"
-        >
-          <ShoppingCart className="h-10 w-10 text-slate-600" />
-          <span className="text-sm font-semibold text-slate-700">
-            E-Commerce
-          </span>
-        </button>
+            {/* E-COMMERCE */}
+            <button
+              onClick={() => {
+                setOpenImportModal(false);
+                router.push("/wms/outbound/import-excel/ecom");
+              }}
+              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-blue-500 hover:bg-blue-50"
+            >
+              <ShoppingCart className="h-10 w-10 text-slate-600" />
+              <span className="text-sm font-semibold text-slate-700">
+                E-Commerce
+              </span>
+            </button>
 
-        {/* B2B */}
-        <button
-          onClick={() => {
-            setOpenImportModal(false);
-            router.push("/wms/outbound/import-excel/b2b");
-          }}
-          className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-green-500 hover:bg-green-50"
-        >
-          <Truck className="h-10 w-10 text-slate-600" />
-          <span className="text-sm font-semibold text-slate-700">
-            B2B
-          </span>
-        </button>
+            {/* B2B */}
+            <button
+              onClick={() => {
+                setOpenImportModal(false);
+                router.push("/wms/outbound/import-excel/b2b");
+              }}
+              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-green-500 hover:bg-green-50"
+            >
+              <Truck className="h-10 w-10 text-slate-600" />
+              <span className="text-sm font-semibold text-slate-700">
+                B2B
+              </span>
+            </button>
 
-        {/* FURUNO */}
-        <button
-          onClick={() => {
-            setOpenImportModal(false);
-            router.push("/wms/outbound/import-excel/import-furuno");
-          }}
-          className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-purple-500 hover:bg-purple-50"
-        >
-          <FileSpreadsheet className="h-10 w-10 text-slate-600" />
-          <span className="text-sm font-semibold text-slate-700">
-            Furuno
-          </span>
-        </button>
+            {/* FURUNO */}
+            <button
+              onClick={() => {
+                setOpenImportModal(false);
+                router.push("/wms/outbound/import-excel/import-furuno");
+              }}
+              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-purple-500 hover:bg-purple-50"
+            >
+              <FileSpreadsheet className="h-10 w-10 text-slate-600" />
+              <span className="text-sm font-semibold text-slate-700">
+                Furuno
+              </span>
+            </button>
 
-      </div>
-    </DialogContent>
-  </Dialog>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <SyncEcommerceModal
         open={syncModalOpen}
