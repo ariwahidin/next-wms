@@ -95,7 +95,7 @@ const LoginPage: LoginPageType = () => {
           );
           // document.cookie = `wms-auth-token=${res.data.x_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
           // pas set cookie setelah login
-          document.cookie = `${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=${res.data.x_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+          document.cookie = `${process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME}=${res.data.x_token}; path=/; max-age=${12 * 60 * 60}; SameSite=Lax`;
           if (res.data.user.base_url === '/dashboard') {
             router.push('/wms/dashboard');
           } else {

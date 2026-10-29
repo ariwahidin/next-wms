@@ -163,7 +163,7 @@ const AuthConflictPage = () => {
             // The HttpOnly refresh token is set separately by the backend.
             const cookieName = process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME;
             if (cookieName) {
-                document.cookie = `${cookieName}=${res.data.x_token}; path=/; max-age=${15 * 60}; SameSite=Lax`;
+                document.cookie = `${cookieName}=${res.data.x_token}; path=/; max-age=${12 * 60 * 60}; SameSite=Lax`;
             }
 
             if (res.data.user.base_url === '/dashboard') {
