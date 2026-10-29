@@ -943,6 +943,10 @@ export default function ItemFormTable({
                 </th>
               )}
 
+              <th className="p-2 border">
+                Remark
+              </th>
+
               <th
                 className="p-2 border"
                 style={{ width: "130px" }}
@@ -1368,8 +1372,32 @@ export default function ItemFormTable({
                   )}
 
                   {/* ========================================= */}
+                  {/* REMARK */}
+                  {/* ========================================= */}
+
+
+                  <td className="p-2 border">
+                    <Input
+                      style={{
+                        fontSize: "12px",
+                      }}
+                      type="text"
+                      value={item.remarks}
+                      onChange={(e) =>
+                        handleChange(
+                          item.ID,
+                          "remarks",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </td>
+
+                  {/* ========================================= */}
                   {/* ACTION */}
                   {/* ========================================= */}
+
+
 
                   <td
                     className="
@@ -1380,6 +1408,7 @@ export default function ItemFormTable({
                     "
                     style={{
                       width: "130px",
+                      whiteSpace: "nowrap",
                     }}
                   >
 

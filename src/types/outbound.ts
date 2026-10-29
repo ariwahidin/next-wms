@@ -7,6 +7,7 @@ export interface HeaderFormProps {
   whs_code: string;
   owner_code: string;
   status?: string;
+  remarks_header?: string;
   remarks?: string;
   mode?: "create" | "edit";
   picker_name?: string;

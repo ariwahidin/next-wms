@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Layout from '@/components/layout';
 import Select from 'react-select';
+import { usePageTabs } from '@/contexts/page-tabs-context';
 
 // ============================================================================
 // Types
@@ -1643,6 +1644,8 @@ const FurunoExcelUpload: React.FC =
                 }
             };
 
+        const { closeTabAndNavigate } = usePageTabs();
+
         // =====================================================================
         // Render
         // =====================================================================
@@ -2755,8 +2758,14 @@ const FurunoExcelUpload: React.FC =
                                                                 <button
                                                                     type="button"
                                                                     onClick={() =>
-                                                                        router.push(
-                                                                            '/wms/outbound/data-outbound'
+                                                                        // router.push(
+                                                                        //     '/wms/outbound/data-outbound'
+                                                                        // )
+                                                                        closeTabAndNavigate(
+                                                                            "/wms/outbound/import-excel/import-furuno",
+                                                                            "Outbound Order",
+                                                                            "/wms/outbound/data-outbound",
+                                                                            true
                                                                         )
                                                                     }
                                                                     className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
@@ -2988,7 +2997,7 @@ const FurunoExcelUpload: React.FC =
                         </div>
                     </div>
                 </div>
-            </Layout>
+            </Layout >
         );
     };
 

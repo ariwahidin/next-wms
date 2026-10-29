@@ -259,7 +259,7 @@ const PickingSheetPrint = () => {
                     minute: "2-digit",
                   }),
                 },
-                { label: "Remarks", value: data.remarks },
+                { label: "Remarks", value: data.remarks_header },
               ].map((f, idx) => (
                 <tr key={idx}>
                   <td style={{ ...headerLabel, verticalAlign: "top" }}>{f.label}</td>
@@ -314,7 +314,7 @@ const PickingSheetPrint = () => {
               {invPolicy.allocation_carton_by_order && <th style={th}>CTN NO</th>}
               {invPolicy.allocation_serial_by_order && <th style={th}>SERIAL NO</th>}
               <th style={th}>QTY</th>
-              <th style={th}>REMARKS</th>
+              <th style={th}>UNBOX</th>
             </tr>
           </thead>
           <tbody>
@@ -470,9 +470,10 @@ const PickingSheetPrint = () => {
                         <td
                           style={{
                             ...td,
-                            fontSize: "10px",
+                            fontSize: "9px",
                             textAlign: "center",
                             whiteSpace: "pre-line",
+                            width: "300px !important",
                           }}
                         >
                           {item.serial_number
