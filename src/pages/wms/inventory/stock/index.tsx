@@ -423,7 +423,14 @@ const InventoryAvailablePage: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
-                                    onClick={() => isSummaryTab ? fetchInventory() : fetchDetailInventory()}
+                                    onClick={() => {
+                                        if (isSummaryTab) {
+                                            fetchInventory();
+                                            fetchCards();
+                                        } else {
+                                            fetchDetailInventory();
+                                        }
+                                    }}
                                     disabled={currentLoading}
                                     className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50 flex items-center gap-1.5"
                                 >

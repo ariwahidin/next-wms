@@ -27,11 +27,11 @@ const outboundMenus = [
     icon: <Truck />,
     href: "/mobile/outbound/view-orders",
   },
-  // {
-  //   label: "Schedule Pickup",
-  //   icon: <ClipboardCheck />,
-  //   href: "/mobile/outbound/schedule-pickup",
-  // },
+  {
+    label: "Outbound Loading Verification",
+    icon: <CheckCircle />,
+    href: "/mobile/outbound/verification",
+  },
   // {
   //   label: "Shipping Report",
   //   icon: <FileText />,

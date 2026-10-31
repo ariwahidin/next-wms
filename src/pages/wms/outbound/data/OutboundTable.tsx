@@ -66,6 +66,7 @@ import ArrangeShipmentModal from "@/components/outbound/ArrangeShipmentModal.pat
 import { usePermission } from "@/hooks/usePermission";
 import Select from "react-select";
 import { Textarea } from "@/components/ui/textarea";
+import StatusBadge from "@/components/ui/status-badge";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -344,7 +345,7 @@ const FilterBar = ({ filters, onChange, onApply, loading }: FilterBarProps) => {
         {/* Status multi-select dropdown */}
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-            Status
+            Picking Status
           </label>
           <Popover>
             <PopoverTrigger asChild>
@@ -1010,8 +1011,8 @@ const OutboundTable = () => {
     { field: "order_no", headerName: "SPK No.", width: 150 },
     {
       field: "status",
-      headerName: "Status",
-      width: 150,
+      headerName: "Picking Status",
+      width: 120,
       cellRenderer: (params: any) => {
         if (!params.value) return null;
         let color = "bg-gray-500";
@@ -1025,6 +1026,17 @@ const OutboundTable = () => {
         }
         return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
       },
+    },
+    {
+      field: "delivery_status",
+      headerName: "Delivery Status",
+      width: 120,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center h-full">
+          {params.value != "" && <StatusBadge status={params.value} />}
+          
+        </div>
+      ),
     },
     { field: "customer_name", headerName: "Customer", width: 320 },
     { field: "total_item", headerName: "Total Item", width: 100 },

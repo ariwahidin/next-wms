@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ItemFormTable from "./ItemFormTable";
 import { Button } from "@/components/ui/button";
-import { ArrowBigLeftIcon, RefreshCcw, Save } from "lucide-react";
+import { ArrowBigLeftIcon, Badge, Printer, RefreshCcw, RefreshCcwDot, Save } from "lucide-react";
 import { HeaderFormProps, ItemFormProps, ItemOptions, ItemScanDetail, OutboundScan } from "@/types/outbound";
 import { Customer } from "@/types/customer";
 import api from "@/lib/api";
@@ -20,6 +21,7 @@ import { id } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
 import { Transporter } from "@/types/transporter";
 import ItemScannedTable from "./ItemScannedTable";
+import { cn } from "@/lib/utils";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -215,82 +217,83 @@ export default function ManualForm() {
 
   useEffect(() => {
     if (no && (mode === "edit" || mode === "copy")) {
-      const fetchOutbound = async () => {
-        try {
-          const res = await api.get(`/outbound/${no}`, {
-            withCredentials: true,
-          });
-          if (res.data.success) {
-            let data = res.data.data.outbound;
-            const detailsWithSerial = res.data.data.details ?? [];
-
-            const serialMap = new Map<number, string[]>(
-              detailsWithSerial.map((d: any) => [d.ID, d.serial_numbers ?? []])
-            );
-
-            if (mode === "copy") {
-              data = {
-                ...data,
-                ID: 0,
-                outbound_no: "",
-                status: "create",
-                shipment_id: "",
-              };
-            }
-
-            setFormData(data);
-            setMuatan(
-              data.items.map((item) => ({
-                ...item,
-                item_name: item.product?.item_name || "",
-                serial_numbers: mode === "copy" ? [] : (serialMap.get(item.ID) ?? []),
-              }))
-            );
-            setOutboundScan(res.data.data.barcodes);
-          }
-        } catch (error) {
-          console.error("Error fetching outbound:", error);
-        }
-      };
-      fetchOutbound();
-
-
-      const fetchOutboundScanDetail = async () => {
-        try {
-          const res = await api.get(`/outbound/scan-details/${no}`, {
-            withCredentials: true,
-          });
-          if (res.data.success) {
-            const data = res.data.data;
-
-            if (mode === "copy") {
-              // reset ID biar dianggap data baru
-              // data = {
-              //   ...data,
-              //   ID: 0,
-              //   outbound_no: "",
-              //   status: "create",
-              //   shipment_id: "",
-              // };
-            }
-
-            // setFormData(data);
-            // setMuatan(
-            //   data.items.map((item) => ({
-            //     ...item,
-            //     item_name: item.product?.item_name || "",
-            //   }))
-            // );
-
-            setItemScanDetails(data);
-          }
-        } catch (error) {
-          console.error("Error fetching outbound scan detail:", error);
-        }
-      };
-      fetchOutboundScanDetail();
+      fetchDataOutbound(no as string);
     }
   }, [no, mode]);
+
+
+  const fetchDataOutbound = async (no: string) => {
+    eventBus.emit("loading", true);
+
+    try {
+      const [outboundRes, scanDetailRes] = await Promise.all([
+        api.get(`/outbound/${no}`, {
+          withCredentials: true,
+        }),
+        api.get(`/outbound/scan-details/${no}`, {
+          withCredentials: true,
+        }),
+      ]);
+
+      // ================================================================
+      // Outbound Data
+      // ================================================================
+
+      if (outboundRes.data.success) {
+        let data = outboundRes.data.data.outbound;
+        const detailsWithSerial = outboundRes.data.data.details ?? [];
+
+        const serialMap = new Map<number, string[]>(
+          detailsWithSerial.map((d: any) => [
+            d.ID,
+            d.serial_numbers ?? [],
+          ])
+        );
+
+        if (mode === "copy") {
+          data = {
+            ...data,
+            ID: 0,
+            outbound_no: "",
+            status: "create",
+            shipment_id: "",
+          };
+        }
+
+        setFormData(data);
+
+        setMuatan(
+          (data.items ?? []).map((item: any) => ({
+            ...item,
+            item_name: item.product?.item_name || "",
+            mode: mode,
+            serial_numbers:
+              mode === "copy"
+                ? []
+                : serialMap.get(item.ID) ?? [],
+          }))
+        );
+
+        setOutboundScan(outboundRes.data.data.barcodes ?? []);
+      }
+
+      // ================================================================
+      // Outbound Scan Details
+      // ================================================================
+
+      if (scanDetailRes.data.success) {
+        const data = scanDetailRes.data.data ?? [];
+
+        setItemScanDetails(data);
+      }
+
+    } catch (error) {
+      console.error("Error fetching outbound:", error);
+    } finally {
+      eventBus.emit("loading", false);
+    }
+  };
+
 
   return (
     <div className="p-4" style={{ fontSize: "12px" }}>
@@ -306,6 +309,17 @@ export default function ManualForm() {
             <ArrowBigLeftIcon className="mr-0" />
             Back
           </Button>
+
+          <Button
+            variant="outline"
+            className="bg-green-500 text-white hover:bg-green-600"
+            onClick={() => {
+              fetchDataOutbound(no as string);
+            }}
+          >
+            <RefreshCcwDot className="mr-2" />
+            Refresh
+          </Button>
           <Button
             disabled={formData.status === "cancel" ? true : false}
             variant="outline"
@@ -315,6 +329,17 @@ export default function ManualForm() {
             <Save className="mr-2" />
             Save
           </Button>
+          {formData.status === "picking" && (
+            <Button
+              className="bg-slate-300 text-slate-900"
+              onClick={() => {
+                window.open(`/wms/outbound/picking-sheet/${formData.ID}`, "_blank");
+              }}
+            >
+              <Printer className="mr-0" />
+              Print Picking Sheet
+            </Button>
+          )}
         </div>
       </div>
 
@@ -324,6 +349,40 @@ export default function ManualForm() {
           <div className="grid grid-cols-2 gap-4">
             {/* Column 1 */}
             <div className="space-y-1">
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Picking Status
+                </Label>
+
+                <span className="shrink-0">:</span>
+
+
+                <div className="flex-1">
+                  <span
+                    className={cn(
+                      "ml-auto inline-flex shrink-0 items-center rounded-md border px-3 py-1",
+                      "text-xs font-semibold uppercase",
+                      formData.status === "open" &&
+                      "border-emerald-200 bg-emerald-50 text-emerald-700",
+                      formData.status === "picking" &&
+                      "border-blue-200 bg-blue-50 text-blue-700",
+                      formData.status === "packing" &&
+                      "border-amber-200 bg-amber-50 text-amber-700",
+                      formData.status === "packed" &&
+                      "border-amber-200 bg-amber-50 text-amber-800",
+                      formData.status === "complete" &&
+                      "border-red-200 bg-red-50 text-red-700"
+                    )}
+                  >
+                    {String(formData.status || "Draft")}
+                  </span>
+                </div>
+              </div>
+
               <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
@@ -331,10 +390,12 @@ export default function ManualForm() {
                 >
                   Picking Date
                 </Label>
+
                 <span className="shrink-0">:</span>
+
                 <div className="flex-1">
                   <DatePicker
-                    disabled={formData.status === "complete" ? true : false}
+                    disabled={formData.status === "complete"}
                     selected={
                       formData.outbound_date
                         ? parseISO(formData.outbound_date)
@@ -344,22 +405,23 @@ export default function ManualForm() {
                       if (date) {
                         setFormData({
                           ...formData,
-                          outbound_date: format(date, "yyyy-MM-dd"), // simpan format ISO
+                          outbound_date: format(date, "yyyy-MM-dd"),
                         });
                       }
                     }}
-                    dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
-                    locale={id} // Bahasa Indonesia
+                    dateFormat="dd/MM/yyyy"
+                    locale={id}
                     customInput={
                       <Input
                         id="OutboundDate"
                         style={{ width: "160px", fontSize: "12px" }}
                       />
                     }
-                    placeholderText="Pilih tanggal"
+                    placeholderText="Choose date"
                   />
                 </div>
               </div>
+
 
               <div className="flex items-center gap-2">
                 <Label

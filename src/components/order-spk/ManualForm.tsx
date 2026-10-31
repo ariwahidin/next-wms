@@ -558,6 +558,7 @@ import { HeaderSPK, MuatanOrderSPK } from "@/types/order-spk";
 import { Textarea } from "../ui/textarea";
 import { Truck } from "@/types/truck";
 import { usePermission } from "@/hooks/usePermission";
+import { cn } from "@/lib/utils";
 
 export default function ManualForm() {
   const router = useRouter();
@@ -618,6 +619,47 @@ export default function ManualForm() {
     }
   };
 
+  // const handleSave = async () => {
+  //   if (
+  //     !formData.truck_no ||
+  //     !formData.driver ||
+  //     !formData.load_date ||
+  //     !formData.load_start_time ||
+  //     !formData.load_end_time
+  //   ) {
+  //     eventBus.emit("showAlert", {
+  //       title: "Error!",
+  //       description:
+  //         "Please fill in all required fields: Truck No., Driver, Load Date, Start Load Time, and End Load Time.",
+  //       type: "error",
+  //     });
+  //     return;
+  //   }
+
+  //   const endpoint = formData.ID === 0 ? "/order" : `/order/${formData.order_no}`;
+  //   const method = formData.ID === 0 ? "post" : "put";
+
+  //   try {
+  //     const res = await api[method](
+  //       endpoint,
+  //       { ...formData, items: muatan },
+  //       { withCredentials: true }
+  //     );
+  //     if (res.data.success) {
+  //       eventBus.emit("showAlert", {
+  //         title: "Success!",
+  //         description: res.data.message,
+  //         type: "success",
+  //       });
+  //       router.push("/wms/outbound/shipping/data");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error saving order:", error);
+  //     alert("Error saving order");
+  //   }
+  // };
+
+
   const handleSave = async () => {
     if (
       !formData.truck_no ||
@@ -635,8 +677,12 @@ export default function ManualForm() {
       return;
     }
 
-    const endpoint = formData.ID === 0 ? "/order" : `/order/${formData.order_no}`;
+    const endpoint =
+      formData.ID === 0 ? "/order" : `/order/${formData.order_no}`;
+
     const method = formData.ID === 0 ? "post" : "put";
+
+    eventBus.emit("loading", true);
 
     try {
       const res = await api[method](
@@ -644,17 +690,35 @@ export default function ManualForm() {
         { ...formData, items: muatan },
         { withCredentials: true }
       );
+
       if (res.data.success) {
         eventBus.emit("showAlert", {
           title: "Success!",
           description: res.data.message,
           type: "success",
         });
+
         router.push("/wms/outbound/shipping/data");
+      } else {
+        eventBus.emit("showAlert", {
+          title: "Error!",
+          description: res.data.message || "Failed to save order.",
+          type: "error",
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving order:", error);
-      alert("Error saving order");
+
+      eventBus.emit("showAlert", {
+        title: "Error!",
+        description:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Error saving order.",
+        type: "error",
+      });
+    } finally {
+      eventBus.emit("loading", false);
     }
   };
 
@@ -693,7 +757,7 @@ export default function ManualForm() {
             Back
           </Button>
 
-          
+
 
           {formData.status !== "loaded" && can("shipment", "create") && (
             <Button
@@ -711,10 +775,42 @@ export default function ManualForm() {
       {/* Form Grid */}
       <div className="grid grid-cols-2 gap-4">
         {/* Left Column */}
+
+
+
         <div className="bg-white-200 p-0 space-y-1">
+
           <div className="flex items-center gap-2">
             <Label className="w-24 text-left shrink-0" style={{ fontSize: "12px" }}>
-              Order Date
+              Status
+            </Label>
+            <span className="shrink-0">:</span>
+
+            <div className="justify-left">
+              <span
+                className={cn(
+                  "ml-auto inline-flex shrink-0 items-center rounded-md border px-3 py-1",
+                  "text-xs font-semibold uppercase",
+                  formData.status === "open" &&
+                  "border-emerald-200 bg-emerald-50 text-emerald-700",
+                  formData.status === "picking" &&
+                  "border-blue-200 bg-blue-50 text-blue-700",
+                  formData.status === "packing" &&
+                  "border-amber-200 bg-amber-50 text-amber-700",
+                  formData.status === "packed" &&
+                  "border-amber-200 bg-amber-50 text-amber-800",
+                  formData.status === "complete" &&
+                  "border-red-200 bg-red-50 text-red-700"
+                )}
+              >
+                {String(formData.status || "Draft")}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Label className="w-24 text-left shrink-0" style={{ fontSize: "12px" }}>
+              Delivery Date
             </Label>
             <span className="shrink-0">:</span>
             <div className="flex-1">

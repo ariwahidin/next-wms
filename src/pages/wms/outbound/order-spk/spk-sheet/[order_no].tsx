@@ -51,11 +51,24 @@ const SPKSheetPrint = () => {
     setOrderDetailItems(res.data.data.detail_items);
   };
 
+  // Generate the SPK barcode first, then open the print dialog.
   useEffect(() => {
-    setTimeout(() => {
+    if (!order?.order_no || !barcodeRef.current) return;
+
+    JsBarcode(barcodeRef.current, order.order_no, {
+      format: "CODE128",
+      displayValue: true,
+      fontSize: 14,
+      width: 2,
+      height: 50,
+    });
+
+    const printTimer = window.setTimeout(() => {
       window.print();
-    }, 500);
-  }, []);
+    }, 700);
+
+    return () => window.clearTimeout(printTimer);
+  }, [order?.order_no]);
 
   const groupedData = orderDetailItems.reduce((acc, item) => {
     if (!acc[item.shipment_id]) {
@@ -94,6 +107,29 @@ const SPKSheetPrint = () => {
       <h2 style={{ textAlign: "center", marginBottom: "20px", marginTop: "10px", textDecoration: "underline" }}>
         SURAT PERINTAH KIRIM
       </h2>
+
+      {/* SPK barcode - scan this to identify the order */}
+      <div
+        style={{
+          width: "278px",
+          height: "52px",
+          marginTop: "4px",
+          marginBottom: "4px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          overflow: "hidden",
+        }}
+      >
+        {order?.order_no && (
+          <canvas
+            ref={barcodeRef}
+            aria-label={`Barcode for SPK ${order.order_no}`}
+            // style={{ width: "168px", height: "32px" }}
+            style={{ width: "200px", height: "50px" }}
+          />
+        )}
+      </div>
 
       <div style={{ fontSize: "12px", marginTop: "10px" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>

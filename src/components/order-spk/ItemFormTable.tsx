@@ -191,7 +191,7 @@ export default function ItemFormTable({
     <>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          {headerForm.status !== "loaded" && can("shipment", "create") && (
+          {headerForm.status !== "loaded" && headerForm.status !== "confirmed" && can("shipment", "create") && (
             <div className="space-x-2">
               <Button
                 className="h-8"
@@ -371,7 +371,7 @@ export default function ItemFormTable({
                       >
                         <Eye size={14} />
                       </Button>
-                      {headerForm.status !== "loaded" && (
+                      {(headerForm.status !== "loaded" && headerForm.status !== "confirmed")  && (
                         <Button
                           size="sm"
                           variant="outline"
