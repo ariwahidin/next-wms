@@ -5,6 +5,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 
+import Select, { type StylesConfig } from "react-select";
+import CreatableSelect from "react-select/creatable";
+
 import {
     AlertCircle,
     CheckCircle2,
@@ -85,6 +88,123 @@ interface VerificationResponse {
     summary: VerificationSummary;
     items: VerificationItem[];
 }
+
+interface TransporterOption {
+    transporter_code: string;
+    transporter_name: string;
+}
+
+interface DriverOption {
+    driver: string;
+    driver_phone: string;
+}
+
+interface TruckOption {
+    name: string;
+    description?: string;
+    cbm?: number;
+}
+
+interface VerificationOptions {
+    transporters: TransporterOption[];
+    drivers: DriverOption[];
+    trucks: TruckOption[];
+}
+
+interface ConfirmationForm {
+    transporter_code: string;
+    driver: string;
+    driver_phone: string;
+    truck_no: string;
+    truck_type: string;
+}
+
+interface SelectOption {
+    value: string;
+    label: string;
+}
+
+const searchableSelectStyles: StylesConfig<SelectOption, false> = {
+    control: (base, state) => ({
+        ...base,
+        minHeight: 36,
+        height: 36,
+        borderRadius: 6,
+        borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+        boxShadow: state.isFocused ? "0 0 0 2px rgba(59,130,246,0.12)" : "none",
+        "&:hover": {
+            borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
+        },
+        cursor: "text",
+        fontSize: 12,
+    }),
+    valueContainer: (base) => ({
+        ...base,
+        padding: "0 10px",
+        height: 36,
+    }),
+    input: (base) => ({
+        ...base,
+        margin: 0,
+        padding: 0,
+        fontSize: 12,
+    }),
+    placeholder: (base) => ({
+        ...base,
+        color: "#9ca3af",
+        fontSize: 12,
+    }),
+    singleValue: (base) => ({
+        ...base,
+        color: "#111827",
+        fontSize: 12,
+    }),
+    indicatorsContainer: (base) => ({
+        ...base,
+        height: 36,
+    }),
+    indicatorSeparator: (base) => ({
+        ...base,
+        display: "none",
+    }),
+    dropdownIndicator: (base) => ({
+        ...base,
+        padding: "0 8px",
+        color: "#6b7280",
+    }),
+    clearIndicator: (base) => ({
+        ...base,
+        padding: "0 4px",
+    }),
+    menu: (base) => ({
+        ...base,
+        zIndex: 9999,
+        fontSize: 12,
+        borderRadius: 8,
+        overflow: "hidden",
+    }),
+    menuPortal: (base) => ({
+        ...base,
+        zIndex: 9999,
+    }),
+    option: (base, state) => ({
+        ...base,
+        padding: "9px 11px",
+        fontSize: 12,
+        backgroundColor: state.isSelected
+            ? "#2563eb"
+            : state.isFocused
+                ? "#eff6ff"
+                : "#ffffff",
+        color: state.isSelected ? "#ffffff" : "#111827",
+        cursor: "pointer",
+    }),
+    noOptionsMessage: (base) => ({
+        ...base,
+        fontSize: 12,
+        color: "#9ca3af",
+    }),
+};
 
 // ============================================================
 // Helpers
@@ -380,6 +500,74 @@ const OutboundVerificationPage = () => {
     const [isDeletingShipment, setIsDeletingShipment] =
         useState(false);
 
+    const [verificationOptions, setVerificationOptions] =
+        useState<VerificationOptions>({
+            transporters: [],
+            drivers: [],
+            trucks: [],
+        });
+    const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+    const optionsLoadedRef = useRef(false);
+    const optionsLoadingRef = useRef(false);
+
+    const [confirmationForm, setConfirmationForm] =
+        useState<ConfirmationForm>({
+            transporter_code: "",
+            driver: "",
+            driver_phone: "",
+            truck_no: "",
+            truck_type: "",
+        });
+
+    const [selectedShipmentIDs, setSelectedShipmentIDs] =
+        useState<number[]>([]);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+    const [showBulkDeleteDialog, setShowBulkDeleteDialog] =
+        useState(false);
+
+    // ========================================================
+    // Fetch Confirmation Options
+    // ========================================================
+
+    const fetchVerificationOptions = async () => {
+        if (optionsLoadedRef.current || optionsLoadingRef.current) return;
+
+        optionsLoadingRef.current = true;
+        setIsLoadingOptions(true);
+        try {
+            const res = await api.get(
+                "/mobile/outbound/verification/options",
+                { withCredentials: true }
+            );
+
+            if (!res.data.success) {
+                throw new Error(
+                    res.data.message ?? "Failed to retrieve confirmation options"
+                );
+            }
+
+            const data = res.data.data ?? {};
+            setVerificationOptions({
+                transporters: data.transporters ?? [],
+                drivers: data.drivers ?? [],
+                trucks: data.trucks ?? [],
+            });
+            optionsLoadedRef.current = true;
+        } catch (err: any) {
+            eventBus.emit("showAlert", {
+                title: "Master Data Error",
+                description: getErrorMessage(
+                    err,
+                    "Failed to load transporter, driver, and truck options"
+                ),
+                type: "error",
+            });
+        } finally {
+            optionsLoadingRef.current = false;
+            setIsLoadingOptions(false);
+        }
+    };
+
     // ========================================================
     // Fetch Verification
     // ========================================================
@@ -415,9 +603,15 @@ const OutboundVerificationPage = () => {
                 setSummary(data.summary);
                 setVerificationItems(data.items ?? []);
 
+                // Load master/history options once all shipments are verified.
+                if (data.summary.is_complete && !isConfirmed(data.summary.status)) {
+                    void fetchVerificationOptions();
+                }
+
                 setActiveOrderNo(data.summary.order_no);
 
                 setOrderNoInput(data.summary.order_no);
+                setSelectedShipmentIDs([]);
 
                 // Preserve the current list filter and search query.
                 // Only refresh server-backed shipment data and progress.
@@ -674,8 +868,8 @@ const OutboundVerificationPage = () => {
             setShipmentToDelete(null);
 
             eventBus.emit("showAlert", {
-                title: "Shipment Deleted",
-                description: `${deletedShipmentID} has been permanently deleted`,
+                title: "Shipment Verification Removed",
+                description: `Verification scan for ${deletedShipmentID} has been removed. Shipment detail remains in the SPK.`,
                 type: "success",
             });
 
@@ -699,6 +893,98 @@ const OutboundVerificationPage = () => {
     };
 
     // ========================================================
+    // Bulk Delete Verified Shipments
+    // ========================================================
+
+    const toggleShipmentSelection = (detailID: number) => {
+        setSelectedShipmentIDs((current) =>
+            current.includes(detailID)
+                ? current.filter((id) => id !== detailID)
+                : [...current, detailID]
+        );
+    };
+
+    const toggleSelectAllVisible = () => {
+        const visibleIDs = verifiedVisibleItems.map(
+            (item) => item.order_detail_id
+        );
+
+        if (allVisibleVerifiedSelected) {
+            setSelectedShipmentIDs((current) =>
+                current.filter((id) => !visibleIDs.includes(id))
+            );
+        } else {
+            setSelectedShipmentIDs((current) =>
+                Array.from(new Set([...current, ...visibleIDs]))
+            );
+        }
+    };
+
+    const handleBulkDeleteShipments = async () => {
+        if (!activeOrderNo || isOrderConfirmed || selectedShipmentIDs.length === 0) return;
+        if (isBulkDeleting) return;
+
+        setIsBulkDeleting(true);
+
+        const selectedItems = verificationItems.filter((item) =>
+            selectedShipmentIDs.includes(item.order_detail_id) && item.is_scanned
+        );
+        let successCount = 0;
+        const failed: string[] = [];
+
+        try {
+            // Reuse the existing DELETE endpoint; requests are intentionally sequential.
+            for (const item of selectedItems) {
+                try {
+                    const res = await api.delete(
+                        `/mobile/outbound/verification/${encodeURIComponent(
+                            activeOrderNo
+                        )}/shipments/${item.order_detail_id}`,
+                        { withCredentials: true }
+                    );
+
+                    if (!res.data.success) {
+                        throw new Error(res.data.message ?? "Delete failed");
+                    }
+                    successCount += 1;
+                } catch {
+                    failed.push(item.shipment_id);
+                }
+            }
+
+            setShowBulkDeleteDialog(false);
+            setSelectedShipmentIDs([]);
+            await fetchVerification(activeOrderNo);
+
+            if (showHistoryDialog) {
+                await fetchScanHistory();
+            }
+
+            if (successCount > 0 && failed.length === 0) {
+                eventBus.emit("showAlert", {
+                    title: "Shipments Deleted",
+                    description: `${successCount} verification scan(s) removed; shipment details remain in the SPK`,
+                    type: "success",
+                });
+            } else if (successCount > 0) {
+                eventBus.emit("showAlert", {
+                    title: "Partial Delete Completed",
+                    description: `${successCount} deleted, ${failed.length} failed. Failed: ${failed.slice(0, 5).join(", ")}${failed.length > 5 ? ", ..." : ""}`,
+                    type: "info",
+                });
+            } else {
+                eventBus.emit("showAlert", {
+                    title: "Delete Failed",
+                    description: `Unable to delete selected shipments: ${failed.slice(0, 5).join(", ")}`,
+                    type: "error",
+                });
+            }
+        } finally {
+            setIsBulkDeleting(false);
+        }
+    };
+
+    // ========================================================
     // Confirm Verification
     // ========================================================
 
@@ -716,6 +1002,20 @@ const OutboundVerificationPage = () => {
             return;
         }
 
+        if (
+            !confirmationForm.transporter_code ||
+            !confirmationForm.driver.trim() ||
+            !confirmationForm.truck_no.trim() ||
+            !confirmationForm.truck_type
+        ) {
+            eventBus.emit("showAlert", {
+                title: "Incomplete Transport Information",
+                description: "Please complete Transporter, Driver, Truck No, and Truck Type before confirmation.",
+                type: "info",
+            });
+            return;
+        }
+
         confirmLockRef.current = true;
         setIsConfirming(true);
 
@@ -725,7 +1025,13 @@ const OutboundVerificationPage = () => {
                 `/mobile/outbound/verification/${encodeURIComponent(
                     activeOrderNo
                 )}/confirm`,
-                {},
+                {
+                    transporter_code: confirmationForm.transporter_code,
+                    driver: confirmationForm.driver.trim(),
+                    driver_phone: confirmationForm.driver_phone.trim(),
+                    truck_no: confirmationForm.truck_no.trim(),
+                    truck_type: confirmationForm.truck_type,
+                },
                 {
                     withCredentials: true,
                 }
@@ -808,6 +1114,17 @@ const OutboundVerificationPage = () => {
         });
 
     }, [verificationItems, searchTerm, showAll]);
+
+    const verifiedVisibleItems = useMemo(
+        () => filteredItems.filter((item) => item.is_scanned),
+        [filteredItems]
+    );
+
+    const allVisibleVerifiedSelected =
+        verifiedVisibleItems.length > 0 &&
+        verifiedVisibleItems.every((item) =>
+            selectedShipmentIDs.includes(item.order_detail_id)
+        );
 
     // ========================================================
     // Initial Focus
@@ -1208,6 +1525,164 @@ const OutboundVerificationPage = () => {
                         </Card>
 
                         {/* ========================================== */}
+                        {/* TRANSPORT INFORMATION */}
+                        {/* ========================================== */}
+
+                        {allComplete && !isOrderConfirmed && (
+                            <Card>
+                                <CardContent className="space-y-3 p-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                                            <Truck size={18} />
+                                        </div>
+                                        <div>
+                                            <div className="text-xs font-semibold text-gray-800">Transport Information</div>
+                                            <div className="text-[11px] text-gray-400">Complete these details before confirming the SPK</div>
+                                        </div>
+                                    </div>
+
+                                    {isLoadingOptions ? (
+                                        <div className="flex items-center justify-center gap-2 rounded-md border bg-gray-50 py-5 text-xs text-gray-500">
+                                            <Loader2 size={16} className="animate-spin" /> Loading master data and driver history...
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-medium text-gray-600">Transporter <span className="text-red-500">*</span></label>
+                                                <Select<SelectOption, false>
+                                                    inputId="outbound-transporter-select"
+                                                    options={verificationOptions.transporters.map((item) => ({
+                                                        value: item.transporter_code,
+                                                        label: `${item.transporter_name} (${item.transporter_code})`,
+                                                    }))}
+                                                    value={verificationOptions.transporters
+                                                        .map((item) => ({
+                                                            value: item.transporter_code,
+                                                            label: `${item.transporter_name} (${item.transporter_code})`,
+                                                        }))
+                                                        .find((item) => item.value === confirmationForm.transporter_code) ?? null}
+                                                    onChange={(option) =>
+                                                        setConfirmationForm((v) => ({
+                                                            ...v,
+                                                            transporter_code: option?.value ?? "",
+                                                        }))
+                                                    }
+                                                    placeholder="Select transporter..."
+                                                    isClearable
+                                                    isSearchable
+                                                    isDisabled={isOrderConfirmed || isConfirming}
+                                                    styles={searchableSelectStyles}
+                                                    menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+                                                    menuPosition="fixed"
+                                                    noOptionsMessage={() => "No transporter found"}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-medium text-gray-600">Driver <span className="text-red-500">*</span></label>
+                                                <CreatableSelect<SelectOption, false>
+                                                    inputId="outbound-driver-select"
+                                                    options={verificationOptions.drivers.map((item) => ({
+                                                        value: item.driver,
+                                                        label: item.driver,
+                                                    }))}
+                                                    value={confirmationForm.driver
+                                                        ? { value: confirmationForm.driver, label: confirmationForm.driver }
+                                                        : null}
+                                                    onChange={(option) => {
+                                                        const driver = option?.value ?? "";
+                                                        const matchedDriver = verificationOptions.drivers.find(
+                                                            (item) => item.driver.trim().toLowerCase() === driver.trim().toLowerCase()
+                                                        );
+                                                        setConfirmationForm((v) => ({
+                                                            ...v,
+                                                            driver,
+                                                            driver_phone: matchedDriver?.driver_phone ?? "",
+                                                        }));
+                                                    }}
+                                                    onCreateOption={(inputValue) =>
+                                                        setConfirmationForm((v) => ({
+                                                            ...v,
+                                                            driver: inputValue.trim(),
+                                                            driver_phone: "",
+                                                        }))
+                                                    }
+                                                    placeholder="Select or enter driver name..."
+                                                    formatCreateLabel={(inputValue) => `Use new driver: ${inputValue}`}
+                                                    isClearable
+                                                    isSearchable
+                                                    isDisabled={isOrderConfirmed || isConfirming}
+                                                    styles={searchableSelectStyles}
+                                                    menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+                                                    menuPosition="fixed"
+                                                    noOptionsMessage={() => "Type a driver name to add"}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-medium text-gray-600">Driver Phone</label>
+                                                <Input
+                                                    value={confirmationForm.driver_phone}
+                                                    onChange={(e) => setConfirmationForm((v) => ({ ...v, driver_phone: e.target.value }))}
+                                                    placeholder="Driver phone number..."
+                                                    className="h-9 text-xs"
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-1">
+                                                    <label className="text-xs font-medium text-gray-600">Truck No <span className="text-red-500">*</span></label>
+                                                    <Input
+                                                        value={confirmationForm.truck_no}
+                                                        onChange={(e) => setConfirmationForm((v) => ({ ...v, truck_no: e.target.value.toUpperCase() }))}
+                                                        placeholder="e.g. B 1234 XYZ"
+                                                        className="h-9 text-xs uppercase"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-xs font-medium text-gray-600">Truck Type <span className="text-red-500">*</span></label>
+                                                    <Select<SelectOption, false>
+                                                        inputId="outbound-truck-type-select"
+                                                        options={verificationOptions.trucks.map((item) => ({
+                                                            value: item.name,
+                                                            label: item.description ? `${item.name} — ${item.description}` : item.name,
+                                                        }))}
+                                                        value={verificationOptions.trucks
+                                                            .map((item) => ({
+                                                                value: item.name,
+                                                                label: item.description ? `${item.name} — ${item.description}` : item.name,
+                                                            }))
+                                                            .find((item) => item.value === confirmationForm.truck_type) ?? null}
+                                                        onChange={(option) =>
+                                                            setConfirmationForm((v) => ({
+                                                                ...v,
+                                                                truck_type: option?.value ?? "",
+                                                            }))
+                                                        }
+                                                        placeholder="Select truck type..."
+                                                        isClearable
+                                                        isSearchable
+                                                        isDisabled={isOrderConfirmed || isConfirming}
+                                                        styles={searchableSelectStyles}
+                                                        menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+                                                        menuPosition="fixed"
+                                                        noOptionsMessage={() => "No truck type found"}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {verificationOptions.transporters.length === 0 || verificationOptions.trucks.length === 0 ? (
+                                                <p className="rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-700">
+                                                    Transporter or truck master data is empty. Please check the master data before confirmation.
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* ========================================== */}
                         {/* SHIPMENT LIST */}
                         {/* ========================================== */}
 
@@ -1264,6 +1739,31 @@ const OutboundVerificationPage = () => {
                                     </span>
                                 </div>
 
+                                {!isOrderConfirmed && verifiedVisibleItems.length > 0 && (
+                                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-gray-50 px-2.5 py-2">
+                                        <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-gray-600">
+                                            <input
+                                                type="checkbox"
+                                                checked={allVisibleVerifiedSelected}
+                                                onChange={toggleSelectAllVisible}
+                                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            />
+                                            Select all verified ({verifiedVisibleItems.length})
+                                        </label>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="destructive"
+                                            className="h-7 text-[11px]"
+                                            disabled={selectedShipmentIDs.length === 0 || isBulkDeleting || isDeletingShipment}
+                                            onClick={() => setShowBulkDeleteDialog(true)}
+                                        >
+                                            <Trash2 size={13} className="mr-1.5" />
+                                            Delete Selected ({selectedShipmentIDs.length})
+                                        </Button>
+                                    </div>
+                                )}
+
                                 {filteredItems.length === 0 ? (
 
                                     <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -1314,7 +1814,18 @@ const OutboundVerificationPage = () => {
 
                                                 <div className="flex items-start justify-between gap-2">
 
-                                                    <div className="min-w-0 flex-1 space-y-1">
+                                                    <div className="flex min-w-0 flex-1 items-start gap-2">
+                                                        {item.is_scanned && !isOrderConfirmed && (
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedShipmentIDs.includes(item.order_detail_id)}
+                                                                onChange={() => toggleShipmentSelection(item.order_detail_id)}
+                                                                disabled={isDeletingShipment || isBulkDeleting || isScanning || isConfirming}
+                                                                aria-label={`Select ${item.shipment_id}`}
+                                                                className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                            />
+                                                        )}
+                                                        <div className="min-w-0 flex-1 space-y-1">
 
                                                         <div className="break-all font-mono text-xs font-bold text-gray-800">
                                                             {item.shipment_id}
@@ -1350,6 +1861,7 @@ const OutboundVerificationPage = () => {
                                                             </span>
                                                         </div>
 
+                                                        </div>
                                                     </div>
 
                                                     <div className="flex shrink-0 flex-col items-end gap-2">
@@ -1384,7 +1896,7 @@ const OutboundVerificationPage = () => {
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600"
-                                                                title="Delete Verified Shipment"
+                                                                title="Remove Verified Shipment Scan"
                                                                 disabled={isDeletingShipment || isScanning || isConfirming}
                                                                 onClick={() => setShipmentToDelete(item)}
                                                             >
@@ -1546,13 +2058,13 @@ const OutboundVerificationPage = () => {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-sm">
                             <Trash2 size={17} className="text-red-600" />
-                            Delete Shipment ID
+                            Remove Shipment Verification
                         </DialogTitle>
                     </DialogHeader>
 
                     <div className="space-y-3 text-xs">
                         <p className="text-gray-600">
-                            Are you sure you want to permanently delete this verified Shipment ID?
+                            Are you sure you want to remove the verification scan for this Shipment ID?
                         </p>
 
                         <div className="rounded-md border border-red-200 bg-red-50 p-3">
@@ -1560,12 +2072,12 @@ const OutboundVerificationPage = () => {
                                 {shipmentToDelete?.shipment_id}
                             </div>
                             <p className="mt-1 text-[11px] text-red-600">
-                                The shipment record and its verification scan record will be permanently deleted.
+                                Only the verification scan record will be removed. The Order Detail remains in the SPK and returns to Pending.
                             </p>
                         </div>
 
                         <p className="text-[11px] text-gray-500">
-                            This action cannot be undone. The SPK progress will be recalculated after deletion.
+                            The shipment detail is not deleted. The SPK progress will be recalculated after the scan is removed.
                         </p>
                     </div>
 
@@ -1596,8 +2108,56 @@ const OutboundVerificationPage = () => {
                             ) : (
                                 <>
                                     <Trash2 size={14} className="mr-2" />
-                                    Delete Permanently
+                                    Remove Verification
                                 </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ================================================== */}
+            {/* BULK DELETE DIALOG */}
+            {/* ================================================== */}
+            <Dialog
+                open={showBulkDeleteDialog}
+                onOpenChange={(open) => {
+                    if (!isBulkDeleting) setShowBulkDeleteDialog(open);
+                }}
+            >
+                <DialogContent className="max-w-sm bg-white">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-sm">
+                            <Trash2 size={17} className="text-red-600" />
+                            Delete Selected Verification Scans
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 text-xs">
+                        <p className="text-gray-600">
+                            Remove the verification scan for {selectedShipmentIDs.length} selected verified Shipment ID(s)?
+                        </p>
+                        <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border bg-gray-50 p-2">
+                            {verificationItems
+                                .filter((item) => selectedShipmentIDs.includes(item.order_detail_id))
+                                .map((item) => (
+                                    <div key={item.order_detail_id} className="break-all font-mono text-[11px] text-gray-700">
+                                        {item.shipment_id}
+                                    </div>
+                                ))}
+                        </div>
+                        <p className="rounded-md border border-red-200 bg-red-50 p-2 text-[11px] text-red-700">
+                            The Order Detail records remain in the SPK and return to Pending. Each scan is removed using the existing DELETE endpoint. If some requests fail, successful removals will not be rolled back.
+                        </p>
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <Button type="button" variant="outline" size="sm" className="flex-1" disabled={isBulkDeleting} onClick={() => setShowBulkDeleteDialog(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="button" variant="destructive" size="sm" className="flex-1" disabled={isBulkDeleting || selectedShipmentIDs.length === 0} onClick={handleBulkDeleteShipments}>
+                            {isBulkDeleting ? (
+                                <><Loader2 size={14} className="mr-2 animate-spin" />Deleting...</>
+                            ) : (
+                                <><Trash2 size={14} className="mr-2" />Delete {selectedShipmentIDs.length} Items</>
                             )}
                         </Button>
                     </DialogFooter>
@@ -1685,6 +2245,28 @@ const OutboundVerificationPage = () => {
                                 <span className="font-semibold">
                                     {summary?.total_pending}
                                 </span>
+                            </div>
+
+                            <div className="border-t pt-2">
+                                <div className="mb-1 text-xs font-semibold text-gray-700">Transport Details</div>
+                                <div className="flex justify-between gap-3 text-xs">
+                                    <span className="text-gray-500">Transporter</span>
+                                    <span className="text-right font-medium">
+                                        {verificationOptions.transporters.find((x) => x.transporter_code === confirmationForm.transporter_code)?.transporter_name || "-"}
+                                    </span>
+                                </div>
+                                <div className="mt-1 flex justify-between gap-3 text-xs">
+                                    <span className="text-gray-500">Driver</span>
+                                    <span className="text-right font-medium">{confirmationForm.driver || "-"}</span>
+                                </div>
+                                <div className="mt-1 flex justify-between gap-3 text-xs">
+                                    <span className="text-gray-500">Driver Phone</span>
+                                    <span className="text-right font-medium">{confirmationForm.driver_phone || "-"}</span>
+                                </div>
+                                <div className="mt-1 flex justify-between gap-3 text-xs">
+                                    <span className="text-gray-500">Truck</span>
+                                    <span className="text-right font-medium">{confirmationForm.truck_no || "-"} / {confirmationForm.truck_type || "-"}</span>
+                                </div>
                             </div>
 
                             <div className="flex justify-between border-t pt-2">

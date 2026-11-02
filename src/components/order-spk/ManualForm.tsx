@@ -573,6 +573,7 @@ export default function ManualForm() {
   const [muatan, setMuatan] = useState<MuatanOrderSPK[]>([]);
   const [transporter, setTransporter] = useState<Transporter[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
+  const [driverPhone, setDriverPhone] = useState<string>(""); // State untuk menyimpan nomor telepon driver
   const [transporterOptions, setTransporterOptions] = useState<ItemOptions[]>([]);
 
   // ── Order Type Options (diperluas) ──────────────────────────────────────────
@@ -912,6 +913,24 @@ export default function ManualForm() {
 
         {/* Right Column */}
         <div className="bg-white-200 p-0 space-y-1">
+
+          <div className="flex items-center gap-2">
+            <Label className="w-32 text-left shrink-0" style={{ fontSize: "12px" }}>
+              Drver Phone
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <Input
+                autoComplete="off"
+                id="DriverPhone"
+                style={{ fontSize: "12px" }}
+                className="flex-1 w-64"
+                value={formData.driver_phone}
+                onChange={(e) => setFormData({ ...formData, driver_phone: e.target.value })}
+              />
+            </div>
+          </div>
+
           <div className="flex items-center gap-2">
             <Label className="w-32 text-left shrink-0" style={{ fontSize: "12px" }}>
               Order Type
