@@ -2,13 +2,13 @@
 
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Select from "react-select";
 
 import CreatableSelect from "react-select/creatable";
 
-import { ChevronDown, ChevronRight, RefreshCw, Search, Check, X } from "lucide-react";
+import { AlertTriangle, ArrowRightLeft, ChevronDown, ChevronRight, RefreshCw, Search, X } from "lucide-react";
 
 import api from "@/lib/api";
 
@@ -372,6 +372,7 @@ export default function InventoryInternalTransferPage() {
 
     const [processMode, setProcessMode] = useState<ProcessMode>("internal-transfer");
     const [selectedCartonInventories, setSelectedCartonInventories] = useState<Map<number, Inventory>>(new Map());
+    const [selectedTransferInventories, setSelectedTransferInventories] = useState<Map<number, Inventory>>(new Map());
     const [toCartonNumber, setToCartonNumber] = useState("");
 
     const [inventories, setInventories] = useState<Inventory[]>([]);
@@ -420,10 +421,10 @@ export default function InventoryInternalTransferPage() {
     const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(null);
 
     const [serials, setSerials] = useState<InventorySerial[]>([]);
-
     const [selectedSerials, setSelectedSerials] = useState<Set<string>>(new Set());
-
     const [qtyToTransfer, setQtyToTransfer] = useState("");
+
+
 
     const [toWhsCode, setToWhsCode] = useState("");
 
@@ -442,6 +443,24 @@ export default function InventoryInternalTransferPage() {
     const [error, setError] = useState("");
 
     const [success, setSuccess] = useState("");
+    const [confirmDialog, setConfirmDialog] = useState<{
+        title: string;
+        description: string;
+        confirmLabel: string;
+        detail?: string;
+    } | null>(null);
+    const confirmResolver = useRef<((confirmed: boolean) => void) | null>(null);
+
+    const askConfirmation = (options: NonNullable<typeof confirmDialog>) => new Promise<boolean>((resolve) => {
+        confirmResolver.current = resolve;
+        setConfirmDialog(options);
+    });
+
+    const closeConfirmation = (confirmed: boolean) => {
+        setConfirmDialog(null);
+        confirmResolver.current?.(confirmed);
+        confirmResolver.current = null;
+    };
 
     const loadMasterData = useCallback(async () => {
 
@@ -574,11 +593,50 @@ export default function InventoryInternalTransferPage() {
 
         setSerials([]);
 
-        setSelectedSerials(new Set());
 
-        setQtyToTransfer("");
 
     }, []);
+
+    const clearTransferSelection = useCallback(() => {
+        setSelectedTransferInventories(new Map());
+        setSelectedSerials(new Set());
+        setQtyToTransfer("");
+        setSerials([]);
+        setSelectedInventory(null);
+    }, []);
+
+    const toggleTransferInventory = useCallback((inventory: Inventory) => {
+        const id = getId(inventory);
+        if (!id) return;
+
+        setSelectedTransferInventories((previous) => {
+            const next = new Map(previous);
+            if (next.has(id)) next.delete(id);
+            else next.set(id, inventory);
+            return next;
+        });
+    }, []);
+
+    const allVisibleTransferInventoriesSelected = inventories.length > 0 &&
+        inventories.every((inventory) => selectedTransferInventories.has(getId(inventory)));
+
+    const toggleAllVisibleTransferInventories = () => {
+        setSelectedTransferInventories((previous) => {
+            const next = new Map(previous);
+            const visibleIDs = inventories.map(getId).filter(Boolean);
+            const allVisibleSelected = visibleIDs.length > 0 && visibleIDs.every((id) => next.has(id));
+
+            if (allVisibleSelected) {
+                visibleIDs.forEach((id) => next.delete(id));
+            } else {
+                inventories.forEach((inventory) => {
+                    const id = getId(inventory);
+                    if (id) next.set(id, inventory);
+                });
+            }
+            return next;
+        });
+    };
 
     const clearCartonSelection = useCallback(() => {
         setSelectedCartonInventories(new Map());
@@ -622,6 +680,7 @@ export default function InventoryInternalTransferPage() {
         setError("");
         setSuccess("");
         clearSelection();
+        clearTransferSelection();
         clearCartonSelection();
         setToCartonNumber("");
         setReason("");
@@ -871,9 +930,7 @@ export default function InventoryInternalTransferPage() {
 
         setExpandedId((prev) => (prev === id ? null : id));
 
-        setSelectedSerials(new Set());
 
-        setQtyToTransfer("");
 
         if (expandedId === id) {
 
@@ -925,56 +982,48 @@ export default function InventoryInternalTransferPage() {
 
     };
 
+    const prepareSingleTransferSource = async (inventory: Inventory) => {
+        setSelectedInventory(inventory);
+        setSelectedSerials(new Set());
+        setQtyToTransfer("");
+        setSerials([]);
+        setError("");
+        if (inventory.transfer_mode !== "serial") return;
+        setLoadingSerials(true);
+        try {
+            const response = await api.get<ApiSerialResponse>(`/inventory/internal-transfer/serials?inventory_id=${getId(inventory)}`);
+            if (!response.data?.success) throw new Error(response.data?.error || response.data?.message || "Failed to fetch serials");
+            setSerials(response.data.data?.serials || []);
+        } catch (err: any) {
+            setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to fetch serials");
+        } finally {
+            setLoadingSerials(false);
+        }
+    };
+
     const availableSerials = useMemo(
-
         () => serials.filter((serial) => serial.qty_available > 0),
-
         [serials]
-
     );
 
     const selectableSerials = useMemo(
-
-        () => availableSerials.filter((serial) => {
-
-            return serial.qty_available === 1 && (serial.qty_allocated || 0) <= 0 && (serial.qty_shipped || 0) <= 0;
-
-        }),
-
+        () => availableSerials.filter((serial) =>
+            serial.qty_available === 1 && (serial.qty_allocated || 0) <= 0 && (serial.qty_shipped || 0) <= 0
+        ),
         [availableSerials]
-
     );
 
-    const allSelected =
-
-        selectableSerials.length > 0 && selectableSerials.every((serial) => selectedSerials.has(serial.serial_number));
-
+    const allSelected = selectableSerials.length > 0 && selectableSerials.every((serial) => selectedSerials.has(serial.serial_number));
     const toggleSerial = (serialNumber: string) => {
-
         setSelectedSerials((previous) => {
-
             const next = new Set(previous);
-
             if (next.has(serialNumber)) next.delete(serialNumber);
-
             else next.add(serialNumber);
-
             return next;
-
         });
-
     };
-
     const toggleAllSerials = () => {
-
-        setSelectedSerials((previous) => {
-
-            if (allSelected) return new Set();
-
-            return new Set(selectableSerials.map((serial) => serial.serial_number));
-
-        });
-
+        setSelectedSerials(allSelected ? new Set() : new Set(selectableSerials.map((serial) => serial.serial_number)));
     };
 
     const resetFilters = () => {
@@ -1005,6 +1054,7 @@ export default function InventoryInternalTransferPage() {
         resetFilters();
 
         clearSelection();
+        clearTransferSelection();
 
         setToWhsCode("");
 
@@ -1024,146 +1074,187 @@ export default function InventoryInternalTransferPage() {
 
     };
 
-    const selectedQuantity = selectedInventory?.transfer_mode === "serial"
-
-        ? selectedSerials.size
-
-        : Number(qtyToTransfer || 0);
-
+    const selectedTransferList = Array.from(selectedTransferInventories.values());
     const canSubmit = useMemo(() => {
-
-        if (!selectedInventory || submitting) return false;
-
-        if (!toWhsCode.trim() || !toLocation.trim() || !divisionCode.trim()) return false;
-
-        if (selectedInventory.transfer_mode === "serial") {
-
-            return selectedSerials.size > 0;
-
+        if (selectedTransferList.length === 0 || submitting) return false;
+        if (!toWhsCode.trim() || !toLocation.trim()) return false;
+        if (selectedTransferList.length === 1) {
+            const inventory = selectedTransferList[0];
+            if (inventory.transfer_mode === "serial") return selectedSerials.size > 0;
+            return Number(qtyToTransfer) > 0 && Number(qtyToTransfer) <= Number(inventory.qty_available);
         }
-
-        return Number(qtyToTransfer) > 0 && Number(qtyToTransfer) <= selectedInventory.qty_available;
-
-    }, [selectedInventory, submitting, toWhsCode, toLocation, divisionCode, selectedSerials, qtyToTransfer]);
+        return selectedTransferList.every((inventory) => Number(inventory.qty_available) > 0);
+    }, [selectedTransferList, selectedTransferInventories, selectedSerials, qtyToTransfer, submitting, toWhsCode, toLocation, divisionCode]);
 
     const submit = async () => {
-
-        if (!selectedInventory) return;
+        const sources = Array.from(selectedTransferInventories.values());
+        if (sources.length === 0) return;
 
         setError("");
-
         setSuccess("");
 
-        const destinationQa = newQaStatus.trim() || selectedInventory.qa_status;
-
-        const destinationLot = lotNumber.trim() || selectedInventory.lot_number || "";
-
-        const sourceSameAsDestination =
-
-            selectedInventory.whs_code === toWhsCode.trim() &&
-
-            selectedInventory.location === toLocation.trim() &&
-
-            selectedInventory.division_code === divisionCode.trim() &&
-
-            selectedInventory.qa_status === destinationQa &&
-
-            (selectedInventory.lot_number || "") === destinationLot;
-
-        if (sourceSameAsDestination) {
-
-            setError("Destination is the same as source.");
-
+        if (!toWhsCode.trim() || !toLocation.trim()) {
+            setError("Please complete destination warehouse and location.");
             return;
-
         }
 
-        if (selectedInventory.transfer_mode === "quantity") {
-
-            const qty = Number(qtyToTransfer);
-
-            if (!Number.isFinite(qty) || qty <= 0) {
-
+        // Preserve the original single-source workflow: user controls quantity or serial selection.
+        if (sources.length === 1) {
+            const inventory = sources[0];
+            const destinationQa = newQaStatus.trim() || inventory.qa_status;
+            const destinationLot = lotNumber.trim() || inventory.lot_number || "";
+            const sameDestination = inventory.whs_code === toWhsCode.trim() &&
+                inventory.location === toLocation.trim() &&
+                inventory.division_code === (divisionCode.trim() || inventory.division_code) &&
+                inventory.qa_status === destinationQa &&
+                (inventory.lot_number || "") === destinationLot;
+            if (sameDestination) {
+                setError("Destination is the same as source.");
+                return;
+            }
+            const quantity = inventory.transfer_mode === "quantity" ? Number(qtyToTransfer) : selectedSerials.size;
+            if (!Number.isFinite(quantity) || quantity <= 0) {
                 setError("Transfer quantity must be greater than 0.");
-
                 return;
-
             }
-
-            if (qty > selectedInventory.qty_available) {
-
-                setError(`Transfer quantity exceeds available quantity (${formatQty(selectedInventory.qty_available)}).`);
-
+            if (inventory.transfer_mode === "quantity" && quantity > Number(inventory.qty_available)) {
+                setError(`Transfer quantity exceeds available quantity (${formatQty(inventory.qty_available)}).`);
                 return;
-
             }
-
+            const confirmed = await askConfirmation({
+                title: "Confirm Inventory Transfer",
+                description: `Transfer ${formatQty(quantity)} ${inventory.uom} from inventory #${getId(inventory)}?`,
+                confirmLabel: "Confirm Transfer",
+                detail: "Please review the destination and quantity before continuing.",
+            });
+            if (!confirmed) return;
+            setSubmitting(true);
+            try {
+                const response = await api.post("/inventory/internal-transfer", {
+                    inventory_id: getId(inventory),
+                    to_whs_code: toWhsCode.trim(),
+                    to_location: toLocation.trim(),
+                    division_code: divisionCode.trim() || inventory.division_code,
+                    new_qa_status: destinationQa,
+                    lot_number: destinationLot,
+                    reason: reason.trim(),
+                    qty_to_transfer: quantity,
+                    serial_numbers: inventory.transfer_mode === "serial" ? Array.from(selectedSerials) : [],
+                });
+                if (!response.data?.success) throw new Error(response.data?.error || response.data?.message || "Transfer failed");
+                setSuccess(response.data.message || "Inventory transfer completed successfully.");
+                clearTransferSelection();
+                setToWhsCode(""); setToLocation(""); setDivisionCode(""); setNewQaStatus(""); setLotNumber(""); setReason("");
+                await fetchInventories();
+            } catch (err: any) {
+                setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || "Transfer failed");
+            } finally {
+                setSubmitting(false);
+            }
+            return;
         }
+
+        const invalidQty = sources.find((inventory) => !Number.isFinite(Number(inventory.qty_available)) || Number(inventory.qty_available) <= 0);
+        if (invalidQty) {
+            setError(`Inventory #${getId(invalidQty)} has no available quantity to transfer.`);
+            return;
+        }
+
+        const sameDestination = sources.find((inventory) => {
+            const destinationQa = newQaStatus.trim() || inventory.qa_status;
+            const destinationLot = lotNumber.trim() || inventory.lot_number || "";
+            return inventory.whs_code === toWhsCode.trim() &&
+                inventory.location === toLocation.trim() &&
+                inventory.division_code === (divisionCode.trim() || inventory.division_code) &&
+                inventory.qa_status === destinationQa &&
+                (inventory.lot_number || "") === destinationLot;
+        });
+
+        if (sameDestination) {
+            setError(`Inventory #${getId(sameDestination)} already matches its destination. Remove it from the selection or change destination.`);
+            return;
+        }
+
+        const confirmed = await askConfirmation({
+            title: "Confirm Multiple Source Transfer",
+            description: `You are about to transfer the full available quantity from ${sources.length} source inventory records.`,
+            confirmLabel: "Confirm Transfer",
+            detail: "Requests will be processed sequentially. If a later request fails, transfers that already succeeded cannot be rolled back automatically.",
+        });
+        if (!confirmed) return;
 
         setSubmitting(true);
+        let succeeded = 0;
+        const failures: string[] = [];
 
         try {
+            for (const inventory of sources) {
+                const inventoryId = getId(inventory);
+                try {
+                    let serialNumbers: string[] = [];
+                    let qtyToTransfer = Number(inventory.qty_available);
 
-            const payload = {
+                    if (inventory.transfer_mode === "serial") {
+                        const serialResponse = await api.get<ApiSerialResponse>(
+                            `/inventory/internal-transfer/serials?inventory_id=${inventoryId}`
+                        );
+                        if (!serialResponse.data?.success) {
+                            throw new Error(serialResponse.data?.error || serialResponse.data?.message || "Failed to fetch serials");
+                        }
 
-                inventory_id: getId(selectedInventory),
+                        const eligibleSerials = (serialResponse.data.data?.serials || []).filter((serial) =>
+                            Number(serial.qty_available) === 1 &&
+                            Number(serial.qty_allocated || 0) <= 0 &&
+                            Number(serial.qty_shipped || 0) <= 0
+                        );
+                        serialNumbers = eligibleSerials.map((serial) => serial.serial_number);
+                        qtyToTransfer = serialNumbers.length;
 
-                to_whs_code: toWhsCode.trim(),
+                        if (serialNumbers.length === 0) {
+                            throw new Error("No eligible available serial numbers found");
+                        }
+                    }
 
-                to_location: toLocation.trim(),
+                    const payload = {
+                        inventory_id: inventoryId,
+                        to_whs_code: toWhsCode.trim(),
+                        to_location: toLocation.trim(),
+                        division_code: divisionCode.trim() || inventory.division_code,
+                        // Empty form values preserve each source inventory's own QA and lot.
+                        new_qa_status: newQaStatus.trim() || inventory.qa_status,
+                        lot_number: lotNumber.trim() || inventory.lot_number || "",
+                        reason: reason.trim(),
+                        qty_to_transfer: qtyToTransfer,
+                        serial_numbers: serialNumbers,
+                    };
 
-                division_code: divisionCode.trim(),
-
-                new_qa_status: destinationQa,
-
-                lot_number: destinationLot,
-
-                reason: reason.trim(),
-
-                qty_to_transfer:
-
-                    selectedInventory.transfer_mode === "quantity"
-
-                        ? Number(qtyToTransfer)
-
-                        : selectedSerials.size,
-
-                serial_numbers:
-
-                    selectedInventory.transfer_mode === "serial"
-
-                        ? Array.from(selectedSerials)
-
-                        : [],
-
-            };
-
-            const response = await api.post("/inventory/internal-transfer", payload);
-
-            if (!response.data?.success) {
-
-                throw new Error(response.data?.error || response.data?.message || "Transfer failed");
-
+                    const response = await api.post("/inventory/internal-transfer", payload);
+                    if (!response.data?.success) {
+                        throw new Error(response.data?.error || response.data?.message || "Transfer failed");
+                    }
+                    succeeded++;
+                } catch (sourceError: any) {
+                    const message = sourceError?.response?.data?.error || sourceError?.response?.data?.message || sourceError?.message || "Transfer failed";
+                    failures.push(`Inventory #${inventoryId} (${inventory.item_code}): ${message}`);
+                }
             }
 
-            setSuccess(response.data.message || "Inventory transfer completed successfully.");
-
-            clearSelection();
+            if (failures.length === 0) {
+                setSuccess(`Successfully transferred all ${succeeded} source inventory record(s) using their full available quantities.`);
+                clearTransferSelection();
+            } else {
+                setError(`${succeeded} source(s) transferred successfully; ${failures.length} source(s) failed. ${failures.join(" | ")}`);
+                // Keep only failed sources selected so the operator can review/retry them.
+                const failedIDs = new Set(failures.map((failure) => Number(failure.match(/Inventory #(\d+)/)?.[1])).filter(Boolean));
+                setSelectedTransferInventories(new Map(sources.filter((inventory) => failedIDs.has(getId(inventory))).map((inventory) => [getId(inventory), inventory])));
+            }
 
             await fetchInventories();
-
         } catch (err: any) {
-
-            console.error("Internal transfer failed:", err);
-
-            setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || "Transfer failed");
-
+            setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || "Transfer process failed");
         } finally {
-
             setSubmitting(false);
-
         }
-
     };
 
     const normalizedDestinationCarton = toCartonNumber.trim();
@@ -1220,9 +1311,12 @@ export default function InventoryInternalTransferPage() {
             return;
         }
 
-        const confirmed = window.confirm(
-            `Change carton number for ${inventoryIDs.length} inventory record(s) to "${destinationCarton}"? Warehouse, location, division, QA status, pallet, lot, and quantities will remain unchanged.`
-        );
+        const confirmed = await askConfirmation({
+            title: "Confirm Carton Number Change",
+            description: `Change the carton number for ${inventoryIDs.length} inventory record(s) to ${destinationCarton}?`,
+            confirmLabel: "Confirm Change",
+            detail: "Warehouse, location, division, QA status, pallet, lot, and quantities will remain unchanged.",
+        });
         if (!confirmed) return;
 
         setSubmitting(true);
@@ -1272,7 +1366,7 @@ export default function InventoryInternalTransferPage() {
 
                             <p className="mt-1 text-xs text-gray-500">
                                 {processMode === "internal-transfer"
-                                    ? "Transfer serial or non-serial inventory to another warehouse, location, or division."
+                                    ? "Select multiple source inventories and transfer their full available quantities to one destination."
                                     : "Select multiple inventory records and assign one destination carton number without changing stock quantities or inventory location."}
                             </p>
 
@@ -1335,7 +1429,7 @@ export default function InventoryInternalTransferPage() {
 
                                         <p className="mt-1 text-xs text-gray-500">
                                             {inventories.length} inventory record(s) available
-                                            {processMode === "change-carton-number" ? ` · ${selectedCartonInventories.size} selected` : ""}
+                                            {processMode === "change-carton-number" ? ` · ${selectedCartonInventories.size} selected` : ` · ${selectedTransferInventories.size} selected`}
                                         </p>
                                         {processMode === "change-carton-number" && appliedCartonNumberSearch && (
                                             <p className="mt-1 text-[11px] text-emerald-700">
@@ -1357,6 +1451,18 @@ export default function InventoryInternalTransferPage() {
                                     </div>
 
                                     <div className="flex items-center gap-3">
+                                        {processMode === "internal-transfer" && inventories.length > 0 && (
+                                            <label className="flex items-center gap-1.5 text-[11px] text-gray-600">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={allVisibleTransferInventoriesSelected}
+                                                    onChange={toggleAllVisibleTransferInventories}
+                                                    disabled={submitting}
+                                                    className="h-3.5 w-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                                />
+                                                Select all visible
+                                            </label>
+                                        )}
                                         {processMode === "change-carton-number" && inventories.length > 0 && (
                                             <label className="flex items-center gap-1.5 text-[11px] text-gray-600">
                                                 <input
@@ -1709,7 +1815,7 @@ export default function InventoryInternalTransferPage() {
 
                                             const selected = processMode === "change-carton-number"
                                                 ? selectedCartonInventories.has(id)
-                                                : selectedInventory ? getId(selectedInventory) === id : false;
+                                                : selectedTransferInventories.has(id);
 
                                             const serialMode = inventory.transfer_mode === "serial";
 
@@ -1725,6 +1831,44 @@ export default function InventoryInternalTransferPage() {
 
                                                 >
                                                     <div className="flex items-stretch">
+                                                        {processMode === "internal-transfer" && (
+                                                            <label
+                                                                className="flex shrink-0 cursor-pointer items-center border-r border-gray-100 px-3 hover:bg-emerald-50"
+                                                                title={`Select inventory #${id} for transfer`}
+                                                                onClick={(event) => event.stopPropagation()}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedTransferInventories.has(id)}
+                                                                    onChange={() => {
+                                                                        const wasSelected = selectedTransferInventories.has(id);
+                                                                        if (wasSelected) {
+                                                                            const remaining = Array.from(selectedTransferInventories.values()).filter((source) => getId(source) !== id);
+                                                                            toggleTransferInventory(inventory);
+                                                                            if (remaining.length === 1) void prepareSingleTransferSource(remaining[0]);
+                                                                            else if (remaining.length === 0) {
+                                                                                setSelectedInventory(null);
+                                                                                setSelectedSerials(new Set());
+                                                                                setQtyToTransfer("");
+                                                                                setSerials([]);
+                                                                            }
+                                                                        } else {
+                                                                            toggleTransferInventory(inventory);
+                                                                            if (selectedTransferInventories.size === 0) void prepareSingleTransferSource(inventory);
+                                                                            else {
+                                                                                setSelectedInventory(null);
+                                                                                setSelectedSerials(new Set());
+                                                                                setQtyToTransfer("");
+                                                                                setSerials([]);
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    disabled={submitting}
+                                                                    aria-label={`Select inventory ${inventory.item_code}, ID ${id} for transfer`}
+                                                                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                                                />
+                                                            </label>
+                                                        )}
                                                         {processMode === "change-carton-number" && (
                                                             <label
                                                                 className="flex shrink-0 cursor-pointer items-center border-r border-gray-100 px-3 hover:bg-emerald-50"
@@ -1899,7 +2043,7 @@ export default function InventoryInternalTransferPage() {
 
                                                                         <div>
 
-                                                                            <div className="text-xs font-semibold text-gray-800">Available Serial Numbers</div>
+                                                                            <div className="text-xs font-semibold text-gray-800">Serial Numbers (select eligible serials to transfer)</div>
 
                                                                             <div className="mt-0.5 text-[11px] text-gray-400">
 
@@ -1909,27 +2053,6 @@ export default function InventoryInternalTransferPage() {
 
                                                                         </div>
 
-                                                                        <button
-
-                                                                            type="button"
-
-                                                                            onClick={(e) => {
-
-                                                                                e.stopPropagation();
-
-                                                                                toggleAllSerials();
-
-                                                                            }}
-
-                                                                            disabled={selectableSerials.length === 0}
-
-                                                                            className="text-xs font-medium text-emerald-700 hover:underline disabled:text-gray-400"
-
-                                                                        >
-
-                                                                            {allSelected ? "Clear all" : "Select all"}
-
-                                                                        </button>
 
                                                                     </div>
 
@@ -1939,11 +2062,10 @@ export default function InventoryInternalTransferPage() {
 
                                                                             const disabled = serial.qty_available !== 1 || (serial.qty_allocated || 0) > 0 || (serial.qty_shipped || 0) > 0;
 
-                                                                            const checked = selectedSerials.has(serial.serial_number);
 
                                                                             return (
 
-                                                                                <label
+                                                                                <div
 
                                                                                     key={serial.serial_number}
 
@@ -1951,11 +2073,7 @@ export default function InventoryInternalTransferPage() {
 
                                                                                         ? "cursor-not-allowed bg-gray-50 text-gray-400"
 
-                                                                                        : checked
-
-                                                                                            ? "cursor-pointer bg-emerald-50"
-
-                                                                                            : "cursor-pointer hover:bg-gray-50"
+                                                                                        : "hover:bg-emerald-50"
 
                                                                                         }`}
 
@@ -1963,19 +2081,7 @@ export default function InventoryInternalTransferPage() {
 
                                                                                     <span className="flex min-w-0 items-center gap-2">
 
-                                                                                        <input
-
-                                                                                            type="checkbox"
-
-                                                                                            checked={checked}
-
-                                                                                            disabled={disabled}
-
-                                                                                            onChange={() => toggleSerial(serial.serial_number)}
-
-                                                                                            className="h-3.5 w-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-
-                                                                                        />
+                                                                                        <span className={`h-2 w-2 shrink-0 rounded-full ${disabled ? "bg-gray-300" : "bg-emerald-500"}`} />
 
                                                                                         <span className="truncate font-mono">{serial.serial_number}</span>
 
@@ -1987,7 +2093,7 @@ export default function InventoryInternalTransferPage() {
 
                                                                                     </span>
 
-                                                                                </label>
+                                                                                </div>
 
                                                                             );
 
@@ -2042,359 +2148,119 @@ export default function InventoryInternalTransferPage() {
                     {/* PROCESS FORM */}
                     {processMode === "internal-transfer" ? (
                     <div className="xl:col-span-4">
-
                         <div className="sticky top-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-
                             <div className="border-b border-gray-200 px-4 py-3">
-
                                 <div className="flex items-center justify-between">
-
                                     <div>
-
-                                        <h2 className="text-sm font-semibold text-gray-900">Transfer</h2>
-
+                                        <h2 className="text-sm font-semibold text-gray-900">{selectedTransferList.length === 1 ? "Single Source Transfer" : "Multiple Source Transfer"}</h2>
                                         <p className="mt-1 text-xs text-gray-500">
-
-                                            {selectedInventory?.transfer_mode === "serial"
-
-                                                ? `${selectedSerials.size} serial(s) selected`
-
-                                                : selectedInventory
-
-                                                    ? `${formatQty(Number(qtyToTransfer || 0))} ${selectedInventory.uom} selected`
-
-                                                    : "Select source inventory"}
-
+                                            {selectedTransferList.length === 1 ? "Manual quantity / serial selection" : `${selectedTransferList.length} source(s) · Full available quantity`}
                                         </p>
-
                                     </div>
-
-                                    {selectedInventory && (
-
-                                        <button type="button" onClick={clearSelection} className="text-gray-400 hover:text-gray-700">
-
-                                            <X className="h-4 w-4" />
-
+                                    {selectedTransferList.length > 0 && (
+                                        <button type="button" onClick={clearTransferSelection} disabled={submitting} className="text-xs text-gray-500 hover:text-gray-900 disabled:opacity-50">
+                                            Clear
                                         </button>
-
                                     )}
-
                                 </div>
-
                             </div>
 
                             <div className="space-y-4 p-4">
-
-                                {selectedInventory ? (
-
-                                    <>
-
-                                        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs">
-
-                                            <div className="font-semibold text-blue-900">
-
-                                                Source Inventory #{getId(selectedInventory)}
-
-                                            </div>
-
-                                            <div className="mt-2 text-sm font-semibold text-blue-900">
-
-                                                {selectedInventory.item_code}
-
-                                            </div>
-
-                                            <div className="mt-1 text-xs font-medium text-blue-800">
-
-                                                {selectedInventory.product?.item_name ||
-
-                                                    "-"}
-
-                                            </div>
-
-                                            <div className="mt-1 text-[11px] text-blue-700">
-
-                                                Model:{" "}
-
-                                                {selectedInventory.product?.unit_model ||
-
-                                                    "-"}
-
-                                            </div>
-
-                                            <div className="mt-1 text-[10px] text-blue-600">
-
-                                                Barcode:{" "}
-
-                                                {selectedInventory.product?.barcode ||
-
-                                                    selectedInventory.barcode ||
-
-                                                    "-"}
-
-                                            </div>
-
-                                            <div className="mt-2 text-blue-700">
-
-                                                {selectedInventory.owner_code} ·{" "}
-
-                                                {selectedInventory.whs_code} /{" "}
-
-                                                {selectedInventory.location}
-
-                                            </div>
-
-                                            <div className="mt-1 text-blue-700">
-
-                                                {formatQty(
-
-                                                    selectedInventory.qty_available,
-
-                                                )}{" "}
-
-                                                {selectedInventory.uom} available ·{" "}
-
-                                                {selectedInventory.transfer_mode ===
-
-                                                    "serial"
-
-                                                    ? "Serial"
-
-                                                    : "Quantity"}{" "}
-
-                                                mode
-
-                                            </div>
-
-                                        </div>
-
-                                        {selectedInventory.transfer_mode === "quantity" && (
-
-                                            <div>
-
-                                                <label className="field">Transfer Quantity *</label>
-
-                                                <input
-
-                                                    type="number"
-
-                                                    min="0.0001"
-
-                                                    max={selectedInventory.qty_available}
-
-                                                    step="any"
-
-                                                    value={qtyToTransfer}
-
-                                                    onChange={(e) => setQtyToTransfer(e.target.value)}
-
-                                                    className={inputClass}
-
-                                                    placeholder={`Max ${selectedInventory.qty_available}`}
-
-                                                />
-
-                                                <div className="mt-1 text-[10px] text-gray-400">
-
-                                                    Maximum: {formatQty(selectedInventory.qty_available)} {selectedInventory.uom}
-
-                                                </div>
-
-                                            </div>
-
-                                        )}
-
-                                        {selectedInventory.transfer_mode === "serial" && (
-
-                                            <div className="rounded-md border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-
-                                                <div className="flex items-center gap-2 font-medium">
-
-                                                    <Check className="h-3.5 w-3.5" />
-
-                                                    {selectedSerials.size} serial(s) selected = {selectedSerials.size} PCS
-
-                                                </div>
-
-                                            </div>
-
-                                        )}
-
-                                        <div>
-
-                                            <label className="field">Destination Warehouse *</label>
-
-                                            <Select
-
-                                                options={warehouseOptions}
-
-                                                value={warehouseOptions.find((option) => option.value === toWhsCode) || null}
-
-                                                onChange={(option) => { setToWhsCode(option?.value || ""); setToLocation(""); }}
-
-                                                isClearable
-
-                                                isSearchable
-
-                                                isLoading={loadingMaster}
-
-                                                placeholder="Select warehouse"
-
-                                                styles={selectStyles}
-
-                                            />
-
-                                        </div>
-
-                                        <div>
-
-                                            <label className="field">Destination Location *</label>
-
-                                            <Select
-
-                                                options={destinationLocationOptions}
-
-                                                value={destinationLocationOptions.find((option) => option.value === toLocation) || null}
-
-                                                onChange={(option) => setToLocation(option?.value || "")}
-
-                                                isClearable
-
-                                                isSearchable
-
-                                                isLoading={loadingMaster}
-
-                                                isDisabled={!toWhsCode}
-
-                                                placeholder={toWhsCode ? "Select location" : "Select warehouse first"}
-
-                                                styles={selectStyles}
-
-                                            />
-
-                                        </div>
-
-                                        <div>
-
-                                            <label className="field">Destination Division *</label>
-
-                                            <Select
-
-                                                options={divisionOptions}
-
-                                                value={divisionOptions.find((option) => option.value === divisionCode) || null}
-
-                                                onChange={(option) => setDivisionCode(option?.value || "")}
-
-                                                isClearable
-
-                                                isSearchable
-
-                                                isLoading={loadingMaster}
-
-                                                placeholder="Select division"
-
-                                                styles={selectStyles}
-
-                                            />
-
-                                        </div>
-
-                                        <div>
-
-                                            <label className="field">Destination QA Status</label>
-
-                                            <Select
-
-                                                options={qaOptions}
-
-                                                value={qaOptions.find((option) => option.value === newQaStatus) || null}
-
-                                                onChange={(option) => setNewQaStatus(option?.value || "")}
-
-                                                isClearable
-
-                                                isSearchable
-
-                                                isLoading={loadingMaster}
-
-                                                placeholder={`Keep source: ${selectedInventory.qa_status}`}
-
-                                                styles={selectStyles}
-
-                                            />
-
-                                        </div>
-
-                                        <div>
-
-                                            <label className="field">Destination Lot</label>
-
-                                            <CreatableSelect
-
-                                                options={lotOptions}
-
-                                                value={lotNumber ? { value: lotNumber, label: lotNumber } : null}
-
-                                                onChange={(option) => setLotNumber(option?.value || "")}
-
-                                                onCreateOption={(value) => setLotNumber(value.trim())}
-
-                                                isClearable
-
-                                                isSearchable
-
-                                                placeholder={`Keep source: ${selectedInventory.lot_number || "-"}`}
-
-                                                styles={selectStyles}
-
-                                            />
-
-                                        </div>
-
-                                        <div>
-
-                                            <label className="field">Reason</label>
-
-                                            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className={`${inputClass} h-auto py-2 resize-none`} placeholder="Reason for internal transfer..." />
-
-                                        </div>
-
-                                        <div className="border-t border-gray-200 pt-4">
-
-                                            <button
-
-                                                type="button"
-
-                                                onClick={submit}
-
-                                                disabled={!canSubmit}
-
-                                                className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-emerald-600 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-
-                                            >
-
-                                                {submitting && <Spinner />}
-
-                                                {submitting ? "Transferring..." : `Transfer ${formatQty(selectedQuantity)} ${selectedInventory.uom || "PCS"}`}
-
-                                            </button>
-
-                                        </div>
-
-                                    </>
-
-                                ) : (
-
-                                    <div className="py-12 text-center text-xs text-gray-400">
-
-                                        Expand and select an inventory record from the left.
-
+                                <div className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2.5 text-xs text-blue-800">
+                                    {selectedTransferList.length === 1
+                                        ? "Single source mode: set the transfer quantity manually, or select the serial numbers to transfer."
+                                        : "Multiple source mode: each source is transferred sequentially using its full available quantity and all eligible serial numbers."}
+                                </div>
+
+                                <div className="overflow-hidden rounded-md border border-gray-200">
+                                    <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-3 py-2 text-[11px] font-semibold text-gray-600">
+                                        <span>Selected source inventory</span>
+                                        <span>{selectedTransferList.length} selected</span>
                                     </div>
+                                    {selectedTransferList.length === 0 ? (
+                                        <div className="px-3 py-8 text-center text-xs text-gray-400">Select one or more inventory records from the list.</div>
+                                    ) : (
+                                        <div className="max-h-56 divide-y divide-gray-100 overflow-y-auto">
+                                            {selectedTransferList.map((inventory) => (
+                                                <div key={getId(inventory)} className="flex items-start justify-between gap-3 px-3 py-2.5 text-xs">
+                                                    <div className="min-w-0">
+                                                        <div className="truncate font-semibold text-gray-800">{inventory.item_code}</div>
+                                                        <div className="mt-0.5 truncate text-[10px] text-gray-500">#{getId(inventory)} · {inventory.whs_code} / {inventory.location} · {inventory.division_code}</div>
+                                                        <div className="mt-0.5 truncate text-[10px] text-gray-400">QA {inventory.qa_status} · Lot {text(inventory.lot_number)}</div>
+                                                        <div className="mt-1 font-medium text-emerald-700">{selectedTransferList.length === 1 ? `Available: ${formatQty(inventory.qty_available)} ${inventory.uom}` : `Full available: ${formatQty(inventory.qty_available)} ${inventory.uom}`}</div>
+                                                    </div>
+                                                    <button type="button" onClick={() => toggleTransferInventory(inventory)} disabled={submitting} aria-label={`Remove inventory ${getId(inventory)}`} className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-600 disabled:opacity-50">
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
 
+                                {selectedTransferList.length === 1 && selectedTransferList[0].transfer_mode === "quantity" && (
+                                    <div>
+                                        <label className="field">Transfer Quantity *</label>
+                                        <input type="number" min="0.0001" max={selectedTransferList[0].qty_available} step="any" value={qtyToTransfer} onChange={(event) => setQtyToTransfer(event.target.value)} disabled={submitting} className={inputClass} placeholder={`Max ${selectedTransferList[0].qty_available}`} />
+                                        <p className="mt-1 text-[10px] text-gray-400">Available: {formatQty(selectedTransferList[0].qty_available)} {selectedTransferList[0].uom}</p>
+                                    </div>
+                                )}
+                                {selectedTransferList.length === 1 && selectedTransferList[0].transfer_mode === "serial" && (
+                                    <div className="rounded-md border border-gray-200 p-3">
+                                        <div className="mb-2 flex items-center justify-between gap-2">
+                                            <div className="text-xs font-semibold text-gray-800">Select serial numbers to transfer</div>
+                                            <button type="button" onClick={toggleAllSerials} disabled={loadingSerials || selectableSerials.length === 0} className="text-[11px] font-medium text-emerald-700 disabled:opacity-40">{allSelected ? "Deselect all" : "Select all eligible"}</button>
+                                        </div>
+                                        <div className="mb-2 text-[11px] text-gray-500">{selectedSerials.size} selected / {selectableSerials.length} eligible</div>
+                                        {loadingSerials ? <div className="py-3 text-xs text-gray-400">Loading serials...</div> : (
+                                            <div className="max-h-48 overflow-y-auto divide-y divide-gray-100">
+                                                {serials.map((serial) => {
+                                                    const eligible = serial.qty_available === 1 && (serial.qty_allocated || 0) <= 0 && (serial.qty_shipped || 0) <= 0;
+                                                    return <label key={serial.serial_number} className={`flex items-center gap-2 py-2 text-xs ${eligible ? "cursor-pointer" : "cursor-not-allowed text-gray-400"}`}>
+                                                        <input type="checkbox" checked={selectedSerials.has(serial.serial_number)} disabled={!eligible || submitting} onChange={() => toggleSerial(serial.serial_number)} />
+                                                        <span className="font-mono">{serial.serial_number}</span>
+                                                        {!eligible && <span className="ml-auto">Unavailable</span>}
+                                                    </label>;
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
 
+                                <div>
+                                    <label className="field">Destination Warehouse *</label>
+                                    <Select options={warehouseOptions} value={warehouseOptions.find((option) => option.value === toWhsCode) || null} onChange={(option) => { setToWhsCode(option?.value || ""); setToLocation(""); }} isClearable isSearchable isLoading={loadingMaster} placeholder="Select warehouse" styles={selectStyles} />
+                                </div>
+                                <div>
+                                    <label className="field">Destination Location *</label>
+                                    <Select options={destinationLocationOptions} value={destinationLocationOptions.find((option) => option.value === toLocation) || null} onChange={(option) => setToLocation(option?.value || "")} isClearable isSearchable isLoading={loadingMaster} isDisabled={!toWhsCode} placeholder={toWhsCode ? "Select location" : "Select warehouse first"} styles={selectStyles} />
+                                </div>
+                                <div>
+                                    <label className="field">Destination Division</label>
+                                    <Select options={divisionOptions} value={divisionOptions.find((option) => option.value === divisionCode) || null} onChange={(option) => setDivisionCode(option?.value || "")} isClearable isSearchable isLoading={loadingMaster} placeholder="Keep each source division" styles={selectStyles} />
+                                    <p className="mt-1 text-[10px] text-gray-400">Leave empty to preserve each sources existing division. Select a division to override it.</p>
+                                </div>
+                                <div>
+                                    <label className="field">Destination QA Status</label>
+                                    <Select options={qaOptions} value={qaOptions.find((option) => option.value === newQaStatus) || null} onChange={(option) => setNewQaStatus(option?.value || "")} isClearable isSearchable isLoading={loadingMaster} placeholder="Keep each source QA status" styles={selectStyles} />
+                                    <p className="mt-1 text-[10px] text-gray-400">Leave empty to preserve each sources own QA status.</p>
+                                </div>
+                                <div>
+                                    <label className="field">Destination Lot</label>
+                                    <CreatableSelect options={lotOptions} value={lotNumber ? { value: lotNumber, label: lotNumber } : null} onChange={(option) => setLotNumber(option?.value || "")} onCreateOption={(value) => setLotNumber(value.trim())} isClearable isSearchable placeholder="Keep each source lot number" styles={selectStyles} />
+                                    <p className="mt-1 text-[10px] text-gray-400">Leave empty to preserve each sources own lot number.</p>
+                                </div>
+                                <div>
+                                    <label className="field">Reason</label>
+                                    <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} className={`${inputClass} h-auto resize-none py-2`} placeholder="Reason for internal transfer..." />
+                                </div>
+                                <div className="border-t border-gray-200 pt-4">
+                                    <button type="button" onClick={() => void submit()} disabled={!canSubmit} className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-emerald-600 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
+                                        {submitting && <Spinner />}
+                                        {submitting ? "Transferring..." : selectedTransferList.length === 1 ? "Transfer Inventory" : `Transfer ${selectedTransferList.length} source(s)`}
+                                    </button>
+                                </div>
                             </div>
-
                         </div>
                     </div>
                     ) : (
@@ -2518,6 +2384,72 @@ export default function InventoryInternalTransferPage() {
                     )}
                 </div>
             </div>
+
+            {confirmDialog && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-[2px]"
+                    role="presentation"
+                    onMouseDown={(event) => {
+                        if (event.target === event.currentTarget && !submitting) closeConfirmation(false);
+                    }}
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="inventory-confirm-title"
+                        aria-describedby="inventory-confirm-description"
+                        className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
+                    >
+                        <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                                <AlertTriangle className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <h3 id="inventory-confirm-title" className="text-sm font-semibold text-slate-900">
+                                    {confirmDialog.title}
+                                </h3>
+                                <p id="inventory-confirm-description" className="mt-1 text-xs leading-5 text-slate-600">
+                                    {confirmDialog.description}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => closeConfirmation(false)}
+                                disabled={submitting}
+                                aria-label="Close confirmation"
+                                className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                        {confirmDialog.detail && (
+                            <div className="mx-5 mt-4 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900">
+                                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                                <p>{confirmDialog.detail}</p>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-end gap-2 px-5 py-4">
+                            <button
+                                type="button"
+                                onClick={() => closeConfirmation(false)}
+                                disabled={submitting}
+                                className="h-9 rounded-lg border border-slate-300 bg-white px-4 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => closeConfirmation(true)}
+                                disabled={submitting}
+                                className="inline-flex h-9 items-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <ArrowRightLeft className="h-3.5 w-3.5" />
+                                {confirmDialog.confirmLabel}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
 
