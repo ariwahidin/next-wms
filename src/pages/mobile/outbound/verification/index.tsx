@@ -13,6 +13,7 @@ import {
     CheckCircle2,
     Circle,
     Clock,
+    Copy,
     History,
     Loader2,
     PackageCheck,
@@ -251,8 +252,8 @@ const StatusBadge = ({
     return (
         <span
             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${confirmed
-                    ? "bg-green-100 text-green-700"
-                    : "bg-orange-100 text-orange-700"
+                ? "bg-green-100 text-green-700"
+                : "bg-orange-100 text-orange-700"
                 }`}
         >
             {confirmed ? (
@@ -294,8 +295,8 @@ const ProgressBar = ({
 
                 <span
                     className={`font-semibold ${complete
-                            ? "text-green-600"
-                            : "text-blue-600"
+                        ? "text-green-600"
+                        : "text-blue-600"
                         }`}
                 >
                     {percentage.toFixed(0)}%
@@ -305,8 +306,8 @@ const ProgressBar = ({
             <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
                 <div
                     className={`h-full rounded-full transition-all duration-300 ${complete
-                            ? "bg-green-500"
-                            : "bg-blue-500"
+                        ? "bg-green-500"
+                        : "bg-blue-500"
                         }`}
                     style={{
                         width: `${percentage}%`,
@@ -406,8 +407,8 @@ const ToggleSwitch = ({
             >
                 <span
                     className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${checked
-                            ? "translate-x-[18px]"
-                            : "translate-x-1"
+                        ? "translate-x-[18px]"
+                        : "translate-x-1"
                         }`}
                 />
             </button>
@@ -1807,8 +1808,8 @@ const OutboundVerificationPage = () => {
                                             <div
                                                 key={item.order_detail_id}
                                                 className={`rounded-md border p-2.5 transition-colors ${item.is_scanned
-                                                        ? "border-green-200 bg-green-50/60"
-                                                        : "border-gray-200 bg-white"
+                                                    ? "border-green-200 bg-green-50/60"
+                                                    : "border-gray-200 bg-white"
                                                     }`}
                                             >
 
@@ -1827,39 +1828,71 @@ const OutboundVerificationPage = () => {
                                                         )}
                                                         <div className="min-w-0 flex-1 space-y-1">
 
-                                                        <div className="break-all font-mono text-xs font-bold text-gray-800">
+                                                            {/* <div className="break-all font-mono text-xs font-bold text-gray-800">
                                                             {item.shipment_id}
-                                                        </div>
+                                                        </div> */}
 
-                                                        <div className="text-xs text-gray-500">
-                                                            Outbound:{" "}
-                                                            <span className="font-medium text-gray-700">
-                                                                {item.outbound_no || "-"}
-                                                            </span>
-                                                        </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="break-all font-mono text-xs font-bold text-gray-800">
+                                                                    {item.shipment_id}
+                                                                </div>
 
-                                                        {item.deliv_to_name && (
-                                                            <div className="truncate text-xs text-gray-500">
-                                                                Delivery To:{" "}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            await navigator.clipboard.writeText(item.shipment_id);
+
+                                                                            eventBus.emit("showAlert", {
+                                                                                title: "Copied",
+                                                                                description: "Shipment ID copied to clipboard",
+                                                                                type: "success",
+                                                                            });
+                                                                        } catch {
+                                                                            eventBus.emit("showAlert", {
+                                                                                title: "Copy Failed",
+                                                                                description: "Unable to copy Shipment ID",
+                                                                                type: "error",
+                                                                            });
+                                                                        }
+                                                                    }}
+                                                                    className="shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                                                                    title="Copy Shipment ID"
+                                                                    aria-label="Copy Shipment ID"
+                                                                >
+                                                                    <Copy size={14} />
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="text-xs text-gray-500">
+                                                                Outbound:{" "}
                                                                 <span className="font-medium text-gray-700">
-                                                                    {item.deliv_to_name}
+                                                                    {item.outbound_no || "-"}
                                                                 </span>
                                                             </div>
-                                                        )}
 
-                                                        <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[11px] text-gray-400">
-                                                            <span>
-                                                                Koli: {item.qty_koli}
-                                                            </span>
+                                                            {item.deliv_to_name && (
+                                                                <div className="truncate text-xs text-gray-500">
+                                                                    Delivery To:{" "}
+                                                                    <span className="font-medium text-gray-700">
+                                                                        {item.deliv_to_name}
+                                                                    </span>
+                                                                </div>
+                                                            )}
 
-                                                            <span>
-                                                                Items: {item.total_item}
-                                                            </span>
+                                                            <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[11px] text-gray-400">
+                                                                <span>
+                                                                    Koli: {item.qty_koli}
+                                                                </span>
 
-                                                            <span>
-                                                                Qty: {item.total_qty}
-                                                            </span>
-                                                        </div>
+                                                                <span>
+                                                                    Items: {item.total_item}
+                                                                </span>
+
+                                                                <span>
+                                                                    Qty: {item.total_qty}
+                                                                </span>
+                                                            </div>
 
                                                         </div>
                                                     </div>
@@ -1976,8 +2009,8 @@ const OutboundVerificationPage = () => {
                                 <Button
                                     type="button"
                                     className={`h-9 w-full font-semibold ${allComplete
-                                            ? "bg-green-600 text-white hover:bg-green-700"
-                                            : "bg-gray-200 text-gray-500 hover:bg-gray-200"
+                                        ? "bg-green-600 text-white hover:bg-green-700"
+                                        : "bg-gray-200 text-gray-500 hover:bg-gray-200"
                                         }`}
                                     disabled={
                                         !allComplete ||
