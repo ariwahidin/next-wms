@@ -14,7 +14,7 @@ import api from "@/lib/api";
 
 import Layout from "@/components/layout";
 
-type ProcessMode = "internal-transfer" | "change-carton-number";
+type ProcessMode = "internal-transfer" | "change-carton-number" | "change-case-number";
 
 interface Product {
 
@@ -374,6 +374,7 @@ export default function InventoryInternalTransferPage() {
     const [selectedCartonInventories, setSelectedCartonInventories] = useState<Map<number, Inventory>>(new Map());
     const [selectedTransferInventories, setSelectedTransferInventories] = useState<Map<number, Inventory>>(new Map());
     const [toCartonNumber, setToCartonNumber] = useState("");
+    const [toCaseNumber, setToCaseNumber] = useState("");
 
     const [inventories, setInventories] = useState<Inventory[]>([]);
 
@@ -401,6 +402,8 @@ export default function InventoryInternalTransferPage() {
     // a request on every keystroke for this dedicated carton search.
     const [cartonNumberSearch, setCartonNumberSearch] = useState("");
     const [appliedCartonNumberSearch, setAppliedCartonNumberSearch] = useState("");
+    const [caseNumberSearch, setCaseNumberSearch] = useState("");
+    const [appliedCaseNumberSearch, setAppliedCaseNumberSearch] = useState("");
 
     const [itemCode, setItemCode] = useState("");
 
@@ -550,9 +553,12 @@ export default function InventoryInternalTransferPage() {
 
             if (search.trim()) params.set("search", search.trim());
 
-            // This is a dedicated current-carton filter, not a broad search.
+            // Dedicated current carton/case filters; these are not broad searches.
             if (processMode === "change-carton-number" && appliedCartonNumberSearch.trim()) {
                 params.set("carton_number", appliedCartonNumberSearch.trim());
+            }
+            if (processMode === "change-case-number" && appliedCaseNumberSearch.trim()) {
+                params.set("case_number", appliedCaseNumberSearch.trim());
             }
 
             const response = await api.get<ApiListResponse>(
@@ -583,7 +589,7 @@ export default function InventoryInternalTransferPage() {
 
         }
 
-    }, [itemCode, ownerCode, sourceWhs, sourceLocation, sourceDivision, sourceQa, sourcePallet, search, processMode, appliedCartonNumberSearch]);
+    }, [itemCode, ownerCode, sourceWhs, sourceLocation, sourceDivision, sourceQa, sourcePallet, search, processMode, appliedCartonNumberSearch, appliedCaseNumberSearch]);
 
     const clearSelection = useCallback(() => {
 
@@ -683,9 +689,12 @@ export default function InventoryInternalTransferPage() {
         clearTransferSelection();
         clearCartonSelection();
         setToCartonNumber("");
+        setToCaseNumber("");
         setReason("");
         setCartonNumberSearch("");
         setAppliedCartonNumberSearch("");
+        setCaseNumberSearch("");
+        setAppliedCaseNumberSearch("");
     };
 
     useEffect(() => {
@@ -1046,6 +1055,8 @@ export default function InventoryInternalTransferPage() {
 
         setCartonNumberSearch("");
         setAppliedCartonNumberSearch("");
+        setCaseNumberSearch("");
+        setAppliedCaseNumberSearch("");
 
     };
 
@@ -1066,6 +1077,8 @@ export default function InventoryInternalTransferPage() {
 
         setLotNumber("");
 
+        setToCartonNumber("");
+        setToCaseNumber("");
         setReason("");
 
         setError("");
@@ -1344,11 +1357,98 @@ export default function InventoryInternalTransferPage() {
         }
     };
 
+    const normalizedDestinationCase = toCaseNumber.trim();
+    const sameCaseSelectionCount = normalizedDestinationCase
+        ? Array.from(selectedCartonInventories.values()).filter(
+            (inventory) => (inventory.case_number || "").trim() === normalizedDestinationCase
+        ).length
+        : 0;
+
+    const canSubmitCaseChange =
+        selectedCartonInventories.size > 0 &&
+        selectedCartonInventories.size <= 500 &&
+        normalizedDestinationCase.length > 0 &&
+        normalizedDestinationCase.length <= 100 &&
+        reason.trim().length > 0 &&
+        reason.trim().length <= 255 &&
+        sameCaseSelectionCount === 0 &&
+        !submitting;
+
+    const submitChangeCaseNumber = async () => {
+        const inventoryIDs = Array.from(selectedCartonInventories.keys());
+        const destinationCase = toCaseNumber.trim();
+        const reasonValue = reason.trim();
+
+        setError("");
+        setSuccess("");
+
+        if (inventoryIDs.length === 0) {
+            setError("Select at least one inventory record.");
+            return;
+        }
+        if (inventoryIDs.length > 500) {
+            setError("Select no more than 500 inventory records per request.");
+            return;
+        }
+        if (!destinationCase) {
+            setError("Destination case number is required.");
+            return;
+        }
+        if (destinationCase.length > 100) {
+            setError("Case number cannot exceed 100 characters.");
+            return;
+        }
+        if (!reasonValue) {
+            setError("Reason is required for audit purposes.");
+            return;
+        }
+        if (reasonValue.length > 255) {
+            setError("Reason cannot exceed 255 characters.");
+            return;
+        }
+        if (sameCaseSelectionCount > 0) {
+            setError("Some selected inventory already has this case number. Remove those records or choose another case number.");
+            return;
+        }
+
+        const confirmed = await askConfirmation({
+            title: "Confirm Case Number Change",
+            description: `Change the case number for ${inventoryIDs.length} inventory record(s) to ${destinationCase}?`,
+            confirmLabel: "Confirm Change",
+            detail: "Warehouse, location, division, owner, QA status, pallet, carton number, lot, and quantities will remain unchanged.",
+        });
+        if (!confirmed) return;
+
+        setSubmitting(true);
+        try {
+            const response = await api.post("/inventory/change-case-number", {
+                inventory_ids: inventoryIDs,
+                to_case_number: destinationCase,
+                reason: reasonValue,
+            });
+
+            if (!response.data?.success) {
+                throw new Error(response.data?.error || response.data?.message || "Change case number failed");
+            }
+
+            setSuccess(response.data.message || `Case number updated for ${inventoryIDs.length} inventory record(s).`);
+            clearCartonSelection();
+            setToCaseNumber("");
+            setReason("");
+            await fetchInventories();
+        } catch (err: any) {
+            console.error("Change case number failed:", err);
+            setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || "Change case number failed");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
 
         <Layout title="Inventory"
 
-            subTitle={processMode === "internal-transfer" ? "Internal Transfer" : "Change Carton Number"}>
+            subTitle={processMode === "internal-transfer" ? "Internal Transfer" : processMode === "change-carton-number" ? "Change Carton Number" : "Change Case Number"}>
 
             {/* <div className="mx-auto max-w-screen-2xl p-4 md:p-6"> */}
 
@@ -1361,13 +1461,15 @@ export default function InventoryInternalTransferPage() {
                         <div>
 
                             <h1 className="text-lg font-semibold text-gray-900">
-                                {processMode === "internal-transfer" ? "Internal Inventory Transfer" : "Change Carton Number"}
+                                {processMode === "internal-transfer" ? "Internal Inventory Transfer" : processMode === "change-carton-number" ? "Change Carton Number" : "Change Case Number"}
                             </h1>
 
                             <p className="mt-1 text-xs text-gray-500">
                                 {processMode === "internal-transfer"
                                     ? "Select multiple source inventories and transfer their full available quantities to one destination."
-                                    : "Select multiple inventory records and assign one destination carton number without changing stock quantities or inventory location."}
+                                    : processMode === "change-carton-number"
+                                        ? "Select multiple inventory records and assign one destination carton number without changing stock quantities or inventory location."
+                                        : "Select multiple inventory records and assign one destination case number without changing stock quantities or inventory location."}
                             </p>
 
                         </div>
@@ -1384,6 +1486,7 @@ export default function InventoryInternalTransferPage() {
                                 >
                                     <option value="internal-transfer">Internal Transfer</option>
                                     <option value="change-carton-number">Change Carton Number</option>
+                                    <option value="change-case-number">Change Case Number</option>
                                 </select>
                             </div>
                             <button
@@ -1429,22 +1532,18 @@ export default function InventoryInternalTransferPage() {
 
                                         <p className="mt-1 text-xs text-gray-500">
                                             {inventories.length} inventory record(s) available
-                                            {processMode === "change-carton-number" ? ` · ${selectedCartonInventories.size} selected` : ` · ${selectedTransferInventories.size} selected`}
+                                            {processMode !== "internal-transfer" ? ` · ${selectedCartonInventories.size} selected` : ` · ${selectedTransferInventories.size} selected`}
                                         </p>
                                         {processMode === "change-carton-number" && appliedCartonNumberSearch && (
                                             <p className="mt-1 text-[11px] text-emerald-700">
                                                 Carton filter: <span className="font-semibold">{appliedCartonNumberSearch}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setCartonNumberSearch("");
-                                                        setAppliedCartonNumberSearch("");
-                                                    }}
-                                                    className="ml-2 underline underline-offset-2 hover:text-emerald-900"
-                                                    disabled={loadingInventories || submitting}
-                                                >
-                                                    Clear
-                                                </button>
+                                                <button type="button" onClick={() => { setCartonNumberSearch(""); setAppliedCartonNumberSearch(""); }} className="ml-2 underline underline-offset-2 hover:text-emerald-900" disabled={loadingInventories || submitting}>Clear</button>
+                                            </p>
+                                        )}
+                                        {processMode === "change-case-number" && appliedCaseNumberSearch && (
+                                            <p className="mt-1 text-[11px] text-emerald-700">
+                                                Case filter: <span className="font-semibold">{appliedCaseNumberSearch}</span>
+                                                <button type="button" onClick={() => { setCaseNumberSearch(""); setAppliedCaseNumberSearch(""); }} className="ml-2 underline underline-offset-2 hover:text-emerald-900" disabled={loadingInventories || submitting}>Clear</button>
                                             </p>
                                         )}
 
@@ -1463,7 +1562,7 @@ export default function InventoryInternalTransferPage() {
                                                 Select all visible
                                             </label>
                                         )}
-                                        {processMode === "change-carton-number" && inventories.length > 0 && (
+                                        {processMode !== "internal-transfer" && inventories.length > 0 && (
                                             <label className="flex items-center gap-1.5 text-[11px] text-gray-600">
                                                 <input
                                                     type="checkbox"
@@ -1514,9 +1613,7 @@ export default function InventoryInternalTransferPage() {
 
                                     {processMode === "change-carton-number" && (
                                         <div>
-                                            <label htmlFor="current-carton-search" className="field">
-                                                Current Carton Number
-                                            </label>
+                                            <label htmlFor="current-carton-search" className="field">Current Carton Number</label>
                                             <div className="relative">
                                                 <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" />
                                                 <input
@@ -1526,11 +1623,8 @@ export default function InventoryInternalTransferPage() {
                                                     onKeyDown={(event) => {
                                                         if (event.key === "Enter") {
                                                             const nextFilter = cartonNumberSearch.trim();
-                                                            if (nextFilter === appliedCartonNumberSearch) {
-                                                                void fetchInventories();
-                                                            } else {
-                                                                setAppliedCartonNumberSearch(nextFilter);
-                                                            }
+                                                            if (nextFilter === appliedCartonNumberSearch) void fetchInventories();
+                                                            else setAppliedCartonNumberSearch(nextFilter);
                                                         }
                                                     }}
                                                     disabled={loadingInventories || submitting}
@@ -1540,9 +1634,33 @@ export default function InventoryInternalTransferPage() {
                                                     autoComplete="off"
                                                 />
                                             </div>
-                                            <p className="mt-1 text-[10px] text-gray-400">
-                                                Partial match supported. Press Enter or Search Inventory.
-                                            </p>
+                                            <p className="mt-1 text-[10px] text-gray-400">Partial match supported. Press Enter or Search Inventory.</p>
+                                        </div>
+                                    )}
+                                    {processMode === "change-case-number" && (
+                                        <div>
+                                            <label htmlFor="current-case-search" className="field">Current Case Number</label>
+                                            <div className="relative">
+                                                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" />
+                                                <input
+                                                    id="current-case-search"
+                                                    value={caseNumberSearch}
+                                                    onChange={(event) => setCaseNumberSearch(event.target.value)}
+                                                    onKeyDown={(event) => {
+                                                        if (event.key === "Enter") {
+                                                            const nextFilter = caseNumberSearch.trim();
+                                                            if (nextFilter === appliedCaseNumberSearch) void fetchInventories();
+                                                            else setAppliedCaseNumberSearch(nextFilter);
+                                                        }
+                                                    }}
+                                                    disabled={loadingInventories || submitting}
+                                                    className={`${inputClass} pl-8`}
+                                                    placeholder="Enter existing case number..."
+                                                    maxLength={100}
+                                                    autoComplete="off"
+                                                />
+                                            </div>
+                                            <p className="mt-1 text-[10px] text-gray-400">Partial match supported. Press Enter or Search Inventory.</p>
                                         </div>
                                     )}
 
@@ -1774,11 +1892,12 @@ export default function InventoryInternalTransferPage() {
                                         onClick={() => {
                                             if (processMode === "change-carton-number") {
                                                 const nextFilter = cartonNumberSearch.trim();
-                                                if (nextFilter === appliedCartonNumberSearch) {
-                                                    void fetchInventories();
-                                                } else {
-                                                    setAppliedCartonNumberSearch(nextFilter);
-                                                }
+                                                if (nextFilter === appliedCartonNumberSearch) void fetchInventories();
+                                                else setAppliedCartonNumberSearch(nextFilter);
+                                            } else if (processMode === "change-case-number") {
+                                                const nextFilter = caseNumberSearch.trim();
+                                                if (nextFilter === appliedCaseNumberSearch) void fetchInventories();
+                                                else setAppliedCaseNumberSearch(nextFilter);
                                             } else {
                                                 void fetchInventories();
                                             }
@@ -1813,7 +1932,7 @@ export default function InventoryInternalTransferPage() {
 
                                             const open = processMode === "internal-transfer" && expandedId === id;
 
-                                            const selected = processMode === "change-carton-number"
+                                            const selected = processMode !== "internal-transfer"
                                                 ? selectedCartonInventories.has(id)
                                                 : selectedTransferInventories.has(id);
 
@@ -1869,7 +1988,7 @@ export default function InventoryInternalTransferPage() {
                                                                 />
                                                             </label>
                                                         )}
-                                                        {processMode === "change-carton-number" && (
+                                                        {processMode !== "internal-transfer" && (
                                                             <label
                                                                 className="flex shrink-0 cursor-pointer items-center border-r border-gray-100 px-3 hover:bg-emerald-50"
                                                                 title={`Select inventory #${id}`}
@@ -1980,7 +2099,7 @@ export default function InventoryInternalTransferPage() {
 
                                                                 <div className="mt-1 pl-6 text-[11px] text-gray-400">
 
-                                                                    Lot {text(inventory.lot_number)} · Pallet {text(inventory.pallet)} · Carton {text(inventory.carton_number)}
+                                                                    Lot {text(inventory.lot_number)} · Pallet {text(inventory.pallet)} · Carton {text(inventory.carton_number)} · Case {text(inventory.case_number)}
 
                                                                 </div>
 
@@ -2269,7 +2388,7 @@ export default function InventoryInternalTransferPage() {
                                 <div className="border-b border-gray-200 px-4 py-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <div>
-                                            <h2 className="text-sm font-semibold text-gray-900">Change Carton Number</h2>
+                                            <h2 className="text-sm font-semibold text-gray-900">{processMode === "change-carton-number" ? "Change Carton Number" : "Change Case Number"}</h2>
                                             <p className="mt-1 text-xs text-gray-500">
                                                 {selectedCartonInventories.size} inventory record(s) selected
                                             </p>
@@ -2289,29 +2408,30 @@ export default function InventoryInternalTransferPage() {
 
                                 <div className="space-y-4 p-4">
                                     <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                                        Only the carton number will change. Warehouse, location, division, owner, QA status, pallet, lot, and quantities will remain unchanged.
+                                        {processMode === "change-carton-number"
+                                            ? "Only the carton number will change. Warehouse, location, division, owner, QA status, pallet, case number, lot, and quantities will remain unchanged."
+                                            : "Only the case number will change. Warehouse, location, division, owner, QA status, pallet, carton number, lot, and quantities will remain unchanged."}
                                     </div>
 
                                     <div>
-                                        <label htmlFor="to-carton-number" className="field">Destination Carton Number <span className="text-red-600">*</span></label>
-                                        <input
-                                            id="to-carton-number"
-                                            type="text"
-                                            value={toCartonNumber}
-                                            onChange={(event) => setToCartonNumber(event.target.value)}
-                                            maxLength={100}
-                                            disabled={submitting}
-                                            autoComplete="off"
-                                            className={inputClass}
-                                            placeholder="Enter destination carton number"
-                                        />
+                                        {processMode === "change-carton-number" ? (
+                                            <>
+                                                <label htmlFor="to-carton-number" className="field">Destination Carton Number <span className="text-red-600">*</span></label>
+                                                <input id="to-carton-number" type="text" value={toCartonNumber} onChange={(event) => setToCartonNumber(event.target.value)} maxLength={100} disabled={submitting} autoComplete="off" className={inputClass} placeholder="Enter destination carton number" />
+                                            </>
+                                        ) : (
+                                            <>
+                                                <label htmlFor="to-case-number" className="field">Destination Case Number <span className="text-red-600">*</span></label>
+                                                <input id="to-case-number" type="text" value={toCaseNumber} onChange={(event) => setToCaseNumber(event.target.value)} maxLength={100} disabled={submitting} autoComplete="off" className={inputClass} placeholder="Enter destination case number" />
+                                            </>
+                                        )}
                                         <p className="mt-1 text-[10px] text-gray-400">Maximum 100 characters.</p>
                                     </div>
 
                                     <div>
-                                        <label htmlFor="carton-change-reason" className="field">Reason <span className="text-red-600">*</span></label>
+                                        <label htmlFor="inventory-change-reason" className="field">Reason <span className="text-red-600">*</span></label>
                                         <textarea
-                                            id="carton-change-reason"
+                                            id="inventory-change-reason"
                                             value={reason}
                                             onChange={(event) => setReason(event.target.value)}
                                             rows={3}
@@ -2319,14 +2439,19 @@ export default function InventoryInternalTransferPage() {
                                             disabled={submitting}
                                             required
                                             className={`${inputClass} h-auto resize-y py-2`}
-                                            placeholder="Explain why the carton number is changing..."
+                                            placeholder={processMode === "change-carton-number" ? "Explain why the carton number is changing..." : "Explain why the case number is changing..."}
                                         />
                                         <div className="mt-1 flex justify-end text-[10px] text-gray-400">{reason.length}/255</div>
                                     </div>
 
-                                    {sameCartonSelectionCount > 0 && (
+                                    {processMode === "change-carton-number" && sameCartonSelectionCount > 0 && (
                                         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">
                                             {sameCartonSelectionCount} selected inventory record(s) already have this carton number. Choose another number or deselect them.
+                                        </div>
+                                    )}
+                                    {processMode === "change-case-number" && sameCaseSelectionCount > 0 && (
+                                        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">
+                                            {sameCaseSelectionCount} selected inventory record(s) already have this case number. Choose another number or deselect them.
                                         </div>
                                     )}
                                     {selectedCartonInventories.size > 500 && (
@@ -2350,7 +2475,9 @@ export default function InventoryInternalTransferPage() {
                                                         <div className="min-w-0">
                                                             <div className="truncate font-semibold text-gray-800">{inventory.item_code || "-"}</div>
                                                             <div className="mt-0.5 truncate text-[10px] text-gray-500">ID {id} · {inventory.whs_code} / {inventory.location}</div>
-                                                            <div className="mt-0.5 truncate text-[10px] text-gray-400">Carton: {text(inventory.carton_number)}</div>
+                                                            <div className="mt-0.5 truncate text-[10px] text-gray-400">
+                                                                {processMode === "change-carton-number" ? `Carton: ${text(inventory.carton_number)}` : `Case: ${text(inventory.case_number)}`}
+                                                            </div>
                                                         </div>
                                                         <button
                                                             type="button"
@@ -2370,12 +2497,16 @@ export default function InventoryInternalTransferPage() {
                                     <div className="border-t border-gray-200 pt-4">
                                         <button
                                             type="button"
-                                            onClick={() => void submitChangeCartonNumber()}
-                                            disabled={!canSubmitCartonChange}
+                                            onClick={() => void (processMode === "change-carton-number" ? submitChangeCartonNumber() : submitChangeCaseNumber())}
+                                            disabled={processMode === "change-carton-number" ? !canSubmitCartonChange : !canSubmitCaseChange}
                                             className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             {submitting && <Spinner />}
-                                            {submitting ? "Updating carton number..." : `Change carton for ${selectedCartonInventories.size} record(s)`}
+                                            {submitting
+                                                ? processMode === "change-carton-number" ? "Updating carton number..." : "Updating case number..."
+                                                : processMode === "change-carton-number"
+                                                    ? `Change carton for ${selectedCartonInventories.size} record(s)`
+                                                    : `Change case for ${selectedCartonInventories.size} record(s)`}
                                         </button>
                                     </div>
                                 </div>
