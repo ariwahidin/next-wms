@@ -177,7 +177,7 @@ export default function ItemFormTable({
   };
 
   useEffect(() => {
-    fetchData();
+    if (headerForm.owner_code) fetchData();
   }, [headerForm.owner_code]);
 
   // Handle modal untuk add items
@@ -267,77 +267,6 @@ export default function ItemFormTable({
 
     setIsModalOpen(false);
   };
-
-  // const handleChange = (
-  //   id: number,
-  //   field: keyof ItemFormProps,
-  //   value: string | number
-  // ) => {
-  //   console.log("ID:", id);
-  //   console.log("Field:", field);
-  //   console.log("Value:", value);
-
-  //   setMuatan((prev) =>
-  //     prev.map((m) =>
-  //       m.ID === id
-  //         ? {
-  //           ...m,
-  //           [field]:
-  //             field === "quantity"
-  //               ? value === "" ? "" : Number(value)
-  //               : value,
-  //         }
-  //         : m
-  //     )
-  //   );
-
-  //   setFilteredMuatan((prev) =>
-  //     prev.map((m) =>
-  //       m.ID === id
-  //         ? {
-  //           ...m,
-  //           [field]:
-  //             field === "quantity"
-  //               ? value === "" ? "" : Number(value)
-  //               : value,
-  //         }
-  //         : m
-  //     )
-  //   );
-
-
-  // };
-
-  // const handleChange = (
-  //   id: number,
-  //   field: keyof ItemFormProps,
-  //   value: string | number
-  // ) => {
-  //   const applyUpdate = (m: ItemFormProps) => {
-  //     if (field === "quantity") {
-  //       const rawQty = value === "" ? "" : Number(value);
-  //       const qty = rawQty === "" ? "" : Math.floor(rawQty as number);
-
-  //       let nextSerials = m.serial_numbers ?? [];
-  //       if (m.is_serial && typeof qty === "number" && nextSerials.length > qty) {
-  //         const removed = nextSerials.length - qty;
-  //         nextSerials = nextSerials.slice(0, qty);
-  //         eventBus.emit("showAlert", {
-  //           title: "Perhatian",
-  //           description: `${removed} serial number dihapus karena qty diubah`,
-  //           type: "info",
-  //         });
-  //       }
-
-  //       return { ...m, quantity: qty, serial_numbers: nextSerials };
-  //     }
-
-  //     return { ...m, [field]: value };
-  //   };
-
-  //   setMuatan((prev) => prev.map((m) => (m.ID === id ? applyUpdate(m) : m)));
-  //   setFilteredMuatan((prev) => prev.map((m) => (m.ID === id ? applyUpdate(m) : m)));
-  // };
 
   const handleChange = (
     id: number,

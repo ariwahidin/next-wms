@@ -53,6 +53,21 @@ export default function ProductForm({
   const [weight, setWeight] = useState<number | "">("");
   const [qtyPerCarton, setQtyPerCarton] = useState<number | "">("");
   const [user_def1, setUser_def1] = useState("");
+
+  // Additional product fields
+  const [itemCode2, setItemCode2] = useState("");
+  const [itemCode3, setItemCode3] = useState("");
+  const [pcsPerBox, setPcsPerBox] = useState<number | "">("");
+  const [pcsPerDozen, setPcsPerDozen] = useState<number | "">("");
+  const [pcsPerSet, setPcsPerSet] = useState<number | "">("");
+  const [pcsPerPack, setPcsPerPack] = useState<number | "">("");
+  const [pcsPerCase, setPcsPerCase] = useState<number | "">("");
+  const [pcsPerGross, setPcsPerGross] = useState<number | "">("");
+  const [cbmPerCarton, setCbmPerCarton] = useState<number | "">("");
+  const [cbmPerPcs, setCbmPerPcs] = useState<number | "">("");
+  const [tonagePerCarton, setTonagePerCarton] = useState<number | "">("");
+  const [tonagePerPcs, setTonagePerPcs] = useState<number | "">("");
+
   const [color, setColor] = useState("");
   const [categoryCode, setCategoryCode] = useState("");
   const [groupCode, setGroupCode] = useState("");
@@ -150,6 +165,19 @@ export default function ProductForm({
     setCategoryCode(editData.category || "");
     setUser_def1(editData.user_def1 || "");
 
+    setItemCode2(editData.item_code2 || "");
+    setItemCode3(editData.item_code3 || "");
+    setPcsPerBox(typeof editData.pcs_per_box === "number" ? editData.pcs_per_box : "");
+    setPcsPerDozen(typeof editData.pcs_per_dozen === "number" ? editData.pcs_per_dozen : "");
+    setPcsPerSet(typeof editData.pcs_per_set === "number" ? editData.pcs_per_set : "");
+    setPcsPerPack(typeof editData.pcs_per_pack === "number" ? editData.pcs_per_pack : "");
+    setPcsPerCase(typeof editData.pcs_per_case === "number" ? editData.pcs_per_case : "");
+    setPcsPerGross(typeof editData.pcs_per_gross === "number" ? editData.pcs_per_gross : "");
+    setCbmPerCarton(typeof editData.cbm_per_carton === "number" ? editData.cbm_per_carton : "");
+    setCbmPerPcs(typeof editData.cbm_per_pcs === "number" ? editData.cbm_per_pcs : "");
+    setTonagePerCarton(typeof editData.tonnage_per_carton === "number" ? editData.tonnage_per_carton : "");
+    setTonagePerPcs(typeof editData.tonnage_per_pcs === "number" ? editData.tonnage_per_pcs : "");
+
     const pick = (val?: string): Option => (val === "Y" ? yesNo[0] : yesNo[1]);
     setSelectedSerial(pick(editData.has_serial));
     setSelectedWaranty(pick(editData.has_waranty));
@@ -201,6 +229,18 @@ export default function ProductForm({
     setSelectedAdaptor(yesNo[1]);
     setSelectedManualBook(yesNo[1]);
     setUser_def1("");
+    setItemCode2("");
+    setItemCode3("");
+    setPcsPerBox("");
+    setPcsPerDozen("");
+    setPcsPerSet("");
+    setPcsPerPack("");
+    setPcsPerCase("");
+    setPcsPerGross("");
+    setCbmPerCarton("");
+    setCbmPerPcs("");
+    setTonagePerCarton("");
+    setTonagePerPcs("");
     submittingRef.current = false;
     setSubmitting(false);
   };
@@ -251,6 +291,18 @@ export default function ProductForm({
         owner_code: selectedOwner.value,
         qty_per_carton: qtyPerCarton === "" ? 0 : Number(qtyPerCarton),
         user_def1: user_def1,
+        item_code2: itemCode2.toUpperCase(),
+        item_code3: itemCode3.toUpperCase(),
+        pcs_per_box: pcsPerBox === "" ? 0 : Number(pcsPerBox),
+        pcs_per_dozen: pcsPerDozen === "" ? 0 : Number(pcsPerDozen),
+        pcs_per_set: pcsPerSet === "" ? 0 : Number(pcsPerSet),
+        pcs_per_pack: pcsPerPack === "" ? 0 : Number(pcsPerPack),
+        pcs_per_case: pcsPerCase === "" ? 0 : Number(pcsPerCase),
+        pcs_per_gross: pcsPerGross === "" ? 0 : Number(pcsPerGross),
+        cbm_per_carton: cbmPerCarton === "" ? 0 : Number(cbmPerCarton),
+        cbm_per_pcs: cbmPerPcs === "" ? 0 : Number(cbmPerPcs),
+        tonage_per_carton: tonagePerCarton === "" ? 0 : Number(tonagePerCarton),
+        tonage_per_pcs: tonagePerPcs === "" ? 0 : Number(tonagePerPcs),
       };
 
       let response;
@@ -301,7 +353,7 @@ export default function ProductForm({
         setOpen(next);
       }}
     >
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0 bg-white">
         <DialogHeader className="px-6 pt-6">
           <DialogTitle>{editData ? "Edit Item" : "Add New Item"}</DialogTitle>
         </DialogHeader>
@@ -584,6 +636,49 @@ export default function ProductForm({
                   onChange={(opt: any) => setSelectedManualBook(opt)}
                 />
               </div>
+
+              {/* Additional Product Fields */}
+              <div className="md:col-span-2 mt-2 border-t pt-4">
+                <h3 className="text-sm font-semibold text-slate-700">Additional Product Information</h3>
+                <p className="text-xs text-muted-foreground mt-1">Optional alternate item codes, unit quantities, CBM and tonnage conversions.</p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="item-code2">Item Code 2</Label>
+                <Input id="item-code2" value={itemCode2} onChange={(e) => setItemCode2(e.target.value.toUpperCase())} placeholder="Entry Item Code 2" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="item-code3">Item Code 3</Label>
+                <Input id="item-code3" value={itemCode3} onChange={(e) => setItemCode3(e.target.value.toUpperCase())} placeholder="Entry Item Code 3" />
+              </div>
+
+              {[
+                { id: "pcs-per-box", label: "Pcs Per Box", value: pcsPerBox, setter: setPcsPerBox },
+                { id: "pcs-per-dozen", label: "Pcs Per Dozen", value: pcsPerDozen, setter: setPcsPerDozen },
+                { id: "pcs-per-set", label: "Pcs Per Set", value: pcsPerSet, setter: setPcsPerSet },
+                { id: "pcs-per-pack", label: "Pcs Per Pack", value: pcsPerPack, setter: setPcsPerPack },
+                { id: "pcs-per-case", label: "Pcs Per Case", value: pcsPerCase, setter: setPcsPerCase },
+                { id: "pcs-per-gross", label: "Pcs Per Gross", value: pcsPerGross, setter: setPcsPerGross },
+                { id: "cbm-per-carton", label: "CBM Per Carton", value: cbmPerCarton, setter: setCbmPerCarton },
+                { id: "cbm-per-pcs", label: "CBM Per Pcs", value: cbmPerPcs, setter: setCbmPerPcs },
+                { id: "tonage-per-carton", label: "Tonage Per Carton", value: tonagePerCarton, setter: setTonagePerCarton },
+                { id: "tonage-per-pcs", label: "Tonage Per Pcs", value: tonagePerPcs, setter: setTonagePerPcs },
+              ].map((field) => (
+                <div className="flex flex-col gap-2" key={field.id}>
+                  <Label htmlFor={field.id}>{field.label}</Label>
+                  <Input
+                    id={field.id}
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    value={field.value}
+                    onWheel={(e) => e.currentTarget.blur()}
+                    onChange={(e) => field.setter(e.target.value === "" ? "" : Number(e.target.value))}
+                    placeholder="0"
+                  />
+                </div>
+              ))}
 
               {/* User Def 1 */}
               <div className="flex flex-col gap-2">

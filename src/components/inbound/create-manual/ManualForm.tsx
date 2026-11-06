@@ -50,7 +50,7 @@ export default function ManualForm() {
     driver: "",
     container: "",
     status: "draft",
-    owner_code: "YUWELL",
+    owner_code: "",
     whs_code: "WH-B",
     type: "NORMAL",
     mode: "create",

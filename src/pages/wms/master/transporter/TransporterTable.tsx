@@ -7,12 +7,13 @@ import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Download, Loader2, Pencil, Trash2, Upload } from "lucide-react";
 import useSWR, { mutate } from "swr";
 import { ChangeEvent, useCallback, useState } from "react";
 import styles from "./TransporterTable.module.css";
 import { toast } from "sonner";
 import { utils, writeFile } from "xlsx";
+import router from "next/router";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -161,6 +162,15 @@ const TransporterTable = ({ setEditData }) => {
     <div style={{ width: "100%", height: "510px" }}>
       <div className="flex items-center justify-between pb-4">
         <div className="justify-self-start">
+          <Button
+            className="h-8 mr-2 bg-green-500 mb-4 text-slate-950 hover:bg-green-600 outline-green-600"
+            onClick={() => {
+              router.push("/wms/master/transporter/import-excel");
+            }}
+          >
+            <Upload className="mr-2 w-4" />
+            Import Excel
+          </Button>
           <Button
             className="bg-blue-500 text-white hover:bg-blue-600 h-8"
             onClick={handleExport}
