@@ -1,4 +1,4 @@
-name: WMS Frontend CI/CD
+name: WMS PILOT Frontend CI/CD
 
 on:
   push:
@@ -279,7 +279,7 @@ jobs:
 
               try {
                 $response = Invoke-WebRequest `
-                  -Uri "http://127.0.0.1:4107/" `
+                  -Uri "http://127.0.0.1:4109/" `
                   -UseBasicParsing `
                   -TimeoutSec 5
 
