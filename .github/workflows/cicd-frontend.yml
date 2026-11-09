@@ -1,0 +1,349 @@
+name: WMS Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - dev-pilot
+  pull_request:
+    branches:
+      - dev-pilot
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Next.js Standalone
+    runs-on: windows-latest
+    environment: dev-pilot-env
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+          NEXT_PUBLIC_WS_URL: ${{ vars.NEXT_PUBLIC_WS_URL }}
+          NEXT_PUBLIC_AUTH_COOKIE_NAME: ${{ vars.NEXT_PUBLIC_AUTH_COOKIE_NAME }}
+        run: npm run build
+
+      - name: Package and validate standalone output
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $standalone = Join-Path $PWD ".next\standalone"
+          $stage = Join-Path $PWD "frontend-package"
+          $zip = Join-Path $PWD "frontend-standalone.zip"
+
+          if (!(Test-Path "$standalone\server.js")) {
+            throw "Standalone server.js tidak ditemukan."
+          }
+
+          if (!(Test-Path "$standalone\node_modules\next")) {
+            throw "Dependensi next tidak ditemukan di output standalone. Periksa next.config.ts dan hasil build."
+          }
+
+          if (Test-Path $stage) {
+            Remove-Item $stage -Recurse -Force
+          }
+
+          if (Test-Path $zip) {
+            Remove-Item $zip -Force
+          }
+
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+
+          # Salin seluruh isi standalone beserta subfolder.
+          Get-ChildItem $standalone -Force |
+            ForEach-Object {
+              Copy-Item $_.FullName -Destination $stage -Recurse -Force
+            }
+
+          # Sertakan aset statis Next.js.
+          $staticSource = Join-Path $PWD ".next\static"
+          $staticTarget = Join-Path $stage ".next\static"
+
+          if (!(Test-Path $staticSource)) {
+            throw "Folder .next/static tidak ditemukan."
+          }
+
+          New-Item -ItemType Directory -Force -Path $staticTarget | Out-Null
+
+          Get-ChildItem $staticSource -Force |
+            ForEach-Object {
+              Copy-Item $_.FullName -Destination $staticTarget -Recurse -Force
+            }
+
+          # Sertakan public bila tersedia.
+          if (Test-Path (Join-Path $PWD "public")) {
+            Copy-Item (Join-Path $PWD "public") `
+              -Destination (Join-Path $stage "public") `
+              -Recurse -Force
+          }
+
+          # Validasi paket sebelum ZIP dibuat.
+          if (!(Test-Path "$stage\server.js")) {
+            throw "Paket tidak berisi server.js."
+          }
+
+          if (!(Test-Path "$stage\node_modules\next")) {
+            throw "Paket standalone tidak berisi node_modules\next."
+          }
+
+          if (!(Test-Path "$stage\.next\static")) {
+            throw "Paket tidak berisi aset .next/static."
+          }
+
+          # Gunakan ZIP API .NET agar seluruh isi folder,
+          # termasuk file tersembunyi, dapat diarsipkan.
+          Add-Type -AssemblyName System.IO.Compression
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+          [System.IO.Compression.ZipFile]::CreateFromDirectory(
+            $stage,
+            $zip,
+            [System.IO.Compression.CompressionLevel]::Optimal,
+            $false
+          )
+
+          # Pastikan ZIP dapat dibaca dan berisi entry point serta next.
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
+
+          try {
+            $names = @($archive.Entries | ForEach-Object { $_.FullName })
+
+            if ($names -notcontains "server.js") {
+              throw "ZIP tidak berisi server.js pada root."
+            }
+
+            if (!($names -contains "node_modules/next/package.json")) {
+              throw "ZIP tidak berisi node_modules/next/package.json."
+            }
+          }
+          finally {
+            $archive.Dispose()
+          }
+
+          Write-Host "Standalone package berhasil divalidasi."
+          Write-Host "ZIP: $zip"
+          Write-Host "Ukuran: $((Get-Item $zip).Length) bytes"
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wms-frontend-standalone
+          path: frontend-standalone.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy Frontend to Production
+    needs: build
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev-pilot'
+
+    runs-on: [self-hosted, Windows, X64, fe-dev-pilot]
+
+    steps:
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wms-frontend-standalone
+          path: deploy-package
+
+      - name: Deploy with backup and rollback
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $appDir = "E:\aplikasi\WMS_PILOT\frontend"
+          $backupDir = Join-Path $appDir "backups"
+          $serviceName = "NSSM-WMS-FE-PILOT"
+          $zip = Join-Path $PWD "deploy-package\frontend-standalone.zip"
+          $stage = Join-Path $PWD "frontend-staged"
+          $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+          $backup = Join-Path $backupDir $timestamp
+
+          $protected = @(
+            "action-runner",
+            "backups",
+            "logs",
+            ".env.local",
+            ".env",
+            ".env.production",
+            ".env.production.local"
+          )
+
+          if (!(Test-Path $zip)) {
+            throw "Artifact frontend tidak ditemukan."
+          }
+
+          if (!(Test-Path $appDir)) {
+            throw "Folder aplikasi tidak ditemukan: $appDir"
+          }
+
+          $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+
+          if (!$service) {
+            throw "Service $serviceName belum dibuat."
+          }
+
+          if (Test-Path $stage) {
+            Remove-Item $stage -Recurse -Force
+          }
+
+          New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          New-Item -ItemType Directory -Force -Path $backup | Out-Null
+
+          Expand-Archive -Path $zip -DestinationPath $stage -Force
+
+          # Validasi sebelum service dihentikan atau aplikasi lama dihapus.
+          if (!(Test-Path "$stage\server.js")) {
+            throw "Paket tidak berisi server.js."
+          }
+
+          if (!(Test-Path "$stage\node_modules\next\package.json")) {
+            throw "Paket tidak memiliki dependensi next. Deployment dibatalkan."
+          }
+
+          if (!(Test-Path "$stage\.next\static")) {
+            throw "Paket tidak memiliki .next/static. Deployment dibatalkan."
+          }
+
+          # Backup file aplikasi sebelumnya.
+          Get-ChildItem $appDir -Force |
+            Where-Object { $_.Name -notin $protected } |
+            ForEach-Object {
+              Copy-Item $_.FullName -Destination $backup -Recurse -Force
+            }
+
+          $hadPreviousApp = Test-Path "$backup\server.js"
+
+          try {
+            $service = Get-Service -Name $serviceName
+
+            if ($service.Status -ne "Stopped") {
+              Stop-Service -Name $serviceName -Force
+
+              (Get-Service $serviceName).WaitForStatus(
+                [System.ServiceProcess.ServiceControllerStatus]::Stopped,
+                [TimeSpan]::FromSeconds(45)
+              )
+            }
+
+            # Hapus aplikasi lama, tetapi pertahankan file dan folder lokal.
+            Get-ChildItem $appDir -Force |
+              Where-Object { $_.Name -notin $protected } |
+              ForEach-Object {
+                Remove-Item $_.FullName -Recurse -Force
+              }
+
+            Get-ChildItem $stage -Force |
+              ForEach-Object {
+                Copy-Item $_.FullName -Destination $appDir -Recurse -Force
+              }
+
+            # Pastikan file dan dependensi benar-benar ada di lokasi runtime.
+            if (!(Test-Path "$appDir\server.js")) {
+              throw "server.js tidak ditemukan setelah penyalinan."
+            }
+
+            if (!(Test-Path "$appDir\node_modules\next\package.json")) {
+              throw "Dependensi next tidak ditemukan setelah penyalinan."
+            }
+
+            Start-Service -Name $serviceName
+
+            (Get-Service $serviceName).WaitForStatus(
+              [System.ServiceProcess.ServiceControllerStatus]::Running,
+              [TimeSpan]::FromSeconds(45)
+            )
+
+            $healthy = $false
+
+            for ($i = 0; $i -lt 12; $i++) {
+              Start-Sleep -Seconds 5
+
+              try {
+                $response = Invoke-WebRequest `
+                  -Uri "http://127.0.0.1:4107/" `
+                  -UseBasicParsing `
+                  -TimeoutSec 5
+
+                if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
+                  $healthy = $true
+                  break
+                }
+              }
+              catch {
+                # Coba kembali hingga batas waktu habis.
+              }
+            }
+
+            if (!$healthy) {
+              throw "Frontend tidak merespons HTTP setelah deployment."
+            }
+
+            Write-Host "Deployment frontend berhasil."
+          }
+          catch {
+            $deployError = $_.Exception.Message
+            Write-Host "Deployment gagal: $deployError"
+
+            try {
+              $service = Get-Service -Name $serviceName
+
+              if ($service.Status -ne "Stopped") {
+                Stop-Service -Name $serviceName -Force
+
+                (Get-Service $serviceName).WaitForStatus(
+                  [System.ServiceProcess.ServiceControllerStatus]::Stopped,
+                  [TimeSpan]::FromSeconds(45)
+                )
+              }
+
+              Get-ChildItem $appDir -Force |
+                Where-Object { $_.Name -notin $protected } |
+                ForEach-Object {
+                  Remove-Item $_.FullName -Recurse -Force
+                }
+
+              if ($hadPreviousApp) {
+                Get-ChildItem $backup -Force |
+                  ForEach-Object {
+                    Copy-Item $_.FullName -Destination $appDir -Recurse -Force
+                  }
+
+                Start-Service -Name $serviceName
+
+                (Get-Service $serviceName).WaitForStatus(
+                  [System.ServiceProcess.ServiceControllerStatus]::Running,
+                  [TimeSpan]::FromSeconds(45)
+                )
+
+                Write-Host "Rollback selesai. Backup: $backup"
+              }
+              else {
+                Write-Host "Tidak ada aplikasi sebelumnya untuk dipulihkan."
+              }
+            }
+            catch {
+              Write-Host "Rollback gagal: $($_.Exception.Message)"
+              Write-Host "Periksa backup secara manual: $backup"
+            }
+
+            throw "Deployment gagal: $deployError"
+          }
