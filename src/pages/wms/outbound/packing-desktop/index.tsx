@@ -15,7 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Box, CheckCircle2Icon, List, Loader2, Trash2, Package, Search, Check, Clock3, RefreshCw, ArrowRight } from "lucide-react";
+import { Box, CheckCircle2Icon, List, Loader2, Trash2, Package, Search, Check, Clock3, RefreshCw, ArrowRight, ArrowBigLeftIcon } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -96,6 +96,7 @@ interface OutboundDetail {
 
 interface OutboundHeader {
     shipment_id?: string;
+    status?: string;
     deliv_to?: string;
     deliv_address?: string;
     deliv_city?: string;
@@ -333,7 +334,10 @@ const ToggleSwitch = ({ checked, onChange, labelOff = "Off", labelOn = "On" }: T
 
 const CheckingPage = () => {
     const router = useRouter();
-    const { outbound, carton, master_carton_id } = router.query;
+    // Continue Packing sends `carton_id`; new packing sends `master_carton_id`.
+    // Accept both so the selected carton type is restored when resuming a carton.
+    const { outbound, carton, master_carton_id, carton_id } = router.query;
+    const selectedMasterCartonId = master_carton_id ?? carton_id;
 
     // ── Scan mode ──────────────────────────────────────────────────────────────
     const [isQrMode, setIsQrMode] = useState(false);
@@ -495,6 +499,7 @@ const CheckingPage = () => {
 
                 setOutboundHeader(header ? {
                     shipment_id: header.shipment_id ?? "",
+                    status: header.status ?? "",
                     deliv_to: header.deliv_to ?? "",
                     deliv_address: header.deliv_address ?? header.deliv_to_address ?? "",
                     deliv_city: header.deliv_city ?? header.deliv_to_city ?? "",
@@ -642,6 +647,8 @@ const CheckingPage = () => {
     }, []);
 
     const fetchCartonByOutboundNo = useCallback(async () => {
+        const cartonID = masterCarton?.id ?? null;
+        // const cartonTypeId = container?.master_carton_id ?? container?.carton_id ?? container?.carton?.id;
         try {
             const [r1, r2] = await Promise.all([
                 api.get(`/mobile/outbound/${outboundNo}/cartons`, { withCredentials: true }),
@@ -704,8 +711,12 @@ const CheckingPage = () => {
     }, [outbound, carton]);
 
     useEffect(() => {
-        if (master_carton_id) fetchMasterCartonDetails(master_carton_id as string);
-    }, [master_carton_id]);
+        if (selectedMasterCartonId) {
+            fetchMasterCartonDetails(selectedMasterCartonId as string);
+        } else {
+            setMasterCarton(null);
+        }
+    }, [selectedMasterCartonId, fetchMasterCartonDetails]);
 
     useEffect(() => {
         if (originalListOutboundDetail.length > 0) {
@@ -1250,7 +1261,28 @@ const CheckingPage = () => {
     // ── Render ─────────────────────────────────────────────────────────────────
     return (
         <Layout title="Outbound" subTitle="Outbound Packing Workbench">
+
+
+
+
             <main className="min-h-screen w-full bg-slate-50 p-3 sm:p-4 lg:p-5">
+
+                <div className="flex justify-between items-center mb-4">
+                    <div className="space-x-1">
+                        <Button
+                            variant="outline"
+                            className="bg-black-500 text-black hover:bg-gray-200"
+                            onClick={() => {
+                                router.push("/wms/outbound/packing/data");
+                            }}
+                        >
+                            <ArrowBigLeftIcon className="mr-0" />
+                            Back
+                        </Button>
+
+                    </div>
+                </div>
+
                 <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                         <div className="min-w-0 xl:w-[34%]">
@@ -1378,7 +1410,8 @@ const CheckingPage = () => {
                                 </Select>
                             </div>
                             <p className="mt-2 text-[11px] text-slate-500">{desktopCartonFilter === "active" ? `Showing active carton: ${packCtnNo || "not selected"}` : "Showing packing records from all cartons"}</p>
-                            {invPolicy?.require_packing_scan && <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/60 p-3"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-wide text-blue-600">Active Container</p><p className="mt-1 text-lg font-bold text-slate-900">CTN #{packCtnNo || "-"}</p><p className="text-xs text-slate-500">{masterCarton?.display_name || "Carton type not selected"}</p></div><div className="flex flex-wrap gap-1.5"><Button size="sm" className="h-8 bg-blue-600" disabled={isCreatingCarton} onClick={handleNewCarton}><Box size={14} className="mr-1" />New</Button><Button size="sm" variant="outline" className="h-8" onClick={() => setShowListContainerDialog(true)}><List size={14} className="mr-1" />List</Button><Button size="sm" variant="outline" className="h-8" onClick={() => setShowEditCartonDialog(true)}>Change Type</Button></div></div></div>}
+                            {invPolicy?.require_packing_scan && <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/60 p-3"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-wide text-blue-600">Active Container</p><p className="mt-1 text-lg font-bold text-slate-900">CTN #{packCtnNo || "-"}</p><p className="text-xs text-slate-500">{masterCarton?.display_name || "Carton type not selected"}</p></div><div className="flex flex-wrap gap-1.5">
+                                <Button size="sm" className="h-8 bg-blue-600" disabled={isCreatingCarton || outboundHeader.status !== "packing"} onClick={handleNewCarton}><Box size={14} className="mr-1" />New</Button><Button size="sm" variant="outline" className="h-8" onClick={() => setShowListContainerDialog(true)}><List size={14} className="mr-1" />List</Button><Button size="sm" variant="outline" className="h-8" onClick={() => setShowEditCartonDialog(true)}>Change Type</Button></div></div></div>}
                         </div>
                         <div className="max-h-[calc(100vh-390px)] min-h-[360px] overflow-y-auto p-3">
                             {isLoadingDesktopResults ? <div className="flex justify-center py-12 text-sm text-slate-500"><Loader2 size={16} className="mr-2 animate-spin" />Loading packing results...</div> : (() => {
@@ -1387,502 +1420,508 @@ const CheckingPage = () => {
                                     ? desktopScannedItems
                                     : desktopScannedItems.filter((item) => (item.pack_ctn_no ?? "") === (packCtnNo ?? ""));
                                 const rows = cartonRows.filter((item) => !term || [item.item_code, item.barcode, item.barcode_data_scan, item.serial_number, item.pack_ctn_no, item.lot_number, item.location_scan, item.package_type].some((value) => String(value ?? "").toLowerCase().includes(term)));
-                                return rows.length ? <div className="space-y-2">{rows.map((item, index) => <article key={item.id ?? `${item.outbound_detail_id}-${index}`} className="rounded-lg border border-slate-200 p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-slate-900">{item.item_code || "-"}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${item.status === "in stock" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>{item.status || "processed"}</span></div><div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-slate-500 sm:grid-cols-2"><p>Barcode: {item.barcode_data_scan || item.barcode || "-"}</p><p>Serial: {item.serial_number || "-"}</p><p>Carton: {item.pack_ctn_no || "-"}</p><p>Location: {item.location_scan || item.location || "-"}</p><p>Quantity: {item.qty_data_scan ?? item.quantity} {item.uom_scan || ""}</p><p>Package: {item.package_qty ?? "-"} {item.package_type || ""}</p><p>Lot: {item.lot_number || "-"}</p></div></div>{item.status === "pending" && item.id && <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-red-500 hover:bg-red-50" disabled={isSubmit} onClick={async () => { await handleRemoveItem(item.id!, item.outbound_detail_id); await fetchAllDesktopScannedItems(); }}><Trash2 size={15} /></Button>}</div></article>)}</div> : <div className="flex flex-col items-center justify-center py-14 text-center"><Clock3 className="h-9 w-9 text-slate-300" /><p className="mt-3 text-sm font-medium text-slate-600">No packing results yet</p><p className="mt-1 max-w-xs text-xs text-slate-400">Select an outbound item from the left panel to start processing.</p></div>;
+                                return rows.length ? <div className="space-y-2">{rows.map((item, index) => <article key={item.id ?? `${item.outbound_detail_id}-${index}`} className="rounded-lg border border-slate-200 p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-slate-900">{item.item_code || "-"}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${item.status === "in stock" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>{outboundHeader?.status || "processed"}</span></div><div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-slate-500 sm:grid-cols-2"><p>Barcode: {item.barcode_data_scan || item.barcode || "-"}</p><p>Serial: {item.serial_number || "-"}</p><p>Carton: {item.pack_ctn_no || "-"}</p><p>Location: {item.location_scan || item.location || "-"}</p><p>Quantity: {item.qty_data_scan ?? item.quantity} {item.uom_scan || ""}</p><p>Package: {item.package_qty ?? "-"} {item.package_type || ""}</p><p>Lot: {item.lot_number || "-"}</p></div></div>{outboundHeader?.status === "packing" && item.id && <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-red-500 hover:bg-red-50" disabled={isSubmit} onClick={async () => { await handleRemoveItem(item.id!, item.outbound_detail_id); await fetchAllDesktopScannedItems(); }}><Trash2 size={15} /></Button>}</div></article>)}</div> : <div className="flex flex-col items-center justify-center py-14 text-center"><Clock3 className="h-9 w-9 text-slate-300" /><p className="mt-3 text-sm font-medium text-slate-600">No packing results yet</p><p className="mt-1 max-w-xs text-xs text-slate-400">Select an outbound item from the left panel to start processing.</p></div>;
                             })()}
                         </div>
-                        {invPolicy?.require_packing_scan && <div className="border-t border-slate-200 bg-slate-50 p-3"><div className="grid grid-cols-2 gap-2"><Button variant="outline" className="w-full" onClick={() => { setContainerWeight(""); setShowSealContainerDialog(true); }}><Box size={15} className="mr-2" />Seal Container</Button><Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => setShowConfirmPackingDialog(true)}><CheckCircle2Icon size={15} className="mr-2" />Confirm Packing</Button></div></div>}
+                        {invPolicy?.require_packing_scan && outboundHeader?.status === "packing" && <div className="border-t border-slate-200 bg-slate-50 p-3"><div className="grid grid-cols-2 gap-2"><Button variant="outline" className="w-full" onClick={() => { setContainerWeight(""); setShowSealContainerDialog(true); }}><Box size={15} className="mr-2" />Seal Container</Button><Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => setShowConfirmPackingDialog(true)}><CheckCircle2Icon size={15} className="mr-2" />Confirm Packing</Button></div></div>}
                     </section>
                 </div>
             </main>
 
-                                <Dialog open={showConfirmPackingDialog} onOpenChange={setShowConfirmPackingDialog}>
-                                    <DialogContent className="bg-white sm:max-w-md">
-                                        <DialogHeader>
-                                            <DialogTitle>Confirm Packing</DialogTitle>
-                                        </DialogHeader>
-                                        <div className="space-y-3">
-                                            {/* Summary validasi */}
-                                            {originalListOutboundDetail.some((item) => (item.scan_qty ?? 0) < item.quantity) ? (
-                                                <div className="space-y-2">
-                                                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                                                        <p className="text-sm font-semibold text-red-700 mb-1">⚠️ Incomplete Items</p>
-                                                        <p className="text-sm text-red-600">
-                                                            Some items have not been fully scanned. Please complete scanning before confirming.
-                                                        </p>
-                                                    </div>
-                                                    <div className="max-h-48 overflow-y-auto space-y-1">
-                                                        {originalListOutboundDetail
-                                                            .filter((item) => (item.scan_qty ?? 0) < item.quantity)
-                                                            .map((item, idx) => (
-                                                                <div key={idx} className="flex justify-between items-center border rounded px-3 py-2 text-xs font-mono bg-gray-50">
-                                                                    <div className="space-y-0.5">
-                                                                        <div className="font-semibold text-gray-800">{item.item_code}</div>
-                                                                        <div className="text-gray-500 truncate max-w-[180px]">{item.item_name}</div>
-                                                                    </div>
-                                                                    <div className="text-right">
-                                                                        <span className="text-orange-600 font-bold">{item.scan_qty ?? 0}</span>
-                                                                        <span className="text-gray-400"> / </span>
-                                                                        <span className="text-gray-700 font-semibold">{item.quantity}</span>
-                                                                        <div className="text-gray-400">{item.uom}</div>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-3">
-                                                    <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                                                        <p className="text-sm font-semibold text-green-700 mb-1">✓ All items complete</p>
-                                                        <p className="text-sm text-green-600">All items have been fully scanned and ready to confirm.</p>
-                                                    </div>
-                                                    <div className="border rounded-md p-3 space-y-1 text-sm">
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-600">Outbound No:</span>
-                                                            <span className="font-semibold">{outboundNo}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-600">Total Items:</span>
-                                                            <span className="font-semibold">{originalListOutboundDetail.length}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-600">Total Qty:</span>
-                                                            <span className="font-semibold text-green-600">
-                                                                {originalListOutboundDetail.reduce((t, i) => t + (i.scan_qty ?? 0), 0)}
-                                                                {" / "}
-                                                                {originalListOutboundDetail.reduce((t, i) => t + i.quantity, 0)}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-xs text-gray-500 italic">
-                                                        This action will finalize the packing for this outbound. Please verify before confirming.
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <DialogFooter className="flex gap-2">
-                                            <Button
-                                                variant="outline"
-                                                disabled={isConfirmingPacking}
-                                                onClick={() => setShowConfirmPackingDialog(false)}
-                                            >
-                                                Cancel
-                                            </Button>
-                                            <Button
-                                                onClick={handleConfirmPacking}
-                                                disabled={
-                                                    isConfirmingPacking ||
-                                                    originalListOutboundDetail.some((item) => (item.scan_qty ?? 0) < item.quantity)
-                                                }
-                                                className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                                            >
-                                                {isConfirmingPacking ? (
-                                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Confirming...</>
-                                                ) : (
-                                                    "Confirm Packing"
-                                                )}
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-
-                        <Dialog open={showSealContainerDialog} onOpenChange={setShowSealContainerDialog}>
-                            <DialogContent className="bg-white sm:max-w-md">
-                                <DialogHeader><DialogTitle>Seal Container</DialogTitle></DialogHeader>
-                                <div className="space-y-4">
-                                    <div className="bg-blue-50 border border-blue-200 rounded-md p-3 space-y-1 text-sm">
-                                        <div className="flex justify-between"><span className="text-gray-600">Outbound No:</span><span className="font-semibold">{outboundNo}</span></div>
-                                        <div className="flex justify-between"><span className="text-gray-600">Packing No:</span><span className="font-semibold">{packingNo}</span></div>
-                                        <div className="flex justify-between"><span className="text-gray-600">Container No:</span><span className="font-semibold">{packCtnNo}</span></div>
-                                        {masterCarton && <div className="flex justify-between"><span className="text-gray-600">Carton Type:</span><span className="font-semibold">{masterCarton.carton_name}</span></div>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label htmlFor="container_weight" className="text-sm font-medium text-gray-700">
-                                            Container Weight (kg) <span className="text-red-500">*</span>
-                                        </label>
-                                        <Input id="container_weight" type="number" step="0.01" min="0" placeholder="Enter weight in kg..." value={containerWeight} onChange={(e) => setContainerWeight(e.target.value)} autoFocus />
-                                        {masterCarton && <p className="text-xs text-gray-500">Max weight: {masterCarton.max_weight} kg | Tare weight: {masterCarton.tare_weight} kg</p>}
-                                    </div>
+            <Dialog open={showConfirmPackingDialog} onOpenChange={setShowConfirmPackingDialog}>
+                <DialogContent className="bg-white sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Confirm Packing</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                        {/* Summary validasi */}
+                        {originalListOutboundDetail.some((item) => (item.scan_qty ?? 0) < item.quantity) ? (
+                            <div className="space-y-2">
+                                <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                                    <p className="text-sm font-semibold text-red-700 mb-1">⚠️ Incomplete Items</p>
+                                    <p className="text-sm text-red-600">
+                                        Some items have not been fully scanned. Please complete scanning before confirming.
+                                    </p>
                                 </div>
-                                <DialogFooter className="flex gap-2">
-                                    <Button variant="outline" onClick={() => { setShowSealContainerDialog(false); setContainerWeight(""); }}>Cancel</Button>
-                                    <Button onClick={handleConfirmSeal} className="bg-green-600 hover:bg-green-700">Next</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-
-                        {/* ── Seal Container Confirmation ── */}
-                        <Dialog open={showConfirmSealContainer} onOpenChange={setShowConfirmSealContainer}>
-                            <DialogContent className="bg-white sm:max-w-md">
-                                <DialogHeader><DialogTitle>Confirm Seal Container</DialogTitle></DialogHeader>
-                                <div className="space-y-3">
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                                        <p className="text-sm font-semibold text-gray-800 mb-1">⚠️ Confirmation Required</p>
-                                        <p className="text-sm text-gray-700">Sealing <strong>Container #{packCtnNo}</strong> will prevent adding more items.</p>
-                                    </div>
-                                    <div className="border rounded-md p-3 space-y-1 text-sm">
-                                        <div className="flex justify-between"><span className="text-gray-600">Outbound No:</span><span className="font-medium">{outboundNo}</span></div>
-                                        <div className="flex justify-between"><span className="text-gray-600">Packing No:</span><span className="font-medium">{packingNo}</span></div>
-                                        <div className="flex justify-between"><span className="text-gray-600">Container No:</span><span className="font-medium">{packCtnNo}</span></div>
-                                        <div className="flex justify-between"><span className="text-gray-600">Weight:</span><span className="font-medium text-green-600">{containerWeight} kg</span></div>
-                                        {masterCarton && <div className="flex justify-between"><span className="text-gray-600">Carton Type:</span><span className="font-medium">{masterCarton.carton_name}</span></div>}
-                                    </div>
-                                    <p className="text-xs text-gray-500 italic">Please verify all information before confirming.</p>
-                                </div>
-                                <DialogFooter className="flex gap-2">
-                                    <Button variant="outline" disabled={isSealingContainer} onClick={() => { setShowConfirmSealContainer(false); setShowSealContainerDialog(true); }}>Back</Button>
-                                    <Button onClick={handleSealContainerSubmit} disabled={isSealingContainer} className="bg-green-600 hover:bg-green-700">
-                                        {isSealingContainer ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sealing...</> : "Confirm Seal"}
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-
-                        {/* ── Edit Carton Dialog ── */}
-                        <Dialog open={showEditCartonDialog} onOpenChange={setShowEditCartonDialog}>
-                            <DialogContent className="bg-white sm:max-w-md">
-                                <DialogHeader><DialogTitle>Change Carton Type</DialogTitle></DialogHeader>
-                                <div className="space-y-3">
-                                    <Select value={selectedNewCartonId} onValueChange={setSelectedNewCartonId}>
-                                        <SelectTrigger className="w-full"><SelectValue placeholder="Select new carton type" /></SelectTrigger>
-                                        <SelectContent>
-                                            {masterCartonsList.map((c) => (
-                                                <SelectItem key={c.id} value={c.id.toString()}>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">
-                                                            {c.carton_name}
-                                                            {c.is_default && <span className="ml-2 text-xs text-blue-500">(Default)</span>}
-                                                            {c.id === masterCarton?.id && <span className="ml-2 text-xs text-green-600">(Current)</span>}
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">{c.dimensions} - Max: {c.max_weight}kg</span>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-
-                                    {getSelectedNewCartonDetails() && (
-                                        <Card className="p-3 bg-blue-50 border-blue-200">
-                                            <div className="space-y-2 text-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <Box size={16} className="text-blue-600" />
-                                                    <span className="font-semibold text-blue-900">{getSelectedNewCartonDetails()?.carton_name}</span>
+                                <div className="max-h-48 overflow-y-auto space-y-1">
+                                    {originalListOutboundDetail
+                                        .filter((item) => (item.scan_qty ?? 0) < item.quantity)
+                                        .map((item, idx) => (
+                                            <div key={idx} className="flex justify-between items-center border rounded px-3 py-2 text-xs font-mono bg-gray-50">
+                                                <div className="space-y-0.5">
+                                                    <div className="font-semibold text-gray-800">{item.item_code}</div>
+                                                    <div className="text-gray-500 truncate max-w-[180px]">{item.item_name}</div>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
-                                                    <div><span className="font-medium">Size:</span> {getSelectedNewCartonDetails()?.dimensions}</div>
-                                                    <div><span className="font-medium">Max Weight:</span> {getSelectedNewCartonDetails()?.max_weight}kg</div>
-                                                    <div><span className="font-medium">Volume:</span> {getSelectedNewCartonDetails()?.volume.toLocaleString()} cm³</div>
-                                                    <div><span className="font-medium">Material:</span> {getSelectedNewCartonDetails()?.material}</div>
+                                                <div className="text-right">
+                                                    <span className="text-orange-600 font-bold">{item.scan_qty ?? 0}</span>
+                                                    <span className="text-gray-400"> / </span>
+                                                    <span className="text-gray-700 font-semibold">{item.quantity}</span>
+                                                    <div className="text-gray-400">{item.uom}</div>
                                                 </div>
-                                                {getSelectedNewCartonDetails()?.description && (
-                                                    <p className="text-xs text-gray-600 italic">{getSelectedNewCartonDetails()?.description}</p>
-                                                )}
                                             </div>
-                                        </Card>
+                                        ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                                    <p className="text-sm font-semibold text-green-700 mb-1">✓ All items complete</p>
+                                    <p className="text-sm text-green-600">All items have been fully scanned and ready to confirm.</p>
+                                </div>
+                                <div className="border rounded-md p-3 space-y-1 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Outbound No:</span>
+                                        <span className="font-semibold">{outboundNo}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Total Items:</span>
+                                        <span className="font-semibold">{originalListOutboundDetail.length}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Total Qty:</span>
+                                        <span className="font-semibold text-green-600">
+                                            {originalListOutboundDetail.reduce((t, i) => t + (i.scan_qty ?? 0), 0)}
+                                            {" / "}
+                                            {originalListOutboundDetail.reduce((t, i) => t + i.quantity, 0)}
+                                        </span>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-500 italic">
+                                    This action will finalize the packing for this outbound. Please verify before confirming.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            disabled={isConfirmingPacking}
+                            onClick={() => setShowConfirmPackingDialog(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleConfirmPacking}
+                            disabled={
+                                isConfirmingPacking ||
+                                originalListOutboundDetail.some((item) => (item.scan_qty ?? 0) < item.quantity)
+                            }
+                            className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        >
+                            {isConfirmingPacking ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Confirming...</>
+                            ) : (
+                                "Confirm Packing"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showSealContainerDialog} onOpenChange={setShowSealContainerDialog}>
+                <DialogContent className="bg-white sm:max-w-md">
+                    <DialogHeader><DialogTitle>Seal Container</DialogTitle></DialogHeader>
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 space-y-1 text-sm">
+                            <div className="flex justify-between"><span className="text-gray-600">Outbound No:</span><span className="font-semibold">{outboundNo}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-600">Packing No:</span><span className="font-semibold">{packingNo}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-600">Container No:</span><span className="font-semibold">{packCtnNo}</span></div>
+                            {masterCarton && <div className="flex justify-between"><span className="text-gray-600">Carton Type:</span><span className="font-semibold">{masterCarton.carton_name}</span></div>}
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="container_weight" className="text-sm font-medium text-gray-700">
+                                Container Weight (kg) <span className="text-red-500">*</span>
+                            </label>
+                            <Input id="container_weight" type="number" step="0.01" min="0" placeholder="Enter weight in kg..." value={containerWeight} onChange={(e) => setContainerWeight(e.target.value)} autoFocus />
+                            {masterCarton && <p className="text-xs text-gray-500">Max weight: {masterCarton.max_weight} kg | Tare weight: {masterCarton.tare_weight} kg</p>}
+                        </div>
+                    </div>
+                    <DialogFooter className="flex gap-2">
+                        <Button variant="outline" onClick={() => { setShowSealContainerDialog(false); setContainerWeight(""); }}>Cancel</Button>
+                        <Button onClick={handleConfirmSeal} className="bg-green-600 hover:bg-green-700">Next</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Seal Container Confirmation ── */}
+            <Dialog open={showConfirmSealContainer} onOpenChange={setShowConfirmSealContainer}>
+                <DialogContent className="bg-white sm:max-w-md">
+                    <DialogHeader><DialogTitle>Confirm Seal Container</DialogTitle></DialogHeader>
+                    <div className="space-y-3">
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                            <p className="text-sm font-semibold text-gray-800 mb-1">⚠️ Confirmation Required</p>
+                            <p className="text-sm text-gray-700">Sealing <strong>Container #{packCtnNo}</strong> will prevent adding more items.</p>
+                        </div>
+                        <div className="border rounded-md p-3 space-y-1 text-sm">
+                            <div className="flex justify-between"><span className="text-gray-600">Outbound No:</span><span className="font-medium">{outboundNo}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-600">Packing No:</span><span className="font-medium">{packingNo}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-600">Container No:</span><span className="font-medium">{packCtnNo}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-600">Weight:</span><span className="font-medium text-green-600">{containerWeight} kg</span></div>
+                            {masterCarton && <div className="flex justify-between"><span className="text-gray-600">Carton Type:</span><span className="font-medium">{masterCarton.carton_name}</span></div>}
+                        </div>
+                        <p className="text-xs text-gray-500 italic">Please verify all information before confirming.</p>
+                    </div>
+                    <DialogFooter className="flex gap-2">
+                        <Button variant="outline" disabled={isSealingContainer} onClick={() => { setShowConfirmSealContainer(false); setShowSealContainerDialog(true); }}>Back</Button>
+                        <Button onClick={handleSealContainerSubmit} disabled={isSealingContainer} className="bg-green-600 hover:bg-green-700">
+                            {isSealingContainer ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sealing...</> : "Confirm Seal"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Edit Carton Dialog ── */}
+            <Dialog open={showEditCartonDialog} onOpenChange={setShowEditCartonDialog}>
+                <DialogContent className="bg-white sm:max-w-md">
+                    <DialogHeader><DialogTitle>Change Carton Type</DialogTitle></DialogHeader>
+                    <div className="space-y-3">
+                        <Select value={selectedNewCartonId} onValueChange={setSelectedNewCartonId}>
+                            <SelectTrigger className="w-full"><SelectValue placeholder="Select new carton type" /></SelectTrigger>
+                            <SelectContent>
+                                {masterCartonsList.map((c) => (
+                                    <SelectItem key={c.id} value={c.id.toString()}>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">
+                                                {c.carton_name}
+                                                {c.is_default && <span className="ml-2 text-xs text-blue-500">(Default)</span>}
+                                                {c.id === masterCarton?.id && <span className="ml-2 text-xs text-green-600">(Current)</span>}
+                                            </span>
+                                            <span className="text-xs text-gray-500">{c.dimensions} - Max: {c.max_weight}kg</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        {getSelectedNewCartonDetails() && (
+                            <Card className="p-3 bg-blue-50 border-blue-200">
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <Box size={16} className="text-blue-600" />
+                                        <span className="font-semibold text-blue-900">{getSelectedNewCartonDetails()?.carton_name}</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                        <div><span className="font-medium">Size:</span> {getSelectedNewCartonDetails()?.dimensions}</div>
+                                        <div><span className="font-medium">Max Weight:</span> {getSelectedNewCartonDetails()?.max_weight}kg</div>
+                                        <div><span className="font-medium">Volume:</span> {getSelectedNewCartonDetails()?.volume.toLocaleString()} cm³</div>
+                                        <div><span className="font-medium">Material:</span> {getSelectedNewCartonDetails()?.material}</div>
+                                    </div>
+                                    {getSelectedNewCartonDetails()?.description && (
+                                        <p className="text-xs text-gray-600 italic">{getSelectedNewCartonDetails()?.description}</p>
                                     )}
                                 </div>
-                                <DialogFooter className="flex gap-2">
-                                    <Button variant="outline" disabled={isUpdatingCarton} onClick={() => { setShowEditCartonDialog(false); setSelectedNewCartonId(masterCarton?.id.toString() ?? ""); }}>Cancel</Button>
-                                    <Button onClick={handleUpdateCarton} disabled={isUpdatingCarton || !selectedNewCartonId}>
-                                        {isUpdatingCarton ? "Updating..." : "Update Carton"}
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                            </Card>
+                        )}
+                    </div>
+                    <DialogFooter className="flex gap-2">
+                        <Button variant="outline" disabled={isUpdatingCarton} onClick={() => { setShowEditCartonDialog(false); setSelectedNewCartonId(masterCarton?.id.toString() ?? ""); }}>Cancel</Button>
+                        <Button onClick={handleUpdateCarton} disabled={isUpdatingCarton || !selectedNewCartonId}>
+                            {isUpdatingCarton ? "Updating..." : "Update Carton"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-                        {/* ── Confirm Update Carton ── */}
-                        <Dialog open={showConfirmUpdateCarton} onOpenChange={setShowConfirmUpdateCarton}>
-                            <DialogContent className="bg-white sm:max-w-md">
-                                <DialogHeader><DialogTitle>Confirm Change Carton Type</DialogTitle></DialogHeader>
-                                <div className="space-y-3">
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                                        <p className="text-sm font-semibold text-gray-800 mb-1">⚠️ Important Notice</p>
-                                        <p className="text-sm text-gray-700">All items in <strong>Carton #{packCtnNo}</strong> will be updated to the new carton type.</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between items-center py-2 border-b text-sm">
-                                            <span className="text-gray-600">Current Carton:</span>
-                                            <span className="font-semibold text-gray-800">{masterCarton?.carton_name}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center py-2 border-b text-sm">
-                                            <span className="text-gray-600">New Carton:</span>
-                                            <span className="font-semibold text-blue-600">{getSelectedNewCartonDetails()?.carton_name}</span>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-gray-500 italic">This action cannot be undone.</p>
-                                </div>
-                                <DialogFooter className="flex gap-2">
-                                    <Button variant="outline" disabled={isUpdatingCarton} onClick={() => setShowConfirmUpdateCarton(false)}>Cancel</Button>
-                                    <Button onClick={handleConfirmUpdateCarton} disabled={isUpdatingCarton} className="bg-blue-600 hover:bg-blue-700">
-                                        {isUpdatingCarton ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : "Confirm Update"}
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+            {/* ── Confirm Update Carton ── */}
+            <Dialog open={showConfirmUpdateCarton} onOpenChange={setShowConfirmUpdateCarton}>
+                <DialogContent className="bg-white sm:max-w-md">
+                    <DialogHeader><DialogTitle>Confirm Change Carton Type</DialogTitle></DialogHeader>
+                    <div className="space-y-3">
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                            <p className="text-sm font-semibold text-gray-800 mb-1">⚠️ Important Notice</p>
+                            <p className="text-sm text-gray-700">All items in <strong>Carton #{packCtnNo}</strong> will be updated to the new carton type.</p>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="flex justify-between items-center py-2 border-b text-sm">
+                                <span className="text-gray-600">Current Carton:</span>
+                                <span className="font-semibold text-gray-800">{masterCarton?.carton_name}</span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b text-sm">
+                                <span className="text-gray-600">New Carton:</span>
+                                <span className="font-semibold text-blue-600">{getSelectedNewCartonDetails()?.carton_name}</span>
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500 italic">This action cannot be undone.</p>
+                    </div>
+                    <DialogFooter className="flex gap-2">
+                        <Button variant="outline" disabled={isUpdatingCarton} onClick={() => setShowConfirmUpdateCarton(false)}>Cancel</Button>
+                        <Button onClick={handleConfirmUpdateCarton} disabled={isUpdatingCarton} className="bg-blue-600 hover:bg-blue-700">
+                            {isUpdatingCarton ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : "Confirm Update"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-                        {/* ── Detail Scanned Items Dialog ── */}
-                        <Dialog open={showModalDetail} onOpenChange={setShowModalDetail}>
-                            <DialogContent className="bg-white max-w-lg">
-                                <DialogHeader><DialogTitle className="font-mono">Scanned Items</DialogTitle></DialogHeader>
-                                <div className="space-y-3">
-                                    <Input className="w-full" placeholder="Search ..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                                    {invPolicy?.require_packing_scan && uniqueCartons.length > 0 && (
-                                        <div className="flex items-center gap-2">
-                                            <label className="text-sm text-gray-600 whitespace-nowrap">Filter Container:</label>
-                                            <Select value={selectedCarton} onValueChange={setSelectedCarton}>
-                                                <SelectTrigger className="w-full"><SelectValue placeholder="Select carton" /></SelectTrigger>
+            {/* ── Detail Scanned Items Dialog ── */}
+            <Dialog open={showModalDetail} onOpenChange={setShowModalDetail}>
+                <DialogContent className="bg-white max-w-lg">
+                    <DialogHeader><DialogTitle className="font-mono">Scanned Items</DialogTitle></DialogHeader>
+                    <div className="space-y-3">
+                        <Input className="w-full" placeholder="Search ..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        {invPolicy?.require_packing_scan && uniqueCartons.length > 0 && (
+                            <div className="flex items-center gap-2">
+                                <label className="text-sm text-gray-600 whitespace-nowrap">Filter Container:</label>
+                                <Select value={selectedCarton} onValueChange={setSelectedCarton}>
+                                    <SelectTrigger className="w-full"><SelectValue placeholder="Select carton" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Container</SelectItem>
+                                        {uniqueCartons.map((c) => <SelectItem key={c} value={c}>Container {c}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="max-h-80 overflow-y-auto space-y-2">
+                        {filteredScannedItems.length > 0 ? (
+                            Object.entries(groupedItems).map(([koli, items]) => {
+                                const cartonNo = selectedCarton === "all" ? "ALL" : (items as ScannedItem[])[0]?.pack_ctn_no;
+                                return (
+                                    <div key={koli} className="p-2 border rounded-md bg-gray-50">
+                                        <div className="font-semibold text-sm font-mono mb-2 flex justify-between items-center">
+                                            <div>
+                                                {invPolicy?.require_packing_scan && cartonNo && cartonNo !== "ALL" && (
+                                                    <div className="text-sm text-gray-600">CTN : {cartonNo}</div>
+                                                )}
+                                                ITEM : {(items as ScannedItem[]).length}, QTY :{" "}
+                                                {(items as ScannedItem[]).reduce((t, i) => t + (i.qty_data_scan ?? 0), 0)}
+                                            </div>
+                                            {invPolicy?.require_packing_scan && cartonNo && cartonNo !== "ALL" && (
+                                                <Button variant="destructive" size="sm" className="h-7 text-xs" disabled={isSubmit}
+                                                    onClick={() => { setCartonToDelete(cartonNo); setShowDeleteCartonConfirm(true); }}>
+                                                    Delete Container
+                                                </Button>
+                                            )}
+                                        </div>
+
+                                        {(items as ScannedItem[]).map((item, index) => (
+                                            <div key={index} className={`p-2 border rounded-md mb-2 ${item.status === "in stock" ? "bg-green-100" : "bg-blue-100"}`}>
+                                                <div className="text-xs space-y-0.5 font-mono">
+                                                    {invPolicy?.require_scan_pick_location && (
+                                                        <div><strong>Location:</strong> {item.location_scan}</div>
+                                                    )}
+                                                    {invPolicy?.require_packing_scan && (
+                                                        <>
+                                                            <div><strong>PACK:</strong> {item.packing_no}</div>
+                                                            <div><strong>CTN:</strong> {item.pack_ctn_no}</div>
+                                                        </>
+                                                    )}
+                                                    <div><strong>EAN:</strong> {item.barcode_data_scan}</div>
+                                                    <div><strong>SKU:</strong> {item.item_code}</div>
+                                                    {/* {item.is_serial && <div><strong>Serial:</strong> {item.serial_number}</div>} */}
+                                                    <div><strong>UNIT SERIAL:</strong> {item.serial_number}</div>
+                                                    <div><strong>CTN SERIAL:</strong> {item.case_number}</div>
+                                                    <div><strong>QTY:</strong> {item.qty_data_scan} {item.uom_scan} <strong>Lot:</strong> {item.lot_number}</div>
+                                                </div>
+                                                <div className="flex justify-between items-center mt-2">
+                                                    {item.status === "pending" && (
+                                                        <Button disabled={isSubmit} className="h-6" variant="destructive" size="sm"
+                                                            onClick={() => handleRemoveItem(item.id!, item.outbound_detail_id)}>
+                                                            {isSubmit ? "Deleting..." : "Delete"}
+                                                        </Button>
+                                                    )}
+                                                    {/* {outboundHeader.status === "packing" && (
+                                                        <Button disabled={isSubmit} className="h-6" variant="destructive" size="sm"
+                                                            onClick={() => handleRemoveItem(item.id!, item.outbound_detail_id)}>
+                                                            {isSubmit ? "Deleting..." : "Delete"}
+                                                        </Button>
+                                                    )} */}
+                                                    {item.status && <span className="text-xs text-gray-400 font-mono ml-auto">{item.status}</span>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="text-gray-500 text-sm text-center py-4">
+                                {selectedCarton !== "all" ? `No items found in Carton ${selectedCarton}` : "This item has not been scanned."}
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter />
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Delete Carton Confirmation ── */}
+            <Dialog open={showDeleteCartonConfirm} onOpenChange={setShowDeleteCartonConfirm}>
+                <DialogContent className="bg-white">
+                    <DialogHeader><DialogTitle>Confirm Delete Container</DialogTitle></DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <p className="text-sm text-gray-600">Are you sure you want to delete all items in Container <strong>{cartonToDelete}</strong>?</p>
+                        <p className="text-sm text-red-600">This action cannot be undone.</p>
+                    </div>
+                    <DialogFooter className="flex gap-2">
+                        <Button variant="outline" disabled={isSubmit} onClick={() => { setShowDeleteCartonConfirm(false); setCartonToDelete(""); }}>Cancel</Button>
+                        <Button variant="destructive" disabled={isSubmit}
+                            onClick={() => {
+                                const detailId = listOutboundScanned.find((i) => i.pack_ctn_no === cartonToDelete)?.outbound_detail_id;
+                                if (detailId) handleRemoveCarton(cartonToDelete, detailId);
+                            }}>
+                            {isSubmit ? "Deleting..." : "Delete Container"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── List Container Dialog ── */}
+            <Dialog open={showListContainerDialog} onOpenChange={setShowListContainerDialog}>
+                <DialogContent className="bg-white sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-sm font-semibold text-gray-800">List Container — {outboundNo}</DialogTitle>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-1">
+                        {listContainerSummary.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400 text-xs">No container data found</div>
+                        ) : (
+                            listContainerSummary.map((container: any) => {
+                                const { pack_ctn_no, qty: totalQty, items: barcodes } = container;
+                                const isCurrent = String(pack_ctn_no) === String(packCtnNo);
+                                return (
+                                    <button
+                                        type="button"
+                                        key={pack_ctn_no}
+                                        disabled={isCurrent}
+                                        onClick={() => handleSelectContainer(container)}
+                                        className={`w-full rounded-lg border p-3 space-y-1.5 text-left transition-colors ${isCurrent ? "border-blue-400 bg-blue-50 cursor-default" : "border-gray-200 bg-gray-50 hover:border-blue-300 hover:bg-blue-50/60 cursor-pointer"}`}
+                                        title={isCurrent ? "Currently active container" : `Switch active container to CTN #${pack_ctn_no}`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                                <Box size={13} className={isCurrent ? "text-blue-600" : "text-gray-500"} />
+                                                <span className={`text-xs font-bold font-mono ${isCurrent ? "text-blue-700" : "text-gray-700"}`}>CTN # {pack_ctn_no}</span>
+                                                {isCurrent
+                                                    ? <span className="text-[10px] bg-blue-600 text-white rounded px-1.5 py-0.5 font-medium">Active</span>
+                                                    : <span className="text-[10px] text-blue-600 font-medium">Click to activate</span>}
+                                            </div>
+                                            <span className="text-xs font-bold text-gray-800">{totalQty} <span className="font-normal text-gray-500">qty</span></span>
+                                        </div>
+                                        {(barcodes as string[]).length > 0 && (
+                                            <div className="flex flex-wrap gap-1 pt-0.5">
+                                                {(barcodes as string[]).map((bc, i) => (
+                                                    <span key={i} className="text-[10px] font-mono bg-white border border-gray-200 text-gray-600 rounded px-1.5 py-0.5">{bc}</span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </button>
+                                );
+                            })
+                        )}
+                    </div>
+                    {listContainerSummary.length > 0 && (
+                        <div className="border-t pt-3 flex justify-between text-xs text-gray-600">
+                            <span>{listContainerSummary.length} container{listContainerSummary.length !== 1 ? "s" : ""} total</span>
+                            <span className="font-semibold text-gray-800">
+                                {listContainerSummary.reduce((sum, c) => sum + c.qty, 0)} total qty
+                            </span>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => setShowListContainerDialog(false)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* </main> */}
+
+
+
+            {/* ── Scan Detail Dialog ── */}
+            {showDialog && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex sm:items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[80vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-2 flex justify-between items-center">
+                            <h2 className="text-base font-semibold text-gray-800">Scan Detail</h2>
+                            <button onClick={closeDialog} className="text-gray-400 hover:text-gray-600 text-2xl p-1 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Close">×</button>
+                        </div>
+
+                        <div className="px-4 py-4 pb-6 space-y-4">
+                            {/* Item Info */}
+                            <div className="p-3 bg-gray-100 rounded-md space-y-1 text-sm text-gray-600">
+                                {outboundNo && <p>Picking ID : <span className="font-medium text-gray-800">{outboundNo}</span></p>}
+                                {invPolicy?.require_packing_scan && <p>Packing No : <span className="font-medium">{packingNo}</span></p>}
+                                {invPolicy?.require_packing_scan && <p>Carton No : <span className="font-semibold text-blue-700">CTN # {packCtnNo || "-"}</span></p>}
+                                {invPolicy?.require_scan_pick_location && <p>Location : <span className="font-medium">{scanLocation}</span></p>}
+                                <p>EAN : <span className="font-mono font-medium">{scanBarcode}</span></p>
+                                {parsedQR?.product && <p>Product : <span className="font-mono font-medium">{parsedQR.product}</span></p>}
+                                {isQrMode && parsedQR?.cartonSerial && <p>Carton : <span className="font-mono font-medium">{parsedQR.cartonSerial}</span></p>}
+                            </div>
+
+                            {/* Serial Form */}
+                            {isSerial ? (
+                                <form onSubmit={handleSerialSubmit} className="space-y-3">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-700">Serial Numbers :</label>
+                                        {serialInputs.map((serial, index) => (
+                                            <div key={index} className="relative">
+                                                <Input autoComplete="off" id={`serial-${index}`} className="w-full pr-10" value={serial}
+                                                    onChange={(e) => { const n = [...serialInputs]; n[index] = e.target.value; setSerialInputs(n); }} />
+                                                {serial && (
+                                                    <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                        onClick={() => { const n = [...serialInputs]; n[index] = ""; setSerialInputs(n); (document.getElementById(`serial-${index}`) as HTMLInputElement)?.focus(); }}>
+                                                        <XCircle size={18} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        <div className="flex gap-4">
+                                            <button type="button" className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                                                onClick={() => setSerialInputs([...serialInputs, ""])}>+ Add Serial</button>
+                                            {serialInputs.length > 1 && (
+                                                <button type="button" className="text-red-600 hover:text-red-800 text-sm font-semibold"
+                                                    onClick={() => setSerialInputs(serialInputs.slice(0, -1))}>− Remove Last</button>
+                                            )}
+                                        </div>
+                                        {serialInputs.length > 1 && (
+                                            <div className="text-xs text-gray-500 break-all">
+                                                Combined: {serialInputs.filter((s) => s.trim() !== "").join("-")}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <Button type="submit" className="w-full" disabled={isSubmit}>
+                                            {isSubmit ? <><Loader2 className="mr-2 w-4 h-4 animate-spin" />Loading...</> : "Submit"}
+                                        </Button>
+                                        <Button type="button" className="w-full" variant="outline" onClick={closeDialog}>Cancel</Button>
+                                    </div>
+                                </form>
+                            ) : (
+                                /* Quantity Form */
+                                <form onSubmit={handleQuantitySubmit} className="space-y-3">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-600">Package Type</label>
+                                            <Select value={selectedPackageType} onValueChange={handlePackageTypeChange}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Select package" /></SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="all">All Container</SelectItem>
-                                                    {uniqueCartons.map((c) => <SelectItem key={c} value={c}>Container {c}</SelectItem>)}
+                                                    {packageOptions.map((option) => <SelectItem key={option.type} value={option.type}>{option.type} · {option.conversion} {scanUom || "PCS"}</SelectItem>)}
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                    )}
-                                </div>
-
-                                <div className="max-h-80 overflow-y-auto space-y-2">
-                                    {filteredScannedItems.length > 0 ? (
-                                        Object.entries(groupedItems).map(([koli, items]) => {
-                                            const cartonNo = selectedCarton === "all" ? "ALL" : (items as ScannedItem[])[0]?.pack_ctn_no;
-                                            return (
-                                                <div key={koli} className="p-2 border rounded-md bg-gray-50">
-                                                    <div className="font-semibold text-sm font-mono mb-2 flex justify-between items-center">
-                                                        <div>
-                                                            {invPolicy?.require_packing_scan && cartonNo && cartonNo !== "ALL" && (
-                                                                <div className="text-sm text-gray-600">CTN : {cartonNo}</div>
-                                                            )}
-                                                            ITEM : {(items as ScannedItem[]).length}, QTY :{" "}
-                                                            {(items as ScannedItem[]).reduce((t, i) => t + (i.qty_data_scan ?? 0), 0)}
-                                                        </div>
-                                                        {invPolicy?.require_packing_scan && cartonNo && cartonNo !== "ALL" && (
-                                                            <Button variant="destructive" size="sm" className="h-7 text-xs" disabled={isSubmit}
-                                                                onClick={() => { setCartonToDelete(cartonNo); setShowDeleteCartonConfirm(true); }}>
-                                                                Delete Container
-                                                            </Button>
-                                                        )}
-                                                    </div>
-
-                                                    {(items as ScannedItem[]).map((item, index) => (
-                                                        <div key={index} className={`p-2 border rounded-md mb-2 ${item.status === "in stock" ? "bg-green-100" : "bg-blue-100"}`}>
-                                                            <div className="text-xs space-y-0.5 font-mono">
-                                                                {invPolicy?.require_scan_pick_location && (
-                                                                    <div><strong>Location:</strong> {item.location_scan}</div>
-                                                                )}
-                                                                {invPolicy?.require_packing_scan && (
-                                                                    <>
-                                                                        <div><strong>PACK:</strong> {item.packing_no}</div>
-                                                                        <div><strong>CTN:</strong> {item.pack_ctn_no}</div>
-                                                                    </>
-                                                                )}
-                                                                <div><strong>EAN:</strong> {item.barcode_data_scan}</div>
-                                                                <div><strong>SKU:</strong> {item.item_code}</div>
-                                                                {/* {item.is_serial && <div><strong>Serial:</strong> {item.serial_number}</div>} */}
-                                                                <div><strong>UNIT SERIAL:</strong> {item.serial_number}</div>
-                                                                <div><strong>CTN SERIAL:</strong> {item.case_number}</div>
-                                                                <div><strong>QTY:</strong> {item.qty_data_scan} {item.uom_scan} <strong>Lot:</strong> {item.lot_number}</div>
-                                                            </div>
-                                                            <div className="flex justify-between items-center mt-2">
-                                                                {item.status === "pending" && (
-                                                                    <Button disabled={isSubmit} className="h-6" variant="destructive" size="sm"
-                                                                        onClick={() => handleRemoveItem(item.id!, item.outbound_detail_id)}>
-                                                                        {isSubmit ? "Deleting..." : "Delete"}
-                                                                    </Button>
-                                                                )}
-                                                                {item.status && <span className="text-xs text-gray-400 font-mono ml-auto">{item.status}</span>}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="text-gray-500 text-sm text-center py-4">
-                                            {selectedCarton !== "all" ? `No items found in Carton ${selectedCarton}` : "This item has not been scanned."}
+                                        <div className="space-y-1.5">
+                                            <label htmlFor="packageQty" className="text-xs font-semibold text-gray-600">Package Quantity</label>
+                                            <Input min={1} step={1} type="number" id="packageQty" className="h-10" value={packageQty} autoComplete="off"
+                                                onChange={(e) => updatePackageQuantity(e.target.value)}
+                                                onWheel={(e) => (e.target as HTMLInputElement).blur()} />
                                         </div>
-                                    )}
-                                </div>
-                                <DialogFooter />
-                            </DialogContent>
-                        </Dialog>
-
-                        {/* ── Delete Carton Confirmation ── */}
-                        <Dialog open={showDeleteCartonConfirm} onOpenChange={setShowDeleteCartonConfirm}>
-                            <DialogContent className="bg-white">
-                                <DialogHeader><DialogTitle>Confirm Delete Container</DialogTitle></DialogHeader>
-                                <div className="py-4 space-y-2">
-                                    <p className="text-sm text-gray-600">Are you sure you want to delete all items in Container <strong>{cartonToDelete}</strong>?</p>
-                                    <p className="text-sm text-red-600">This action cannot be undone.</p>
-                                </div>
-                                <DialogFooter className="flex gap-2">
-                                    <Button variant="outline" disabled={isSubmit} onClick={() => { setShowDeleteCartonConfirm(false); setCartonToDelete(""); }}>Cancel</Button>
-                                    <Button variant="destructive" disabled={isSubmit}
-                                        onClick={() => {
-                                            const detailId = listOutboundScanned.find((i) => i.pack_ctn_no === cartonToDelete)?.outbound_detail_id;
-                                            if (detailId) handleRemoveCarton(cartonToDelete, detailId);
-                                        }}>
-                                        {isSubmit ? "Deleting..." : "Delete Container"}
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-
-                        {/* ── List Container Dialog ── */}
-                        <Dialog open={showListContainerDialog} onOpenChange={setShowListContainerDialog}>
-                            <DialogContent className="bg-white sm:max-w-md">
-                                <DialogHeader>
-                                    <DialogTitle className="text-sm font-semibold text-gray-800">List Container — {outboundNo}</DialogTitle>
-                                </DialogHeader>
-                                <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-1">
-                                    {listContainerSummary.length === 0 ? (
-                                        <div className="text-center py-8 text-gray-400 text-xs">No container data found</div>
-                                    ) : (
-                                        listContainerSummary.map((container: any) => {
-                                            const { pack_ctn_no, qty: totalQty, items: barcodes } = container;
-                                            const isCurrent = String(pack_ctn_no) === String(packCtnNo);
-                                            return (
-                                                <button
-                                                    type="button"
-                                                    key={pack_ctn_no}
-                                                    disabled={isCurrent}
-                                                    onClick={() => handleSelectContainer(container)}
-                                                    className={`w-full rounded-lg border p-3 space-y-1.5 text-left transition-colors ${isCurrent ? "border-blue-400 bg-blue-50 cursor-default" : "border-gray-200 bg-gray-50 hover:border-blue-300 hover:bg-blue-50/60 cursor-pointer"}`}
-                                                    title={isCurrent ? "Currently active container" : `Switch active container to CTN #${pack_ctn_no}`}
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Box size={13} className={isCurrent ? "text-blue-600" : "text-gray-500"} />
-                                                            <span className={`text-xs font-bold font-mono ${isCurrent ? "text-blue-700" : "text-gray-700"}`}>CTN # {pack_ctn_no}</span>
-                                                            {isCurrent
-                                                                ? <span className="text-[10px] bg-blue-600 text-white rounded px-1.5 py-0.5 font-medium">Active</span>
-                                                                : <span className="text-[10px] text-blue-600 font-medium">Click to activate</span>}
-                                                        </div>
-                                                        <span className="text-xs font-bold text-gray-800">{totalQty} <span className="font-normal text-gray-500">qty</span></span>
-                                                    </div>
-                                                    {(barcodes as string[]).length > 0 && (
-                                                        <div className="flex flex-wrap gap-1 pt-0.5">
-                                                            {(barcodes as string[]).map((bc, i) => (
-                                                                <span key={i} className="text-[10px] font-mono bg-white border border-gray-200 text-gray-600 rounded px-1.5 py-0.5">{bc}</span>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </button>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                                {listContainerSummary.length > 0 && (
-                                    <div className="border-t pt-3 flex justify-between text-xs text-gray-600">
-                                        <span>{listContainerSummary.length} container{listContainerSummary.length !== 1 ? "s" : ""} total</span>
-                                        <span className="font-semibold text-gray-800">
-                                            {listContainerSummary.reduce((sum, c) => sum + c.qty, 0)} total qty
-                                        </span>
                                     </div>
-                                )}
-                                <DialogFooter>
-                                    <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => setShowListContainerDialog(false)}>Close</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-
-                {/* </main> */}
-
-
-
-                {/* ── Scan Detail Dialog ── */}
-                {showDialog && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex sm:items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[80vh] overflow-y-auto">
-                            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-2 flex justify-between items-center">
-                                <h2 className="text-base font-semibold text-gray-800">Scan Detail</h2>
-                                <button onClick={closeDialog} className="text-gray-400 hover:text-gray-600 text-2xl p-1 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Close">×</button>
-                            </div>
-
-                            <div className="px-4 py-4 pb-6 space-y-4">
-                                {/* Item Info */}
-                                <div className="p-3 bg-gray-100 rounded-md space-y-1 text-sm text-gray-600">
-                                    {outboundNo && <p>Picking ID : <span className="font-medium text-gray-800">{outboundNo}</span></p>}
-                                    {invPolicy?.require_packing_scan && <p>Packing No : <span className="font-medium">{packingNo}</span></p>}
-                                    {invPolicy?.require_packing_scan && <p>Carton No : <span className="font-semibold text-blue-700">CTN # {packCtnNo || "-"}</span></p>}
-                                    {invPolicy?.require_scan_pick_location && <p>Location : <span className="font-medium">{scanLocation}</span></p>}
-                                    <p>EAN : <span className="font-mono font-medium">{scanBarcode}</span></p>
-                                    {parsedQR?.product && <p>Product : <span className="font-mono font-medium">{parsedQR.product}</span></p>}
-                                    {isQrMode && parsedQR?.cartonSerial && <p>Carton : <span className="font-mono font-medium">{parsedQR.cartonSerial}</span></p>}
-                                </div>
-
-                                {/* Serial Form */}
-                                {isSerial ? (
-                                    <form onSubmit={handleSerialSubmit} className="space-y-3">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-700">Serial Numbers :</label>
-                                            {serialInputs.map((serial, index) => (
-                                                <div key={index} className="relative">
-                                                    <Input autoComplete="off" id={`serial-${index}`} className="w-full pr-10" value={serial}
-                                                        onChange={(e) => { const n = [...serialInputs]; n[index] = e.target.value; setSerialInputs(n); }} />
-                                                    {serial && (
-                                                        <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                                            onClick={() => { const n = [...serialInputs]; n[index] = ""; setSerialInputs(n); (document.getElementById(`serial-${index}`) as HTMLInputElement)?.focus(); }}>
-                                                            <XCircle size={18} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
-                                            <div className="flex gap-4">
-                                                <button type="button" className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
-                                                    onClick={() => setSerialInputs([...serialInputs, ""])}>+ Add Serial</button>
-                                                {serialInputs.length > 1 && (
-                                                    <button type="button" className="text-red-600 hover:text-red-800 text-sm font-semibold"
-                                                        onClick={() => setSerialInputs(serialInputs.slice(0, -1))}>− Remove Last</button>
-                                                )}
-                                            </div>
-                                            {serialInputs.length > 1 && (
-                                                <div className="text-xs text-gray-500 break-all">
-                                                    Combined: {serialInputs.filter((s) => s.trim() !== "").join("-")}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col sm:flex-row gap-2">
-                                            <Button type="submit" className="w-full" disabled={isSubmit}>
-                                                {isSubmit ? <><Loader2 className="mr-2 w-4 h-4 animate-spin" />Loading...</> : "Submit"}
-                                            </Button>
-                                            <Button type="button" className="w-full" variant="outline" onClick={closeDialog}>Cancel</Button>
-                                        </div>
-                                    </form>
-                                ) : (
-                                    /* Quantity Form */
-                                    <form onSubmit={handleQuantitySubmit} className="space-y-3">
-                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-semibold text-gray-600">Package Type</label>
-                                                <Select value={selectedPackageType} onValueChange={handlePackageTypeChange}>
-                                                    <SelectTrigger className="h-10"><SelectValue placeholder="Select package" /></SelectTrigger>
-                                                    <SelectContent>
-                                                        {packageOptions.map((option) => <SelectItem key={option.type} value={option.type}>{option.type} · {option.conversion} {scanUom || "PCS"}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label htmlFor="packageQty" className="text-xs font-semibold text-gray-600">Package Quantity</label>
-                                                <Input min={1} step={1} type="number" id="packageQty" className="h-10" value={packageQty} autoComplete="off"
-                                                    onChange={(e) => updatePackageQuantity(e.target.value)}
-                                                    onWheel={(e) => (e.target as HTMLInputElement).blur()} />
-                                            </div>
-                                        </div>
-                                        <div className="rounded-lg border border-blue-100 bg-blue-50/70 p-3">
-                                            <div className="flex items-center justify-between gap-3"><span className="text-xs font-semibold uppercase tracking-wide text-blue-700">Calculated Quantity</span><span className="text-xl font-bold text-blue-900">{Number(scanQty) || 0} {scanUom || "PCS"}</span></div>
-                                            <p className="mt-1 text-xs text-blue-700">{Number(packageQty) || 0} {selectedPackageType} × {getSelectedPackageConversion()} {scanUom || "PCS"}</p>
-                                            {desktopActiveDetail && <p className="mt-2 border-t border-blue-100 pt-2 text-xs text-blue-700">Remaining outbound quantity: <strong>{desktopActiveDetail.quantity - (desktopActiveDetail.scan_qty ?? 0)} {desktopActiveDetail.uom || scanUom}</strong></p>}
-                                        </div>
-                                        <div className="flex flex-col sm:flex-row gap-2">
-                                            <Button type="submit" className="w-full" disabled={isSubmit}>
-                                                {isSubmit ? <><Loader2 className="mr-2 w-4 h-4 animate-spin" />Loading...</> : "Submit"}
-                                            </Button>
-                                            <Button type="button" className="w-full" variant="outline" onClick={closeDialog}>Cancel</Button>
-                                        </div>
-                                    </form>
-                                )}
-                            </div>
+                                    <div className="rounded-lg border border-blue-100 bg-blue-50/70 p-3">
+                                        <div className="flex items-center justify-between gap-3"><span className="text-xs font-semibold uppercase tracking-wide text-blue-700">Calculated Quantity</span><span className="text-xl font-bold text-blue-900">{Number(scanQty) || 0} {scanUom || "PCS"}</span></div>
+                                        <p className="mt-1 text-xs text-blue-700">{Number(packageQty) || 0} {selectedPackageType} × {getSelectedPackageConversion()} {scanUom || "PCS"}</p>
+                                        {desktopActiveDetail && <p className="mt-2 border-t border-blue-100 pt-2 text-xs text-blue-700">Remaining outbound quantity: <strong>{desktopActiveDetail.quantity - (desktopActiveDetail.scan_qty ?? 0)} {desktopActiveDetail.uom || scanUom}</strong></p>}
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <Button type="submit" className="w-full" disabled={isSubmit}>
+                                            {isSubmit ? <><Loader2 className="mr-2 w-4 h-4 animate-spin" />Loading...</> : "Submit"}
+                                        </Button>
+                                        <Button type="button" className="w-full" variant="outline" onClick={closeDialog}>Cancel</Button>
+                                    </div>
+                                </form>
+                            )}
                         </div>
                     </div>
-                )}
+                </div>
+            )}
         </Layout>
     );
 };

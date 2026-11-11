@@ -109,6 +109,8 @@ export interface ItemScanDetail {
   barcode_data_scan?: string;
   qty_data_scan?: string;
   uom_scan?: string;
+  package_type?: string;
+  package_qty?: number;
   CreatedAt?: string;
   product : {
     item_name : string

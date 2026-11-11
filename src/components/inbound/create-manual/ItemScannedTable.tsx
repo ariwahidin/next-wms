@@ -52,6 +52,7 @@ interface ItemReceivedFull {
     item_model?: string;
     scan_type?: string;
     scan_data?: string;
+    CreatedAt?: string;
 }
 
 interface PalletSummary {
@@ -572,7 +573,8 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                                     <TableCell>{item.lot_number || "-"}</TableCell>
                                                     <TableCell>{formatDate(item.rec_date)}</TableCell>
                                                     <TableCell>{formatDate(item.prod_date)}</TableCell>
-                                                    <TableCell>{dayjs(item.created_at).format("DD/MM/YYYY, HH:mm")}</TableCell>
+                                                    <TableCell>{dayjs(item.CreatedAt).format("DD/MM/YYYY, HH:mm")}</TableCell>
+                                                    {/* <TableCell>{item.CreatedAt}</TableCell> */}
                                                 </TableRow>
                                             ))
                                         )}

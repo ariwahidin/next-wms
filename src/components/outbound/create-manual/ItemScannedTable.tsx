@@ -170,6 +170,8 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
             <TableHead>Serial Number</TableHead>
             <TableHead>UoM Scan</TableHead>
             <TableHead>Qty Scan</TableHead>
+            <TableHead>Package Type</TableHead>
+            <TableHead>Package Qty</TableHead>
             <TableHead>Created At</TableHead>
           </TableRow>
         </TableHeader>
@@ -188,8 +190,10 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
               )}
               <TableCell className="text-sm">{item.uom_scan}</TableCell>
               <TableCell className="text-sm">{item.qty_data_scan}</TableCell>
+              <TableCell className="text-sm">{item.package_type}</TableCell>
+              <TableCell className="text-sm">{item.package_qty}</TableCell>
               <TableCell className="text-sm">
-                {dayjs(item.CreatedAt).format("D MMMM YYYY, HH:mm")}
+                {dayjs(item.CreatedAt).format("DD/MM/YYYY, HH:mm")}
               </TableCell>
             </TableRow>
           ))}
@@ -200,7 +204,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({
               Total
             </TableCell>
             <TableCell className="font-bold">{totalQty}</TableCell>
-            <TableCell /> {/* kosongkan sel terakhir */}
+            <TableCell colSpan={3} /> {/* kosongkan sel terakhir */}
           </TableRow>
         </TableFooter>
       </Table>

@@ -99,6 +99,13 @@ const PackingTable = () => {
   const [selectedMasterCartonId, setSelectedMasterCartonId] = useState("");
   const [outboundSearch, setOutboundSearch] = useState("");
 
+  // Continue packing: explicitly choose an existing carton to resume.
+  const [isContinuePackingOpen, setIsContinuePackingOpen] = useState(false);
+  const [continueOutboundNo, setContinueOutboundNo] = useState("");
+  const [continueCartons, setContinueCartons] = useState<any[]>([]);
+  const [selectedContinueCarton, setSelectedContinueCarton] = useState("");
+  const [isLoadingContinueCartons, setIsLoadingContinueCartons] = useState(false);
+
   // Dialog states
   const [isScannedItemDialog, setIsScannedItemDialog] = useState(false);
 
@@ -238,58 +245,96 @@ const PackingTable = () => {
       return;
     }
 
-    setIsOpeningWorkspace(true);
+    setContinueOutboundNo(outboundNo);
+    setContinueCartons([]);
+    setSelectedContinueCarton("");
+    setIsContinuePackingOpen(true);
+    setIsLoadingContinueCartons(true);
+
     try {
-      // Resolve the existing active carton so the workspace opens on the
-      // carton already being packed instead of creating a new one.
-      const response = await api.get(`/mobile/outbound/${encodeURIComponent(outboundNo)}/cartons`, {
-        withCredentials: true,
-      });
+      const response = await api.get(
+        `/mobile/outbound/${encodeURIComponent(outboundNo)}/cartons`,
+        { withCredentials: true }
+      );
 
-      const cartons = unwrapList(response.data);
-      const activeCarton =
-        cartons.find((carton: any) =>
-          carton?.is_active === true ||
-          carton?.active === true ||
-          String(carton?.status ?? "").toUpperCase() === "ACTIVE"
-        ) ?? cartons[0];
+      // Actual API response:
+      // { data: { cartons: [{ pack_ctn_no, carton_id, qty, count, ctn_status }] } }
+      const cartons = Array.isArray(response.data?.data?.cartons)
+        ? response.data.data.cartons
+        : Array.isArray(response.data?.cartons)
+          ? response.data.cartons
+          : [];
 
-      const masterCartonId =
-        getMasterCartonId(activeCarton) ||
-        getMasterCartonId(item) ||
-        Number(item?.master_carton_id ?? 0);
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || "Failed to retrieve carton data.");
+      }
 
-      if (!masterCartonId) {
-        showPackingError(
-          "The carton type for this packing record could not be identified. Please open it through Add Packing and select a carton type."
-        );
+      if (!cartons.length) {
+        setContinueCartons([]);
+        showPackingError("No existing carton was found for this outbound.");
         return;
       }
 
-      const cartonNo =
-        activeCarton?.carton_no ??
-        activeCarton?.carton_number ??
-        activeCarton?.carton ??
-        item?.carton ??
-        1;
+      const normalizedCartons = cartons.map((carton: any, index: number) => ({
+        ...carton,
+        // carton_id is the existing carton record ID, not master_carton_id.
+        _cartonId: Number(carton?.carton_id ?? carton?.ID ?? carton?.id ?? 0),
+        _cartonNo: String(
+          carton?.pack_ctn_no ??
+            carton?.carton_no ??
+            carton?.carton_number ??
+            carton?.carton ??
+            index + 1
+        ),
+        _cartonTypeName:
+          carton?.carton_type_name ??
+          carton?.master_carton_name ??
+          carton?.carton_type ??
+          carton?.carton_name ??
+          "Carton",
+        _qty: Number(carton?.qty ?? 0),
+        _count: Number(carton?.count ?? 0),
+        _cartonStatus: String(carton?.ctn_status ?? carton?.status ?? "").toLowerCase(),
+        _isActive: String(carton?.ctn_status ?? carton?.status ?? "").toLowerCase() === "open",
+      }));
 
-      const query = new URLSearchParams({
-        outbound: outboundNo,
-        master_carton_id: String(masterCartonId),
-        carton: String(cartonNo),
-      });
-
-      window.location.href = `/wms/outbound/packing-desktop?${query.toString()}`;
+      setContinueCartons(normalizedCartons);
     } catch (error: any) {
-      console.error("Open ongoing packing failed:", error);
+      console.error("Load outbound cartons failed:", error);
       showPackingError(
         error?.response?.data?.message ||
           error?.message ||
-          "Unable to load the active carton for this outbound."
+          "Unable to load cartons for this outbound."
       );
     } finally {
-      setIsOpeningWorkspace(false);
+      setIsLoadingContinueCartons(false);
     }
+  };
+
+  const resumeSelectedCarton = () => {
+    const selectedCarton = continueCartons.find(
+      (carton) => String(carton._cartonNo) === selectedContinueCarton
+    );
+
+    if (!selectedCarton) {
+      showPackingError("Please select a carton to continue.");
+      return;
+    }
+
+    if (!selectedCarton._cartonId) {
+      showPackingError(
+        "Carton ID is missing from the selected carton. The carton list API must return carton_id."
+      );
+      return;
+    }
+
+    const query = new URLSearchParams({
+      outbound: continueOutboundNo,
+      carton_id: String(selectedCarton._cartonId),
+      carton: String(selectedCarton._cartonNo),
+    });
+
+    window.location.href = `/wms/outbound/packing-desktop?${query.toString()}`;
   };
 
   const printPackingNo = async () => {
@@ -681,14 +726,14 @@ const PackingTable = () => {
         <div className="flex items-center justify-between pb-4">
           <div className="justify-self-start">
             <div className="flex items-center gap-2 h-4">
-              <Button
+              {/* <Button
                 className="h-8 w-42"
                 onClick={() => {
                   generatePacking();
                 }}
               >
                 Generate Packing No
-              </Button>
+              </Button> */}
               <Button
                 className="h-8 gap-2"
                 variant="outline"
@@ -758,6 +803,121 @@ const PackingTable = () => {
           }}
         />
       </div>
+
+      {isContinuePackingOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/40 p-4">
+          <div className="w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
+                  <Package className="h-4 w-4" />
+                  CONTINUE OUTBOUND PACKING
+                </div>
+                <h2 className="mt-1 text-lg font-bold text-slate-900">Select Carton</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Choose which existing carton you want to continue packing.
+                </p>
+                <p className="mt-2 text-xs font-semibold text-slate-700">
+                  Outbound: {continueOutboundNo}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsContinuePackingOpen(false)}
+                disabled={isLoadingContinueCartons}
+              >
+                ✕
+              </Button>
+            </div>
+
+            <div className="max-h-[55vh] space-y-2 overflow-y-auto px-5 py-5">
+              {isLoadingContinueCartons ? (
+                <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading cartons...
+                </div>
+              ) : continueCartons.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
+                  No carton data available for this outbound.
+                </div>
+              ) : (
+                continueCartons.map((carton, index) => {
+                  const isSelected =
+                    selectedContinueCarton === String(carton._cartonNo);
+
+                  return (
+                    <button
+                      key={`${carton._cartonNo}-${carton._masterCartonId}-${index}`}
+                      type="button"
+                      onClick={() =>
+                        setSelectedContinueCarton(String(carton._cartonNo))
+                      }
+                      className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition ${
+                        isSelected
+                          ? "border-blue-400 bg-blue-50 ring-1 ring-blue-200"
+                          : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-900">
+                            CTN #{carton._cartonNo}
+                          </span>
+                          {carton._cartonStatus && (
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              carton._isActive
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-slate-100 text-slate-600"
+                            }`}>
+                              {carton._cartonStatus.toUpperCase()}
+                            </span>
+                          )}
+                        </span>
+                        <span className="mt-1 block text-xs text-slate-500">
+                          {carton._cartonTypeName}
+                          {" · "}{carton._qty} PCS
+                          {" · "}{carton._count} item(s)
+                          {" · Carton ID: "}{carton._cartonId || "-"}
+                        </span>
+                      </span>
+                      <span
+                        className={`ml-3 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                          isSelected
+                            ? "border-blue-600 bg-blue-600 text-white"
+                            : "border-slate-300"
+                        }`}
+                      >
+                        {isSelected ? "✓" : ""}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50 px-5 py-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsContinuePackingOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={resumeSelectedCarton}
+                disabled={!selectedContinueCarton || isLoadingContinueCartons}
+                className="gap-2 bg-blue-600 hover:bg-blue-700"
+              >
+                <ArrowUpRight className="h-4 w-4" />
+                Continue Packing
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isNewPackingOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4">
