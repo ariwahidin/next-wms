@@ -45,6 +45,7 @@ interface ItemReceivedFull {
     uom?: string;
     product?: { item_name?: string; has_serial?: string };
     exp_date?: string;
+    rec_date?: string;
     prod_date?: string;
     lot_number?: string;
     case_number?: string;
@@ -519,14 +520,16 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                             {/* <TableHead>Barcode / EAN</TableHead> */}
                                             <TableHead>Serial Number</TableHead>
                                             <TableHead>Pallet</TableHead>
+                                            <TableHead>Location</TableHead>
                                             <TableHead>Carton</TableHead>
                                             {/* <TableHead>Whs Code</TableHead> */}
                                             <TableHead>Status</TableHead>
                                             <TableHead>Qty</TableHead>
                                             {/* <TableHead>UoM</TableHead> */}
                                             <TableHead>Lot Number</TableHead>
-                                            <TableHead>Exp Date</TableHead>
-                                            {/* <TableHead>Prod Date</TableHead> */}
+                                            
+                                            <TableHead>Rcvd Date</TableHead>
+                                            <TableHead>Prod Date</TableHead>
                                             <TableHead>Created At</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -559,15 +562,16 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                                     <TableCell className="font-mono">
                                                         {item.product?.has_serial === "Y" ? item.serial_number || "-" : "-"}
                                                     </TableCell>
-                                                    <TableCell className="font-medium">{item.pallet || item.location || "-"}</TableCell>
+                                                    <TableCell className="font-mono">{item.pallet || "-"}</TableCell>
+                                                    <TableCell className="font-medium">{item.location || "-"}</TableCell>
                                                     <TableCell className="font-mono text-xs">{item.case_number || "-"}</TableCell>
                                                     {/* <TableCell>{item.whs_code}</TableCell> */}
                                                     <TableCell><StatusBadge status={item.status} /></TableCell>
                                                     <TableCell>{item.quantity}</TableCell>
                                                     {/* <TableCell>{item.uom}</TableCell> */}
                                                     <TableCell>{item.lot_number || "-"}</TableCell>
-                                                    <TableCell>{formatDate(item.exp_date)}</TableCell>
-                                                    {/* <TableCell>{formatDate(item.prod_date)}</TableCell> */}
+                                                    <TableCell>{formatDate(item.rec_date)}</TableCell>
+                                                    <TableCell>{formatDate(item.prod_date)}</TableCell>
                                                     <TableCell>{dayjs(item.created_at).format("DD/MM/YYYY, HH:mm")}</TableCell>
                                                 </TableRow>
                                             ))

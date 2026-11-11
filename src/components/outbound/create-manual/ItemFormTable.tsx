@@ -179,11 +179,7 @@ export default function ItemFormTable({
                     }))
                 );
 
-                // const defaultUoms = uoms.data.data.map((item: any) => ({
-                //   value: item.code,
-                //   label: item.code,
-                // }));
-                // setDefaultUoms(defaultUoms);
+
 
                 setVasPages(vasPages.data.data);
                 const vasOptions = vasPages.data.data.map((item: any) => ({
@@ -213,7 +209,11 @@ export default function ItemFormTable({
     };
 
     useEffect(() => {
-        fetchData();
+
+        if (headerForm.owner_code && headerForm.owner_code.trim() !== "") {
+            fetchData();
+        }
+        // fetchData();
     }, [headerForm.owner_code]);
 
     const handleAddItems = () => {
@@ -640,7 +640,7 @@ export default function ItemFormTable({
             <div className="space-y-4">
                 <div className="flex justify-between items-center">
                     {/* <h2 className="text-lg font-semibold">Requested Items</h2> */}
-                    {!isReadOnlyStatus && (
+                    {!isReadOnlyStatus && headerForm.order_type != "" && (
                         <div className="flex items-center gap-2">
                             <Button
                                 type="button"

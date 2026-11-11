@@ -120,6 +120,8 @@ interface TransferFormData {
     to_location: string;
     old_qa_status: string;
     new_qa_status: string;
+    from_prod_date: string;
+    to_prod_date: string;
     rec_date: string;
     prod_date: string;
     exp_date: string;
@@ -143,6 +145,8 @@ const emptyForm: TransferFormData = {
     to_location: "",
     old_qa_status: "",
     new_qa_status: "",
+    from_prod_date: "",
+    to_prod_date: "",
     rec_date: "",
     prod_date: "",
     exp_date: "",
@@ -570,6 +574,8 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
             from_location: group.location,
             old_qa_status: group.qa_status,
             new_qa_status: group.qa_status,
+            from_prod_date: group.prod_date,
+            to_prod_date: group.prod_date,
             from_division_code: group.division_code,
             division_code: group.division_code,
             rec_date: group.rec_date || "",
@@ -600,6 +606,9 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
     };
 
     const validateForm = (): boolean => {
+
+        console.log("Validating form data:", formData);
+
         if (!selectedGroup) { setError("Please select an inventory to transfer"); return false; }
         if (!formData.to_whs_code || !formData.to_location) { setError("Destination warehouse and location are required"); return false; }
         if (formData.qty_to_transfer <= 0) { setError("Quantity to transfer must be greater than 0"); return false; }
@@ -611,7 +620,8 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
             formData.from_location === formData.to_location &&
             formData.old_qa_status === formData.new_qa_status &&
             formData.from_division_code === formData.division_code &&
-            formData.from_lot_number === formData.lot_number
+            formData.from_lot_number === formData.lot_number &&
+            formData.from_prod_date === formData.prod_date
         ) {
             setError("Source and destination are the same. Please select different attributes.");
             return false;
@@ -1097,17 +1107,6 @@ function ByCartonTab({ qaStatuses, locations, ownerOptions, customSelectStyles, 
     const productOptions: SelectOption[] = products.map((p) => ({ value: p.item_code, label: `${p.item_code} — ${p.item_name}` }));
     const divisionOptions: SelectOption[] = divisions.map((d) => ({ value: d.code, label: `${d.code} — ${d.name}` }));
 
-    // const toggleCarton = (cartonNumber: string) => {
-    //     setSelectedCartons((prev) => {
-    //         const next = new Set(prev);
-    //         next.has(cartonNumber) ? next.delete(cartonNumber) : next.add(cartonNumber);
-    //         return next;
-    //     });
-    // };
-    // const selectAll = () => setSelectedCartons(new Set(displayedCartons.map((c) => c.carton_number)));
-    // const clearAll = () => setSelectedCartons(new Set());
-
-    // const selectedCartonData = displayedCartons.filter((c) => selectedCartons.has(c.carton_number));
 
     const toggleCarton = (key: string) => {
         setSelectedCartons((prev) => {
@@ -1202,6 +1201,8 @@ function ByCartonTab({ qaStatuses, locations, ownerOptions, customSelectStyles, 
                 from_whs_code: carton.whs_code,
                 to_whs_code: effWhsCode,
                 from_location: carton.location,
+                from_prod_date: carton.prod_date,
+                to_prod_date: carton.prod_date,
                 to_location: effLocation,
                 old_qa_status: carton.qa_status,
                 new_qa_status: effQaStatus,
@@ -1881,6 +1882,8 @@ function MultiItemTab({ qaStatuses, locations, ownerOptions, customSelectStyles,
                 to_location: effLocation,
                 old_qa_status: carton.qa_status,
                 new_qa_status: effQaStatus,
+                from_prod_date: carton.prod_date || "",
+                to_prod_date: carton.prod_date || "",
                 rec_date: carton.rec_date || "",
                 prod_date: carton.prod_date || "",
                 exp_date: carton.exp_date || "",

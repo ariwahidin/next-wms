@@ -463,6 +463,7 @@ export default function ManualForm() {
                 </Label>
                 <span className="shrink-0">:</span>
                 <Input
+                  placeholder="Enter PO / Invoice No"
                   autoComplete="off"
                   id="ReceiptID"
                   style={{ fontSize: "12px" }}

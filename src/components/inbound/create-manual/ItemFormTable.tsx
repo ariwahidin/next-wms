@@ -210,14 +210,14 @@ export default function ItemFormTable({
         item_code: product.item_code,
         quantity: 1,
         qa_status: "A",
-        location: "STAGING",
+        location: "STAGING1",
         ref_id: inboundReferences.ID,
         ref_no: inboundReferences.ref_no,
         uom: product.uom,
         division: "REGULAR",
         rec_date: new Date().toISOString().split("T")[0],
-        // prod_date: new Date().toISOString().split("T")[0],
-        prod_date: "",
+        prod_date: new Date().toISOString().split("T")[0],
+        // prod_date: "",
         exp_date: "",
         lot_number: "",
         remarks: "",
@@ -561,14 +561,6 @@ export default function ItemFormTable({
             <div className="flex space-x-2">
               {(headerForm.status === "open" || headerForm.status === "draft") && (
                 <>
-                  {/* <Button
-                    variant="destructive"
-                    onClick={handleDeleteSelected}
-                    disabled={selectedIds.length === 0}
-                    className="flex items-center gap-2 w-auto"
-                  >
-                    Delete Selected
-                  </Button> */}
 
 
                   <Button
@@ -601,26 +593,10 @@ export default function ItemFormTable({
         >
           <thead className="bg-gray-100">
             <tr>
-              {/* <th className="p-2 border text-center w-8">
-                {headerForm.status == "open" || headerForm.status == "draft" && (
-                  <input
-                    // disabled={headerForm.status === "complete"}
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                  />
-                )}
-              </th> */}
               <th className="p-2 border w-12 text-center">No.</th>
               <th className="p-2 border" style={{ width: "200px" }}>
                 Item
               </th>
-              {/* <th className="p-2 border" style={{ width: "400px" }}>
-                Description
-              </th> */}
-              {/* <th className="p-2 border" style={{ width: "50px" }}>
-                UoM
-              </th> */}
               <th className="p-2 border" style={{ width: "100px" }}>
                 Plan Qty
               </th>
@@ -683,12 +659,6 @@ export default function ItemFormTable({
                 </th>
               )}
 
-              {/* {invPolicy?.inbound_can_input_serial && (
-                <th className="p-2 border" style={{ width: "140px" }}>
-                  Serial No.
-                </th>
-              )} */}
-
               <th className="p-2 border" style={{ width: "220px" }}>
                 Action
               </th>
@@ -701,18 +671,6 @@ export default function ItemFormTable({
                 const isEditing = editingId === item.ID;
                 return (
                   <tr key={item.ID} className="border-t">
-                    {/* <td className="p-2 border text-center">
-                      {headerForm.status == "open" && (
-                        <input
-                          // disabled={headerForm.status === "complete"}
-                          type="checkbox"
-                          checked={selectedIds.includes(item.ID)}
-                          onChange={(e) =>
-                            handleSelect(item.ID, e.target.checked)
-                          }
-                        />
-                      )}
-                    </td> */}
                     <td className="p-2 border text-center">{index + 1}</td>
 
                     {headerForm.status == "open" || headerForm.status == "draft" ||
@@ -720,30 +678,9 @@ export default function ItemFormTable({
                       <>
                         <td className="p-2 border">
                           <div className="flex items-center gap-2">
-                            {/* <Input
-                              style={{ fontSize: "12px" }}
-                              type="text"
-                              value={item.item_code}
-                              readOnly
-                              className="flex-1"
-                              placeholder="Click edit to select item..."
-                            /> */}
                             <span className="text-xs">SKU : {item.item_code} <br /> {products.find(
                               (p) => p.item_code === item.item_code
                             )?.item_name || ""}</span> <br />
-                            {/* <span>{products.find(
-                              (p) => p.item_code === item.item_code
-                            )?.item_name || ""}</span> */}
-                            {/* {['open', 'draft'].includes(headerForm.status) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEditItem(item)}
-                                title="Select item"
-                              >
-                                <RefreshCcw size={12} />
-                              </Button>
-                            )} */}
                           </div>
                           {errors[item.ID]?.item_code && (
                             <small className="text-red-500">
@@ -751,35 +688,6 @@ export default function ItemFormTable({
                             </small>
                           )}
                         </td>
-                        {/* <td className="p-2 border">
-                          <Input
-                            style={{ fontSize: "12px" }}
-                            readOnly
-                            type="text"
-                            value={
-                              products.find(
-                                (p) => p.item_code === item.item_code
-                              )?.item_name || ""
-                            }
-                          />
-                        </td> */}
-                        {/* <td className="p-2 border">
-                          <Select
-                            key={item.ID}
-                            className="w-24"
-                            options={
-                              selectStates[item.ID]?.options ?? defaultOptions
-                            }
-                            onFocus={() => handleFocus(item.item_code, item.ID)}
-                            isLoading={selectStates[item.ID]?.loading ?? false}
-                            value={(
-                              selectStates[item.ID]?.options ?? defaultOptions
-                            ).find((option) => option.value === item.uom)}
-                            onChange={(value) =>
-                              handleChange(item.ID, "uom", value?.value)
-                            }
-                          />
-                        </td> */}
                         <td className="p-2 border">
                           <div>
                             <Input
@@ -1014,28 +922,6 @@ export default function ItemFormTable({
                           </td>
                         )}
 
-                        {/* {invPolicy?.inbound_can_input_serial && (
-                          <td className="p-2 border">
-                            <Input
-                              style={{ fontSize: "12px", width: "130px" }}
-                              type="text"
-                              value={item.serial_number}
-                              onChange={(e) =>
-                                handleChange(
-                                  item.ID,
-                                  "serial_number",
-                                  e.target.value
-                                )
-                              }
-                            />
-                            {errors[item.ID]?.serial_number && (
-                              <small className="text-red-500">
-                                {errors[item.ID].serial_number}
-                              </small>
-                            )}
-                          </td>
-                        )} */}
-
                         <td
                           className="p-2 border space-x-2 text-center"
                           style={{ width: "100px" }}
@@ -1200,12 +1086,6 @@ export default function ItemFormTable({
                             {item.case_number}
                           </td>
                         )}
-
-                        {/* {invPolicy?.inbound_can_input_serial && (
-                          <td className="p-2 border text-center">
-                            {item.serial_number}
-                          </td>
-                        )} */}
 
                         {invPolicy?.inbound_can_input_serial && (
                           <td className="p-2 border text-center">

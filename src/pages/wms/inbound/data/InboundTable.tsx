@@ -847,21 +847,6 @@ const InboundTable = () => {
                   </DropdownMenuItem>
                 )}
 
-                {/* {(params.data.status === "checking" ||
-                  params.data.status === "partially received") && (
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmAction({ type: "putaway", inbound_no: params.data.inbound_no });
-                        // handlePutaway(params.data.inbound_no);
-                      }}
-                    >
-                      <Blocks className="mr-2 h-4 w-4" />
-                      Confirm Putaway
-                    </DropdownMenuItem>
-                  )} */}
-
                 {(params.data.status === "checking" ||
                   params.data.status === "partially received") && (
                     <>
@@ -890,7 +875,7 @@ const InboundTable = () => {
                           }}
                         >
                           <CheckCircle2 className="mr-2 h-4 w-4" />
-                          Confirm Putaway
+                          Putaway All Items
                         </DropdownMenuItem>
                       )}
                     </>
@@ -1057,7 +1042,7 @@ const InboundTable = () => {
       confirmText: "Check All",
     },
     putaway: {
-      title: "Confirm Putaway?",
+      title: "Confirm Putaway All Items?",
       description: "This will finalize putaway to the assigned locations.",
       confirmText: "Confirm Putaway",
     },

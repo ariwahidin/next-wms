@@ -10,7 +10,7 @@ import {
 } from "ag-grid-community";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Printer } from "lucide-react";
+import { MoreHorizontal, Pencil, Printer, Plus, Package, Loader2, ArrowUpRight } from "lucide-react";
 import useSWR from "swr";
 import { type ChangeEvent, useCallback, useState, useEffect } from "react";
 import styles from "./OutboundTable.module.css";
@@ -45,6 +45,41 @@ const HandleEdit = (item: any) => {
   window.location.href = `/wms/outbound/edit/${item.outbound_no}`;
 };
 
+type PickingOutboundOption = {
+  outbound_no: string;
+  shipment_id?: string;
+  customer_name?: string;
+  status?: string;
+  raw_status?: string;
+  [key: string]: any;
+};
+
+type MasterCartonOption = {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  [key: string]: any;
+};
+
+const unwrapList = (responseData: any): any[] => {
+  const candidates = [
+    responseData?.data,
+    responseData?.data?.data,
+    responseData?.data?.items,
+    responseData?.items,
+    responseData?.result,
+  ];
+
+  return candidates.find((value) => Array.isArray(value)) ?? [];
+};
+
+const getOutboundStatus = (item: any) =>
+  String(item?.raw_status ?? item?.status ?? "").trim().toUpperCase();
+
+const getMasterCartonId = (item: any) =>
+  Number(item?.master_carton_id ?? item?.ID ?? item?.id ?? item?.carton_type_id ?? 0);
+
 const PackingTable = () => {
   const {
     data: rowData,
@@ -52,6 +87,17 @@ const PackingTable = () => {
     mutate,
   } = useSWR("/outbound/packing/all", fetcher);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
+
+  // Create/open packing workspace dialog
+  const [isNewPackingOpen, setIsNewPackingOpen] = useState(false);
+  const [isLoadingOutbounds, setIsLoadingOutbounds] = useState(false);
+  const [isLoadingCartonTypes, setIsLoadingCartonTypes] = useState(false);
+  const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
+  const [pickingOutbounds, setPickingOutbounds] = useState<PickingOutboundOption[]>([]);
+  const [masterCartonOptions, setMasterCartonOptions] = useState<MasterCartonOption[]>([]);
+  const [selectedOutboundNo, setSelectedOutboundNo] = useState("");
+  const [selectedMasterCartonId, setSelectedMasterCartonId] = useState("");
+  const [outboundSearch, setOutboundSearch] = useState("");
 
   // Dialog states
   const [isScannedItemDialog, setIsScannedItemDialog] = useState(false);
@@ -61,6 +107,190 @@ const PackingTable = () => {
       document.body.style.removeProperty("pointer-events");
     }
   }, [isScannedItemDialog]);
+
+  const showPackingError = (description: string) => {
+    eventBus.emit("showAlert", {
+      title: "Unable to continue",
+      description,
+      type: "error",
+    });
+  };
+
+  const openNewPackingDialog = async () => {
+    setIsNewPackingOpen(true);
+    setSelectedOutboundNo("");
+    setSelectedMasterCartonId("");
+    setOutboundSearch("");
+    setMasterCartonOptions([]);
+    setIsLoadingOutbounds(true);
+
+    try {
+      const response = await api.get("/mobile/outbound/list/open", {
+        withCredentials: true,
+      });
+
+      // Endpoint response yang diberikan backend berbentuk:
+      // { "data": [ ... ] } dan tidak selalu menyertakan property `success`.
+      // Karena itu, validasi dilakukan berdasarkan keberadaan array data.
+      const outboundRows = unwrapList(response.data);
+      if (!Array.isArray(outboundRows)) {
+        throw new Error(response.data?.message || "Invalid outbound list response");
+      }
+
+      const rows = outboundRows
+        .filter((item: any) => getOutboundStatus(item) === "PICKING")
+        .map((item: any) => ({
+          ...item,
+          outbound_no: String(item.outbound_no ?? item.OutboundNo ?? ""),
+        }))
+        .filter((item: PickingOutboundOption) => item.outbound_no);
+
+      setPickingOutbounds(rows);
+    } catch (error: any) {
+      console.error("Load picking outbound failed:", error);
+      showPackingError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to load outbound with PICKING status."
+      );
+    } finally {
+      setIsLoadingOutbounds(false);
+    }
+  };
+
+  const handleOutboundSelection = async (outboundNo: string) => {
+    setSelectedOutboundNo(outboundNo);
+    setSelectedMasterCartonId("");
+    setMasterCartonOptions([]);
+
+    if (!outboundNo) return;
+
+    setIsLoadingCartonTypes(true);
+    try {
+      const response = await api.get("/mobile/outbound/master-cartons", {
+        withCredentials: true,
+      });
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || "Failed to load carton types");
+      }
+
+      const rows = unwrapList(response.data)
+        .map((item: any) => {
+          const id = getMasterCartonId(item);
+          const name = String(
+            item?.carton_type ??
+              item?.master_carton_name ??
+              item?.carton_name ??
+              item?.name ??
+              item?.code ??
+              item?.description ??
+              `Carton Type ${id}`
+          );
+
+          return {
+            ...item,
+            id,
+            name,
+            code: item?.code ?? item?.carton_code ?? "",
+            description: item?.description ?? "",
+          };
+        })
+        .filter((item: MasterCartonOption) => item.id > 0);
+
+      setMasterCartonOptions(rows);
+    } catch (error: any) {
+      console.error("Load master carton types failed:", error);
+      showPackingError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to load carton types."
+      );
+    } finally {
+      setIsLoadingCartonTypes(false);
+    }
+  };
+
+  const startNewPacking = () => {
+    if (!selectedOutboundNo) {
+      showPackingError("Please select an outbound number.");
+      return;
+    }
+
+    if (!selectedMasterCartonId) {
+      showPackingError("Please select a carton type.");
+      return;
+    }
+
+    const query = new URLSearchParams({
+      outbound: selectedOutboundNo,
+      master_carton_id: selectedMasterCartonId,
+      carton: "1",
+    });
+
+    window.location.href = `/wms/outbound/packing-desktop?${query.toString()}`;
+  };
+
+  const openOngoingPacking = async (item: any) => {
+    const outboundNo = String(item?.outbound_no ?? item?.OutboundNo ?? "");
+    if (!outboundNo) {
+      showPackingError("Outbound number is not available in this packing record.");
+      return;
+    }
+
+    setIsOpeningWorkspace(true);
+    try {
+      // Resolve the existing active carton so the workspace opens on the
+      // carton already being packed instead of creating a new one.
+      const response = await api.get(`/mobile/outbound/${encodeURIComponent(outboundNo)}/cartons`, {
+        withCredentials: true,
+      });
+
+      const cartons = unwrapList(response.data);
+      const activeCarton =
+        cartons.find((carton: any) =>
+          carton?.is_active === true ||
+          carton?.active === true ||
+          String(carton?.status ?? "").toUpperCase() === "ACTIVE"
+        ) ?? cartons[0];
+
+      const masterCartonId =
+        getMasterCartonId(activeCarton) ||
+        getMasterCartonId(item) ||
+        Number(item?.master_carton_id ?? 0);
+
+      if (!masterCartonId) {
+        showPackingError(
+          "The carton type for this packing record could not be identified. Please open it through Add Packing and select a carton type."
+        );
+        return;
+      }
+
+      const cartonNo =
+        activeCarton?.carton_no ??
+        activeCarton?.carton_number ??
+        activeCarton?.carton ??
+        item?.carton ??
+        1;
+
+      const query = new URLSearchParams({
+        outbound: outboundNo,
+        master_carton_id: String(masterCartonId),
+        carton: String(cartonNo),
+      });
+
+      window.location.href = `/wms/outbound/packing-desktop?${query.toString()}`;
+    } catch (error: any) {
+      console.error("Open ongoing packing failed:", error);
+      showPackingError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Unable to load the active carton for this outbound."
+      );
+    } finally {
+      setIsOpeningWorkspace(false);
+    }
+  };
 
   const printPackingNo = async () => {
     if (selectedRows.length === 0) {
@@ -266,11 +496,32 @@ const PackingTable = () => {
                   className="cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
+                    openOngoingPacking(params.data);
+                  }}
+                >
+                  <ArrowUpRight className="mr-2 h-4 w-4" />
+                  Continue Packing
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     HandlePreviewPDF(params.data.packing_no, params.data.outbound_id);
                   }}
                 >
                   <Printer className="mr-2 h-4 w-4" />
                   Print Packing List
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    HandlePrintSummaryPacking(params.data.packing_no, params.data.outbound_id);
+                  }}
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print Packing Summary
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
@@ -303,6 +554,16 @@ const PackingTable = () => {
                 >
                   <Printer className="mr-2 h-4 w-4" />
                   Label Custom 2
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    HandlePrintLabelByItem(params.data.packing_no, params.data.outbound_id);
+                  }}
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Label By Item
                 </DropdownMenuItem>
 
                 {/* <DropdownMenuSeparator />
@@ -388,6 +649,13 @@ const PackingTable = () => {
     }
   };
 
+    const HandlePrintSummaryPacking = (packing_no: string, id: number) => {
+    console.log("Preview PDF ID:", id);
+    window.open(`/wms/outbound/packing/packing-summary/${packing_no}/${id}`, "_blank");
+
+    return
+  };
+
   const HandlePrintLabel = (packing_no: string, id: number) => {
     console.log("Preview PDF ID:", id);
     window.open(`/wms/outbound/packing/packing-label/${packing_no}/${id}`, "_blank");
@@ -400,6 +668,11 @@ const PackingTable = () => {
   const HandlePrintLabelCustom2 = (packing_no: string, id: number) => {
     console.log("Preview PDF ID:", id);
     window.open(`/wms/outbound/packing/label-custom-2/${packing_no}/${id}`, "_blank");
+  };
+
+  const HandlePrintLabelByItem = (packing_no: string, id: number) => {
+    console.log("Preview PDF ID:", id);
+    window.open(`/wms/outbound/packing/label-by-item/${packing_no}/${id}`, "_blank");
   };
 
   return (
@@ -415,6 +688,14 @@ const PackingTable = () => {
                 }}
               >
                 Generate Packing No
+              </Button>
+              <Button
+                className="h-8 gap-2"
+                variant="outline"
+                onClick={openNewPackingDialog}
+              >
+                <Plus className="h-4 w-4" />
+                Add Packing
               </Button>
               {selectedRows.length > 0 && (
                 <Button
@@ -477,6 +758,139 @@ const PackingTable = () => {
           }}
         />
       </div>
+
+      {isNewPackingOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4">
+          <div className="w-full max-w-xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
+                  <Package className="h-4 w-4" />
+                  NEW OUTBOUND PACKING
+                </div>
+                <h2 className="mt-1 text-lg font-bold text-slate-900">Create Packing Workspace</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Select an outbound with PICKING status, then choose its carton type.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsNewPackingOpen(false)}
+                disabled={isOpeningWorkspace}
+              >
+                ✕
+              </Button>
+            </div>
+
+            <div className="space-y-5 px-5 py-5">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Outbound Number</label>
+                <input
+                  value={outboundSearch}
+                  onChange={(event) => setOutboundSearch(event.target.value)}
+                  placeholder="Search outbound number..."
+                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+                <div className="max-h-56 overflow-y-auto rounded-lg border border-slate-200">
+                  {isLoadingOutbounds ? (
+                    <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading outbound list...
+                    </div>
+                  ) : pickingOutbounds.filter((item) =>
+                      `${item.outbound_no} ${item.shipment_id ?? ""} ${item.customer_name ?? ""}`
+                        .toLowerCase()
+                        .includes(outboundSearch.toLowerCase())
+                    ).length === 0 ? (
+                    <div className="py-8 text-center text-sm text-slate-500">
+                      No outbound with PICKING status found.
+                    </div>
+                  ) : (
+                    pickingOutbounds
+                      .filter((item) =>
+                        `${item.outbound_no} ${item.shipment_id ?? ""} ${item.customer_name ?? ""}`
+                          .toLowerCase()
+                          .includes(outboundSearch.toLowerCase())
+                      )
+                      .map((item) => (
+                        <button
+                          key={item.outbound_no}
+                          type="button"
+                          onClick={() => handleOutboundSelection(item.outbound_no)}
+                          className={`flex w-full items-center justify-between border-b border-slate-100 px-3 py-3 text-left last:border-b-0 hover:bg-blue-50 ${
+                            selectedOutboundNo === item.outbound_no ? "bg-blue-50 ring-1 ring-inset ring-blue-300" : ""
+                          }`}
+                        >
+                          <span className="min-w-0">
+                            <span className="block text-sm font-semibold text-slate-800">{item.outbound_no}</span>
+                            <span className="mt-0.5 block truncate text-xs text-slate-500">
+                              {item.shipment_id || "No shipment ID"}{item.customer_name ? ` · ${item.customer_name}` : ""}
+                            </span>
+                          </span>
+                          <span className="ml-3 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700">
+                            PICKING
+                          </span>
+                        </button>
+                      ))
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Carton Type</label>
+                <select
+                  value={selectedMasterCartonId}
+                  onChange={(event) => setSelectedMasterCartonId(event.target.value)}
+                  disabled={!selectedOutboundNo || isLoadingCartonTypes || masterCartonOptions.length === 0}
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                >
+                  <option value="">
+                    {!selectedOutboundNo
+                      ? "Select outbound number first"
+                      : isLoadingCartonTypes
+                        ? "Loading carton types..."
+                        : masterCartonOptions.length === 0
+                          ? "No carton type available"
+                          : "Select carton type"}
+                  </option>
+                  {masterCartonOptions.map((carton) => (
+                    <option key={carton.id} value={String(carton.id)}>
+                      {carton.name}{carton.code && carton.code !== carton.name ? ` (${carton.code})` : ""}
+                    </option>
+                  ))}
+                </select>
+                {isLoadingCartonTypes && (
+                  <p className="flex items-center gap-2 text-xs text-slate-500">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Loading carton types...
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50 px-5 py-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsNewPackingOpen(false)}
+                disabled={isOpeningWorkspace}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={startNewPacking}
+                disabled={!selectedOutboundNo || !selectedMasterCartonId || isLoadingCartonTypes || isOpeningWorkspace}
+                className="gap-2 bg-blue-600 hover:bg-blue-700"
+              >
+                {isOpeningWorkspace ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" />}
+                Open Packing
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

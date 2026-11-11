@@ -46,7 +46,7 @@ export default function ManualForm() {
     customer_code: "",
     shipment_id: "",
     whs_code: "CKY",
-    owner_code: "YUWELL",
+    owner_code: "",
     mode: "create",
     picker_name: "",
     cust_address: "",
@@ -703,7 +703,7 @@ export default function ManualForm() {
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
                 >
-                  Start/Finish Picking Time<span className="text-red-500">*</span>
+                  Plan Start/Finish Picking Time<span className="text-red-500">*</span>
                 </Label>
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
