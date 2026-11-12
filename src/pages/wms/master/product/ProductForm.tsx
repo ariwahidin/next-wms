@@ -563,7 +563,7 @@ export default function ProductForm({
               </div>
 
               {/* Qty Per Carton */}
-              <div className="flex flex-col gap-2">
+              {/* <div className="flex flex-col gap-2">
                 <Label htmlFor="qtyPerCarton">Qty/Carton</Label>
                 <Input
                   inputMode="numeric"
@@ -574,7 +574,7 @@ export default function ProductForm({
                   id="qtyPerCarton"
                   placeholder="Entry Qty Per Carton (e.g. 12)"
                 />
-              </div>
+              </div> */}
 
               {/* Color */}
               <div className="flex flex-col gap-2">
@@ -653,6 +653,7 @@ export default function ProductForm({
               </div>
 
               {[
+                { id: "qty-per-carton", label: "Pcs Per Carton", value: qtyPerCarton, setter: setQtyPerCarton },
                 { id: "pcs-per-box", label: "Pcs Per Box", value: pcsPerBox, setter: setPcsPerBox },
                 { id: "pcs-per-dozen", label: "Pcs Per Dozen", value: pcsPerDozen, setter: setPcsPerDozen },
                 { id: "pcs-per-set", label: "Pcs Per Set", value: pcsPerSet, setter: setPcsPerSet },

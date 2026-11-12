@@ -765,6 +765,7 @@ const CheckingPage = () => {
     const buildPackageOptions = (product: any): PackageOption[] => {
         const fields: Array<[string, string]> = [
             ["PCS", "1"],
+            ["CARTON", "qty_per_carton"],
             ["BOX", "pcs_per_box"],
             ["DOZEN", "pcs_per_dozen"],
             ["SET", "pcs_per_set"],
