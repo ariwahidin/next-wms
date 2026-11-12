@@ -83,6 +83,15 @@ export default function ManualForm() {
     { value: "JAPAN", label: "JAPAN" },
   ]);
 
+
+  const [truckTypeOptions, setTruckTypeOptions] = useState<ItemOptions[]>([
+    { value: "CDD", label: "CDD" },
+    { value: "CDE", label: "CDE" },
+    { value: "WINGBOX", label: "WINGBOX" },
+    { value: "MOTOCYCLE", label: "MOTOCYCLE" },
+    { value: "NON-SIZE", label: "NON-SIZE" },
+  ]);
+
   const [ownerOptions, setOwnerOptions] = useState<ItemOptions[]>([]);
   const [whsCodeOptions, setWhsCodeOptions] = useState<ItemOptions[]>([]);
 
@@ -126,12 +135,13 @@ export default function ManualForm() {
 
   const fetchData = async () => {
     try {
-      const [suppliers, transporters, warehouses, owners, origins] = await Promise.all([
+      const [suppliers, transporters, warehouses, owners, origins, truckRes] = await Promise.all([
         api.get("/suppliers/owner/user"),
         api.get("/transporters"),
         api.get("/warehouses"),
         api.get("/owners/user"),
         api.get("/origins"),
+        api.get("/trucks"),
       ]);
 
       if (suppliers.data.success) {
@@ -192,6 +202,15 @@ export default function ManualForm() {
             }))
           );
         }
+
+        if (truckRes.data.success) {
+          setTruckTypeOptions(
+            truckRes.data.data.map((item: any) => ({
+              value: item.name,
+              label: item.name,
+            }))
+          );
+        }
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -203,7 +222,8 @@ export default function ManualForm() {
       ...m,
       ref_no: references.find((ref) => ref.ID === m.ref_id)?.ref_no,
     }));
-    formData.invoice = formData.receipt_id;
+    // formData.invoice = formData.receipt_id;
+    formData.po_number = formData.receipt_id;
     if (references.length == 1) {
       references[0].ref_no = formData.receipt_id;
     }
@@ -463,7 +483,7 @@ export default function ManualForm() {
                 </Label>
                 <span className="shrink-0">:</span>
                 <Input
-                  placeholder="Enter PO / Invoice No"
+                  placeholder="Enter PO No"
                   autoComplete="off"
                   id="ReceiptID"
                   style={{ fontSize: "12px" }}
@@ -471,6 +491,27 @@ export default function ManualForm() {
                   value={formData.receipt_id}
                   onChange={(e) =>
                     setFormData({ ...formData, receipt_id: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Invoice No
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  placeholder="Enter Invoice No"
+                  autoComplete="off"
+                  id="InvoiceNo"
+                  style={{ fontSize: "12px" }}
+                  className="flex-1"
+                  value={formData.invoice}
+                  onChange={(e) =>
+                    setFormData({ ...formData, invoice: e.target.value })
                   }
                 />
               </div>
@@ -843,6 +884,24 @@ export default function ManualForm() {
               </div>
 
               <div className="flex items-center gap-2">
+                <Label className="w-24 text-left shrink-0" style={{ fontSize: "12px" }}>
+                  Truck Size
+                </Label>
+                <span className="shrink-0">:</span>
+                <div className="flex-1">
+                  <Select
+                    className="w-50"
+                    value={truckTypeOptions.find((o) => o.value === formData.truck_size)}
+                    options={truckTypeOptions}
+                    onChange={(opt) => {
+                      if (opt)
+                        setFormData({ ...formData, truck_size: opt.value });
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
@@ -858,7 +917,7 @@ export default function ManualForm() {
                     setFormData({ ...formData, truck_size: e.target.value })
                   }
                 />
-              </div>
+              </div> */}
 
               <div className="flex items-center gap-2">
                 <Label
