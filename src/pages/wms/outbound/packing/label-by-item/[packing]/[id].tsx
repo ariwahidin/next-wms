@@ -294,8 +294,21 @@ const CartonLabelPrinter: React.FC = () => {
         return qtyScan / safeCopies;
     };
 
-    const getQuantityUom = (item: PackingItem): number => {
-        return toFiniteNumber(item.package_qty);
+    const getQuantityUom = (
+        item: PackingItem,
+        copies: number
+    ): number | null => {
+        const packageQty = toFiniteNumber(item.package_qty);
+        const safeCopies = normalizePrintCopies(copies);
+
+        // No copies means this row has no printed per-label quantity.
+        if (safeCopies <= 0) {
+            return null;
+        }
+
+        // Distribute the total package quantity across the selected copies.
+        // Do not round: rounding could change the represented total quantity.
+        return packageQty / safeCopies;
     };
 
     const getUom = (item: PackingItem): string => {
@@ -522,7 +535,8 @@ const CartonLabelPrinter: React.FC = () => {
                                         <th className="px-3 py-3">Item Code</th>
                                         <th className="px-3 py-3 text-right">Qty Scan</th>
                                         <th className="px-3 py-3 text-right">Package Qty</th>
-                                        <th className="px-3 py-3 text-right">Qty per Label</th>
+                                        <th className="px-3 py-3 text-right">Qty PCS / Label</th>
+                                        <th className="px-3 py-3 text-right">Qty UOM / Label</th>
                                         <th className="px-3 py-3 text-center">Print Copies</th>
                                         <th className="px-3 py-3 text-right">Action</th>
                                     </tr>
@@ -562,14 +576,23 @@ const CartonLabelPrinter: React.FC = () => {
 
                                             <td className="px-3 py-3 text-right font-semibold tabular-nums text-gray-800">
                                                 {(() => {
-                                                    const qtyPerLabel = getQuantityPcs(
-                                                        item,
-                                                        printCopies[index] ?? 1
-                                                    );
+                                                    const copies = printCopies[index] ?? 1;
+                                                    const qtyPerLabel = getQuantityPcs(item, copies);
 
                                                     return qtyPerLabel === null
                                                         ? '-'
                                                         : formatQuantity(qtyPerLabel);
+                                                })()}
+                                            </td>
+
+                                            <td className="px-3 py-3 text-right font-semibold tabular-nums text-gray-800">
+                                                {(() => {
+                                                    const copies = printCopies[index] ?? 1;
+                                                    const qtyUomPerLabel = getQuantityUom(item, copies);
+
+                                                    return qtyUomPerLabel === null
+                                                        ? '-'
+                                                        : formatQuantity(qtyUomPerLabel);
                                                 })()}
                                             </td>
 
@@ -667,7 +690,10 @@ const CartonLabelPrinter: React.FC = () => {
                                         item,
                                         printCopies[index] ?? 1
                                     )}
-                                    getQuantityUom={getQuantityUom}
+                                    quantityUom={getQuantityUom(
+                                        item,
+                                        printCopies[index] ?? 1
+                                    )}
                                     getUom={getUom}
                                 />
                             </div>
@@ -711,7 +737,10 @@ const CartonLabelPrinter: React.FC = () => {
                                         printLabel.item,
                                         printCopies[printLabel.itemIndex] ?? 1
                                     )}
-                                    getQuantityUom={getQuantityUom}
+                                    quantityUom={getQuantityUom(
+                                        printLabel.item,
+                                        printCopies[printLabel.itemIndex] ?? 1
+                                    )}
                                     getUom={getUom}
                                 />
                             </div>
@@ -935,7 +964,7 @@ interface LabelContentProps {
     getDeliveryAddress: (item: PackingItem) => string;
 
     quantityPcs: number | null;
-    getQuantityUom: (item: PackingItem) => number;
+    quantityUom: number | null;
     getUom: (item: PackingItem) => string;
 }
 
@@ -951,7 +980,7 @@ const LabelContent: React.FC<LabelContentProps> = ({
     getDeliveryName,
     getDeliveryAddress,
     quantityPcs,
-    getQuantityUom,
+    quantityUom,
     getUom,
 }) => {
     return (
@@ -1043,7 +1072,7 @@ const LabelContent: React.FC<LabelContentProps> = ({
                 </div>
 
                 <div>
-                    {formatQuantity(getQuantityUom(item))}
+                    {quantityUom === null ? '-' : formatQuantity(quantityUom)}
                 </div>
 
                 <div>
