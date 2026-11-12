@@ -515,15 +515,17 @@ export default function ItemFormTable({
                     type: "success",
                 });
 
-                router.reload();
+                // router.reload();
+                eventBus.emit("refreshData");
             } else {
-                eventBus.emit("showAlert", {
-                    title: "Error",
-                    description:
-                        response.data?.message ||
-                        "Failed to update outbound.",
-                    type: "error",
-                });
+                console.error("Failed to reconcile outbound:", response.data);
+                // eventBus.emit("showAlert", {
+                //     title: "Error",
+                //     description:
+                //         response.data?.message ||
+                //         "Failed to update outbound.",
+                //     type: "error",
+                // });
             }
         } catch (error: any) {
             console.error("Error reconciling outbound:", error);
@@ -539,7 +541,7 @@ export default function ItemFormTable({
         } finally {
             setIsReconciling(false);
             eventBus.emit("loading", false);
-        }
+        } 
     };
 
 

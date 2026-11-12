@@ -143,7 +143,7 @@ export default function ManualForm() {
       formData.plan_pickup_date == "" ||
       formData.plan_pickup_time == "" ||
       formData.rcv_do_date == "" ||
-      formData.rcv_do_time == "" 
+      formData.rcv_do_time == ""
       // formData.start_pick_time == "" ||
       // formData.end_pick_time == ""
     ) {
@@ -294,6 +294,18 @@ export default function ManualForm() {
     }
   };
 
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchDataOutbound(no as string);
+    };
+
+    eventBus.on("refreshData", handleRefresh);
+
+    return () => {
+      eventBus.off("refreshData", handleRefresh);
+    };
+  }, [no]);
 
   return (
     <div className="p-4" style={{ fontSize: "12px" }}>
