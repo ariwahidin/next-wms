@@ -37,6 +37,14 @@ interface PackingItem {
     package_type: string;
     package_qty: number;
 
+    // Packaging conversion data from the backend.
+    qty_per_carton?: number;
+    pcs_per_gross?: number;
+    pcs_per_dozen?: number;
+    pcs_per_set?: number;
+    pcs_per_pack?: number;
+    pcs_per_case?: number;
+
     barcode_scan: string;
 
     ctn_length: number;
@@ -48,10 +56,14 @@ interface PackingItem {
     ctn_volume: number;
 }
 
+type PrintMode = 'MANUAL' | 'PACKAGE_QTY' | 'CARTON';
+
 interface PrintLabel {
     item: PackingItem;
     itemIndex: number;
     copyIndex: number;
+    quantityPcs: number | null;
+    quantityUom: number | null;
 }
 
 // =============================================
@@ -73,6 +85,9 @@ const PAGE_HEIGHT_MM = 297;
 const PAGE_PADDING_MM = 5;
 const LABEL_GAP_MM = 2;
 
+// Persist the preferred print mode between visits to this page.
+const PRINT_MODE_STORAGE_KEY = 'wms-packing-label-print-mode';
+
 // =============================================
 // HELPERS
 // =============================================
@@ -91,7 +106,8 @@ const formatQuantity = (value: number): string => {
 
     // String(number) keeps the shortest round-trippable representation.
     // Avoid applying an arbitrary decimal rounding rule to inventory quantities.
-    return String(value);
+    // Suppress binary floating-point artifacts while preserving practical quantity precision.
+    return String(Number(value.toFixed(10)));
 };
 
 const normalizePrintCopies = (value: number): number => {
@@ -111,15 +127,49 @@ const CartonLabelPrinter: React.FC = () => {
 
     const [packingItems, setPackingItems] = useState<PackingItem[]>([]);
     const [printCopies, setPrintCopies] = useState<number[]>([]);
+    const [rowPrintModes, setRowPrintModes] = useState<PrintMode[]>([]);
+    const [defaultPrintMode, setDefaultPrintMode] = useState<PrintMode>('MANUAL');
+    const [settingsLoaded, setSettingsLoaded] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // =============================================
+    // PERSISTED DEFAULT PRINT MODE
+    // =============================================
+
+    useEffect(() => {
+        try {
+            const savedMode = window.localStorage.getItem(PRINT_MODE_STORAGE_KEY);
+            if (
+                savedMode === 'MANUAL' ||
+                savedMode === 'PACKAGE_QTY' ||
+                savedMode === 'CARTON'
+            ) {
+                setDefaultPrintMode(savedMode);
+            }
+        } catch (storageError) {
+            console.warn('Unable to read print mode from localStorage:', storageError);
+        } finally {
+            setSettingsLoaded(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!settingsLoaded) return;
+
+        try {
+            window.localStorage.setItem(PRINT_MODE_STORAGE_KEY, defaultPrintMode);
+        } catch (storageError) {
+            console.warn('Unable to save print mode to localStorage:', storageError);
+        }
+    }, [defaultPrintMode, settingsLoaded]);
 
     // =============================================
     // FETCH DATA
     // =============================================
 
     useEffect(() => {
-        if (!packing || !id) return;
+        if (!packing || !id || !settingsLoaded) return;
 
         let isMounted = true;
 
@@ -138,12 +188,9 @@ const CartonLabelPrinter: React.FC = () => {
                 if (!isMounted) return;
 
                 const list: PackingItem[] = res.data.data?.list || [];
-
                 setPackingItems(list);
-
-                // Safe default: each API record is printed once.
-                // User can set an individual row to package_qty using the quick action.
-                setPrintCopies(list.map(() => 1));
+                setPrintCopies(list.map(item => getCopiesForMode(item, defaultPrintMode)));
+                setRowPrintModes(list.map(() => defaultPrintMode));
             } catch (err) {
                 console.error('Failed to fetch packing items:', err);
 
@@ -162,7 +209,10 @@ const CartonLabelPrinter: React.FC = () => {
         return () => {
             isMounted = false;
         };
-    }, [packing, id]);
+        // Fetch once after localStorage preference has been loaded.
+        // Changing the default mode is handled by the explicit mode-change handler.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [packing, id, settingsLoaded]);
 
     // =============================================
     // CARTON NUMBERING
@@ -198,8 +248,27 @@ const CartonLabelPrinter: React.FC = () => {
     const labels = packingItems;
 
     // =============================================
-    // PRINT COPY CONFIGURATION
+    // PRINT MODE / COPY CONFIGURATION
     // =============================================
+
+    const getCopiesForMode = (item: PackingItem, mode: PrintMode): number => {
+        if (mode === 'PACKAGE_QTY') {
+            return normalizePrintCopies(toFiniteNumber(item.package_qty));
+        }
+
+        if (mode === 'CARTON') {
+            const qtyScan = toFiniteNumber(item.qty_scan ?? item.quantity);
+            const qtyPerCarton = toFiniteNumber(item.qty_per_carton);
+
+            if (qtyScan <= 0) return 0;
+            if (qtyPerCarton <= 0) return 1;
+
+            // Ceiling is intentional: the last label may be a partial carton.
+            return Math.ceil(qtyScan / qtyPerCarton);
+        }
+
+        return 1;
+    };
 
     const updatePrintCopies = (index: number, value: number) => {
         setPrintCopies(previous => {
@@ -207,23 +276,56 @@ const CartonLabelPrinter: React.FC = () => {
             updated[index] = normalizePrintCopies(value);
             return updated;
         });
+
+        // Manual edits switch only this row to manual distribution.
+        setRowPrintModes(previous => {
+            const updated = [...previous];
+            updated[index] = 'MANUAL';
+            return updated;
+        });
     };
 
-    const setCopiesToPackageQty = (index: number, item: PackingItem) => {
-        updatePrintCopies(index, toFiniteNumber(item.package_qty));
+    const applyModeToRow = (index: number, item: PackingItem, mode: PrintMode) => {
+        setPrintCopies(previous => {
+            const updated = [...previous];
+            updated[index] = getCopiesForMode(item, mode);
+            return updated;
+        });
+
+        setRowPrintModes(previous => {
+            const updated = [...previous];
+            updated[index] = mode;
+            return updated;
+        });
     };
 
-    const setAllCopiesToOne = () => {
-        setPrintCopies(packingItems.map(() => 1));
+    const applyModeToAll = (mode: PrintMode) => {
+        setDefaultPrintMode(mode);
+        setPrintCopies(packingItems.map(item => getCopiesForMode(item, mode)));
+        setRowPrintModes(packingItems.map(() => mode));
     };
 
-    const setAllCopiesToPackageQty = () => {
-        setPrintCopies(
-            packingItems.map(item =>
-                normalizePrintCopies(toFiniteNumber(item.package_qty))
-            )
-        );
+    const handleDefaultModeChange = (mode: PrintMode) => {
+        applyModeToAll(mode);
     };
+
+    const setAllCopiesToOne = () => applyModeToAll('MANUAL');
+    const setAllCopiesToPackageQty = () => applyModeToAll('PACKAGE_QTY');
+    const setAllCopiesToCarton = () => applyModeToAll('CARTON');
+
+    const getCartonRemainder = (item: PackingItem): number => {
+        const qtyScan = toFiniteNumber(item.qty_scan ?? item.quantity);
+        const qtyPerCarton = toFiniteNumber(item.qty_per_carton);
+
+        if (qtyScan <= 0 || qtyPerCarton <= 0) return 0;
+        const remainder = qtyScan % qtyPerCarton;
+        return remainder > 0 ? remainder : 0;
+    };
+
+    const missingCartonConfigCount = packingItems.filter(item =>
+        toFiniteNumber(item.qty_scan ?? item.quantity) > 0 &&
+        toFiniteNumber(item.qty_per_carton) <= 0
+    ).length;
 
     const totalPrintLabels = useMemo(() => {
         return packingItems.reduce((total, _item, index) => {
@@ -231,24 +333,78 @@ const CartonLabelPrinter: React.FC = () => {
         }, 0);
     }, [packingItems, printCopies]);
 
-    // Expand only the print data. The screen preview remains one card per API record.
+    // Returns the quantity represented by a particular printed copy.
+    // CARTON mode uses qty_per_carton and allows a smaller final/partial carton.
+    const getQuantityPcs = (
+        item: PackingItem,
+        copies: number,
+        mode: PrintMode,
+        copyIndex = 0
+    ): number | null => {
+        const qtyScan = toFiniteNumber(item.qty_scan ?? item.quantity);
+        const safeCopies = normalizePrintCopies(copies);
+
+        if (safeCopies <= 0) return null;
+
+        if (mode === 'CARTON') {
+            const qtyPerCarton = toFiniteNumber(item.qty_per_carton);
+            if (qtyPerCarton > 0) {
+                const remainingQty = Math.max(qtyScan - (copyIndex * qtyPerCarton), 0);
+                return Math.min(qtyPerCarton, remainingQty);
+            }
+        }
+
+        // Manual and Package Qty modes distribute the scanned quantity evenly.
+        return qtyScan / safeCopies;
+    };
+
+    const getQuantityUom = (
+        item: PackingItem,
+        copies: number,
+        mode: PrintMode,
+        copyIndex = 0
+    ): number | null => {
+        const qtyScan = toFiniteNumber(item.qty_scan ?? item.quantity);
+        const packageQty = toFiniteNumber(item.package_qty);
+        const safeCopies = normalizePrintCopies(copies);
+
+        if (safeCopies <= 0) return null;
+
+        if (mode === 'CARTON') {
+            const pcsForThisLabel = getQuantityPcs(item, copies, mode, copyIndex) ?? 0;
+
+            // Convert this label's PCS quantity back to the item's package UOM.
+            // This also handles a partial carton without losing the remainder.
+            if (qtyScan > 0) {
+                return (pcsForThisLabel * packageQty) / qtyScan;
+            }
+            return 0;
+        }
+
+        return packageQty / safeCopies;
+    };
+
+    // Expand only the print data. Preview remains one card per API record.
     const printLabels = useMemo<PrintLabel[]>(() => {
         const result: PrintLabel[] = [];
 
         packingItems.forEach((item, itemIndex) => {
             const copies = normalizePrintCopies(printCopies[itemIndex] ?? 1);
+            const mode = rowPrintModes[itemIndex] ?? 'MANUAL';
 
             for (let copyIndex = 0; copyIndex < copies; copyIndex += 1) {
                 result.push({
                     item,
                     itemIndex,
                     copyIndex,
+                    quantityPcs: getQuantityPcs(item, copies, mode, copyIndex),
+                    quantityUom: getQuantityUom(item, copies, mode, copyIndex),
                 });
             }
         });
 
         return result;
-    }, [packingItems, printCopies]);
+    }, [packingItems, printCopies, rowPrintModes]);
 
     // =============================================
     // PAGINATION
@@ -269,47 +425,6 @@ const CartonLabelPrinter: React.FC = () => {
 
         return result;
     }, [printLabels]);
-
-    // =============================================
-    // QUANTITY HELPERS
-    // =============================================
-
-    const getQuantityPcs = (
-        item: PackingItem,
-        copies: number
-    ): number | null => {
-        const qtyScan = toFiniteNumber(
-            item.qty_scan ?? item.quantity
-        );
-
-        const safeCopies = normalizePrintCopies(copies);
-
-        // If this row is not being printed, there is no quantity per label.
-        if (safeCopies <= 0) {
-            return null;
-        }
-
-        // Each printed copy represents an equal share of the scanned quantity.
-        // Do not round here: rounding could make the printed total differ from Qty Scan.
-        return qtyScan / safeCopies;
-    };
-
-    const getQuantityUom = (
-        item: PackingItem,
-        copies: number
-    ): number | null => {
-        const packageQty = toFiniteNumber(item.package_qty);
-        const safeCopies = normalizePrintCopies(copies);
-
-        // No copies means this row has no printed per-label quantity.
-        if (safeCopies <= 0) {
-            return null;
-        }
-
-        // Distribute the total package quantity across the selected copies.
-        // Do not round: rounding could change the represented total quantity.
-        return packageQty / safeCopies;
-    };
 
     const getUom = (item: PackingItem): string => {
         return item.package_type || item.uom_scan || '-';
@@ -506,7 +621,20 @@ const CartonLabelPrinter: React.FC = () => {
                                 </p>
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap items-end gap-2">
+                                <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
+                                    Default Print Mode
+                                    <select
+                                        value={defaultPrintMode}
+                                        onChange={event => handleDefaultModeChange(event.target.value as PrintMode)}
+                                        className="min-w-[190px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                    >
+                                        <option value="MANUAL">Manual / 1 Copy</option>
+                                        <option value="PACKAGE_QTY">Package Qty</option>
+                                        <option value="CARTON">Carton</option>
+                                    </select>
+                                </label>
+
                                 <button
                                     type="button"
                                     onClick={setAllCopiesToOne}
@@ -524,17 +652,27 @@ const CartonLabelPrinter: React.FC = () => {
                                     <Copy className="h-4 w-4" />
                                     All = Package Qty
                                 </button>
+
+                                <button
+                                    type="button"
+                                    onClick={setAllCopiesToCarton}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+                                >
+                                    <Package className="h-4 w-4" />
+                                    All = Carton
+                                </button>
                             </div>
                         </div>
 
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[720px] text-sm">
+                            <table className="w-full min-w-[1100px] text-sm">
                                 <thead>
                                     <tr className="border-b bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
                                         <th className="px-3 py-3">Label</th>
                                         <th className="px-3 py-3">Item Code</th>
                                         <th className="px-3 py-3 text-right">Qty Scan</th>
                                         <th className="px-3 py-3 text-right">Package Qty</th>
+                                        <th className="px-3 py-3 text-right">Qty / Carton</th>
                                         <th className="px-3 py-3 text-right">Qty PCS / Label</th>
                                         <th className="px-3 py-3 text-right">Qty UOM / Label</th>
                                         <th className="px-3 py-3 text-center">Print Copies</th>
@@ -574,10 +712,17 @@ const CartonLabelPrinter: React.FC = () => {
                                                 )}
                                             </td>
 
+                                            <td className="px-3 py-3 text-right tabular-nums">
+                                                {toFiniteNumber(item.qty_per_carton) > 0
+                                                    ? formatQuantity(toFiniteNumber(item.qty_per_carton))
+                                                    : '-'}
+                                            </td>
+
                                             <td className="px-3 py-3 text-right font-semibold tabular-nums text-gray-800">
                                                 {(() => {
                                                     const copies = printCopies[index] ?? 1;
-                                                    const qtyPerLabel = getQuantityPcs(item, copies);
+                                                    const mode = rowPrintModes[index] ?? 'MANUAL';
+                                                    const qtyPerLabel = getQuantityPcs(item, copies, mode, 0);
 
                                                     return qtyPerLabel === null
                                                         ? '-'
@@ -588,7 +733,8 @@ const CartonLabelPrinter: React.FC = () => {
                                             <td className="px-3 py-3 text-right font-semibold tabular-nums text-gray-800">
                                                 {(() => {
                                                     const copies = printCopies[index] ?? 1;
-                                                    const qtyUomPerLabel = getQuantityUom(item, copies);
+                                                    const mode = rowPrintModes[index] ?? 'MANUAL';
+                                                    const qtyUomPerLabel = getQuantityUom(item, copies, mode, 0);
 
                                                     return qtyUomPerLabel === null
                                                         ? '-'
@@ -612,18 +758,33 @@ const CartonLabelPrinter: React.FC = () => {
                                                     className="w-24 rounded-md border border-gray-300 px-3 py-2 text-center font-semibold tabular-nums outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                                                     aria-label={`Print copies for label ${index + 1}`}
                                                 />
+                                                {(rowPrintModes[index] ?? 'MANUAL') === 'CARTON' &&
+                                                    getCartonRemainder(item) > 0 && (
+                                                        <p className="mt-1 whitespace-nowrap text-[11px] text-amber-700">
+                                                            Last carton: {formatQuantity(getCartonRemainder(item))} PCS
+                                                        </p>
+                                                    )}
                                             </td>
 
                                             <td className="px-3 py-3 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setCopiesToPackageQty(index, item)
-                                                    }
-                                                    className="whitespace-nowrap rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-                                                >
-                                                    Use Package Qty
-                                                </button>
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => applyModeToRow(index, item, 'CARTON')}
+                                                        disabled={toFiniteNumber(item.qty_per_carton) <= 0}
+                                                        title={toFiniteNumber(item.qty_per_carton) > 0 ? 'Calculate copies using quantity per carton' : 'qty_per_carton is not available for this item'}
+                                                        className="whitespace-nowrap rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    >
+                                                        Carton
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => applyModeToRow(index, item, 'PACKAGE_QTY')}
+                                                        className="whitespace-nowrap rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                                                    >
+                                                        Package Qty
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -631,9 +792,16 @@ const CartonLabelPrinter: React.FC = () => {
                             </table>
                         </div>
 
+                        {missingCartonConfigCount > 0 && (
+                            <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                {missingCartonConfigCount} item(s) do not have a valid qty_per_carton. Carton mode keeps those items at 1 copy until the packaging data is available.
+                            </p>
+                        )}
+
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-4">
                             <p className="text-sm text-gray-500">
-                                Setting 0 means this label will not be printed.
+                                0 = do not print. Carton mode automatically creates a partial final carton when needed.
+                                Default Print Mode is saved in this browser.
                             </p>
 
                             <p className="text-sm font-semibold text-gray-800">
@@ -653,7 +821,7 @@ const CartonLabelPrinter: React.FC = () => {
                         </h2>
 
                         <p className="mt-1 text-sm text-gray-500">
-                            Preview displays one label per API record. Copies are expanded only in print output.
+                            Preview shows the first generated label for each item. Print output expands all copies, including a partial final carton.
                         </p>
                     </div>
 
@@ -674,7 +842,7 @@ const CartonLabelPrinter: React.FC = () => {
                                         </span>
 
                                         <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                                            {normalizePrintCopies(printCopies[index] ?? 1)} copies
+                                            {normalizePrintCopies(printCopies[index] ?? 1)} copies · {rowPrintModes[index] ?? 'MANUAL'}
                                         </span>
                                     </div>
                                 </div>
@@ -688,11 +856,15 @@ const CartonLabelPrinter: React.FC = () => {
                                     getDeliveryAddress={getDeliveryAddress}
                                     quantityPcs={getQuantityPcs(
                                         item,
-                                        printCopies[index] ?? 1
+                                        printCopies[index] ?? 1,
+                                        rowPrintModes[index] ?? 'MANUAL',
+                                        0
                                     )}
                                     quantityUom={getQuantityUom(
                                         item,
-                                        printCopies[index] ?? 1
+                                        printCopies[index] ?? 1,
+                                        rowPrintModes[index] ?? 'MANUAL',
+                                        0
                                     )}
                                     getUom={getUom}
                                 />
@@ -733,14 +905,8 @@ const CartonLabelPrinter: React.FC = () => {
                                     formatDimension={formatDimension}
                                     getDeliveryName={getDeliveryName}
                                     getDeliveryAddress={getDeliveryAddress}
-                                    quantityPcs={getQuantityPcs(
-                                        printLabel.item,
-                                        printCopies[printLabel.itemIndex] ?? 1
-                                    )}
-                                    quantityUom={getQuantityUom(
-                                        printLabel.item,
-                                        printCopies[printLabel.itemIndex] ?? 1
-                                    )}
+                                    quantityPcs={printLabel.quantityPcs}
+                                    quantityUom={printLabel.quantityUom}
                                     getUom={getUom}
                                 />
                             </div>
