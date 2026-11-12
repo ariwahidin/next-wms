@@ -1,7 +1,6 @@
-
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Package, Printer } from 'lucide-react';
+import { Package, Printer, RotateCcw, Copy } from 'lucide-react';
 import api from '@/lib/api';
 
 // =============================================
@@ -49,16 +48,58 @@ interface PackingItem {
     ctn_volume: number;
 }
 
+interface PrintLabel {
+    item: PackingItem;
+    itemIndex: number;
+    copyIndex: number;
+}
+
 // =============================================
-// CONFIGURATION
+// PRINT CONFIGURATION
 // =============================================
 
-// A4 portrait: 5 labels per page
+// A4 portrait: 5 labels per page.
 const LABELS_PER_PAGE = 5;
 
-// Label dimensions
-const LABEL_HEIGHT = '50mm';
-const LABEL_WIDTH = '200mm';
+// Physical label dimensions.
+const LABEL_HEIGHT_MM = 50;
+const LABEL_WIDTH_MM = 200;
+
+// A4 dimensions.
+const PAGE_WIDTH_MM = 210;
+const PAGE_HEIGHT_MM = 297;
+
+// 5mm top/left/right padding and 2mm gap between labels.
+const PAGE_PADDING_MM = 5;
+const LABEL_GAP_MM = 2;
+
+// =============================================
+// HELPERS
+// =============================================
+
+const toFiniteNumber = (value: unknown, fallback = 0): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+/**
+ * Keep quantities ungrouped to avoid ambiguity on printed labels.
+ * Example: 1728 -> "1728", 1.5 -> "1.5".
+ */
+const formatQuantity = (value: number): string => {
+    if (!Number.isFinite(value)) return '0';
+
+    // String(number) keeps the shortest round-trippable representation.
+    // Avoid applying an arbitrary decimal rounding rule to inventory quantities.
+    return String(value);
+};
+
+const normalizePrintCopies = (value: number): number => {
+    if (!Number.isFinite(value) || value <= 0) return 0;
+
+    // A copy is a physical label, so it must be a whole number.
+    return Math.floor(value);
+};
 
 // =============================================
 // MAIN COMPONENT
@@ -66,10 +107,10 @@ const LABEL_WIDTH = '200mm';
 
 const CartonLabelPrinter: React.FC = () => {
     const router = useRouter();
-
     const { packing, id } = router.query;
 
     const [packingItems, setPackingItems] = useState<PackingItem[]>([]);
+    const [printCopies, setPrintCopies] = useState<number[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -79,6 +120,8 @@ const CartonLabelPrinter: React.FC = () => {
 
     useEffect(() => {
         if (!packing || !id) return;
+
+        let isMounted = true;
 
         const fetchData = async () => {
             try {
@@ -92,17 +135,33 @@ const CartonLabelPrinter: React.FC = () => {
                     }
                 );
 
-                setPackingItems(res.data.data?.list || []);
+                if (!isMounted) return;
 
+                const list: PackingItem[] = res.data.data?.list || [];
+
+                setPackingItems(list);
+
+                // Safe default: each API record is printed once.
+                // User can set an individual row to package_qty using the quick action.
+                setPrintCopies(list.map(() => 1));
             } catch (err) {
                 console.error('Failed to fetch packing items:', err);
-                setError('Failed to load packing items.');
+
+                if (isMounted) {
+                    setError('Failed to load packing items.');
+                }
             } finally {
-                setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         };
 
         fetchData();
+
+        return () => {
+            isMounted = false;
+        };
     }, [packing, id]);
 
     // =============================================
@@ -111,18 +170,20 @@ const CartonLabelPrinter: React.FC = () => {
 
     const cartonMap = useMemo(() => {
         const cartons = Array.from(
-            new Set(
-                packingItems.map(item => item.pack_ctn_no)
-            )
+            new Set(packingItems.map(item => item.pack_ctn_no))
         ).sort((a, b) => {
-            return Number(a) - Number(b);
+            const numberA = Number(a);
+            const numberB = Number(b);
+
+            if (Number.isFinite(numberA) && Number.isFinite(numberB)) {
+                return numberA - numberB;
+            }
+
+            return String(a).localeCompare(String(b));
         });
 
         return new Map(
-            cartons.map((carton, index) => [
-                carton,
-                index + 1,
-            ])
+            cartons.map((carton, index) => [carton, index + 1])
         );
     }, [packingItems]);
 
@@ -130,64 +191,138 @@ const CartonLabelPrinter: React.FC = () => {
 
     // =============================================
     // LABEL DATA
-    // ONE RECORD = ONE LABEL
+    // One API record = one preview label.
+    // Print copies are expanded separately for print view.
     // =============================================
 
-    const labels = useMemo(() => {
-        return packingItems;
-    }, [packingItems]);
+    const labels = packingItems;
+
+    // =============================================
+    // PRINT COPY CONFIGURATION
+    // =============================================
+
+    const updatePrintCopies = (index: number, value: number) => {
+        setPrintCopies(previous => {
+            const updated = [...previous];
+            updated[index] = normalizePrintCopies(value);
+            return updated;
+        });
+    };
+
+    const setCopiesToPackageQty = (index: number, item: PackingItem) => {
+        updatePrintCopies(index, toFiniteNumber(item.package_qty));
+    };
+
+    const setAllCopiesToOne = () => {
+        setPrintCopies(packingItems.map(() => 1));
+    };
+
+    const setAllCopiesToPackageQty = () => {
+        setPrintCopies(
+            packingItems.map(item =>
+                normalizePrintCopies(toFiniteNumber(item.package_qty))
+            )
+        );
+    };
+
+    const totalPrintLabels = useMemo(() => {
+        return packingItems.reduce((total, _item, index) => {
+            return total + normalizePrintCopies(printCopies[index] ?? 1);
+        }, 0);
+    }, [packingItems, printCopies]);
+
+    // Expand only the print data. The screen preview remains one card per API record.
+    const printLabels = useMemo<PrintLabel[]>(() => {
+        const result: PrintLabel[] = [];
+
+        packingItems.forEach((item, itemIndex) => {
+            const copies = normalizePrintCopies(printCopies[itemIndex] ?? 1);
+
+            for (let copyIndex = 0; copyIndex < copies; copyIndex += 1) {
+                result.push({
+                    item,
+                    itemIndex,
+                    copyIndex,
+                });
+            }
+        });
+
+        return result;
+    }, [packingItems, printCopies]);
 
     // =============================================
     // PAGINATION
     // =============================================
 
     const pages = useMemo(() => {
-        const result: PackingItem[][] = [];
+        const result: PrintLabel[][] = [];
 
         for (
-            let i = 0;
-            i < labels.length;
-            i += LABELS_PER_PAGE
+            let index = 0;
+            index < printLabels.length;
+            index += LABELS_PER_PAGE
         ) {
             result.push(
-                labels.slice(i, i + LABELS_PER_PAGE)
+                printLabels.slice(index, index + LABELS_PER_PAGE)
             );
         }
 
         return result;
-    }, [labels]);
+    }, [printLabels]);
 
     // =============================================
-    // HELPERS
+    // QUANTITY HELPERS
     // =============================================
 
-    const formatDimension = (item: PackingItem) => {
-        const {
-            ctn_length,
-            ctn_width,
-            ctn_height,
-        } = item;
+    const getQuantityPcs = (
+        item: PackingItem,
+        copies: number
+    ): number | null => {
+        const qtyScan = toFiniteNumber(
+            item.qty_scan ?? item.quantity
+        );
 
-        if (
-            !ctn_length &&
-            !ctn_width &&
-            !ctn_height
-        ) {
+        const safeCopies = normalizePrintCopies(copies);
+
+        // If this row is not being printed, there is no quantity per label.
+        if (safeCopies <= 0) {
+            return null;
+        }
+
+        // Each printed copy represents an equal share of the scanned quantity.
+        // Do not round here: rounding could make the printed total differ from Qty Scan.
+        return qtyScan / safeCopies;
+    };
+
+    const getQuantityUom = (item: PackingItem): number => {
+        return toFiniteNumber(item.package_qty);
+    };
+
+    const getUom = (item: PackingItem): string => {
+        return item.package_type || item.uom_scan || '-';
+    };
+
+    // =============================================
+    // GENERAL HELPERS
+    // =============================================
+
+    const formatDimension = (item: PackingItem): string => {
+        const length = toFiniteNumber(item.ctn_length);
+        const width = toFiniteNumber(item.ctn_width);
+        const height = toFiniteNumber(item.ctn_height);
+
+        if (!length && !width && !height) {
             return '-';
         }
 
-        return `${ctn_length || 0} x ${ctn_width || 0} x ${ctn_height || 0}`;
+        return `${formatQuantity(length)} x ${formatQuantity(width)} x ${formatQuantity(height)}`;
     };
 
-    const getDeliveryName = (item: PackingItem) => {
-        return (
-            item.deliv_to_name ||
-            item.customer_name ||
-            '-'
-        );
+    const getDeliveryName = (item: PackingItem): string => {
+        return item.deliv_to_name || item.customer_name || '-';
     };
 
-    const getDeliveryAddress = (item: PackingItem) => {
+    const getDeliveryAddress = (item: PackingItem): string => {
         return [
             item.deliv_address,
             item.deliv_city,
@@ -196,25 +331,15 @@ const CartonLabelPrinter: React.FC = () => {
             .join(', ') || '-';
     };
 
-    const getQuantityPcs = (item: PackingItem) => {
-        return item.qty_scan ?? item.quantity ?? 0;
-    };
-
-    const getQuantityUom = (item: PackingItem) => {
-        return item.package_qty ?? 0;
-    };
-
-    const getUom = (item: PackingItem) => {
-        return item.package_type || item.uom_scan || '-';
-    };
-
     // =============================================
     // PRINT
     // =============================================
 
     const handlePrint = () => {
-        if (!labels.length) return;
+        if (totalPrintLabels <= 0) return;
 
+        // Print dialog settings should be:
+        // Paper: A4, Orientation: Portrait, Scale: 100%, Margins: None.
         window.print();
     };
 
@@ -255,20 +380,17 @@ const CartonLabelPrinter: React.FC = () => {
     return (
         <>
             {/* =========================================
-          SCREEN VIEW
-      ========================================= */}
+                SCREEN VIEW
+            ========================================= */}
 
             <div className="screen-only min-h-screen bg-gray-100 p-8">
-
                 <div className="mx-auto max-w-6xl">
 
                     {/* HEADER */}
 
-                    <div className="mb-6 flex items-center justify-between">
-
+                    <div className="mb-6 flex items-center justify-between gap-4">
                         <div>
                             <div className="flex items-center gap-3">
-
                                 <div className="rounded-xl bg-blue-100 p-3">
                                     <Package className="h-7 w-7 text-blue-600" />
                                 </div>
@@ -282,25 +404,23 @@ const CartonLabelPrinter: React.FC = () => {
                                         Individual item packing label generator
                                     </p>
                                 </div>
-
                             </div>
                         </div>
 
                         <button
+                            type="button"
                             onClick={handlePrint}
-                            disabled={!labels.length}
-                            className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={totalPrintLabels <= 0}
+                            className="flex shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <Printer className="h-5 w-5" />
-                            Print Labels
+                            Print {totalPrintLabels > 0 ? `${totalPrintLabels} Labels` : 'Labels'}
                         </button>
-
                     </div>
 
                     {/* SUMMARY */}
 
-                    <div className="mb-6 grid grid-cols-3 gap-4">
-
+                    <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div className="rounded-xl border bg-white p-5 shadow-sm">
                             <p className="text-sm text-gray-500">
                                 Packing Number
@@ -323,23 +443,24 @@ const CartonLabelPrinter: React.FC = () => {
 
                         <div className="rounded-xl border bg-white p-5 shadow-sm">
                             <p className="text-sm text-gray-500">
-                                Total Labels
+                                Total Labels to Print
                             </p>
 
                             <p className="mt-2 text-2xl font-bold text-blue-600">
-                                {labels.length}
+                                {totalPrintLabels.toLocaleString('en-US')}
+                            </p>
+
+                            <p className="mt-1 text-xs text-gray-500">
+                                {pages.length} A4 page(s), maximum 5 labels per page
                             </p>
                         </div>
-
                     </div>
 
                     {/* PRINT INFORMATION */}
 
                     <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-
                         <div className="flex items-start gap-3">
-
-                            <Printer className="mt-0.5 h-5 w-5 text-blue-600" />
+                            <Printer className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
 
                             <div>
                                 <p className="font-semibold text-blue-900">
@@ -347,40 +468,192 @@ const CartonLabelPrinter: React.FC = () => {
                                 </p>
 
                                 <p className="mt-1 text-sm text-blue-800">
-                                    Paper: A4 Portrait | Labels per page: 5 |
-                                    Label size: 200 x 50 mm
+                                    Paper: A4 Portrait | Labels per page: 5 | Label size: 200 x 50 mm
                                 </p>
 
                                 <p className="mt-1 text-xs text-blue-700">
-                                    Set printer margins to None and scale to 100%.
+                                    In the print dialog, select A4, Portrait, Scale 100%, and Margins None.
+                                    Disable browser headers and footers.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* PRINT COPY CONTROLS */}
+
+                    <div className="mb-6 rounded-xl border bg-white p-5 shadow-sm">
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 className="font-semibold text-gray-800">
+                                    Print Quantity Settings
+                                </h2>
+
+                                <p className="mt-1 text-sm text-gray-500">
+                                    Set how many copies should be printed for each label.
                                 </p>
                             </div>
 
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    onClick={setAllCopiesToOne}
+                                    className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    <RotateCcw className="h-4 w-4" />
+                                    Reset all to 1
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={setAllCopiesToPackageQty}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                                >
+                                    <Copy className="h-4 w-4" />
+                                    All = Package Qty
+                                </button>
+                            </div>
                         </div>
 
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[720px] text-sm">
+                                <thead>
+                                    <tr className="border-b bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                                        <th className="px-3 py-3">Label</th>
+                                        <th className="px-3 py-3">Item Code</th>
+                                        <th className="px-3 py-3 text-right">Qty Scan</th>
+                                        <th className="px-3 py-3 text-right">Package Qty</th>
+                                        <th className="px-3 py-3 text-right">Qty per Label</th>
+                                        <th className="px-3 py-3 text-center">Print Copies</th>
+                                        <th className="px-3 py-3 text-right">Action</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {packingItems.map((item, index) => (
+                                        <tr
+                                            key={`${item.pack_ctn_no}-${item.item_code}-${index}`}
+                                            className="border-b last:border-0"
+                                        >
+                                            <td className="px-3 py-3 font-semibold text-gray-700">
+                                                LABEL #{index + 1}
+                                                <div className="mt-1 text-xs font-normal text-gray-400">
+                                                    Carton {cartonMap.get(item.pack_ctn_no) || 1} of {totalCartons}
+                                                </div>
+                                            </td>
+
+                                            <td className="px-3 py-3 font-medium text-gray-800">
+                                                {item.item_code}
+                                                <div className="mt-1 text-xs text-gray-500">
+                                                    {getUom(item)}
+                                                </div>
+                                            </td>
+
+                                            <td className="px-3 py-3 text-right tabular-nums">
+                                                {formatQuantity(
+                                                    toFiniteNumber(item.qty_scan ?? item.quantity)
+                                                )}
+                                            </td>
+
+                                            <td className="px-3 py-3 text-right tabular-nums">
+                                                {formatQuantity(
+                                                    toFiniteNumber(item.package_qty)
+                                                )}
+                                            </td>
+
+                                            <td className="px-3 py-3 text-right font-semibold tabular-nums text-gray-800">
+                                                {(() => {
+                                                    const qtyPerLabel = getQuantityPcs(
+                                                        item,
+                                                        printCopies[index] ?? 1
+                                                    );
+
+                                                    return qtyPerLabel === null
+                                                        ? '-'
+                                                        : formatQuantity(qtyPerLabel);
+                                                })()}
+                                            </td>
+
+                                            <td className="px-3 py-3 text-center">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="1"
+                                                    inputMode="numeric"
+                                                    value={printCopies[index] ?? 1}
+                                                    onChange={event =>
+                                                        updatePrintCopies(
+                                                            index,
+                                                            Number(event.target.value)
+                                                        )
+                                                    }
+                                                    className="w-24 rounded-md border border-gray-300 px-3 py-2 text-center font-semibold tabular-nums outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                    aria-label={`Print copies for label ${index + 1}`}
+                                                />
+                                            </td>
+
+                                            <td className="px-3 py-3 text-right">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setCopiesToPackageQty(index, item)
+                                                    }
+                                                    className="whitespace-nowrap rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                                                >
+                                                    Use Package Qty
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-4">
+                            <p className="text-sm text-gray-500">
+                                Setting 0 means this label will not be printed.
+                            </p>
+
+                            <p className="text-sm font-semibold text-gray-800">
+                                Total copies:{' '}
+                                <span className="text-blue-600 tabular-nums">
+                                    {totalPrintLabels.toLocaleString('en-US')}
+                                </span>
+                            </p>
+                        </div>
                     </div>
 
                     {/* LABEL PREVIEW */}
 
+                    <div className="mb-3">
+                        <h2 className="font-semibold text-gray-800">
+                            Label Preview
+                        </h2>
+
+                        <p className="mt-1 text-sm text-gray-500">
+                            Preview displays one label per API record. Copies are expanded only in print output.
+                        </p>
+                    </div>
+
                     <div className="space-y-4">
-
                         {labels.map((item, index) => (
-
                             <div
                                 key={`${item.pack_ctn_no}-${item.item_code}-${index}`}
                                 className="mx-auto max-w-4xl rounded-lg border border-gray-300 bg-white p-4 shadow-sm"
                             >
-
                                 <div className="mb-3 flex items-center justify-between">
-
                                     <span className="text-xs font-semibold text-gray-500">
                                         LABEL #{index + 1}
                                     </span>
 
-                                    <span className="text-xs text-gray-400">
-                                        Carton {cartonMap.get(item.pack_ctn_no)} of {totalCartons}
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs text-gray-400">
+                                            Carton {cartonMap.get(item.pack_ctn_no) || 1} of {totalCartons}
+                                        </span>
 
+                                        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                                            {normalizePrintCopies(printCopies[index] ?? 1)} copies
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <LabelContent
@@ -390,13 +663,14 @@ const CartonLabelPrinter: React.FC = () => {
                                     formatDimension={formatDimension}
                                     getDeliveryName={getDeliveryName}
                                     getDeliveryAddress={getDeliveryAddress}
-                                    getQuantityPcs={getQuantityPcs}
+                                    quantityPcs={getQuantityPcs(
+                                        item,
+                                        printCopies[index] ?? 1
+                                    )}
                                     getQuantityUom={getQuantityUom}
                                     getUom={getUom}
                                 />
-
                             </div>
-
                         ))}
 
                         {!labels.length && (
@@ -404,261 +678,243 @@ const CartonLabelPrinter: React.FC = () => {
                                 No packing items found.
                             </div>
                         )}
-
                     </div>
-
                 </div>
-
             </div>
 
             {/* =========================================
-          PRINT VIEW
-      ========================================= */}
+                PRINT VIEW
+                Every configured copy becomes one physical label.
+            ========================================= */}
 
             <div className="print-only">
-
                 {pages.map((page, pageIndex) => (
-
                     <div
                         className="print-page"
-                        key={pageIndex}
+                        key={`print-page-${pageIndex}`}
                     >
-
-                        {page.map((item, index) => (
-
+                        {page.map(printLabel => (
                             <div
                                 className="label-container"
-                                key={`${item.pack_ctn_no}-${item.item_code}-${pageIndex}-${index}`}
+                                key={`${printLabel.itemIndex}-${printLabel.copyIndex}`}
                             >
-
                                 <LabelContent
-                                    item={item}
-                                    cartonNumber={cartonMap.get(item.pack_ctn_no) || 1}
+                                    item={printLabel.item}
+                                    cartonNumber={
+                                        cartonMap.get(printLabel.item.pack_ctn_no) || 1
+                                    }
                                     totalCartons={totalCartons}
                                     formatDimension={formatDimension}
                                     getDeliveryName={getDeliveryName}
                                     getDeliveryAddress={getDeliveryAddress}
-                                    getQuantityPcs={getQuantityPcs}
+                                    quantityPcs={getQuantityPcs(
+                                        printLabel.item,
+                                        printCopies[printLabel.itemIndex] ?? 1
+                                    )}
                                     getQuantityUom={getQuantityUom}
                                     getUom={getUom}
                                 />
-
                             </div>
-
                         ))}
-
                     </div>
-
                 ))}
-
             </div>
 
             {/* =========================================
-          PRINT CSS
-      ========================================= */}
+                PRINT CSS
+            ========================================= */}
 
             <style jsx global>{`
+                .print-only {
+                    display: none;
+                }
 
-        .print-only {
-          display: none;
-        }
+                @media print {
+                    @page {
+                        size: A4 portrait;
+                        margin: 0;
+                    }
 
-        @media print {
+                    html,
+                    body {
+                        width: ${PAGE_WIDTH_MM}mm !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: #fff !important;
+                    }
 
-          @page {
-            size: A4 portrait;
-            margin: 0;
-          }
+                    body {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
 
-          html,
-          body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-          }
+                    *,
+                    *::before,
+                    *::after {
+                        box-sizing: border-box !important;
+                    }
 
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
+                    .screen-only {
+                        display: none !important;
+                    }
 
-          .screen-only {
-            display: none !important;
-          }
+                    .print-only {
+                        display: block !important;
+                        width: ${PAGE_WIDTH_MM}mm !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
 
-          .print-only {
-            display: block !important;
-          }
+                    /*
+                     * Physical A4 page:
+                     * 210mm wide x 297mm high.
+                     * 5mm left/right padding gives 200mm label width.
+                     */
+                    .print-page {
+                        width: ${PAGE_WIDTH_MM}mm !important;
+                        height: ${PAGE_HEIGHT_MM}mm !important;
+                        min-height: ${PAGE_HEIGHT_MM}mm !important;
+                        max-height: ${PAGE_HEIGHT_MM}mm !important;
 
-          /* =====================================
-             A4 PAGE
-          ===================================== */
+                        margin: 0 !important;
+                        padding: ${PAGE_PADDING_MM}mm !important;
 
-          .print-page {
-            width: 210mm;
-            height: 297mm;
+                        display: grid !important;
+                        grid-template-columns: ${LABEL_WIDTH_MM}mm !important;
+                        grid-template-rows: repeat(${LABELS_PER_PAGE}, ${LABEL_HEIGHT_MM}mm) !important;
 
-            box-sizing: border-box;
+                        column-gap: 0 !important;
+                        row-gap: ${LABEL_GAP_MM}mm !important;
 
-            padding: 5mm;
+                        align-content: start !important;
+                        justify-content: start !important;
 
-            display: grid;
+                        overflow: hidden !important;
+                        background: #fff !important;
 
-            grid-template-columns: 200mm;
-            grid-template-rows: repeat(5, 50mm);
+                        page-break-after: always !important;
+                        break-after: page !important;
+                    }
 
-            column-gap: 0;
-            row-gap: 2mm;
+                    .print-page:last-child {
+                        page-break-after: auto !important;
+                        break-after: auto !important;
+                    }
 
-            align-content: start;
+                    /*
+                     * Each physical label is exactly 200mm x 50mm.
+                     * Avoid flex shrinking or grid item stretching.
+                     */
+                    .label-container {
+                        width: ${LABEL_WIDTH_MM}mm !important;
+                        height: ${LABEL_HEIGHT_MM}mm !important;
+                        min-width: ${LABEL_WIDTH_MM}mm !important;
+                        max-width: ${LABEL_WIDTH_MM}mm !important;
+                        min-height: ${LABEL_HEIGHT_MM}mm !important;
+                        max-height: ${LABEL_HEIGHT_MM}mm !important;
 
-            background: white;
+                        margin: 0 !important;
+                        padding: 2mm !important;
 
-            page-break-after: always;
-            break-after: page;
+                        overflow: hidden !important;
+                        border: 1px solid #000 !important;
 
-            overflow: hidden;
-          }
+                        background: #fff !important;
+                        color: #000 !important;
 
-          .print-page:last-child {
-            page-break-after: auto;
-            break-after: auto;
-          }
+                        font-family: Arial, sans-serif !important;
 
-          /* =====================================
-             LABEL CONTAINER
-          ===================================== */
+                        break-inside: avoid !important;
+                        page-break-inside: avoid !important;
+                    }
 
-          .label-container {
-            width: 200mm;
-            height: 50mm;
+                    .label-container .label-header {
+                        display: grid !important;
+                        grid-template-columns: 32mm 1fr !important;
 
-            box-sizing: border-box;
+                        border-bottom: 1px solid #999 !important;
+                        padding-bottom: 2mm !important;
+                        min-height: 11mm !important;
+                    }
 
-            overflow: hidden;
+                    .label-container .label-header-title {
+                        font-size: 10pt !important;
+                        font-weight: bold !important;
+                    }
 
-            border: 1px solid #000;
+                    .label-container .label-customer {
+                        font-size: 9pt !important;
+                        line-height: 1.3 !important;
+                    }
 
-            padding: 2mm;
+                    .label-container .label-customer-name {
+                        font-size: 10pt !important;
+                        font-weight: bold !important;
+                        text-transform: uppercase !important;
+                    }
 
-            background: white;
-            color: black;
+                    .label-container .label-info {
+                        display: grid !important;
+                        grid-template-columns: 1fr 1fr 1fr !important;
+                        align-items: center !important;
 
-            font-family: Arial, sans-serif;
-          }
+                        border-bottom: 1px solid #999 !important;
+                        padding: 2mm 0 !important;
 
-          /* =====================================
-             DELIVERY HEADER
-          ===================================== */
+                        font-size: 9pt !important;
+                        font-weight: bold !important;
+                    }
 
-          .label-container .label-header {
-            display: grid;
+                    .label-container .label-info-center {
+                        text-align: center !important;
+                    }
 
-            grid-template-columns: 32mm 1fr;
+                    .label-container .label-info-right {
+                        text-align: right !important;
+                    }
 
-            border-bottom: 1px solid #999;
+                    .label-container .label-dimension {
+                        display: grid !important;
+                        grid-template-columns: 2fr 1fr !important;
 
-            padding-bottom: 2mm;
+                        border-bottom: 1px solid #999 !important;
+                        padding: 2mm 0 !important;
 
-            min-height: 11mm;
-          }
+                        font-size: 9pt !important;
+                    }
 
-          .label-container .label-header-title {
-            font-size: 10pt;
-            font-weight: bold;
-          }
+                    .label-container .label-table-header,
+                    .label-container .label-table-value {
+                        display: grid !important;
+                        grid-template-columns: 1.6fr 1.4fr 0.7fr 0.7fr 0.5fr !important;
+                    }
 
-          .label-container .label-customer {
-            font-size: 9pt;
-            line-height: 1.3;
-          }
+                    .label-container .label-table-header {
+                        border-bottom: 1px solid #999 !important;
+                        padding: 1.5mm 0 !important;
 
-          .label-container .label-customer-name {
-            font-size: 10pt;
-            font-weight: bold;
-            text-transform: uppercase;
-          }
+                        font-size: 9pt !important;
+                        font-weight: bold !important;
+                    }
 
-          /* =====================================
-             CARTON INFORMATION
-          ===================================== */
+                    .label-container .label-table-value {
+                        padding: 1.5mm 0 !important;
 
-          .label-container .label-info {
-            display: grid;
+                        font-size: 9pt !important;
+                        line-height: 1.3 !important;
+                    }
 
-            grid-template-columns: 1fr 1fr 1fr;
+                    .label-container .label-bold {
+                        font-weight: bold !important;
+                    }
 
-            align-items: center;
-
-            border-bottom: 1px solid #999;
-
-            padding: 2mm 0;
-
-            font-size: 9pt;
-            font-weight: bold;
-          }
-
-          .label-container .label-info-center {
-            text-align: center;
-          }
-
-          .label-container .label-info-right {
-            text-align: right;
-          }
-
-          /* =====================================
-             DIMENSION AND WEIGHT
-          ===================================== */
-
-          .label-container .label-dimension {
-            display: grid;
-
-            grid-template-columns: 2fr 1fr;
-
-            border-bottom: 1px solid #999;
-
-            padding: 2mm 0;
-
-            font-size: 9pt;
-          }
-
-          /* =====================================
-             ITEM TABLE
-          ===================================== */
-
-         .label-container .label-table-header,
-            .label-container .label-table-value {
-            display: grid;
-            grid-template-columns: 1.6fr 1.4fr 0.7fr 0.7fr 0.5fr;
-            }
-
-            .label-container .label-table-header {
-            border-bottom: 1px solid #999;
-            padding: 1.5mm 0;
-            font-size: 9pt;
-            font-weight: bold;
-            }
-
-            .label-container .label-table-value {
-            padding: 1.5mm 0;
-            font-size: 9pt;
-            line-height: 1.3;
-            }
-
-          .label-container .label-bold {
-            font-weight: bold;
-          }
-
-          .label-container .label-uom {
-            font-size: 9pt;
-            font-weight: bold;
-            margin-top: 1mm;
-          }
-
-        }
-
-      `}</style>
-
+                    .label-container .label-uom {
+                        margin-top: 1mm !important;
+                        font-size: 9pt !important;
+                        font-weight: bold !important;
+                    }
+                }
+            `}</style>
         </>
     );
 };
@@ -676,13 +932,10 @@ interface LabelContentProps {
     formatDimension: (item: PackingItem) => string;
 
     getDeliveryName: (item: PackingItem) => string;
-
     getDeliveryAddress: (item: PackingItem) => string;
 
-    getQuantityPcs: (item: PackingItem) => number;
-
+    quantityPcs: number | null;
     getQuantityUom: (item: PackingItem) => number;
-
     getUom: (item: PackingItem) => string;
 }
 
@@ -692,37 +945,25 @@ interface LabelContentProps {
 
 const LabelContent: React.FC<LabelContentProps> = ({
     item,
-
     cartonNumber,
     totalCartons,
-
     formatDimension,
-
     getDeliveryName,
     getDeliveryAddress,
-
-    getQuantityPcs,
+    quantityPcs,
     getQuantityUom,
     getUom,
-
 }) => {
-
     return (
-
         <div className="h-full w-full text-black">
-
-            {/* =====================================
-          DELIVERY TO
-      ===================================== */}
+            {/* DELIVERY TO */}
 
             <div className="label-header grid grid-cols-[32%_68%] border-b border-gray-400 pb-2">
-
                 <div className="label-header-title text-sm font-bold">
                     Delivery To (Tujuan) :
                 </div>
 
                 <div className="label-customer text-xs leading-tight">
-
                     <div className="label-customer-name font-bold uppercase">
                         {getDeliveryName(item)}
                     </div>
@@ -730,17 +971,12 @@ const LabelContent: React.FC<LabelContentProps> = ({
                     <div>
                         {getDeliveryAddress(item)}
                     </div>
-
                 </div>
-
             </div>
 
-            {/* =====================================
-          CARTON INFORMATION
-      ===================================== */}
+            {/* CARTON INFORMATION */}
 
             <div className="label-info grid grid-cols-3 items-center border-b border-gray-400 py-2 text-xs">
-
                 <div>
                     <span className="font-bold">
                         QTY This Case :
@@ -755,17 +991,12 @@ const LabelContent: React.FC<LabelContentProps> = ({
                 <div className="label-info-right text-right font-bold">
                     {item.packing_no}
                 </div>
-
             </div>
 
-            {/* =====================================
-          DIMENSION AND WEIGHT
-      ===================================== */}
+            {/* DIMENSION AND WEIGHT */}
 
             <div className="label-dimension grid grid-cols-2 border-b border-gray-400 py-2 text-xs">
-
                 <div>
-
                     <div className="font-bold">
                         Dimension L x W x H (cm)
                     </div>
@@ -773,11 +1004,9 @@ const LabelContent: React.FC<LabelContentProps> = ({
                     <div>
                         {formatDimension(item)}
                     </div>
-
                 </div>
 
                 <div>
-
                     <div className="font-bold">
                         Weight
                     </div>
@@ -785,31 +1014,22 @@ const LabelContent: React.FC<LabelContentProps> = ({
                     <div>
                         {item.ctn_max_weight || '-'}
                     </div>
-
                 </div>
-
             </div>
 
-            {/* =====================================
-          ITEM INFORMATION HEADER
-      ===================================== */}
+            {/* ITEM INFORMATION HEADER */}
 
             <div className="label-table-header grid grid-cols-[1.6fr_1.4fr_.7fr_.7fr_.5fr] border-b border-gray-400 py-2 text-xs font-bold">
-
                 <div>Do No</div>
                 <div>Item_code</div>
                 <div>Qty_Pcs</div>
                 <div>Qty_UOM</div>
                 <div>UOM</div>
-
             </div>
 
-            {/* =====================================
-          ITEM INFORMATION VALUE
-      ===================================== */}
+            {/* ITEM INFORMATION VALUE */}
 
             <div className="label-table-value grid grid-cols-[1.6fr_1.4fr_.7fr_.7fr_.5fr] py-2 text-xs">
-
                 <div className="font-bold">
                     {item.outbound_no}
                 </div>
@@ -819,29 +1039,18 @@ const LabelContent: React.FC<LabelContentProps> = ({
                 </div>
 
                 <div>
-                    {getQuantityPcs(item)}
+                    {quantityPcs === null ? '-' : formatQuantity(quantityPcs)}
                 </div>
 
                 <div>
-                    {getQuantityUom(item)}
+                    {formatQuantity(getQuantityUom(item))}
                 </div>
 
                 <div>
                     {getUom(item)}
                 </div>
-
             </div>
-
-            {/* =====================================
-          UOM
-      ===================================== */}
-
-            {/* <div className="label-uom mt-1 text-xs font-bold">
-        UOM : {getUom(item)}
-      </div> */}
-
         </div>
-
     );
 };
 

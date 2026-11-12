@@ -691,7 +691,7 @@ export default function ItemFormTable({
                         <td className="p-2 border">
                           <div>
                             <Input
-                              className="w-20"
+                              className="w-28"
                               style={{ fontSize: "12px" }}
                               type="number"
                               value={item.quantity}
