@@ -634,6 +634,7 @@ function ByQuantityTab({ qaStatuses, warehouseOptions, locations, divisionOption
         setError(""); setSuccess("");
         if (!validateForm()) return;
         setSubmitting(true);
+        formData.to_prod_date = formData.prod_date; // ensure to_prod_date is set for backend
         try {
             const res = await api.post("/inventory/transfer", formData, { withCredentials: true });
             if (res.data.success) {

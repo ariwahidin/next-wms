@@ -454,6 +454,8 @@ const PickingSheetPrint = () => {
                         </td>
                       )}
 
+                      {}
+
 
                       {invPolicy.allocation_case_by_order && (
                         <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>

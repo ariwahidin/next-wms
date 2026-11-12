@@ -143,9 +143,9 @@ export default function ManualForm() {
       formData.plan_pickup_date == "" ||
       formData.plan_pickup_time == "" ||
       formData.rcv_do_date == "" ||
-      formData.rcv_do_time == "" ||
-      formData.start_pick_time == "" ||
-      formData.end_pick_time == ""
+      formData.rcv_do_time == "" 
+      // formData.start_pick_time == "" ||
+      // formData.end_pick_time == ""
     ) {
       eventBus.emit("showAlert", {
         title: "Error!",
@@ -703,7 +703,7 @@ export default function ManualForm() {
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
                 >
-                  Plan Start/Finish Picking Time<span className="text-red-500">*</span>
+                  Start/Finish Picking Time
                 </Label>
                 <span className="shrink-0">:</span>
                 <div className="flex-1">
@@ -777,6 +777,7 @@ export default function ManualForm() {
                       // tampil di dropdown
                       return (
                         <div>
+                          <div className="font-medium text-blue-600">{cust?.customer_code}</div>
                           <div>{option.label}</div>
                           <div className="text-xs text-gray-500">
                             {cust?.cust_addr1}, {cust?.cust_city}
@@ -880,6 +881,7 @@ export default function ManualForm() {
                       // tampil di dropdown
                       return (
                         <div>
+                          <div className="font-medium text-blue-600">{cust?.customer_code}</div>
                           <div>{option.label}</div>
                           <div className="text-xs text-gray-500">
                             {cust?.cust_addr1}, {cust?.cust_city}

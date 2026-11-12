@@ -255,7 +255,7 @@ const PickingSheetPrint = () => {
                             <td style={headerValue}>{data.cust_city}</td>
                         </tr>
                         <tr></tr>
-                        <tr>
+                        {/* <tr>
                             <td style={headerLabel}>Delivery To</td>
                             <td style={headerValue}>{data.deliv_to_name}</td>
                         </tr>
@@ -266,7 +266,7 @@ const PickingSheetPrint = () => {
                         <tr>
                             <td style={headerLabel}>Delivery City</td>
                             <td style={headerValue}>{data.deliv_city}</td>
-                        </tr>
+                        </tr> */}
                         <tr>
                             <td style={headerLabel}></td>
                             <td style={headerValue}></td>
