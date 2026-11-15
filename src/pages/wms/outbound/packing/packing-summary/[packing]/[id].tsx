@@ -1,3 +1,4 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -6,6 +7,7 @@ import { useRouter } from "next/router";
 import JsBarcode from "jsbarcode";
 import api from "@/lib/api";
 import React from "react";
+import { printDocument } from "@/lib/print";
 
 const PickingSheetPrint = () => {
     const router = useRouter();
@@ -14,6 +16,7 @@ const PickingSheetPrint = () => {
     const barcodeRef = useRef<HTMLCanvasElement>(null);
     const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
     const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
+    const printStartedRef = useRef(false);
 
     useEffect(() => {
         if (packing && id) {
@@ -64,9 +67,34 @@ const PickingSheetPrint = () => {
                 }
             });
 
-            setTimeout(() => {
-                window.print();
+            if (printStartedRef.current) return;
+
+            printStartedRef.current = true;
+
+            const timer = setTimeout(async () => {
+                try {
+                    await printDocument({
+                        documentType: "PACKING_LIST_SUMMARY",
+                        documentNo: packingItems[0].packing_no,
+                        module: "OUTBOUND",
+                        printMethod: "BROWSER",
+                        printFormat: "PDF",
+                        copyCount: 1,
+                    });
+                } catch (error) {
+                    console.error("Packing List Summary print error:", error);
+
+                    printStartedRef.current = false;
+
+                    alert(
+                        error instanceof Error
+                            ? error.message
+                            : "Failed to process print request."
+                    );
+                }
             }, 500);
+
+            return () => clearTimeout(timer);
         }
     }, [packingItems]);
 
@@ -255,18 +283,6 @@ const PickingSheetPrint = () => {
                             <td style={headerValue}>{data.cust_city}</td>
                         </tr>
                         <tr></tr>
-                        {/* <tr>
-                            <td style={headerLabel}>Delivery To</td>
-                            <td style={headerValue}>{data.deliv_to_name}</td>
-                        </tr>
-                        <tr>
-                            <td style={headerLabel}>Delivery Address</td>
-                            <td style={headerValue}>{data.deliv_address}</td>
-                        </tr>
-                        <tr>
-                            <td style={headerLabel}>Delivery City</td>
-                            <td style={headerValue}>{data.deliv_city}</td>
-                        </tr> */}
                         <tr>
                             <td style={headerLabel}></td>
                             <td style={headerValue}></td>
@@ -274,7 +290,6 @@ const PickingSheetPrint = () => {
                     </tbody>
                 </table>
             </div>
-
 
             <table
                 style={{
@@ -357,7 +372,6 @@ const PickingSheetPrint = () => {
                     </tr>
                 </tbody>
             </table>
-
 
             {/* Signatures */}
             <div

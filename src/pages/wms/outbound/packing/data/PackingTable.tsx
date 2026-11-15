@@ -494,7 +494,7 @@ const PackingTable = () => {
     },
     { field: "no", headerName: "No. ", maxWidth: 70 },
     { field: "packing_no", headerName: "Packing No", maxWidth: 150 },
-    { field: "shipment_id", headerName: "DO No.", maxWidth: 150 },
+    { field: "shipment_id", headerName: "DO No.", minWidth: 190, maxWidth: 280 },
     { field: "customer_name", headerName: "Customer", width: 280 },
     { field: "cust_city", headerName: "Customer City", maxWidth: 150 },
     // { field: "customer_delivery", headerName: "Delivery To", maxWidth: 200 },

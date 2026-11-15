@@ -1,7 +1,9 @@
+
 /* eslint-disable @next/next/no-img-element */
 import { useRouter } from 'next/router';
 import { useEffect, useRef } from 'react';
 import JsBarcode from 'jsbarcode';
+import { printDocument } from '@/lib/print';
 
 const LabelCard = ({ palletID, date }) => {
     const barcodeRef = useRef(null);
@@ -29,7 +31,7 @@ const LabelCard = ({ palletID, date }) => {
             <div className="absolute bottom-0 left-0 right-0 h-0 border-b-2 border-dashed border-gray-400" style={{ bottom: '-1px' }}></div>
             <div className="absolute top-0 bottom-0 left-0 w-0 border-l-2 border-dashed border-gray-400" style={{ left: '-1px' }}></div>
             <div className="absolute top-0 bottom-0 right-0 w-0 border-r-2 border-dashed border-gray-400" style={{ right: '-1px' }}></div>
-            
+
             <div className="flex items-center justify-between mb-3 pb-2 border-b-2 border-black">
                 <div className="flex items-center gap-2">
                     {/* <Package className="h-8 w-8" />
@@ -72,12 +74,56 @@ export default function PrintPalletID() {
     const router = useRouter();
     const { inbound_no, start, end } = router.query;
 
+    const autoPrintStartedRef = useRef(false);
+    const printProcessingRef = useRef(false);
+
+    // ============================================================
+    // PRINT MANAGEMENT
+    // ============================================================
+    const handlePrint = async () => {
+        if (!inbound_no || !start || !end) {
+            return;
+        }
+
+        // Prevent duplicate print requests while processing
+        if (printProcessingRef.current) {
+            return;
+        }
+
+        printProcessingRef.current = true;
+
+        try {
+            await printDocument({
+                documentType: 'PALLET_ID_LABEL',
+                documentNo: `${inbound_no}-${start}-${end}`,
+                module: 'INBOUND',
+                printMethod: 'BROWSER',
+                printFormat: 'PDF',
+                copyCount: 1,
+            });
+        } catch (error) {
+            console.error('Print error:', error);
+
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to process print request.'
+            );
+        } finally {
+            printProcessingRef.current = false;
+        }
+    };
+
+    // ============================================================
+    // AUTO PRINT
+    // ============================================================
     useEffect(() => {
-        // Auto print setelah halaman load
-        if (inbound_no && start && end) {
+        if (inbound_no && start && end && !autoPrintStartedRef.current) {
             const timer = setTimeout(() => {
-                window.print();
+                autoPrintStartedRef.current = true;
+                handlePrint();
             }, 500);
+
             return () => clearTimeout(timer);
         }
     }, [inbound_no, start, end]);
@@ -143,7 +189,7 @@ export default function PrintPalletID() {
                     </div>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => window.print()}
+                            onClick={handlePrint}
                             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                         >
                             Print

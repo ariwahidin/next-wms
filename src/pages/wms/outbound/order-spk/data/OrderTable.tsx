@@ -120,6 +120,15 @@ const HandlePreviewPDF = (item: MuatanOrderSPK) => {
 };
 
 
+const HandlePrintSPKWithOutDetail = (item: MuatanOrderSPK) => {
+  window.open(`/wms/outbound/order-spk/spk-non-detail/${item.order_no}`, "_blank");
+};
+
+const HandlePrintSuratJalan = (item: MuatanOrderSPK) => {
+  window.open(`/wms/outbound/order-spk/surat-jalan/${item.order_no}`, "_blank");
+};
+
+
 // ─── Date Range Picker ────────────────────────────────────────────────────────
 
 interface DateRangePickerProps {
@@ -735,6 +744,14 @@ const OrderTable = () => {
 
                 <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePreviewPDF(params.data); }}>
                   <Printer className="mr-2 h-4 w-4" /> Print SPK
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePrintSPKWithOutDetail(params.data); }}>
+                  <Printer className="mr-2 h-4 w-4" /> Print SPK Without Items
+                </DropdownMenuItem>
+
+                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePrintSuratJalan(params.data); }}>
+                  <Printer className="mr-2 h-4 w-4" /> Print Surat Jalan
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />

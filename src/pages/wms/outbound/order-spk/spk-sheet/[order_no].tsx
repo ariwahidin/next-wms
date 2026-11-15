@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import JsBarcode from "jsbarcode";
 import api from "@/lib/api";
+import { printDocument } from "@/lib/print";
 import React from "react";
 import { HeaderSPK, MuatanOrderSPK } from "@/types/order-spk";
 
@@ -35,6 +36,7 @@ const SPKSheetPrint = () => {
   const barcodeRef = useRef<HTMLCanvasElement>(null);
   const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
   const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
+  const printStartedRef = useRef(false);
 
   useEffect(() => {
     if (order_no) {
@@ -63,8 +65,29 @@ const SPKSheetPrint = () => {
       height: 50,
     });
 
-    const printTimer = window.setTimeout(() => {
-      window.print();
+    const printTimer = window.setTimeout(async () => {
+      if (printStartedRef.current) return;
+
+      printStartedRef.current = true;
+
+      try {
+        await printDocument({
+          documentType: "SPK_SHEET_DETAIL",
+          documentNo: order.order_no,
+          module: "OUTBOUND",
+          printMethod: "BROWSER",
+          printFormat: "PDF",
+          copyCount: 1,
+        });
+      } catch (error) {
+        printStartedRef.current = false;
+        console.error("SPK print error:", error);
+        alert(
+          error instanceof Error
+            ? error.message
+            : "Failed to process print request."
+        );
+      }
     }, 700);
 
     return () => window.clearTimeout(printTimer);

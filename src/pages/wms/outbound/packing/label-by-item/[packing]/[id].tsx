@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Package, Printer, RotateCcw, Copy } from 'lucide-react';
 import api from '@/lib/api';
+import { printDocument } from '@/lib/print';
 
 // =============================================
 // INTERFACE
@@ -132,6 +133,7 @@ const CartonLabelPrinter: React.FC = () => {
     const [settingsLoaded, setSettingsLoaded] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const printProcessingRef = useRef(false);
 
     // =============================================
     // PERSISTED DEFAULT PRINT MODE
@@ -463,12 +465,40 @@ const CartonLabelPrinter: React.FC = () => {
     // PRINT
     // =============================================
 
-    const handlePrint = () => {
-        if (totalPrintLabels <= 0) return;
+    const handlePrint = async () => {
+        if (totalPrintLabels <= 0 || printProcessingRef.current) return;
 
-        // Print dialog settings should be:
-        // Paper: A4, Orientation: Portrait, Scale: 100%, Margins: None.
-        window.print();
+        const packingNo = packingItems[0]?.packing_no;
+        if (!packingNo) {
+            setError('Packing number is not available.');
+            return;
+        }
+
+        printProcessingRef.current = true;
+
+        try {
+            // Print dialog settings should be:
+            // Paper: A4, Orientation: Portrait, Scale: 100%, Margins: None.
+            await printDocument({
+                documentType: 'CARTON_LABEL_BY_ITEM',
+                documentNo: packingNo,
+                module: 'OUTBOUND',
+                printMethod: 'BROWSER',
+                printFormat: 'PDF',
+                // One print request/job; the job may contain multiple labels.
+                copyCount: 1,
+            });
+        } catch (error) {
+            console.error('Carton label print error:', error);
+
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to process print request.'
+            );
+        } finally {
+            printProcessingRef.current = false;
+        }
     };
 
     // =============================================

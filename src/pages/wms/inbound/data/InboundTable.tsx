@@ -414,14 +414,6 @@ const FilterBar = ({ filters, onChange, loading }: FilterBarProps) => {
     }, 500);
   };
 
-  // const handleOwnerChange = (val: string) => {
-  //   setLocalOwner(val);
-  //   clearTimeout(ownerDebounce.current);
-  //   ownerDebounce.current = setTimeout(() => {
-  //     onChange({ ...filters, owner: val });
-  //   }, 500);
-  // };
-
   const toggleStatus = (status: string) => {
     const next = filters.statuses.includes(status)
       ? filters.statuses.filter((s) => s !== status)
@@ -627,22 +619,6 @@ const FilterBar = ({ filters, onChange, loading }: FilterBarProps) => {
 
         <div className="hidden h-10 w-px bg-slate-200 sm:block" />
 
-        {/* Owner text filter */}
-        {/* <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-            Owner
-          </label>
-          <div className="relative">
-            <User className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input
-              value={localOwner}
-              onChange={(e) => handleOwnerChange(e.target.value)}
-              placeholder="Owner code..."
-              className="w-32 rounded-md border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-sm text-slate-700 placeholder-slate-400 transition-all focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1"
-            />
-          </div>
-        </div> */}
-
         {/* Owner filter */}
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
@@ -839,7 +815,6 @@ const InboundTable = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       setConfirmAction({ type: "checking", inbound_no: params.data.inbound_no });
-                      // handleChecking(params.data.inbound_no);
                     }}
                   >
                     <Blocks className="mr-2 h-4 w-4" />

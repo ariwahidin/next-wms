@@ -11,6 +11,7 @@ import React from "react";
 import { useRouter } from "next/router";
 import { InventoryPolicy } from "@/types/inventory";
 import { HeaderFormProps } from "@/types/outbound";
+import { printDocument } from "@/lib/print";
 
 const PickingSheetPrint = () => {
   const searchParams = useSearchParams();
@@ -111,14 +112,56 @@ const PickingSheetPrint = () => {
     }
   }, [groupedData, isLoaded]);
 
+  // useEffect(() => {
+  //   if (!isLoaded) return;
+  //   window.print();
+  //   window.onafterprint = () => window.close();
+  //   window.addEventListener("beforeunload", () => {
+  //     window.close();
+  //   });
+  // }, [isLoaded]);
+
+  const printStartedRef = useRef(false);
+
   useEffect(() => {
-    if (!isLoaded) return;
-    window.print();
-    window.onafterprint = () => window.close();
-    window.addEventListener("beforeunload", () => {
-      window.close();
-    });
-  }, [isLoaded]);
+    if (!isLoaded || !data || printStartedRef.current) return;
+
+    printStartedRef.current = true;
+
+    const executePrint = async () => {
+      try {
+        await printDocument({
+          documentType: "PICKING_SHEET",
+          documentNo: data.outbound_no,
+          module: "OUTBOUND",
+          printMethod: "BROWSER",
+          printFormat: "PDF",
+          copyCount: 1,
+        });
+
+        window.onafterprint = () => window.close();
+
+        window.addEventListener(
+          "beforeunload",
+          () => {
+            window.close();
+          }
+        );
+      } catch (error) {
+        console.error("Picking Sheet print error:", error);
+
+        printStartedRef.current = false;
+
+        alert(
+          error instanceof Error
+            ? error.message
+            : "Failed to process print request."
+        );
+      }
+    };
+
+    executePrint();
+  }, [isLoaded, data]);
 
   if (pickingSheet.length === 0) return <p>Loading...</p>;
   if (!invPolicy) return <p>Loading...</p>;
@@ -454,7 +497,7 @@ const PickingSheetPrint = () => {
                         </td>
                       )}
 
-                      {}
+                      { }
 
 
                       {invPolicy.allocation_case_by_order && (

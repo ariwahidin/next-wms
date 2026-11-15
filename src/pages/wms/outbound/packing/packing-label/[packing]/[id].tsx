@@ -5,6 +5,7 @@ import { Package, MapPin, Calendar, User, Hash, Barcode, Box } from 'lucide-reac
 import { useRouter } from 'next/router';
 import api from '@/lib/api';
 import Layout from '@/components/layout';
+import { printDocument } from '@/lib/print';
 
 interface PackingItem {
   packing_no: string;
@@ -57,6 +58,8 @@ const CartonLabelPrinter: React.FC = () => {
   const { packing, id } = router.query;
   const [packingItems, setPackingItems] = useState<PackingItem[]>([]);
   const printRef = useRef(null);
+  const printProcessingRef = useRef(false);
+  const printRequestedRef = useRef(false);
 
   useEffect(() => {
     if (packing && id) {
@@ -137,19 +140,55 @@ const CartonLabelPrinter: React.FC = () => {
     });
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (groupedCartons.length === 0) return;
+    if (printProcessingRef.current || printRequestedRef.current) return;
+
+    const packingNo = groupedCartons[0]?.packing_no || packingItems[0]?.packing_no;
+
+    if (!packingNo) {
+      console.error('Packing number is not available. Print request was not submitted.');
+      return;
+    }
+
+    printProcessingRef.current = true;
+
+    try {
+      await printDocument({
+        documentType: 'CARTON_LABEL_DEFAULT',
+        documentNo: packingNo,
+        module: 'OUTBOUND',
+        printMethod: 'BROWSER',
+        printFormat: 'PDF',
+        copyCount: 1,
+      });
+
+      // Prevent the auto-print effect and manual button from submitting
+      // the same print job more than once during this page session.
+      printRequestedRef.current = true;
+    } catch (error) {
+      console.error('Carton label print error:', error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Failed to process print request.'
+      );
+    } finally {
+      printProcessingRef.current = false;
+    }
   };
 
   const totalCartons = groupedCartons.length;
 
   useEffect(() => {
-    if (groupedCartons.length > 0) {
-      setTimeout(() => {
-        window.print();
-      }, 1500);
-    }
-  })
+    if (groupedCartons.length === 0 || printRequestedRef.current) return;
+
+    const timer = window.setTimeout(() => {
+      void handlePrint();
+    }, 1500);
+
+    return () => window.clearTimeout(timer);
+  }, [groupedCartons]);
 
   return (
     <>

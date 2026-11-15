@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import JsBarcode from "jsbarcode";
 import api from "@/lib/api";
+import { printDocument } from "@/lib/print";
 import React from "react";
 
 const PickingSheetPrint = () => {
@@ -14,6 +15,7 @@ const PickingSheetPrint = () => {
   const barcodeRef = useRef<HTMLCanvasElement>(null);
   const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
   const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
+  const printStartedRef = useRef(false);
 
   useEffect(() => {
     if (packing && id) {
@@ -64,8 +66,30 @@ const PickingSheetPrint = () => {
         }
       });
 
-      setTimeout(() => {
-        window.print();
+      setTimeout(async () => {
+        if (printStartedRef.current) return;
+
+        const packingNo = packingItems[0]?.packing_no;
+        if (!packingNo) {
+          console.error("Packing number is not available. Print request skipped.");
+          return;
+        }
+
+        printStartedRef.current = true;
+
+        try {
+          await printDocument({
+            documentType: "PACKING_LIST_DETAIL",
+            documentNo: packingNo,
+            module: "OUTBOUND",
+            printMethod: "BROWSER",
+            printFormat: "PDF",
+            copyCount: 1,
+          });
+        } catch (error) {
+          console.error("Packing list print error:", error);
+          printStartedRef.current = false;
+        }
       }, 500);
     }
   }, [packingItems]);
