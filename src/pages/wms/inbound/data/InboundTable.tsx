@@ -930,7 +930,7 @@ const InboundTable = () => {
         return <div>{dayjs(params.value).format("DD MMM YYYY")}</div>;
       },
     },
-    { field: "receipt_id", headerName: "Receipt ID", width: 130 },
+    { field: "receipt_id", headerName: "Receipt ID", width: 150 },
     {
       field: "type",
       headerName: "IB Type",
@@ -976,10 +976,10 @@ const InboundTable = () => {
         return <Badge className={`${color} capitalize`}>{params.value}</Badge>;
       },
     },
-    { field: "total_line", headerName: "Items", width: 80 },
-    { field: "total_qty", headerName: "Planned", width: 90 },
-    { field: "qty_scan", headerName: "Checked", width: 90 },
-    { field: "qty_putaway", headerName: "PutAway", width: 90 },
+    { field: "total_line", headerName: "Items", width: 100 },
+    { field: "total_qty", headerName: "Planned", width: 100 },
+    { field: "qty_scan", headerName: "Checked", width: 100 },
+    { field: "qty_putaway", headerName: "PutAway", width: 100 },
   ]);
 
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
