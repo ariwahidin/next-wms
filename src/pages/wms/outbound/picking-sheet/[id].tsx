@@ -473,6 +473,7 @@ const PickingSheetPrint = () => {
                       <td
                         style={{
                           ...td,
+                          fontWeight: "bold"
                           // textAlign: "center",
                           // whiteSpace: "nowrap",
                           // fontWeight: "bold",
@@ -516,7 +517,7 @@ const PickingSheetPrint = () => {
                           {item.serial_number}
                         </td>
                       )}
-                      <td style={{ ...td, textAlign: "center" }}>
+                      <td style={{ ...td, textAlign: "center", fontWeight: "bold" }}>
                         {item.quantity}
                         {/* {item.uom} */}
                       </td>
@@ -525,8 +526,7 @@ const PickingSheetPrint = () => {
                   ))}
 
                   {/* Sub-total per item group */}
-                  <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
-                    {/* NO + ITEM + EAN = 3 cols always */}
+                  {/* <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
                     <td colSpan={3} style={{ ...td }}></td>
 
                     {invPolicy.show_rec_date && <td style={{ ...td }}></td>}
@@ -540,12 +540,10 @@ const PickingSheetPrint = () => {
                     {invPolicy.allocation_case_by_order && <td style={{ ...td }}></td>}
                     {invPolicy.allocation_carton_by_order && <td style={{ ...td }}></td>}
                     {invPolicy.allocation_serial_by_order && <td style={{ ...td }}></td>}
-
-                    {/* <td style={{ ...td, textAlign: "right" }}></td> */}
                     <td style={{ ...td, textAlign: "right" }}>TOTAL</td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
                     <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td>
-                  </tr>
+                  </tr> */}
                 </React.Fragment>
               );
             })}

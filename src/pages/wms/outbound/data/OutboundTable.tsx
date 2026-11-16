@@ -89,6 +89,21 @@ interface FilterParams {
   owner: string;
 }
 
+interface StockShortageRow {
+  item_code: string;
+  item_name?: string;
+  required_qty: number;
+  available_qty: number;
+  shortage_qty: number;
+}
+
+interface StockShortageResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+  shortages?: StockShortageRow[];
+}
+
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS: { value: OutboundStatus; label: string; color: string; dot: string }[] = [
@@ -629,6 +644,12 @@ const OutboundTable = () => {
   const [isSubmit, setIsSubmit] = useState(false);
   const [openImportModal, setOpenImportModal] = useState(false);
 
+  // Stock shortage audit dialog
+  const [stockShortageOpen, setStockShortageOpen] = useState(false);
+  const [stockShortages, setStockShortages] = useState<StockShortageRow[]>([]);
+  const [stockShortageMessage, setStockShortageMessage] = useState("");
+  const [stockShortageOutboundNo, setStockShortageOutboundNo] = useState("");
+
   const isSubmittingRef = useRef(false);
   const gridRef = useRef<AgGridReact>(null);
   const currentPageRef = useRef<number>(0);
@@ -706,8 +727,11 @@ const OutboundTable = () => {
     setTimeout(tryRestore, 200);
   }, [rowData]);
 
-  const HandlePicking = (id: number) => {
+
+
+  const HandlePicking = (id: number, outboundNo = "") => {
     if (isSubmittingRef.current) return;
+
     showAlert(
       "Picking Confirmation",
       "The picking process is carried out by the system, are you sure to continue?",
@@ -715,23 +739,183 @@ const OutboundTable = () => {
       async () => {
         eventBus.emit("loading", true);
         isSubmittingRef.current = true;
+
+        const handleFailure = (responseData: any) => {
+          const shortageRows = Array.isArray(responseData?.shortages)
+            ? responseData.shortages
+            : [];
+
+          if (shortageRows.length > 0) {
+            setStockShortages(shortageRows);
+            setStockShortageMessage(
+              responseData.message ||
+              "Some items do not have sufficient available stock."
+            );
+            setStockShortageOutboundNo(outboundNo);
+            setStockShortageOpen(true);
+            return;
+          }
+
+          notify(
+            "Picking Failed",
+            responseData?.message ||
+            responseData?.error ||
+            "Failed to process outbound picking.",
+            "error"
+          );
+        };
+
         try {
           const res = await api.post(
             `/outbound/picking/${id}`,
             { inbound_id: id },
             { withCredentials: true }
           );
-          if (res.data.success) {
-            eventBus.emit("showAlert", { title: "Success!", description: res.data.message, type: "success" });
+
+          if (res.data?.success === true) {
+            setStockShortageOpen(false);
+
+            eventBus.emit("showAlert", {
+              title: "Success!",
+              description: res.data.message,
+              type: "success",
+            });
+
             mutate();
+          } else {
+            handleFailure(res.data);
           }
-        } catch (error) {
-          console.error("Error saving inbound:", error);
+        } catch (error: any) {
+          console.error("Error picking outbound:", error);
+
+          handleFailure(
+            error?.response?.data || error?.data || {}
+          );
         } finally {
-          setTimeout(() => { eventBus.emit("loading", false); isSubmittingRef.current = false; }, 1500);
+          setTimeout(() => {
+            eventBus.emit("loading", false);
+            isSubmittingRef.current = false;
+          }, 500);
         }
       }
     );
+  };
+
+
+  // const HandlePicking = (id: number, outboundNo = "") => {
+  //   if (isSubmittingRef.current) return;
+
+  //   showAlert(
+  //     "Picking Confirmation",
+  //     "The picking process is carried out by the system, are you sure to continue?",
+  //     "error",
+  //     async () => {
+  //       eventBus.emit("loading", true);
+  //       isSubmittingRef.current = true;
+
+  //       try {
+  //         const res = await api.post(
+  //           `/outbound/picking/${id}`,
+  //           { inbound_id: id },
+  //           { withCredentials: true }
+  //         );
+
+  //         if (res.data.success) {
+  //           eventBus.emit("showAlert", {
+  //             title: "Success!",
+  //             description: res.data.message,
+  //             type: "success",
+  //           });
+  //           setStockShortageOpen(false);
+  //           mutate();
+  //         }
+  //       } catch (error: any) {
+  //         console.error("Error picking outbound:", error);
+
+  //         const responseData = error?.response?.data as StockShortageResponse | undefined;
+  //         const shortageRows = Array.isArray(responseData?.shortages)
+  //           ? responseData.shortages
+  //           : [];
+
+  //         if (shortageRows.length > 0) {
+  //           setStockShortages(shortageRows);
+  //           setStockShortageMessage(
+  //             responseData?.message || "Some items do not have sufficient available stock."
+  //           );
+  //           setStockShortageOutboundNo(outboundNo);
+  //           setStockShortageOpen(true);
+  //         } else {
+  //           notify(
+  //             "Picking Failed",
+  //             responseData?.message ||
+  //               responseData?.error ||
+  //               error?.message ||
+  //               "Failed to process outbound picking.",
+  //             "error"
+  //           );
+  //         }
+  //       } finally {
+  //         setTimeout(() => {
+  //           eventBus.emit("loading", false);
+  //           isSubmittingRef.current = false;
+  //         }, 500);
+  //       }
+  //     }
+  //   );
+  // };
+
+
+  const handleCopyStockShortages = async () => {
+    if (stockShortages.length === 0) return;
+
+    const headers = [
+      "Item Code",
+      "Item Name",
+      "Required Qty",
+      "Available Qty",
+      "Shortage Qty",
+    ];
+
+    const rows = stockShortages.map((item) => [
+      item.item_code ?? "",
+      item.item_name ?? "",
+      item.required_qty ?? 0,
+      item.available_qty ?? 0,
+      item.shortage_qty ?? 0,
+    ]);
+
+    const tsv = [headers, ...rows]
+      .map((row) =>
+        row
+          .map((value) =>
+            String(value).replace(/[\t\r\n]+/g, " ")
+          )
+          .join("\t")
+      )
+      .join("\n");
+
+    try {
+      await navigator.clipboard.writeText(tsv);
+
+      notify(
+        "Copied",
+        "Stock shortage report copied successfully.",
+        "success"
+      );
+    } catch (error) {
+      console.error("Failed to copy stock shortage report:", error);
+
+      notify(
+        "Copy Failed",
+        "Unable to access clipboard.",
+        "error"
+      );
+    }
+  };
+
+
+  const closeStockShortageDialog = () => {
+    setStockShortageOpen(false);
   };
 
   const HandlePackingWithoutScan = (id: number) => {
@@ -917,7 +1101,7 @@ const OutboundTable = () => {
               </DropdownMenuItem>
 
               {params.data.status === "open" && (
-                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePicking(params.data.ID); }}>
+                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePicking(params.data.ID, params.data.outbound_no); }}>
                   <Blocks className="mr-2 h-4 w-4" /> Picking
                 </DropdownMenuItem>
               )}
@@ -1034,7 +1218,7 @@ const OutboundTable = () => {
       cellRenderer: (params: any) => (
         <div className="flex items-center h-full">
           {params.value != "" && <StatusBadge status={params.value} />}
-          
+
         </div>
       ),
     },
@@ -1226,6 +1410,148 @@ const OutboundTable = () => {
       </div>
 
       {/* ── Dialogs & Modals ── */}
+
+      {/* Stock shortage audit report */}
+      <Dialog
+        open={stockShortageOpen}
+        onOpenChange={(open) => {
+          if (!open) closeStockShortageDialog();
+        }}
+      >
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-5xl max-h-[88vh] overflow-y-auto bg-white">
+          <DialogHeader>
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                <Package2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <DialogTitle className="text-lg font-semibold text-slate-900">
+                  Stock Shortage Audit
+                </DialogTitle>
+                <DialogDescription className="mt-1">
+                  {stockShortageOutboundNo
+                    ? `Outbound ${stockShortageOutboundNo} cannot be picked because some items have insufficient stock.`
+                    : "Outbound cannot be picked because some items have insufficient stock."}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-red-800">
+                    {stockShortageMessage || "Insufficient stock available"}
+                  </p>
+                  <p className="mt-1 text-xs text-red-700">
+                    Picking has not been completed. Review the shortage below, adjust stock if necessary, then retry picking.
+                  </p>
+                </div>
+                <div className="mt-2 shrink-0 rounded-md border border-red-200 bg-white px-3 py-2 sm:mt-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                    Affected SKU
+                  </p>
+                  <p className="text-xl font-bold tabular-nums text-red-700">
+                    {stockShortages.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-800">Shortage Details</h3>
+                <p className="text-xs text-slate-500">
+                  Copy the table and paste it into Excel for stock auditing.
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleCopyStockShortages}
+                disabled={stockShortages.length === 0}
+                className="h-9 bg-slate-900 text-white hover:bg-slate-700"
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copy for Excel
+              </Button>
+            </div>
+
+            <div className="overflow-hidden rounded-lg border border-slate-200">
+              <div className="max-h-[45vh] overflow-auto">
+                <table className="w-full min-w-[680px] border-collapse text-sm">
+                  <thead className="sticky top-0 z-10 bg-slate-100">
+                    <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                      <th className="w-14 border-b border-slate-200 px-3 py-3 text-center">No.</th>
+                      <th className="border-b border-slate-200 px-3 py-3">Item Code</th>
+                      <th className="border-b border-slate-200 px-3 py-3">Item Name</th>
+                      <th className="border-b border-slate-200 px-3 py-3 text-right">Required Qty</th>
+                      <th className="border-b border-slate-200 px-3 py-3 text-right">Available Qty</th>
+                      <th className="border-b border-slate-200 px-3 py-3 text-right">Shortage Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stockShortages.map((item, index) => (
+                      <tr
+                        key={`${item.item_code}-${index}`}
+                        className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
+                      >
+                        <td className="px-3 py-3 text-center text-xs text-slate-500">
+                          {index + 1}
+                        </td>
+                        <td className="px-3 py-3 font-mono text-xs font-semibold text-slate-800">
+                          {item.item_code}
+                        </td>
+                        <td className="px-3 py-3 text-slate-600">
+                          {item.item_name || "-"}
+                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums text-slate-700">
+                          {Number(item.required_qty ?? 0).toLocaleString("id-ID", { maximumFractionDigits: 4 })}
+                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums text-slate-700">
+                          {Number(item.available_qty ?? 0).toLocaleString("id-ID", { maximumFractionDigits: 4 })}
+                        </td>
+                        <td className="px-3 py-3 text-right font-semibold tabular-nums text-red-600">
+                          {Number(item.shortage_qty ?? 0).toLocaleString("id-ID", { maximumFractionDigits: 4 })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-slate-50">
+                    <tr>
+                      <td colSpan={5} className="px-3 py-3 text-right text-xs font-semibold uppercase text-slate-600">
+                        Total shortage
+                      </td>
+                      <td className="px-3 py-3 text-right font-bold tabular-nums text-red-700">
+                        {stockShortages
+                          .reduce((total, item) => total + Number(item.shortage_qty || 0), 0)
+                          .toLocaleString("id-ID", { maximumFractionDigits: 4 })}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-slate-500">
+                Closing this report will not change inventory or outbound status.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeStockShortageDialog}
+                className="sm:min-w-28"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* <ScannedItemDialog /> */}
       <Dialog open={isScannedItemDialog} onOpenChange={closeScannedItemDialog}>
         <DialogContent className="sm:max-w-md bg-white">

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Package, Printer, RotateCcw, Copy } from 'lucide-react';
+import { Package, Printer, RotateCcw, Copy, ArrowLeft } from 'lucide-react';
 import api from '@/lib/api';
 import { printDocument } from '@/lib/print';
 
@@ -879,8 +879,8 @@ const CartonLabelPrinter: React.FC = () => {
 
                                 <LabelContent
                                     item={item}
-                                    cartonNumber={cartonMap.get(item.pack_ctn_no) || 1}
-                                    totalCartons={totalCartons}
+                                    copyNumber={1}
+                                    totalCopies={normalizePrintCopies(printCopies[index] ?? 1)}
                                     formatDimension={formatDimension}
                                     getDeliveryName={getDeliveryName}
                                     getDeliveryAddress={getDeliveryAddress}
@@ -928,10 +928,10 @@ const CartonLabelPrinter: React.FC = () => {
                             >
                                 <LabelContent
                                     item={printLabel.item}
-                                    cartonNumber={
-                                        cartonMap.get(printLabel.item.pack_ctn_no) || 1
-                                    }
-                                    totalCartons={totalCartons}
+                                    copyNumber={printLabel.copyIndex + 1}
+                                    totalCopies={normalizePrintCopies(
+                                        printCopies[printLabel.itemIndex] ?? 1
+                                    )}
                                     formatDimension={formatDimension}
                                     getDeliveryName={getDeliveryName}
                                     getDeliveryAddress={getDeliveryAddress}
@@ -1151,8 +1151,8 @@ const CartonLabelPrinter: React.FC = () => {
 interface LabelContentProps {
     item: PackingItem;
 
-    cartonNumber: number;
-    totalCartons: number;
+    copyNumber: number;
+    totalCopies: number;
 
     formatDimension: (item: PackingItem) => string;
 
@@ -1170,8 +1170,8 @@ interface LabelContentProps {
 
 const LabelContent: React.FC<LabelContentProps> = ({
     item,
-    cartonNumber,
-    totalCartons,
+    copyNumber,
+    totalCopies,
     formatDimension,
     getDeliveryName,
     getDeliveryAddress,
@@ -1210,7 +1210,7 @@ const LabelContent: React.FC<LabelContentProps> = ({
                 </div>
 
                 <div className="label-info-center text-center font-bold">
-                    Carton {cartonNumber} of {totalCartons}
+                    Carton {copyNumber} of {totalCopies}
                 </div>
 
                 <div className="label-info-right text-right font-bold">
@@ -1256,7 +1256,7 @@ const LabelContent: React.FC<LabelContentProps> = ({
 
             <div className="label-table-value grid grid-cols-[1.6fr_1.4fr_.7fr_.7fr_.5fr] py-2 text-xs">
                 <div className="font-bold">
-                    {item.outbound_no}
+                    {item.shipment_id || '-'}
                 </div>
 
                 <div className="font-bold">

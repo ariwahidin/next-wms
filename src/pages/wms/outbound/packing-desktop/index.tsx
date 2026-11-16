@@ -15,7 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Box, CheckCircle2Icon, List, Loader2, Trash2, Package, Search, Check, Clock3, RefreshCw, ArrowRight, ArrowBigLeftIcon } from "lucide-react";
+import { Box, CheckCircle2Icon, List, Loader2, Trash2, Package, Search, Check, Clock3, RefreshCw, ArrowRight, ArrowBigLeftIcon, PrinterIcon } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -95,6 +95,7 @@ interface OutboundDetail {
 }
 
 interface OutboundHeader {
+    outbound_id?: number;
     shipment_id?: string;
     status?: string;
     deliv_to?: string;
@@ -498,6 +499,7 @@ const CheckingPage = () => {
                         : [];
 
                 setOutboundHeader(header ? {
+                    outbound_id :header.ID  ?? 0,
                     shipment_id: header.shipment_id ?? "",
                     status: header.status ?? "",
                     deliv_to: header.deliv_to ?? "",
@@ -1259,6 +1261,11 @@ const CheckingPage = () => {
     const totalScanQty = filteredItems.reduce((t, i) => t + (i.scan_qty ?? 0), 0);
     const totalPlanQty = filteredItems.reduce((t, i) => t + i.quantity, 0);
 
+    const HandlePrintLabelByItem = (packing_no: string, id: number) => {
+        console.log("Preview PDF ID:", id);
+        window.open(`/wms/outbound/packing/label-by-item/${packing_no}/${id}`, "_blank");
+    };
+
     // ── Render ─────────────────────────────────────────────────────────────────
     return (
         <Layout title="Outbound" subTitle="Outbound Packing Workbench">
@@ -1279,6 +1286,18 @@ const CheckingPage = () => {
                         >
                             <ArrowBigLeftIcon className="mr-0" />
                             Back
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            className="bg-black-500 text-black hover:bg-gray-200"
+                            onClick={() => {
+                                // router.push("/wms/outbound/packing/data");
+                                HandlePrintLabelByItem(outboundNo, outboundHeader.outbound_id);
+                            }}
+                        >
+                            <PrinterIcon className="mr-0" />
+                            Print Label By Item
                         </Button>
 
                     </div>
