@@ -102,24 +102,6 @@ const PickingSheetPrint = () => {
 
     const data = packingItems[0];
 
-    // sebelum return JSX
-    //   const groupedData = packingItems.reduce((acc, item) => {
-    //     if (!acc[item.item_code]) {
-    //       acc[item.item_code] = [];
-    //     }
-    //     acc[item.item_code].push(item);
-    //     return acc;
-    //   }, {});
-
-    //   const grandTotalQty = packingItems.reduce(
-    //     (acc, item) => acc + item.quantity,
-    //     0
-    //   );
-
-    //   const grandTotalCbm = packingItems
-    //     .reduce((acc, item) => acc + item.cbm, 0)
-    //     .toFixed(3);
-
     const groupedData = Object.values(
         packingItems.reduce((acc: any, item: any) => {
             const key = `${item.item_code}_${item.package_type}`;
@@ -129,22 +111,27 @@ const PickingSheetPrint = () => {
                     item_code: item.item_code,
                     item_name: item.item_name,
                     package_type: item.package_type,
-                    cartons: new Set<string>(),
                     qty_pack: 0,
                     qty_pcs: 0,
+                    ctn_total: 0,
                 };
             }
 
             const group = acc[key];
-
-            // Unique carton
-            group.cartons.add(String(item.pack_ctn_no));
 
             // Total package quantity
             group.qty_pack += Number(item.package_qty || 0);
 
             // Total PCS
             group.qty_pcs += Number(item.quantity || 0);
+
+            // CTN Total = qty_scan / qty_per_carton
+            const qtyScan = Number(item.qty_scan || 0);
+            const qtyPerCarton = Number(item.qty_per_carton || 0);
+
+            if (qtyPerCarton > 0) {
+                group.ctn_total += qtyScan / qtyPerCarton;
+            }
 
             return acc;
         }, {})
@@ -160,14 +147,21 @@ const PickingSheetPrint = () => {
         0
     );
 
-    // let numbering = 1;
+    // Format CTN Total: maximum 3 decimal places
+    const formatCtnTotal = (value: number) => {
+        return Number(value.toFixed(3)).toLocaleString("en-US");
+    };
 
     return (
         <div style={{ padding: "10px", fontFamily: "Arial" }}>
             {/* Header */}
             <div style={{ display: "flex", justifyContent: "center" }}>
                 <p
-                    style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}
+                    style={{
+                        fontSize: "16px",
+                        textAlign: "center",
+                        fontWeight: "bold",
+                    }}
                 >
                     PT Yusen Logistics Interlink Indonesia
                 </p>
@@ -207,6 +201,7 @@ const PickingSheetPrint = () => {
                             ref={barcodeRef}
                         ></canvas>
                     </td>
+
                     <td style={{ textAlign: "center" }}>
                         <div
                             style={{
@@ -223,6 +218,7 @@ const PickingSheetPrint = () => {
                             </span>
                         </div>
                     </td>
+
                     <td style={{ textAlign: "center" }}>
                         <div
                             style={{
@@ -254,10 +250,12 @@ const PickingSheetPrint = () => {
                             <td style={headerLabel}>Packing No</td>
                             <td style={headerValue}>{data.packing_no}</td>
                         </tr>
+
                         <tr>
                             <td style={headerLabel}>Shipment ID</td>
                             <td style={headerValue}>{data.shipment_id}</td>
                         </tr>
+
                         <tr>
                             <td style={headerLabel}>Packing Date</td>
                             <td style={headerValue}>
@@ -270,19 +268,24 @@ const PickingSheetPrint = () => {
                                 })}
                             </td>
                         </tr>
+
                         <tr>
                             <td style={headerLabel}>Customer Name</td>
                             <td style={headerValue}>{data.customer_name}</td>
                         </tr>
+
                         <tr>
                             <td style={headerLabel}>Customer Address</td>
                             <td style={headerValue}>{data.cust_address}</td>
                         </tr>
+
                         <tr>
                             <td style={headerLabel}>Customer City</td>
                             <td style={headerValue}>{data.cust_city}</td>
                         </tr>
+
                         <tr></tr>
+
                         <tr>
                             <td style={headerLabel}></td>
                             <td style={headerValue}></td>
@@ -319,8 +322,9 @@ const PickingSheetPrint = () => {
                                 {index + 1}
                             </td>
 
+                            {/* CTN Total */}
                             <td style={{ ...td, textAlign: "center" }}>
-                                {item.cartons.size}
+                                {formatCtnTotal(item.ctn_total)}
                             </td>
 
                             <td style={{ ...td, textAlign: "center" }}>
@@ -390,6 +394,7 @@ const PickingSheetPrint = () => {
                     <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
                     <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
                 </div>
+
                 <div>
                     <p style={{ textAlign: "center", fontSize: "10px" }}>
                         Supervisor
@@ -399,6 +404,7 @@ const PickingSheetPrint = () => {
                     <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
                     <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
                 </div>
+
                 <div>
                     <p style={{ textAlign: "center", fontSize: "10px" }}>
                         Driver
@@ -408,6 +414,7 @@ const PickingSheetPrint = () => {
                     <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
                     <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
                 </div>
+
                 <div>
                     <p style={{ textAlign: "center", fontSize: "10px" }}>
                         Receiver

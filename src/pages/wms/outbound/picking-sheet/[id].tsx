@@ -204,6 +204,10 @@ const PickingSheetPrint = () => {
           .page-number::before {
             // content: "Page " counter(page) " of " counter(pages);
           }
+
+          .detail-row-last td {
+            border-bottom: none !important;
+          }
         }
 
         /* Fallback visible page number for screen preview */
@@ -217,6 +221,10 @@ const PickingSheetPrint = () => {
           }
           .page-number::before {
             // content: "(Page numbers visible on print)";
+          }
+
+          .detail-row-last td {
+            border-bottom: none !important;
           }
         }
       `}</style>
@@ -378,8 +386,17 @@ const PickingSheetPrint = () => {
 
               return (
                 <React.Fragment key={itemCode}>
+                  {/* {validRecords.map((item, j) => (
+                    <tr key={j}> */}
                   {validRecords.map((item, j) => (
-                    <tr key={j}>
+                  <tr
+                    key={j}
+                    className={
+                      j === validRecords.length - 1
+                        ? "detail-row-last"
+                        : ""
+                    }
+                  >
                       {/* ── Row number: only shown on first sub-row of each item group ── */}
                       <td
                         style={{
@@ -526,7 +543,7 @@ const PickingSheetPrint = () => {
                   ))}
 
                   {/* Sub-total per item group */}
-                  {/* <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
+                  <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
                     <td colSpan={3} style={{ ...td }}></td>
 
                     {invPolicy.show_rec_date && <td style={{ ...td }}></td>}
@@ -543,7 +560,7 @@ const PickingSheetPrint = () => {
                     <td style={{ ...td, textAlign: "right" }}>TOTAL</td>
                     <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
                     <td style={{ ...td, textAlign: "center" }}>{totalCbm}</td>
-                  </tr> */}
+                  </tr>
                 </React.Fragment>
               );
             })}
