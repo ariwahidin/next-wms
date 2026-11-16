@@ -149,7 +149,8 @@ const PickingSheetPrint = () => {
 
     // Format CTN Total: maximum 3 decimal places
     const formatCtnTotal = (value: number) => {
-        return Number(value.toFixed(3)).toLocaleString("en-US");
+        // return Number(value.toFixed(3)).toLocaleString("en-US");
+        return Math.ceil(value).toLocaleString("en-US");
     };
 
     return (
