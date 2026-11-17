@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from "react-select";
@@ -541,7 +541,7 @@ export default function ItemFormTable({
         } finally {
             setIsReconciling(false);
             eventBus.emit("loading", false);
-        } 
+        }
     };
 
 
@@ -577,14 +577,22 @@ export default function ItemFormTable({
         });
     };
 
-    // Handle apply dari modal
+
+    const tempIdRef = useRef(0);
+
+    const generateTempId = () => {
+        tempIdRef.current -= 1;
+        return tempIdRef.current;
+    };
+
+
+
     const handleModalApply = (selectedItems: Product[]) => {
         console.log("Selected Items:", selectedItems);
-        // return;
 
         if (modalMode === "create") {
             const newItems = selectedItems.map((product) => ({
-                ID: Date.now() * 1000 + Math.floor(Math.random() * 1000),
+                ID: generateTempId(),
                 item_id: product.ID,
                 outbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
                 item_code: product.item_code,
@@ -595,22 +603,29 @@ export default function ItemFormTable({
                 remarks: "",
                 mode: "create",
                 sn: product.has_serial,
-                vas_id: vasOptions.find((item) => item.label === "NO")?.value,
+                vas_id: vasOptions.find(
+                    (item) => item.label === "NO"
+                )?.value,
                 exp_date: "",
                 lot_number: "",
                 serial_number: "",
                 carton_number: "",
                 case_number: "",
-                division_code: headerForm.order_type === "B2C - Marketplace" ? "E-COMMERCE" : "REGULAR",
+                division_code:
+                    headerForm.order_type === "B2C - Marketplace"
+                        ? "E-COMMERCE"
+                        : "REGULAR",
             }));
 
             setMuatan((prev) => [...prev, ...newItems]);
+
         } else if (
             modalMode === "edit" &&
             editingItem &&
             selectedItems.length > 0
         ) {
             const selectedProduct = selectedItems[0];
+
             setMuatan((prev) =>
                 prev.map((m) =>
                     m.ID === editingItem.ID
@@ -627,6 +642,58 @@ export default function ItemFormTable({
 
         setIsModalOpen(false);
     };
+
+
+    // Handle apply dari modal
+    // const handleModalApply = (selectedItems: Product[]) => {
+    //     console.log("Selected Items:", selectedItems);
+    //     // return;
+
+    //     if (modalMode === "create") {
+    //         const newItems = selectedItems.map((product) => ({
+    //             ID: Date.now() * 1000 + Math.floor(Math.random() * 1000),
+    //             item_id: product.ID,
+    //             outbound_id: headerForm.ID > 0 ? headerForm.ID : 0,
+    //             item_code: product.item_code,
+    //             quantity: 1,
+    //             location: "",
+    //             uom: product.uom,
+    //             barcode: product.barcode,
+    //             remarks: "",
+    //             mode: "create",
+    //             sn: product.has_serial,
+    //             vas_id: vasOptions.find((item) => item.label === "NO")?.value,
+    //             exp_date: "",
+    //             lot_number: "",
+    //             serial_number: "",
+    //             carton_number: "",
+    //             case_number: "",
+    //             division_code: headerForm.order_type === "B2C - Marketplace" ? "E-COMMERCE" : "REGULAR",
+    //         }));
+
+    //         setMuatan((prev) => [...prev, ...newItems]);
+    //     } else if (
+    //         modalMode === "edit" &&
+    //         editingItem &&
+    //         selectedItems.length > 0
+    //     ) {
+    //         const selectedProduct = selectedItems[0];
+    //         setMuatan((prev) =>
+    //             prev.map((m) =>
+    //                 m.ID === editingItem.ID
+    //                     ? {
+    //                         ...m,
+    //                         item_code: selectedProduct.item_code,
+    //                         uom: selectedProduct.uom,
+    //                         is_serial: selectedProduct.has_serial,
+    //                     }
+    //                     : m
+    //             )
+    //         );
+    //     }
+
+    //     setIsModalOpen(false);
+    // };
 
     const outboundPolicyColCount = [
         invPolicy?.use_vas,
