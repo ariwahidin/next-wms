@@ -21,17 +21,40 @@ export interface HeaderSPK {
   remarks?: string;
 }
 
+// export interface MuatanOrderSPK {
+//   ID: number;
+//   order_id?: number;
+//   order_no?: string;
+//   outbound_id : number;
+//   outbound_no : string;
+//   shipment_id? : string;
+//   deliv_to? : string;
+//   deliv_to_name? : string;
+//   deliv_address? : string;
+//   deliv_city? : string;
+//   total_item?: number;
+//   total_qty?: number;
+//   qty_koli?: number;
+//   vas_koli?: number;
+//   total_cbm?: number;
+//   mode?: "create" | "edit";
+//   remarks?: string;
+//   use_vas?: boolean;
+//   order_type?: string;
+// }
+
+
 export interface MuatanOrderSPK {
   ID: number;
   order_id?: number;
   order_no?: string;
-  outbound_id : number;
-  outbound_no : string;
-  shipment_id? : string;
-  deliv_to? : string;
-  deliv_to_name? : string;
-  deliv_address? : string;
-  deliv_city? : string;
+  outbound_id: number;
+  outbound_no: string;
+  shipment_id?: string;
+  deliv_to?: string;
+  deliv_to_name?: string;
+  deliv_address?: string;
+  deliv_city?: string;
   total_item?: number;
   total_qty?: number;
   qty_koli?: number;
@@ -41,6 +64,14 @@ export interface MuatanOrderSPK {
   remarks?: string;
   use_vas?: boolean;
   order_type?: string;
+
+  // Delivery Hub assignment
+  delivery_mode?: "DIRECT" | "VIA_HUB";
+  delivery_hub_id?: number | null;
+  delivery_hub_code?: string;
+  delivery_hub_name?: string;
+  delivery_hub_address?: string;
+  delivery_hub_city?: string;
 }
 
 export interface DetailItemFormPropsSPK {

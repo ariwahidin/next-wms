@@ -1,24 +1,22 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { use, useEffect, useState } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Select from "react-select";
-import { Eye, Pencil, Trash, X } from "lucide-react";
-import {
-  CombinedOutboundProps,
-  ItemFormProps,
-  ItemOptions,
-} from "@/types/outbound";
-import { Product } from "@/types/item";
+
+import { Eye, X } from "lucide-react";
+
 import api from "@/lib/api";
+
 import ItemSelectionModal from "@/components/order-spk/ItemSelectionModal";
+import DeliveryHubAssignment from "@/components/order-spk/DeliveryHubAssignment";
+
 import {
   CombinedSPKProps,
-  DetailItemFormPropsSPK,
   MuatanOrderSPK,
 } from "@/types/order-spk";
-import { Transporter } from "@/types/transporter";
+
 import {
   Dialog,
   DialogContent,
@@ -26,6 +24,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+
 import {
   Table,
   TableBody,
@@ -34,13 +33,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { InventoryPolicy } from "@/types/inventory";
+
 import { usePermission } from "@/hooks/usePermission";
 
 type OrderDetail = {
   item_code: string;
   barcode: string;
-  product: { item_name: string } | null;
+  product: {
+    item_name: string;
+  } | null;
   quantity: number;
   uom: string;
   vas_name: string;
@@ -52,41 +53,39 @@ export default function ItemFormTable({
   headerForm,
   setHeaderForm,
 }: CombinedSPKProps) {
-  const [products, setProducts] = useState<Product[]>([]);
   const [pickings, setPickings] = useState<MuatanOrderSPK[]>([]);
-  const [transporters, setTransporters] = useState<Transporter[]>([]);
-  const [transporterOptions, setTransporterOptions] = useState<ItemOptions[]>(
-    []
-  );
-  const [vasPages, setVasPages] = useState<any[]>([]);
-  const [vasOptions, setVasOptions] = useState<any[]>([]);
-  const [itemCodeOptions, setItemCodeOptions] = useState<ItemOptions[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [errors, setErrors] = useState<{
-    [id: number]: { [key: string]: string };
-  }>({});
-  const [defaultUoms, setDefaultUoms] = useState([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
-  const [editingItem, setEditingItem] = useState<ItemFormProps | null>(null);
-  const [selectedOutboundNo, setSelectedOutboundNo] = useState<string[]>([]);
+
   const [open, setOpen] = useState(false);
+
   const [viewData, setViewData] = useState<OrderDetail[]>([]);
+
   const [loading, setLoading] = useState(false);
+
   const [useVas, setUseVas] = useState<boolean>(false);
-  const { can } = usePermission()
+
+  const [selectedOutboundNo, setSelectedOutboundNo] = useState<string[]>([]);
+
+  const { can } = usePermission();
+
+  // =========================================================
+  // FETCH PICKING DATA
+  // =========================================================
 
   const fetchData = async () => {
     try {
-      const [pickings] = await Promise.all([api.get("/order/list")]);
+      const res = await api.get("/order/list", {
+        withCredentials: true,
+      });
 
-      if (pickings.data.success) {
-        setPickings(pickings.data.data);
-        setUseVas(pickings.data.data[0]?.use_vas || false);
+      if (res.data.success) {
+        setPickings(res.data.data || []);
+
+        setUseVas(res.data.data?.[0]?.use_vas || false);
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching picking data:", error);
     }
   };
 
@@ -94,326 +93,550 @@ export default function ItemFormTable({
     fetchData();
   }, []);
 
+  // =========================================================
+  // ADD DO
+  // =========================================================
+
   const handleAddItems = () => {
-    setModalMode("create");
-    setEditingItem(null);
     setIsModalOpen(true);
   };
 
-  const handleEditItem = (item: ItemFormProps) => {
-    setModalMode("edit");
-    setEditingItem(item);
-    setIsModalOpen(true);
-  };
+  // =========================================================
+  // CANCEL / DELETE DO
+  // =========================================================
 
   const handleCancel = async (item: MuatanOrderSPK) => {
-    console.log("Cancel Item : ", item);
-
     if (item.mode === "create") {
-      setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
+      setMuatan((prev) =>
+        prev.filter((m) => m.ID !== item.ID)
+      );
+
       setSelectedOutboundNo((prev) =>
         prev.filter((no) => no !== item.outbound_no)
       );
-    } else {
-      try {
-        const res = await api.delete(`/order/item/` + item.ID, {
-          withCredentials: true,
-        });
-        console.log("Response dari server:", res);
-        if (res.data.success) {
-          setMuatan((prev) => prev.filter((m) => m.ID !== item.ID));
-          setEditingId(null);
-          setErrors({});
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
+
+      return;
+    }
+
+    try {
+      const res = await api.delete(`/order/item/${item.ID}`, {
+        withCredentials: true,
+      });
+
+      if (res.data.success) {
+        setMuatan((prev) =>
+          prev.filter((m) => m.ID !== item.ID)
+        );
+
+        setSelectedOutboundNo((prev) =>
+          prev.filter((no) => no !== item.outbound_no)
+        );
       }
+    } catch (error) {
+      console.error("Error deleting SPK item:", error);
     }
   };
 
-  // Handle apply dari modal
-  const handleModalApply = (selectedItems: MuatanOrderSPK[]) => {
-    console.log("Pickings Data: ", pickings);
-    console.log("Muatan Data: ", muatan);
-    console.log("Selected Items On Apply :", selectedItems);
-    console.log("Modal Mode: ", modalMode);
-    // return;
+  // =========================================================
+  // APPLY SELECTED DO FROM MODAL
+  // =========================================================
 
-    if (modalMode === "create") {
-      const newPicking: MuatanOrderSPK[] = selectedItems.map((p) => ({
-        ID: Date.now() * 1000 + Math.floor(Math.random() * 1000),
-        outbound_id: pickings.find((o) => o.outbound_no === p.outbound_no)?.ID,
+  const handleModalApply = (selectedItems: MuatanOrderSPK[]) => {
+    const newPicking: MuatanOrderSPK[] = selectedItems.map((p) => {
+      const selectedPicking = pickings.find(
+        (o) => o.outbound_no === p.outbound_no
+      );
+
+      return {
+        ID:
+          Date.now() * 1000 +
+          Math.floor(Math.random() * 1000),
+
+        outbound_id: selectedPicking?.ID ?? p.outbound_id,
+
         outbound_no: p.outbound_no,
         shipment_id: p.shipment_id,
+
         deliv_to: p.deliv_to,
         deliv_to_name: p.deliv_to_name,
         deliv_address: p.deliv_address,
         deliv_city: p.deliv_city,
+
         total_item: p.total_item,
         total_qty: p.total_qty,
         qty_koli: p.qty_koli,
         vas_koli: 0,
         total_cbm: p.total_cbm,
-        mode: "create",
-        order_type : p.order_type,
-      }));
 
-      setMuatan((prev) => [...prev, ...newPicking]);
-    } else if (
-      modalMode === "edit" &&
-      editingItem &&
-      selectedItems.length > 0
-    ) {
-      const selectedProduct = selectedItems[0];
-    }
+        mode: "create",
+
+        order_type: p.order_type,
+
+        remarks: p.remarks || "",
+
+        // Delivery Hub assignment
+        delivery_mode: p.delivery_mode || "DIRECT",
+        delivery_hub_id: p.delivery_hub_id ?? null,
+        delivery_hub_code: p.delivery_hub_code || "",
+        delivery_hub_name: p.delivery_hub_name || "",
+        delivery_hub_address: p.delivery_hub_address || "",
+        delivery_hub_city: p.delivery_hub_city || "",
+      };
+    });
+
+    setMuatan((prev) => {
+      // Hindari memasukkan DO yang sama dua kali.
+      const existingKeys = new Set(
+        prev.map(
+          (item) =>
+            `${item.outbound_id}:${item.shipment_id || item.outbound_no}`
+        )
+      );
+
+      const filtered = newPicking.filter((item) => {
+        const key = `${item.outbound_id}:${
+          item.shipment_id || item.outbound_no
+        }`;
+
+        return !existingKeys.has(key);
+      });
+
+      return [...prev, ...filtered];
+    });
 
     setIsModalOpen(false);
   };
 
-  const handleView = (item: MuatanOrderSPK) => {
-    console.log("View Item : ", item);
+  // =========================================================
+  // VIEW OUTBOUND DETAIL
+  // =========================================================
+
+  const handleView = async (item: MuatanOrderSPK) => {
     setLoading(true);
-    api
-      .get(`/outbound/` + item.outbound_no, { withCredentials: true })
-      .then((res) => {
-        if (res.data.success) {
-          setViewData(res.data.data.items);
-          setOpen(true);
-          setLoading(false);
+
+    try {
+      const res = await api.get(
+        `/outbound/${item.outbound_no}`,
+        {
+          withCredentials: true,
         }
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-      });
+      );
+
+      if (res.data.success) {
+        setViewData(res.data.data.items || []);
+        setOpen(true);
+      }
+    } catch (error) {
+      console.error("Error fetching outbound detail:", error);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // =========================================================
+  // UPDATE MUATAN FIELD
+  // =========================================================
+
+  const updateMuatan = (
+    id: number,
+    field: keyof MuatanOrderSPK,
+    value: string | number
+  ) => {
+    setMuatan((prev) =>
+      prev.map((item) =>
+        item.ID === id
+          ? {
+              ...item,
+              [field]: value,
+            }
+          : item
+      )
+    );
+  };
+
+  // =========================================================
+  // TOTAL CALCULATION
+  // =========================================================
+
+  const totalKoli = muatan.reduce(
+    (acc, item) => acc + (Number(item.qty_koli) || 0),
+    0
+  );
+
+  const totalVasKoli = muatan.reduce(
+    (acc, item) => acc + (Number(item.vas_koli) || 0),
+    0
+  );
+
+  const totalItem = muatan.reduce(
+    (acc, item) => acc + (Number(item.total_item) || 0),
+    0
+  );
+
+  const totalQty = muatan.reduce(
+    (acc, item) => acc + (Number(item.total_qty) || 0),
+    0
+  );
+
+  const totalCBM = muatan.reduce(
+    (acc, item) => acc + (Number(item.total_cbm) || 0),
+    0
+  );
+
+  const isReadOnly =
+    headerForm.status === "loaded" ||
+    headerForm.status === "confirmed";
+
+  // =========================================================
+  // RENDER
+  // =========================================================
 
   return (
     <>
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          {headerForm.status !== "loaded" && headerForm.status !== "confirmed" && can("shipment", "create") && (
-            <div className="space-x-2">
-              <Button
-                className="h-8"
-                type="button"
-                disabled={headerForm.status === "picking"}
-                onClick={handleAddItems}
-              >
-                Add DO
-              </Button>
-            </div>
-          )}
+
+        {/* =====================================================
+            ADD DO BUTTON
+        ===================================================== */}
+
+        <div className="flex items-center justify-between">
+          {!isReadOnly &&
+            can("shipment", "create") && (
+              <div className="space-x-2">
+                <Button
+                  className="h-8"
+                  type="button"
+                  disabled={headerForm.status === "picking"}
+                  onClick={handleAddItems}
+                >
+                  Add DO
+                </Button>
+              </div>
+            )}
         </div>
 
-        <div className="w-full overflow-x-auto relative">
-          <table className="w-full border font-normal text-xs whitespace-nowrap">
+        {/* =====================================================
+            DELIVERY HUB ASSIGNMENT
+        ===================================================== */}
+
+        <DeliveryHubAssignment
+          muatan={muatan}
+          setMuatan={setMuatan}
+          disabled={isReadOnly}
+        />
+
+        {/* =====================================================
+            SPK DETAIL TABLE
+        ===================================================== */}
+
+        <div className="relative w-full overflow-x-auto">
+          <table className="w-full border whitespace-nowrap text-xs font-normal">
+
             <thead className="bg-gray-100">
               <tr>
-                <th className="p-2 border w-12 text-center sticky left-0 bg-gray-100 z-20">
+                <th
+                  className="sticky left-0 z-20 w-12 border bg-gray-100 p-2 text-center"
+                >
                   No.
                 </th>
 
-                <th className="p-2 border sticky left-[48px] bg-gray-100 z-20" style={{ width: "120px" }}>
+                <th
+                  className="sticky left-[48px] z-20 border bg-gray-100 p-2"
+                  style={{ width: "120px" }}
+                >
                   Picking No
                 </th>
-                <th className="p-2 border" style={{ width: "120px" }}>
+
+                <th
+                  className="border p-2"
+                  style={{ width: "120px" }}
+                >
                   DO No
                 </th>
-                <th className="p-2 border" style={{ width: "120px" }}>
+
+                <th
+                  className="border p-2"
+                  style={{ width: "120px" }}
+                >
                   Order Type
                 </th>
-                <th className="p-2 border" style={{ width: "200px" }}>
+
+                <th
+                  className="border p-2"
+                  style={{ width: "200px" }}
+                >
                   Delivery To
                 </th>
-                <th className="p-2 border" style={{ width: "130px" }}>
+
+                <th
+                  className="border p-2"
+                  style={{ width: "130px" }}
+                >
                   Delivery City
                 </th>
+
                 <th
-                  className="p-2 border"
-                  style={{ width: "75px", textAlign: "center" }}
+                  className="border p-2 text-center"
+                  style={{ width: "75px" }}
                 >
                   Total Koli
                 </th>
+
                 {useVas && (
                   <th
-                    className="p-2 border"
-                    style={{ width: "75px", textAlign: "center" }}
+                    className="border p-2 text-center"
+                    style={{ width: "75px" }}
                   >
                     VAS Koli
                   </th>
                 )}
-                <th className="p-2 border" style={{ width: "65px" }}>
+
+                <th
+                  className="border p-2"
+                  style={{ width: "65px" }}
+                >
                   Total Item
                 </th>
-                <th className="p-2 border" style={{ width: "65px" }}>
+
+                <th
+                  className="border p-2"
+                  style={{ width: "65px" }}
+                >
                   Total Qty
                 </th>
-                <th className="p-2 border" style={{ width: "85px" }}>
+
+                <th
+                  className="border p-2"
+                  style={{ width: "85px" }}
+                >
                   Total CBM
                 </th>
-                <th className="p-2 border" style={{ width: "100px" }}>
+
+                <th
+                  className="border p-2"
+                  style={{ width: "100px" }}
+                >
                   Remarks
                 </th>
-                <th className="p-2 border" style={{ width: "50px" }}>
+
+                <th
+                  className="border p-2"
+                  style={{ width: "50px" }}
+                >
                   Action
                 </th>
               </tr>
             </thead>
+
             <tbody>
-              {muatan?.map((item, index) => {
-                return (
-                  <tr key={item.outbound_no} className="border-t">
-                    <td className="p-2 border text-center sticky left-0 bg-white z-10">
-                      {index + 1}
-                    </td>
+              {muatan?.map((item, index) => (
+                <tr
+                  key={item.ID}
+                  className="border-t"
+                >
+                  <td className="sticky left-0 z-10 border bg-white p-2 text-center">
+                    {index + 1}
+                  </td>
 
-                    <td className="p-2 border sticky left-[48px] bg-white z-10">
-                      <span>{item.outbound_no}</span>
-                    </td>
-                    <td className="p-2 border">
-                      <span>{item.shipment_id}</span>
-                    </td>
-                    <td className="p-2 border">
-                      <span>{item.order_type}</span>
-                    </td>
-                    <td className="p-2 border">
-                      <span>{item.deliv_to_name}</span>
-                    </td>
-                    <td className="p-2 border">
-                      <span>{item.deliv_city}</span>
-                    </td>
-                    <td className="p-2 border">
+                  <td className="sticky left-[48px] z-10 border bg-white p-2">
+                    <span>{item.outbound_no}</span>
+                  </td>
+
+                  <td className="border p-2">
+                    <span>{item.shipment_id}</span>
+                  </td>
+
+                  <td className="border p-2">
+                    <span>{item.order_type}</span>
+                  </td>
+
+                  <td className="border p-2">
+                    <span>{item.deliv_to_name}</span>
+                  </td>
+
+                  <td className="border p-2">
+                    <span>{item.deliv_city}</span>
+                  </td>
+
+                  <td className="border p-2">
+                    <Input
+                      readOnly
+                      className="h-8"
+                      style={{
+                        fontSize: "12px",
+                        textAlign: "center",
+                      }}
+                      type="number"
+                      value={item.qty_koli ?? 0}
+                    />
+                  </td>
+
+                  {useVas && (
+                    <td className="border p-2">
                       <Input
-                        readOnly
-                        style={{ fontSize: "12px", textAlign: "center" }}
+                        className="h-8"
+                        disabled={isReadOnly}
+                        style={{
+                          fontSize: "12px",
+                          textAlign: "center",
+                        }}
                         type="number"
-                        value={item.qty_koli}
+                        value={item.vas_koli ?? 0}
                         onChange={(e) =>
-                          setMuatan((prev) =>
-                            prev.map((m) =>
-                              m.ID === item.ID
-                                ? { ...m, qty_koli: Number(e.target.value) }
-                                : m
-                            )
+                          updateMuatan(
+                            item.ID,
+                            "vas_koli",
+                            Number(e.target.value)
                           )
                         }
                       />
                     </td>
+                  )}
 
-                    {useVas && (
-                      <td className="p-2 border">
-                        <Input
-                          style={{ fontSize: "12px", textAlign: "center" }}
-                          type="number"
-                          value={item.vas_koli}
-                          onChange={(e) =>
-                            setMuatan((prev) =>
-                              prev.map((m) =>
-                                m.ID === item.ID
-                                  ? { ...m, vas_koli: Number(e.target.value) }
-                                  : m
-                              )
-                            )
-                          }
-                        />
-                      </td>
-                    )}
-                    <td className="p-2 border">
-                      <Input
-                        style={{ fontSize: "12px", textAlign: "center" }}
-                        readOnly
-                        type="text"
-                        value={item.total_item}
-                      />
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        style={{ fontSize: "12px", textAlign: "center" }}
-                        readOnly
-                        type="text"
-                        value={item.total_qty}
-                      />
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        style={{ fontSize: "12px", textAlign: "center" }}
-                        readOnly
-                        type="text"
-                        value={item.total_cbm}
-                      />
-                    </td>
-                    <td className="p-2 border">
-                      <Input
-                        style={{ fontSize: "12px", textAlign: "center" }}
-                        type="text"
-                        value={item.remarks || ""}
-                        onChange={(e) =>
-                          setMuatan((prev) =>
-                            prev.map((m) =>
-                              m.ID === item.ID
-                                ? { ...m, remarks: e.target.value }
-                                : m
-                            )
-                          )
-                        }
-                      />
-                    </td>
-                    <td
-                      className="p-2 border space-x-2 text-center"
-                      style={{ width: "100px" }}
+                  <td className="border p-2">
+                    <Input
+                      readOnly
+                      className="h-8"
+                      style={{
+                        fontSize: "12px",
+                        textAlign: "center",
+                      }}
+                      type="text"
+                      value={item.total_item ?? 0}
+                    />
+                  </td>
+
+                  <td className="border p-2">
+                    <Input
+                      readOnly
+                      className="h-8"
+                      style={{
+                        fontSize: "12px",
+                        textAlign: "center",
+                      }}
+                      type="text"
+                      value={item.total_qty ?? 0}
+                    />
+                  </td>
+
+                  <td className="border p-2">
+                    <Input
+                      readOnly
+                      className="h-8"
+                      style={{
+                        fontSize: "12px",
+                        textAlign: "center",
+                      }}
+                      type="text"
+                      value={item.total_cbm ?? 0}
+                    />
+                  </td>
+
+                  <td className="border p-2">
+                    <Input
+                      className="h-8"
+                      disabled={isReadOnly}
+                      style={{
+                        fontSize: "12px",
+                        textAlign: "center",
+                      }}
+                      type="text"
+                      value={item.remarks || ""}
+                      onChange={(e) =>
+                        updateMuatan(
+                          item.ID,
+                          "remarks",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </td>
+
+                  <td
+                    className="space-x-2 border p-2 text-center"
+                    style={{ width: "100px" }}
+                  >
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      type="button"
+                      onClick={() => handleView(item)}
                     >
+                      <Eye size={14} />
+                    </Button>
+
+                    {!isReadOnly && (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          handleView(item);
-                        }}
+                        type="button"
+                        onClick={() => handleCancel(item)}
                       >
-                        <Eye size={14} />
+                        <X size={14} />
                       </Button>
-                      {(headerForm.status !== "loaded" && headerForm.status !== "confirmed")  && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            handleCancel(item);
-                          }}
-                        >
-                          <X size={14} />
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                    )}
+                  </td>
+                </tr>
+              ))}
+
+              {muatan.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={useVas ? 13 : 12}
+                    className="border p-6 text-center text-gray-500"
+                  >
+                    No DO added to this SPK.
+                  </td>
+                </tr>
+              )}
             </tbody>
+
+            {/* =================================================
+                TOTAL
+            ================================================= */}
+
             <tfoot>
               <tr className="bg-gray-100 font-semibold">
-                <td className="p-2 border sticky left-0 bg-gray-100 z-20" colSpan={6}>
+                <td
+                  className="sticky left-0 z-20 border bg-gray-100 p-2"
+                  colSpan={6}
+                >
                   Total
                 </td>
-                <td className="p-2 border text-center">
-                  {muatan.reduce((acc, item) => acc + item.qty_koli, 0)}
+
+                <td className="border p-2 text-center">
+                  {totalKoli}
                 </td>
+
                 {useVas && (
-                  <td className="p-2 border text-center">
-                    {muatan.reduce((acc, item) => acc + item.vas_koli, 0)}
+                  <td className="border p-2 text-center">
+                    {totalVasKoli}
                   </td>
                 )}
-                <td className="p-2 border text-center">
-                  {muatan.reduce((acc, item) => acc + item.total_item, 0)}
+
+                <td className="border p-2 text-center">
+                  {totalItem}
                 </td>
-                <td className="p-2 border text-center">
-                  {muatan.reduce((acc, item) => acc + item.total_qty, 0)}
+
+                <td className="border p-2 text-center">
+                  {totalQty}
                 </td>
-                <td className="p-2 border text-center">
-                  {muatan.reduce((acc, item) => acc + item.total_cbm, 0)}
+
+                <td className="border p-2 text-center">
+                  {totalCBM}
                 </td>
-                <td className="p-2 border"></td>
+
+                <td className="border p-2"></td>
+
+                <td className="border p-2"></td>
               </tr>
             </tfoot>
           </table>
         </div>
+
+        {/* =====================================================
+            OUTBOUND DETAIL MODAL
+        ===================================================== */}
 
         <OrderDetailModal
           open={open}
@@ -422,6 +645,11 @@ export default function ItemFormTable({
           loading={loading}
         />
       </div>
+
+      {/* =======================================================
+          ITEM SELECTION MODAL
+      ======================================================= */}
+
       <ItemSelectionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -432,6 +660,10 @@ export default function ItemFormTable({
     </>
   );
 }
+
+// =============================================================
+// OUTBOUND DETAIL MODAL
+// =============================================================
 
 function OrderDetailModal({
   open,
@@ -445,10 +677,14 @@ function OrderDetailModal({
   loading: boolean;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-3xl bg-white">
         <DialogHeader>
           <DialogTitle>Detail Order</DialogTitle>
+
           <DialogDescription>
             Detail item in the selected order
           </DialogDescription>
@@ -468,14 +704,22 @@ function OrderDetailModal({
                 <TableHead>VAS</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {data?.map((item, idx) => (
                 <TableRow key={idx}>
                   <TableCell>{item.item_code}</TableCell>
+
                   <TableCell>{item.barcode}</TableCell>
-                  <TableCell>{item.product.item_name}</TableCell>
+
+                  <TableCell>
+                    {item.product?.item_name || "-"}
+                  </TableCell>
+
                   <TableCell>{item.quantity}</TableCell>
+
                   <TableCell>{item.uom}</TableCell>
+
                   <TableCell>{item.vas_name}</TableCell>
                 </TableRow>
               ))}
