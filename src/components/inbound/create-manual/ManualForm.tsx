@@ -496,6 +496,8 @@ export default function ManualForm() {
                 />
               </div>
 
+
+
               <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
@@ -513,6 +515,24 @@ export default function ManualForm() {
                   value={formData.invoice}
                   onChange={(e) =>
                     setFormData({ ...formData, invoice: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  BL No.
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  style={{ fontSize: "12px" }}
+                  className="flex-1"
+                  value={formData.bl_no}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bl_no: e.target.value })
                   }
                 />
               </div>
@@ -941,7 +961,7 @@ export default function ManualForm() {
                 />
               </div> */}
 
-              <div className="flex items-center gap-2">
+              {/* <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
                   style={{ fontSize: "12px" }}
@@ -957,7 +977,7 @@ export default function ManualForm() {
                     setFormData({ ...formData, bl_no: e.target.value })
                   }
                 />
-              </div>
+              </div> */}
               <div className="flex items-center gap-2">
                 <Label
                   className="w-24 text-left shrink-0"
