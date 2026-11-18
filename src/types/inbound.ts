@@ -11,6 +11,7 @@ export interface HeaderFormProps {
   container?: string;
   po_number: string;
   invoice?: string;
+  delivery_note_number?: string;
   type?: string;
   status?: string;
   owner_code?: string;

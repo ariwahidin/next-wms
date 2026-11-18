@@ -45,6 +45,7 @@ export default function ManualForm() {
     supplier: "",
     po_number: "",
     invoice: "",
+    delivery_note_number: "",
     transporter: "",
     no_truck: "",
     driver: "",
@@ -512,6 +513,27 @@ export default function ManualForm() {
                   value={formData.invoice}
                   onChange={(e) =>
                     setFormData({ ...formData, invoice: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label
+                  className="w-24 text-left shrink-0"
+                  style={{ fontSize: "12px" }}
+                >
+                  Delivery Note
+                </Label>
+                <span className="shrink-0">:</span>
+                <Input
+                  placeholder="Enter Delivery Note Number"
+                  autoComplete="off"
+                  id="DeliveryNote"
+                  style={{ fontSize: "12px" }}
+                  className="flex-1"
+                  value={formData.delivery_note_number}
+                  onChange={(e) =>
+                    setFormData({ ...formData, delivery_note_number: e.target.value })
                   }
                 />
               </div>
