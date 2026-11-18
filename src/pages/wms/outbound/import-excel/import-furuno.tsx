@@ -61,6 +61,7 @@ interface FurunoPreviewRow {
     customer: string;
     serialNumber: string;
     warehouse: string;
+    actualDeliveryAddress: string;
     eligible: boolean;
 }
 
@@ -156,6 +157,7 @@ const REQUIRED_HEADERS = [
     'Customer',
     'Serial/Production Number',
     'Name Warehouse',
+    'Address Delivery Order',
 ] as const;
 
 /**
@@ -201,6 +203,7 @@ const PREVIEW_HEADERS = [
     'Customer',
     'Serial / Production Number',
     'Warehouse',
+    'Address Delivery Order',
 ] as const;
 
 // ============================================================================
@@ -569,7 +572,8 @@ const isMeaningfulRow = (
         row.customerNo ||
         row.customer ||
         row.serialNumber ||
-        row.warehouse
+        row.warehouse ||
+        row.actualDeliveryAddress
     );
 };
 
@@ -667,6 +671,7 @@ const normalizeFurunoWorkbookForUpload = async (
         'Customer',
         'Serial/Production Number',
         'Name Warehouse',
+        'Address Delivery Order',
     ];
 
     outputWorksheet.addRow(
@@ -757,6 +762,14 @@ const normalizeFurunoWorkbookForUpload = async (
                 row,
                 headerMap,
                 'Name Warehouse'
+            )
+        );
+
+        values.push(
+            getRawCellByHeader(
+                row,
+                headerMap,
+                'Address Delivery Order'
             )
         );
 
@@ -1398,6 +1411,13 @@ const FurunoExcelUpload: React.FC =
                                 'Name Warehouse'
                             );
 
+                        const actualDeliveryAddress =
+                            getCellByHeader(
+                                row,
+                                headerMap,
+                                'Address Delivery Order'
+                            );
+
                         const partCode = getCellByHeader(
                             row,
                             headerMap,
@@ -1417,6 +1437,7 @@ const FurunoExcelUpload: React.FC =
                             customer,
                             serialNumber,
                             warehouse,
+                            actualDeliveryAddress,
                             eligible: false,
                         };
 
@@ -1832,6 +1853,9 @@ const FurunoExcelUpload: React.FC =
 
                                                 <li>
                                                     Customer No is optional.
+                                                </li>
+                                                <li>
+                                                    Address Delivery Order is optional.
                                                 </li>
 
                                                 <li>
@@ -2438,6 +2462,25 @@ const FurunoExcelUpload: React.FC =
 
                                                             </td>
 
+
+                                                            {/* Actual Delivery Address */}
+                                                            <td className="px-3 py-2 text-sm whitespace-nowrap">
+
+                                                                <span
+                                                                    className={`
+                                                                        inline-flex px-2 py-1 rounded-md text-xs font-medium
+                                                                        ${row.eligible
+                                                                            ? 'bg-green-100 text-green-800'
+                                                                            : 'bg-yellow-100 text-yellow-800'
+                                                                        }
+                                                                    `}
+                                                                >
+                                                                    {row.actualDeliveryAddress ||
+                                                                        '—'}
+                                                                </span>
+
+                                                            </td>
+
                                                             {/* Status */}
 
                                                             <td className="px-3 py-2 text-center whitespace-nowrap">
@@ -2750,6 +2793,7 @@ const FurunoExcelUpload: React.FC =
                                                                         </div>
                                                                     </div>
                                                                 )}
+
 
                                                             {/* Go To Outbound */}
 

@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import JsBarcode from 'jsbarcode';
 import api from '@/lib/api';
 import Layout from '@/components/layout';
+import { printDocument } from '@/lib/print';
 
 interface PackingItem {
   packing_no: string;
@@ -72,6 +73,8 @@ const CartonLabelPrinter: React.FC = () => {
   const { packing, id } = router.query;
   const [packingItems, setPackingItems] = useState<PackingItem[]>([]);
   const printRef = useRef(null);
+  const printProcessingRef = useRef(false);
+  const autoPrintStartedRef = useRef(false);
 
   useEffect(() => {
     if (packing && id) {
@@ -168,8 +171,40 @@ const CartonLabelPrinter: React.FC = () => {
     });
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (groupedCartons.length <= 0 || printProcessingRef.current) return;
+
+    const packingNo = groupedCartons[0]?.packing_no;
+    if (!packingNo) {
+      alert('Packing number is not available.');
+      return;
+    }
+
+    // Prevent the scheduled auto-print from duplicating a manual print request.
+    autoPrintStartedRef.current = true;
+    printProcessingRef.current = true;
+
+    try {
+      await printDocument({
+        documentType: 'CARTON_LABEL_CUSTOM_2',
+        documentNo: packingNo,
+        module: 'OUTBOUND',
+        printMethod: 'BROWSER',
+        printFormat: 'PDF',
+        copyCount: 1,
+      });
+
+      window.print();
+    } catch (error) {
+      console.error('Carton label print error:', error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Failed to process print request.'
+      );
+    } finally {
+      printProcessingRef.current = false;
+    }
   };
 
   const totalCartons = groupedCartons.length;
@@ -211,9 +246,14 @@ const CartonLabelPrinter: React.FC = () => {
       });
 
       // Auto print after barcodes are generated
-      setTimeout(() => {
-        window.print();
+      const autoPrintTimer = window.setTimeout(() => {
+        if (autoPrintStartedRef.current) return;
+
+        autoPrintStartedRef.current = true;
+        void handlePrint();
       }, 1500);
+
+      return () => window.clearTimeout(autoPrintTimer);
     }
   }, [groupedCartons]);
 

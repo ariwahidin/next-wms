@@ -1,0 +1,432 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
+import JsBarcode from "jsbarcode";
+import api from "@/lib/api";
+import React from "react";
+
+const PickingSheetPrint = () => {
+  const router = useRouter();
+  const { packing, id } = router.query;
+  const [packingItems, setPackingItems] = useState<any[]>([]);
+  const barcodeRef = useRef<HTMLCanvasElement>(null);
+  const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
+  const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
+
+  useEffect(() => {
+    if (packing && id) {
+      console.log("packing : ", packing);
+      console.log("id : ", id);
+      fetchData(id as string);
+    }
+  }, [packing, id]);
+
+  const fetchData = async (id: string) => {
+    const res = await api.get(`/outbound/${id}/packing/${packing}`, {
+      withCredentials: true,
+    });
+    setPackingItems(res.data.data.list);
+  };
+
+  useEffect(() => {
+    if (packingItems.length > 0 && barcodeRef.current) {
+      JsBarcode(barcodeRef.current, packingItems[0].packing_no, {
+        format: "CODE128",
+        displayValue: true,
+        fontSize: 14,
+        width: 2,
+        height: 50,
+      });
+
+      packingItems.forEach((item, index) => {
+        const canvasBarcode = barcodeLocationRef.current[index];
+        if (canvasBarcode) {
+          JsBarcode(canvasBarcode, item.location, {
+            format: "CODE128",
+            displayValue: false,
+            width: 1.5,
+            height: 20,
+            margin: 0,
+          });
+        }
+
+        const canvasBarcodeItem = barcodeItemRef.current[index];
+        if (canvasBarcodeItem) {
+          JsBarcode(canvasBarcodeItem, item.barcode, {
+            format: "CODE128",
+            displayValue: false,
+            width: 1.5,
+            height: 20,
+            margin: 0,
+          });
+        }
+      });
+
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    }
+  }, [packingItems]);
+
+  if (packingItems.length === 0) return <p>Loading...</p>;
+
+  const data = packingItems[0];
+
+  // sebelum return JSX
+  const groupedData = packingItems.reduce((acc, item) => {
+    if (!acc[item.item_code]) {
+      acc[item.item_code] = [];
+    }
+    acc[item.item_code].push(item);
+    return acc;
+  }, {});
+
+  const grandTotalQty = packingItems.reduce(
+    (acc, item) => acc + item.quantity,
+    0
+  );
+
+  const grandTotalCbm = packingItems
+    .reduce((acc, item) => acc + item.cbm, 0)
+    .toFixed(3);
+
+  let numbering = 1;
+
+  return (
+    <div style={{ padding: "10px", fontFamily: "Arial" }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <p
+          style={{ fontSize: "16px", textAlign: "center", fontWeight: "bold" }}
+        >
+          PT Yusen Logistics Interlink Indonesia
+        </p>
+      </div>
+
+      <hr
+        style={{
+          border: "1px solid black",
+          marginBottom: "10px",
+          marginTop: "10px",
+        }}
+      />
+
+      <h2
+        style={{
+          textAlign: "center",
+          fontWeight: "bold",
+          marginBottom: "10px",
+        }}
+      >
+        PACKING LIST
+      </h2>
+
+      <hr
+        style={{
+          border: "1px solid black",
+          marginBottom: "10px",
+          marginTop: "10px",
+        }}
+      />
+
+      <table style={{ display: "none", width: "100%", marginBottom: "10px" }}>
+        <tr>
+          <td style={{ textAlign: "center", width: "33%" }}>
+            <canvas
+              style={{ width: "200px", height: "50px" }}
+              ref={barcodeRef}
+            ></canvas>
+          </td>
+          <td style={{ textAlign: "center" }}>
+            <div
+              style={{
+                fontSize: "12px",
+                border: "1px solid black",
+                padding: "5px",
+                width: "220px",
+              }}
+            >
+              <span {...{ style: { fontWeight: "bold" } }}>
+                {data.transporter_code}
+                {" to "}
+                {data.cust_city}
+              </span>
+            </div>
+          </td>
+          <td style={{ textAlign: "center" }}>
+            <div
+              style={{
+                fontSize: "12px",
+                border: "1px solid black",
+                padding: "5px",
+                width: "100px",
+              }}
+            >
+              <span {...{ style: { fontWeight: "bold" } }}>
+                {data.shipment_id}
+              </span>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      {/* Outbound Info */}
+      <div style={{ fontSize: "12px", marginTop: "10px" }}>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            fontSize: "12px",
+          }}
+        >
+          <tbody>
+            <tr>
+              <td style={headerLabel}>Packing No</td>
+              <td style={headerValue}>{data.packing_no}</td>
+            </tr>
+            <tr>
+              <td style={headerLabel}>Shipment ID</td>
+              <td style={headerValue}>{data.shipment_id}</td>
+            </tr>
+            <tr>
+              <td style={headerLabel}>Packing Date</td>
+              <td style={headerValue}>
+                {new Date(data.packing_date).toLocaleDateString("id-ID", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </td>
+            </tr>
+            <tr>
+              <td style={headerLabel}>Customer Name</td>
+              <td style={headerValue}>{data.customer_name}</td>
+            </tr>
+            <tr>
+              <td style={headerLabel}>Customer Address</td>
+              <td style={headerValue}>{data.cust_address}</td>
+            </tr>
+            <tr>
+              <td style={headerLabel}>Customer City</td>
+              <td style={headerValue}>{data.cust_city}</td>
+            </tr>
+            <tr></tr>
+            <tr>
+              <td style={headerLabel}>Delivery To</td>
+              <td style={headerValue}>{data.deliv_to_name}</td>
+            </tr>
+            <tr>
+              <td style={headerLabel}>Delivery Address</td>
+              <td style={headerValue}>{data.deliv_address}</td>
+            </tr>
+            <tr>
+              <td style={headerLabel}>Delivery City</td>
+              <td style={headerValue}>{data.deliv_city}</td>
+            </tr>
+            <tr>
+              <td style={headerLabel}></td>
+              <td style={headerValue}></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          marginTop: "20px",
+          fontSize: "12px",
+        }}
+      >
+        <thead>
+          <tr>
+            <th style={th}>NO</th>
+            <th style={th}>PACKING NO</th>
+            <th style={th}>CTN NO</th>
+            <th style={th}>SKU</th>
+            <th style={th}>DESCRIPTION</th>
+            {/* <th style={th}>EAN</th> */}
+            <th style={th}>QTY</th>
+            <th style={th}>UoM</th>
+            <th style={th}>REMARKS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(groupedData).map(
+            ([itemCode, records]: [string, any], i) => {
+              const totalQty = (records as any[]).reduce(
+                (sum, r) => sum + r.quantity,
+                0
+              );
+              const totalCbm = (records as any[]).reduce(
+                (sum, r) => sum + r.cbm,
+                0
+              );
+
+              return (
+                <React.Fragment key={itemCode}>
+
+                  {records.map((item, j) => (
+                    <tr key={j}>
+                      {/* NO */}
+                      <td style={{ textAlign: "center" }}>{numbering++}</td>
+
+                      {/* PACKING NO */}
+                      <td style={{ textAlign: "center", maxWidth: "50px" }}>
+                        {j === 0 ? item.packing_no : ""}
+                      </td>
+                      <td style={{ textAlign: "center" }}>{item.pack_ctn_no}</td>
+
+                      {/* ITEM CODE */}
+                      <td style={{ textAlign: "center" }}>
+                        {j === 0 ? item.item_code : ""}
+                      </td>
+
+                      {/* ITEM NAME */}
+                      <td
+                        style={{
+                          maxWidth: "180px",       // batasi lebar kolom biar kolom lain tetap muat
+                          whiteSpace: "normal",     // izinkan wrap, jangan nowrap
+                          wordBreak: "break-word",  // patah kata kalau kepanjangan
+                          overflowWrap: "break-word",
+                          lineHeight: "1.2",
+                        }}
+                      >
+                        {j === 0 ? item.item_name : ""}
+                      </td>
+
+                      {/* BARCODE */}
+                      {/* <td style={{ textAlign: "center" }}>
+                        {j === 0 ? item.barcode_scan : ""}
+                      </td> */}
+
+                      {/* QTY */}
+                      <td style={{ textAlign: "center" }}>{item.qty_scan}</td>
+                      <td style={{ textAlign: "center" }}>{item.uom_scan}</td>
+                      <td
+                        style={{
+                          textAlign: "left",
+                          fontSize: "10px",
+                          maxWidth: "100px",
+                          whiteSpace: "normal",
+                          wordBreak: "break-word",
+                          overflowWrap: "break-word",
+                          lineHeight: "1.3",
+                        }}
+                      >
+                        {item.serial_remarks || ""}
+                      </td>
+                    </tr>
+                  ))}
+
+                  <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
+                    <td style={{ ...td, textAlign: "center" }}>{''}</td>
+                    <td colSpan={4} style={{ ...td, textAlign: "right" }}>
+                      TOTAL
+                    </td>
+                    <td style={{ ...td, textAlign: "center" }}>{totalQty}</td>
+                    <td style={{ ...td, textAlign: "center" }}>{''}</td>
+                    <td style={{ ...td, textAlign: "center" }}>{''}</td>
+                  </tr>
+                </React.Fragment>
+              );
+            }
+          )}
+
+          {/* grand total */}
+          <tr style={{ fontWeight: "bold", background: "#eaeaea" }}>
+            <td colSpan={5} style={{ ...td, textAlign: "right" }}>
+              GRAND TOTAL
+            </td>
+            <td style={{ ...td, textAlign: "center" }}>{grandTotalQty}</td>
+            <td style={{ ...td, textAlign: "center" }}>{''}</td>
+            <td style={{ ...td, textAlign: "center" }}>{''}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Signatures */}
+      <div
+        style={{
+          marginTop: "50px",
+          display: "flex",
+          justifyContent: "space-around",
+        }}
+      >
+        <div>
+          <p style={{ textAlign: "center", fontSize: "10px" }}>
+            Checker
+          </p>
+          <div style={signatureLine}></div>
+          <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
+          <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
+          <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
+        </div>
+        <div>
+          <p style={{ textAlign: "center", fontSize: "10px" }}>
+            Supervisor
+          </p>
+          <div style={signatureLine}></div>
+          <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
+          <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
+          <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
+        </div>
+        <div>
+          <p style={{ textAlign: "center", fontSize: "10px" }}>
+            Driver
+          </p>
+          <div style={signatureLine}></div>
+          <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
+          <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
+          <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
+        </div>
+        <div>
+          <p style={{ textAlign: "center", fontSize: "10px" }}>
+            Receiver
+          </p>
+          <div style={signatureLine}></div>
+          <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
+          <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
+          <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const th = {
+  border: "1px solid #000",
+  padding: "4px",
+  backgroundColor: "#eee",
+};
+
+const td = {
+  borderBottom: "1px dashed #000",
+  padding: "4px",
+};
+
+const headerLabel = {
+  padding: "2px 6px",
+  fontWeight: "bold" as const,
+  whiteSpace: "nowrap" as const,
+  width: "7%",
+};
+
+const headerValue = {
+  padding: "2px 6px",
+  width: "30%",
+};
+
+const signatureLine = {
+  borderBottom: "1px solid black",
+  width: "100px",
+  height: "55px",
+  marginBottom: "5px",
+};
+
+export default PickingSheetPrint;

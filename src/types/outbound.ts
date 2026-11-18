@@ -31,6 +31,7 @@ export interface HeaderFormProps {
   transporter_code?: string;
   customer_name?: string;
   deliv_to_name?: string;
+  actual_deliv_address?: string;
 }
 
 export interface ItemFormProps {

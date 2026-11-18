@@ -348,362 +348,357 @@ export default function ManualForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-4 gap-8">
         {/* Column 1 */}
-        <div className="bg-white-200 p-0 space-y-1">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Column 1 */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Picking Date
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <DatePicker
-                    disabled={formData.status === "complete" ? true : false}
-                    selected={
-                      formData.outbound_date
-                        ? parseISO(formData.outbound_date)
-                        : null
-                    }
-                    onChange={(date: Date | null) => {
-                      if (date) {
-                        setFormData({
-                          ...formData,
-                          outbound_date: format(date, "yyyy-MM-dd"), // simpan format ISO
-                        });
-                      }
-                    }}
-                    dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
-                    locale={id} // Bahasa Indonesia
-                    customInput={
-                      <Input
-                        id="OutboundDate"
-                        style={{ width: "160px", fontSize: "12px" }}
-                      />
-                    }
-                    placeholderText="Pilih tanggal"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  DO No <span className="text-red-500">*</span>
-                </Label>
-                <span className="shrink-0">:</span>
-                <Input
-                  disabled={formData.status === "complete" ? true : false}
-                  id="ShipmentID"
-                  style={{ fontSize: "12px" }}
-                  className="flex-1"
-                  value={formData.shipment_id}
-                  autoComplete="off"
-                  onChange={(e) =>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Label
+              className="w-24 text-left shrink-0"
+              style={{ fontSize: "12px" }}
+            >
+              Picking Date
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <DatePicker
+                disabled={formData.status === "complete" ? true : false}
+                selected={
+                  formData.outbound_date
+                    ? parseISO(formData.outbound_date)
+                    : null
+                }
+                onChange={(date: Date | null) => {
+                  if (date) {
                     setFormData({
                       ...formData,
-                      shipment_id: e.target.value,
-                    })
+                      outbound_date: format(date, "yyyy-MM-dd"), // simpan format ISO
+                    });
                   }
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Owner
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <Select
-                    isDisabled={
-                      muatan.length > 0 ||
-                        formData.status == "picking" ||
-                        formData.status == "complete"
-                        ? true
-                        : false
-                    }
-                    value={ownerOptions.find(
-                      (option) => option.value === formData.owner_code
-                    )}
-                    options={ownerOptions}
-                    onChange={(selectedOption) => {
-                      if (selectedOption) {
-                        setFormData({
-                          ...formData,
-                          owner_code: selectedOption.value,
-                        });
-                      }
-                    }}
+                }}
+                dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
+                locale={id} // Bahasa Indonesia
+                customInput={
+                  <Input
+                    id="OutboundDate"
+                    style={{ width: "160px", fontSize: "12px" }}
                   />
-                </div>
-              </div>
-
-
-
-              <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Whs Code
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <Select
-
-                    isDisabled={
-                      muatan.length > 0 ||
-                        formData.status == "picking" ||
-                        formData.status == "complete"
-                        ? true
-                        : false
-                    }
-
-                    // isDisabled={
-                    //   formData.status == "picking" ||
-                    //     formData.status == "complete"
-                    //     ? true
-                    //     : false
-                    // }
-                    value={whsOptions.find(
-                      (option) => option.value === formData.whs_code
-                    )}
-                    options={whsOptions}
-                    onChange={(selectedOption) => {
-                      if (selectedOption) {
-                        setFormData({
-                          ...formData,
-                          whs_code: selectedOption.value,
-                        });
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-
-              <div className="flex items-center gap-2">
-                <Label className="w-24 text-left shrink-0" style={{ fontSize: "12px" }}>
-                  Order Type
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  {/* ── Opsi diperluas: TRIP, MULTI DROP, B2B - Consignment, B2B - Normal, B2C - Marketplace ── */}
-                  <Select
-                    // className="w-56"
-                    isDisabled={
-                      muatan.length > 0 ||
-                        formData.status == "picking" ||
-                        formData.status == "complete"
-                        ? true
-                        : false
-                    }
-                    value={ordertypeOptions.find((o) => o.value === formData.order_type)}
-                    options={ordertypeOptions}
-                    onChange={(opt) => {
-                      if (opt) setFormData({ ...formData, order_type: opt.value });
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2" style={{ display: "none" }}>
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Picker Name
-                </Label>
-                <span className="shrink-0">:</span>
-                <Input
-                  id="PickerName"
-                  style={{ fontSize: "12px" }}
-                  className="flex-1"
-                  value={formData.picker_name}
-                  autoComplete="off"
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      picker_name: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div className="flex items-center gap-2" style={{ display: "none" }}>
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Transporter
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <Select
-                    value={transporterOptions.find(
-                      (option) => option.value === formData.transporter_code
-                    )}
-                    options={transporterOptions}
-                    onChange={(selectedOption) => {
-                      if (selectedOption) {
-                        setFormData({
-                          ...formData,
-                          transporter_code: selectedOption.value,
-                        });
-                      }
-                    }}
-                  />
-                </div>
-              </div>
+                }
+                placeholderText="Pilih tanggal"
+              />
             </div>
+          </div>
 
-            {/* Column 2 */}
-            <div className="space-y-1 ps-8">
+          <div className="flex items-center gap-2">
+            <Label
+              className="w-24 text-left shrink-0"
+              style={{ fontSize: "12px" }}
+            >
+              DO No <span className="text-red-500">*</span>
+            </Label>
+            <span className="shrink-0">:</span>
+            <Input
+              disabled={formData.status === "complete" ? true : false}
+              id="ShipmentID"
+              style={{ fontSize: "12px" }}
+              className="flex-1"
+              value={formData.shipment_id}
+              autoComplete="off"
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  shipment_id: e.target.value,
+                })
+              }
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Label
+              className="w-24 text-left shrink-0"
+              style={{ fontSize: "12px" }}
+            >
+              Owner
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <Select
+                isDisabled={
+                  muatan.length > 0 ||
+                    formData.status == "picking" ||
+                    formData.status == "complete"
+                    ? true
+                    : false
+                }
+                value={ownerOptions.find(
+                  (option) => option.value === formData.owner_code
+                )}
+                options={ownerOptions}
+                onChange={(selectedOption) => {
+                  if (selectedOption) {
+                    setFormData({
+                      ...formData,
+                      owner_code: selectedOption.value,
+                    });
+                  }
+                }}
+              />
+            </div>
+          </div>
 
 
-              <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Plan Pickup Date / Time<span className="text-red-500">*</span>
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <DatePicker
-                    selected={
-                      formData.plan_pickup_date
-                        ? parseISO(formData.plan_pickup_date)
-                        : null
-                    }
-                    onChange={(date: Date | null) => {
-                      if (date) {
-                        setFormData({
-                          ...formData,
-                          plan_pickup_date: format(date, "yyyy-MM-dd"), // simpan format ISO
-                        });
-                      }
-                    }}
-                    dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
-                    locale={id} // Bahasa Indonesia
-                    customInput={
-                      <Input
-                        id="PlanPickupDate"
-                        style={{ width: "160px", fontSize: "12px" }}
-                      />
-                    }
-                    placeholderText="Choose date"
-                  />
-                  <Input
-                    id="PlanPickupTime"
-                    type="time"
-                    style={{ width: "160px", fontSize: "12px" }}
-                    value={formData.plan_pickup_time}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        plan_pickup_time: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Receiving DO Date / Time<span className="text-red-500">*</span>
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <DatePicker
-                    selected={
-                      formData.rcv_do_date
-                        ? parseISO(formData.rcv_do_date)
-                        : null
-                    }
-                    onChange={(date: Date | null) => {
-                      if (date) {
-                        setFormData({
-                          ...formData,
-                          rcv_do_date: format(date, "yyyy-MM-dd"), // simpan format ISO
-                        });
-                      }
-                    }}
-                    dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
-                    locale={id} // Bahasa Indonesia
-                    customInput={
-                      <Input
-                        id="RcvDODate"
-                        style={{ width: "160px", fontSize: "12px" }}
-                      />
-                    }
-                    placeholderText="Choose date"
-                  />
-                  <Input
-                    id="RcvDOTime"
-                    type="time"
-                    style={{ width: "160px", fontSize: "12px" }}
-                    value={formData.rcv_do_time}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        rcv_do_time: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
+          <div className="flex items-center gap-2">
+            <Label
+              className="w-24 text-left shrink-0"
+              style={{ fontSize: "12px" }}
+            >
+              Whs Code
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <Select
 
-              <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Start/Finish Picking Time<span className="text-red-500">*</span>
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <Input
-                    id="startTime"
-                    type="time"
-                    style={{ width: "160px", fontSize: "12px" }}
-                    value={formData.start_pick_time}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        start_pick_time: e.target.value,
-                      })
-                    }
-                  />
-                  <Input
-                    id="endTime"
-                    type="time"
-                    style={{ width: "160px", fontSize: "12px" }}
-                    value={formData.end_pick_time}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        end_pick_time: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
+                isDisabled={
+                  muatan.length > 0 ||
+                    formData.status == "picking" ||
+                    formData.status == "complete"
+                    ? true
+                    : false
+                }
+
+                // isDisabled={
+                //   formData.status == "picking" ||
+                //     formData.status == "complete"
+                //     ? true
+                //     : false
+                // }
+                value={whsOptions.find(
+                  (option) => option.value === formData.whs_code
+                )}
+                options={whsOptions}
+                onChange={(selectedOption) => {
+                  if (selectedOption) {
+                    setFormData({
+                      ...formData,
+                      whs_code: selectedOption.value,
+                    });
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+
+          <div className="flex items-center gap-2">
+            <Label className="w-24 text-left shrink-0" style={{ fontSize: "12px" }}>
+              Order Type
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              {/* ── Opsi diperluas: TRIP, MULTI DROP, B2B - Consignment, B2B - Normal, B2C - Marketplace ── */}
+              <Select
+                // className="w-56"
+                isDisabled={
+                  muatan.length > 0 ||
+                    formData.status == "picking" ||
+                    formData.status == "complete"
+                    ? true
+                    : false
+                }
+                value={ordertypeOptions.find((o) => o.value === formData.order_type)}
+                options={ordertypeOptions}
+                onChange={(opt) => {
+                  if (opt) setFormData({ ...formData, order_type: opt.value });
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2" style={{ display: "none" }}>
+            <Label
+              className="w-24 text-left shrink-0"
+              style={{ fontSize: "12px" }}
+            >
+              Picker Name
+            </Label>
+            <span className="shrink-0">:</span>
+            <Input
+              id="PickerName"
+              style={{ fontSize: "12px" }}
+              className="flex-1"
+              value={formData.picker_name}
+              autoComplete="off"
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  picker_name: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="flex items-center gap-2" style={{ display: "none" }}>
+            <Label
+              className="w-24 text-left shrink-0"
+              style={{ fontSize: "12px" }}
+            >
+              Transporter
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <Select
+                value={transporterOptions.find(
+                  (option) => option.value === formData.transporter_code
+                )}
+                options={transporterOptions}
+                onChange={(selectedOption) => {
+                  if (selectedOption) {
+                    setFormData({
+                      ...formData,
+                      transporter_code: selectedOption.value,
+                    });
+                  }
+                }}
+              />
             </div>
           </div>
         </div>
+        {/* Column 2 */}
+        <div className="space-y-1 ps-8">
+
+
+          <div className="flex items-center gap-2">
+            <Label
+              className="w-24 text-left shrink-0"
+              style={{ fontSize: "12px" }}
+            >
+              Plan Pickup Date / Time<span className="text-red-500">*</span>
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <DatePicker
+                selected={
+                  formData.plan_pickup_date
+                    ? parseISO(formData.plan_pickup_date)
+                    : null
+                }
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    setFormData({
+                      ...formData,
+                      plan_pickup_date: format(date, "yyyy-MM-dd"), // simpan format ISO
+                    });
+                  }
+                }}
+                dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
+                locale={id} // Bahasa Indonesia
+                customInput={
+                  <Input
+                    id="PlanPickupDate"
+                    style={{ width: "160px", fontSize: "12px" }}
+                  />
+                }
+                placeholderText="Choose date"
+              />
+              <Input
+                id="PlanPickupTime"
+                type="time"
+                style={{ width: "160px", fontSize: "12px" }}
+                value={formData.plan_pickup_time}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    plan_pickup_time: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Label
+              className="w-24 text-left shrink-0"
+              style={{ fontSize: "12px" }}
+            >
+              Receiving DO Date / Time<span className="text-red-500">*</span>
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <DatePicker
+                selected={
+                  formData.rcv_do_date
+                    ? parseISO(formData.rcv_do_date)
+                    : null
+                }
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    setFormData({
+                      ...formData,
+                      rcv_do_date: format(date, "yyyy-MM-dd"), // simpan format ISO
+                    });
+                  }
+                }}
+                dateFormat="dd/MM/yyyy" // TAMPILAN Indonesia
+                locale={id} // Bahasa Indonesia
+                customInput={
+                  <Input
+                    id="RcvDODate"
+                    style={{ width: "160px", fontSize: "12px" }}
+                  />
+                }
+                placeholderText="Choose date"
+              />
+              <Input
+                id="RcvDOTime"
+                type="time"
+                style={{ width: "160px", fontSize: "12px" }}
+                value={formData.rcv_do_time}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    rcv_do_time: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Label
+              className="w-24 text-left shrink-0"
+              style={{ fontSize: "12px" }}
+            >
+              Start/Finish Picking Time<span className="text-red-500">*</span>
+            </Label>
+            <span className="shrink-0">:</span>
+            <div className="flex-1">
+              <Input
+                id="startTime"
+                type="time"
+                style={{ width: "160px", fontSize: "12px" }}
+                value={formData.start_pick_time}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    start_pick_time: e.target.value,
+                  })
+                }
+              />
+              <Input
+                id="endTime"
+                type="time"
+                style={{ width: "160px", fontSize: "12px" }}
+                value={formData.end_pick_time}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    end_pick_time: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+        </div>
+        {/* Column 3 */}
         <div className="bg-white-200 p-0 space-y-1">
           <div className="flex items-start gap-2">
             <div className="flex items-center gap-2 w-1/2">
@@ -716,6 +711,7 @@ export default function ManualForm({
               <span className="shrink-0">:</span>
               <div className="flex-1">
                 <Select
+                  className="min-w-[185px]"
                   value={customerOptions.find(
                     (option) => option.value === formData.customer_code
                   )}
@@ -910,131 +906,30 @@ export default function ManualForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* Column 1 */}
-            <div className="space-y-1">
-              {/* <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Driver
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <Input
-                    id="Driver"
-                    style={{ fontSize: "12px" }}
-                    className="flex-1"
-                    value={formData.driver}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        driver: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div> */}
-
-              {/* <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Qty Koli
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    id="Koli"
-                    style={{ fontSize: "12px" }}
-                    className="flex-1 w-42"
-                    value={formData.qty_koli}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        qty_koli: parseInt(e.target.value),
-                      })
-                    }
-                  />
-                </div>
-              </div> */}
-              {/* <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Qty Koli Seal
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    id="KoliSeal"
-                    style={{ fontSize: "12px" }}
-                    className="flex-1"
-                    value={formData.qty_koli_seal}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        qty_koli_seal: parseInt(e.target.value),
-                      })
-                    }
-                  />
-                </div>
-              </div> */}
+          <div className="flex items-start gap-2">
+            <div className="flex items-center gap-2">
+              <Label
+                className="w-24 text-left shrink-0"
+                style={{ fontSize: "12px" }}
+              >
+                Actual Delivery Address
+              </Label>
+              <span className="shrink-0">:</span>
+              <textarea
+                style={{ fontSize: "12px", width: "350px", height: "100px" }}
+                id="actualDeliveryAddress"
+                // readOnly
+                className="flex-1 resize-none border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                rows={2}
+                value={formData.actual_deliv_address}
+                onChange={(e) =>
+                  setFormData({ ...formData, actual_deliv_address: e.target.value })
+                }
+              />
             </div>
-
-            {/* Column 2 */}
-            {/* <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Truck Size
-                </Label>
-                <span className="shrink-0">:</span>
-                <div className="flex-1">
-                  <Input
-                    id="TruckSize"
-                    style={{ fontSize: "12px" }}
-                    className="flex-1"
-                    value={formData.truck_size}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        truck_size: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Label
-                  className="w-24 text-left shrink-0"
-                  style={{ fontSize: "12px" }}
-                >
-                  Truck No.
-                </Label>
-                <span className="shrink-0">:</span>
-                <Input
-                  id="TruckNo"
-                  style={{ fontSize: "12px" }}
-                  className="flex-1"
-                  value={formData.truck_no}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      truck_no: e.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div> */}
           </div>
+
+
 
           <div className="flex items-start gap-2">
             <div className="flex items-start gap-2">
@@ -1059,6 +954,31 @@ export default function ManualForm({
             </div>
           </div>
         </div>
+        {/* Column 4 */}
+        {/* <div className="bg-white-200 p-0 space-y-1">
+          <div className="flex items-start gap-2">
+            <div className="flex items-center gap-2">
+              <Label
+                className="w-24 text-left shrink-0"
+                style={{ fontSize: "12px" }}
+              >
+                Actual Delivery Address
+              </Label>
+              <span className="shrink-0">:</span>
+              <textarea
+                style={{ fontSize: "12px", width: "350px", height: "100px" }}
+                id="actualDeliveryAddress"
+                // readOnly
+                className="flex-1 resize-none border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                rows={2}
+                value={formData.actual_deliv_address}
+                onChange={(e) =>
+                  setFormData({ ...formData, actual_deliv_address: e.target.value })
+                }
+              />
+            </div>
+          </div>
+        </div> */}
       </div>
 
       <form className="space-y-4">
