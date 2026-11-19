@@ -240,17 +240,17 @@ const PickingSheetPrint = () => {
             </tr>
             <tr></tr>
             <tr>
-              <td style={headerLabel}>Delivery To</td>
-              <td style={headerValue}>{data.deliv_to_name}</td>
+              <td style={headerLabel}>Ship To</td>
+              <td style={headerValue}>{data.actual_deliv_address}</td>
             </tr>
-            <tr>
+            {/* <tr>
               <td style={headerLabel}>Delivery Address</td>
               <td style={headerValue}>{data.deliv_address}</td>
             </tr>
             <tr>
               <td style={headerLabel}>Delivery City</td>
               <td style={headerValue}>{data.deliv_city}</td>
-            </tr>
+            </tr> */}
             <tr>
               <td style={headerLabel}></td>
               <td style={headerValue}></td>
@@ -343,7 +343,7 @@ const PickingSheetPrint = () => {
                           lineHeight: "1.3",
                         }}
                       >
-                        {item.serial_remarks || ""}
+                        {/* {item.serial_remarks || ""} */}
                       </td>
                     </tr>
                   ))}

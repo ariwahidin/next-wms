@@ -18,6 +18,7 @@ interface PackingItem {
   deliv_city: string;
   customer_name: string;
   deliv_to_name: string;
+  actual_deliv_address: string;
   outbound_no: string;
   shipment_id: string;
   item_code: string;
@@ -45,6 +46,7 @@ interface GroupedCarton {
   deliv_to: string;
   deliv_address: string;
   deliv_city: string;
+  actual_deliv_address: string;
   customer_name: string;
   deliv_to_name: string;
   outbound_no: string;
@@ -105,6 +107,7 @@ const CartonLabelPrinter: React.FC = () => {
           deliv_to: item.deliv_to,
           deliv_address: item.deliv_address,
           deliv_city: item.deliv_city,
+          actual_deliv_address: item.actual_deliv_address,
           customer_name: item.customer_name,
           deliv_to_name: item.deliv_to_name,
           outbound_no: item.outbound_no,
@@ -254,7 +257,7 @@ const CartonLabelPrinter: React.FC = () => {
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <p className="text-blue-800 font-medium">
-                {totalCartons} label siap dicetak • {packingItems.length} total items
+                {totalCartons} labels to print • {packingItems.length} total items
               </p>
             </div>
 
@@ -279,7 +282,7 @@ const CartonLabelPrinter: React.FC = () => {
                 <div className="header-to">To :</div>
                 <div className="header-customer">
                   <div className="customer-name">{carton.customer_name}</div>
-                  <div className="customer-address">{carton.deliv_address}</div>
+                  <div className="customer-address">{carton.actual_deliv_address}</div>
                 </div>
               </div>
 
@@ -301,7 +304,7 @@ const CartonLabelPrinter: React.FC = () => {
               </div>
 
               {/* Barcode Section */}
-              <div className="barcode-section">
+              {/* <div className="barcode-section">
                 <div className="barcode-left">
                   <div className="barcode-title">Shipment Order No.</div>
                   <svg id={`barcode-shipment-${index}`} className="barcode-svg"></svg>
@@ -312,24 +315,29 @@ const CartonLabelPrinter: React.FC = () => {
                   <svg id={`barcode-case-${index}`} className="barcode-svg"></svg>
                   <div className="barcode-text">{carton.outbound_no}{carton.pack_ctn_no.padStart(2, '0')}</div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Bottom Grid Section */}
               <div className="bottom-section">
                 {carton.items.map((item, idx) => (
                   <div className="bottom-label" key={idx}>
-                    <span>{item.item_code}</span> {' - '}<span>{item.item_name}</span>
+                    <div className="item-description">
+                      <span>{item.item_code}</span>
+                      {' - '}
+                      <span>{item.item_name}</span>
+                    </div>
+                    <div className="item-quantity">{item.quantity}</div>
                   </div>
                 ))}
               </div>
 
-              <div className="footer-section-delivered">
+              {/* <div className="footer-section-delivered">
                 <div className="footer-left-delivered">
                   Delivered By : <br />
                   <span style={{ fontWeight: "bold" }}>YUWELL Warehouse</span> <br />
                   Jl. Raya Cakung Cilincing KM. 1.5, Cakung, Jakarta 13910 <br />
                 </div>
-              </div>
+              </div> */}
 
               {/* Footer Section */}
               <div className="footer-section">
@@ -566,8 +574,9 @@ const CartonLabelPrinter: React.FC = () => {
           // }
 
           .bottom-section {
-            display: flex;
-            flex-direction: column;
+            // display: flex;
+            // flex-direction: column;
+            width: 100%;
           }
 
           .bottom-left {
@@ -586,15 +595,36 @@ const CartonLabelPrinter: React.FC = () => {
           //   margin-bottom: 1mm;
           // }
 
+          // .bottom-label {
+          //   font-size: 7pt;
+          //   display: block;
+          //   width: 100%;
+          // }
+
           .bottom-label {
             font-size: 7pt;
-            display: block;
+            display: grid;
+            grid-template-columns: 1fr 60px;
+            align-items: start;
             width: 100%;
+            gap: 8px;
           }
 
           .bottom-value {
             font-size: 9pt;
             font-weight: bold;
+          }
+
+          .item-description {
+            text-align: left;
+            min-width: 0;
+            overflow-wrap: break-word;
+          }
+
+          .item-quantity {
+            text-align: right;
+            white-space: nowrap;
+            font-weight: 600;
           }
 
           .footer-section-delivered {

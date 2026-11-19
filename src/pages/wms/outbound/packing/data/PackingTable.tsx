@@ -558,7 +558,7 @@ const PackingTable = () => {
                   <Printer className="mr-2 h-4 w-4" />
                   Print Packing List
                 </DropdownMenuItem>
-                <DropdownMenuItem
+                {/* <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -567,7 +567,7 @@ const PackingTable = () => {
                 >
                   <Printer className="mr-2 h-4 w-4" />
                   Print Packing Summary
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -590,7 +590,7 @@ const PackingTable = () => {
                   <Printer className="mr-2 h-4 w-4" />
                   Label Custom 1
                 </DropdownMenuItem>
-                <DropdownMenuItem
+                {/* <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -599,8 +599,8 @@ const PackingTable = () => {
                 >
                   <Printer className="mr-2 h-4 w-4" />
                   Label Custom 2
-                </DropdownMenuItem>
-                <DropdownMenuItem
+                </DropdownMenuItem> */}
+                {/* <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -609,7 +609,7 @@ const PackingTable = () => {
                 >
                   <Printer className="mr-2 h-4 w-4" />
                   Label By Item
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
 
                 {/* <DropdownMenuSeparator />
 

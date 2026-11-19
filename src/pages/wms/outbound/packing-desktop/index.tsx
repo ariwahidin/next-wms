@@ -499,7 +499,7 @@ const CheckingPage = () => {
                         : [];
 
                 setOutboundHeader(header ? {
-                    outbound_id :header.ID  ?? 0,
+                    outbound_id: header.ID ?? 0,
                     shipment_id: header.shipment_id ?? "",
                     status: header.status ?? "",
                     deliv_to: header.deliv_to ?? "",
@@ -1266,6 +1266,11 @@ const CheckingPage = () => {
         window.open(`/wms/outbound/packing/label-by-item/${packing_no}/${id}`, "_blank");
     };
 
+    const HandlePrintLabelCustom1 = (packing_no: string, id: number) => {
+        console.log("Preview PDF ID:", id);
+        window.open(`/wms/outbound/packing/label-custom-1/${packing_no}/${id}`, "_blank");
+    };
+
     // ── Render ─────────────────────────────────────────────────────────────────
     return (
         <Layout title="Outbound" subTitle="Outbound Packing Workbench">
@@ -1292,13 +1297,23 @@ const CheckingPage = () => {
                             variant="outline"
                             className="bg-black-500 text-black hover:bg-gray-200"
                             onClick={() => {
-                                // router.push("/wms/outbound/packing/data");
+                                // HandlePrintLabelByItem(outboundNo, outboundHeader.outbound_id);
+                                HandlePrintLabelCustom1(outboundNo, outboundHeader.outbound_id);
+                            }}
+                        >
+                            <PrinterIcon className="mr-0" />
+                            Print Label
+                        </Button>
+                        {/* <Button
+                            variant="outline"
+                            className="bg-black-500 text-black hover:bg-gray-200"
+                            onClick={() => {
                                 HandlePrintLabelByItem(outboundNo, outboundHeader.outbound_id);
                             }}
                         >
                             <PrinterIcon className="mr-0" />
                             Print Label By Item
-                        </Button>
+                        </Button> */}
 
                     </div>
                 </div>
@@ -1867,8 +1882,38 @@ const CheckingPage = () => {
                                 {isQrMode && parsedQR?.cartonSerial && <p>Carton : <span className="font-mono font-medium">{parsedQR.cartonSerial}</span></p>}
                             </div>
 
-                            {/* Serial Form */}
-                            {isSerial ? (
+                            <form onSubmit={handleQuantitySubmit} className="space-y-3">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-600">Package Type</label>
+                                        <Select value={selectedPackageType} onValueChange={handlePackageTypeChange}>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Select package" /></SelectTrigger>
+                                            <SelectContent>
+                                                {packageOptions.map((option) => <SelectItem key={option.type} value={option.type}>{option.type} · {option.conversion} {scanUom || "PCS"}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label htmlFor="packageQty" className="text-xs font-semibold text-gray-600">Package Quantity</label>
+                                        <Input min={1} step={1} type="number" id="packageQty" className="h-10" value={packageQty} autoComplete="off"
+                                            onChange={(e) => updatePackageQuantity(e.target.value)}
+                                            onWheel={(e) => (e.target as HTMLInputElement).blur()} />
+                                    </div>
+                                </div>
+                                <div className="rounded-lg border border-blue-100 bg-blue-50/70 p-3">
+                                    <div className="flex items-center justify-between gap-3"><span className="text-xs font-semibold uppercase tracking-wide text-blue-700">Calculated Quantity</span><span className="text-xl font-bold text-blue-900">{Number(scanQty) || 0} {scanUom || "PCS"}</span></div>
+                                    <p className="mt-1 text-xs text-blue-700">{Number(packageQty) || 0} {selectedPackageType} × {getSelectedPackageConversion()} {scanUom || "PCS"}</p>
+                                    {desktopActiveDetail && <p className="mt-2 border-t border-blue-100 pt-2 text-xs text-blue-700">Remaining outbound quantity: <strong>{desktopActiveDetail.quantity - (desktopActiveDetail.scan_qty ?? 0)} {desktopActiveDetail.uom || scanUom}</strong></p>}
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <Button type="submit" className="w-full" disabled={isSubmit}>
+                                        {isSubmit ? <><Loader2 className="mr-2 w-4 h-4 animate-spin" />Loading...</> : "Submit"}
+                                    </Button>
+                                    <Button type="button" className="w-full" variant="outline" onClick={closeDialog}>Cancel</Button>
+                                </div>
+                            </form>
+
+                            {/* {isSerial ? (
                                 <form onSubmit={handleSerialSubmit} className="space-y-3">
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-gray-700">Serial Numbers :</label>
@@ -1906,7 +1951,6 @@ const CheckingPage = () => {
                                     </div>
                                 </form>
                             ) : (
-                                /* Quantity Form */
                                 <form onSubmit={handleQuantitySubmit} className="space-y-3">
                                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                         <div className="space-y-1.5">
@@ -1937,7 +1981,7 @@ const CheckingPage = () => {
                                         <Button type="button" className="w-full" variant="outline" onClick={closeDialog}>Cancel</Button>
                                     </div>
                                 </form>
-                            )}
+                            )} */}
                         </div>
                     </div>
                 </div>
