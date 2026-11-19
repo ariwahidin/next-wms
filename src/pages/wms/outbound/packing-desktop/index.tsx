@@ -28,6 +28,7 @@ import api from "@/lib/api";
 import eventBus from "@/utils/eventBus";
 import { InventoryPolicy } from "@/types/inventory";
 import { ParsedQRData, parseQRCode } from "@/utils/qrParser";
+import { products } from "@/types/example/data/dummy";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,6 +85,7 @@ interface OutboundDetail {
     outbound_detail_id: number;
     item_code: string;
     item_name?: string;
+    unit_model?: string;
     barcode: string;
     quantity: number;
     scan_qty?: number;
@@ -92,6 +94,7 @@ interface OutboundDetail {
     owner_code?: string;
     is_serial?: boolean;
     lot_number?: string;
+    bundle_product_code?: string;
 }
 
 interface OutboundHeader {
@@ -130,6 +133,10 @@ interface ScannedItem {
     lot_number?: string;
     package_type?: string;
     package_qty?: number;
+    product?: {
+        item_name: string;
+        unit_model: string;
+    };
 }
 
 // ─── QR Parser ────────────────────────────────────────────────────────────────
@@ -511,6 +518,7 @@ const CheckingPage = () => {
                     outbound_detail_id: item.outbound_detail_id,
                     item_code: item.item_code,
                     item_name: item.item_name,
+                    unit_model: item.unit_model,
                     barcode: item.barcode,
                     quantity: item.quantity,
                     scan_qty: item.scan_qty,
@@ -521,6 +529,7 @@ const CheckingPage = () => {
                     lot_number: item.lot_number,
                     package_type: item.package_type,
                     package_qty: item.package_qty,
+                    bundle_product_code: item.bundle_product_code
                 }));
                 setOriginalListOutboundDetail(filtered);
             }
@@ -560,6 +569,7 @@ const CheckingPage = () => {
                     pack_ctn_no: item.pack_ctn_no,
                     item_model: item.item_model,
                     lot_number: item.lot_number,
+                    product: item.product
                 }));
                 setListOutboundScanned(filtered);
                 setSelectedCarton("all");
@@ -613,6 +623,7 @@ const CheckingPage = () => {
                             lot_number: item.lot_number,
                             package_type: item.package_type,
                             package_qty: item.package_qty,
+                            product: item.product
                         })) as ScannedItem[];
                     } catch (error) {
                         console.error("Failed to load picking detail:", detail.outbound_detail_id, error);
@@ -1227,7 +1238,8 @@ const CheckingPage = () => {
             (item.barcode ?? "").toLowerCase().includes(term) ||
             item.quantity.toString().includes(term) ||
             (item.scan_qty ?? 0).toString().includes(term) ||
-            (item.lot_number ?? "").toLowerCase().includes(term)
+            (item.lot_number ?? "").toLowerCase().includes(term) ||
+            (item.unit_model ?? "").toLowerCase().includes(term)
         );
     });
 
@@ -1404,6 +1416,9 @@ const CheckingPage = () => {
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <span className="text-sm font-semibold text-slate-900">{item.item_code}</span>
+                                                    {item.unit_model && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">{item.unit_model}</span>}
+                                                    {item.bundle_product_code && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">{item.bundle_product_code}</span>}
+
                                                     {completed ? <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">Completed</span> : <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">Pending</span>}
                                                     {item.is_serial && <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700">Serial</span>}
                                                 </div>
@@ -1455,7 +1470,24 @@ const CheckingPage = () => {
                                     ? desktopScannedItems
                                     : desktopScannedItems.filter((item) => (item.pack_ctn_no ?? "") === (packCtnNo ?? ""));
                                 const rows = cartonRows.filter((item) => !term || [item.item_code, item.barcode, item.barcode_data_scan, item.serial_number, item.pack_ctn_no, item.lot_number, item.location_scan, item.package_type].some((value) => String(value ?? "").toLowerCase().includes(term)));
-                                return rows.length ? <div className="space-y-2">{rows.map((item, index) => <article key={item.id ?? `${item.outbound_detail_id}-${index}`} className="rounded-lg border border-slate-200 p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-slate-900">{item.item_code || "-"}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${item.status === "in stock" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>{outboundHeader?.status || "processed"}</span></div><div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-slate-500 sm:grid-cols-2"><p>Barcode: {item.barcode_data_scan || item.barcode || "-"}</p><p>Serial: {item.serial_number || "-"}</p><p>Carton: {item.pack_ctn_no || "-"}</p><p>Location: {item.location_scan || item.location || "-"}</p><p>Quantity: {item.qty_data_scan ?? item.quantity} {item.uom_scan || ""}</p><p>Package: {item.package_qty ?? "-"} {item.package_type || ""}</p><p>Lot: {item.lot_number || "-"}</p></div></div>{outboundHeader?.status === "packing" && item.id && <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-red-500 hover:bg-red-50" disabled={isSubmit} onClick={async () => { await handleRemoveItem(item.id!, item.outbound_detail_id); await fetchAllDesktopScannedItems(); }}><Trash2 size={15} /></Button>}</div></article>)}</div> : <div className="flex flex-col items-center justify-center py-14 text-center"><Clock3 className="h-9 w-9 text-slate-300" /><p className="mt-3 text-sm font-medium text-slate-600">No packing results yet</p><p className="mt-1 max-w-xs text-xs text-slate-400">Select an outbound item from the left panel to start processing.</p></div>;
+                                return rows.length ?
+                                    <div className="space-y-2">{rows.map((item, index) => <article key={item.id ?? `${item.outbound_detail_id}-${index}`} className="rounded-lg border border-slate-200 p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="text-sm font-semibold text-slate-900">{item.item_code || "-"}</span>
+                                            <span className="text-xs text-blue-600">{item.product.item_name || "-"}</span>
+                                            <span className="text-xs text-green-600">{item.product.unit_model || "-"}</span>
+                                            {/* <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${item.status === "in stock" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>{outboundHeader?.status || "processed"}</span> */}
+                                        </div>
+                                        <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-slate-500 sm:grid-cols-2">
+                                            <p>Barcode: {item.barcode_data_scan || item.barcode || "-"}</p>
+                                            {/* <p>Serial: {item.serial_number || "-"}</p> */}
+                                            <p>Carton: {item.pack_ctn_no || "-"}</p>
+                                            {/* <p>Location: {item.location_scan || item.location || "-"}</p> */}
+                                            {/* <p>Quantity: {item.qty_data_scan ?? item.quantity} {item.uom_scan || ""}</p> */}
+                                            {/* <p>Package: {item.package_qty ?? "-"} {item.package_type || ""}</p> */}
+                                            {/* <p>Lot: {item.lot_number || "-"}</p> */}
+                                        </div>
+                                    </div>{outboundHeader?.status === "packing" && item.id && <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-red-500 hover:bg-red-50" disabled={isSubmit} onClick={async () => { await handleRemoveItem(item.id!, item.outbound_detail_id); await fetchAllDesktopScannedItems(); }}><Trash2 size={15} /></Button>}</div></article>)}</div> : <div className="flex flex-col items-center justify-center py-14 text-center"><Clock3 className="h-9 w-9 text-slate-300" /><p className="mt-3 text-sm font-medium text-slate-600">No packing results yet</p><p className="mt-1 max-w-xs text-xs text-slate-400">Select an outbound item from the left panel to start processing.</p></div>;
                             })()}
                         </div>
                         {invPolicy?.require_packing_scan && outboundHeader?.status === "packing" && <div className="border-t border-slate-200 bg-slate-50 p-3"><div className="grid grid-cols-2 gap-2"><Button variant="outline" className="w-full" onClick={() => { setContainerWeight(""); setShowSealContainerDialog(true); }}><Box size={15} className="mr-2" />Seal Container</Button><Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => setShowConfirmPackingDialog(true)}><CheckCircle2Icon size={15} className="mr-2" />Confirm Packing</Button></div></div>}

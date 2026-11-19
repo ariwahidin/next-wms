@@ -295,11 +295,11 @@ const CartonLabelPrinter: React.FC = () => {
               {/* Grid Section - Qty and Case Number */}
               <div className="grid-section">
                 <div className="grid-left">
-                  <div className="grid-label">Qty This Case</div>
+                  <div className="grid-label">Qty This Carton</div>
                   <div className="grid-value">{carton.total_quantity}</div>
                 </div>
                 <div className="grid-right">
-                  <div className="grid-label">Case <span className="case-number">{carton.pack_ctn_no} of {totalCartons}</span></div>
+                  <div className="grid-label">Carton <span className="case-number">{carton.pack_ctn_no} of {totalCartons}</span></div>
                 </div>
               </div>
 
@@ -341,10 +341,9 @@ const CartonLabelPrinter: React.FC = () => {
 
               {/* Footer Section */}
               <div className="footer-section">
-                <div className="footer-left">
-                  {/* {carton.outbound_no} */}
+                {/* <div className="footer-left">
                   L x W x H : {carton.ctn_length} x {carton.ctn_width} x {carton.ctn_height} cm <br />
-                </div>
+                </div> */}
                 <div className="footer-right">{new Date().toLocaleString('en-US', {
                   month: '2-digit',
                   day: '2-digit',

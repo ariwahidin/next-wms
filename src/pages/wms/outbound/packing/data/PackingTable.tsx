@@ -157,8 +157,8 @@ const PackingTable = () => {
       console.error("Load picking outbound failed:", error);
       showPackingError(
         error?.response?.data?.message ||
-          error?.message ||
-          "Failed to load outbound with PICKING status."
+        error?.message ||
+        "Failed to load outbound with PICKING status."
       );
     } finally {
       setIsLoadingOutbounds(false);
@@ -187,12 +187,12 @@ const PackingTable = () => {
           const id = getMasterCartonId(item);
           const name = String(
             item?.carton_type ??
-              item?.master_carton_name ??
-              item?.carton_name ??
-              item?.name ??
-              item?.code ??
-              item?.description ??
-              `Carton Type ${id}`
+            item?.master_carton_name ??
+            item?.carton_name ??
+            item?.name ??
+            item?.code ??
+            item?.description ??
+            `Carton Type ${id}`
           );
 
           return {
@@ -210,8 +210,8 @@ const PackingTable = () => {
       console.error("Load master carton types failed:", error);
       showPackingError(
         error?.response?.data?.message ||
-          error?.message ||
-          "Failed to load carton types."
+        error?.message ||
+        "Failed to load carton types."
       );
     } finally {
       setIsLoadingCartonTypes(false);
@@ -281,10 +281,10 @@ const PackingTable = () => {
         _cartonId: Number(carton?.carton_id ?? carton?.ID ?? carton?.id ?? 0),
         _cartonNo: String(
           carton?.pack_ctn_no ??
-            carton?.carton_no ??
-            carton?.carton_number ??
-            carton?.carton ??
-            index + 1
+          carton?.carton_no ??
+          carton?.carton_number ??
+          carton?.carton ??
+          index + 1
         ),
         _cartonTypeName:
           carton?.carton_type_name ??
@@ -303,8 +303,8 @@ const PackingTable = () => {
       console.error("Load outbound cartons failed:", error);
       showPackingError(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load cartons for this outbound."
+        error?.message ||
+        "Unable to load cartons for this outbound."
       );
     } finally {
       setIsLoadingContinueCartons(false);
@@ -694,7 +694,7 @@ const PackingTable = () => {
     }
   };
 
-    const HandlePrintSummaryPacking = (packing_no: string, id: number) => {
+  const HandlePrintSummaryPacking = (packing_no: string, id: number) => {
     console.log("Preview PDF ID:", id);
     window.open(`/wms/outbound/packing/packing-summary/${packing_no}/${id}`, "_blank");
 
@@ -741,6 +741,13 @@ const PackingTable = () => {
               >
                 <Plus className="h-4 w-4" />
                 Add Packing
+              </Button>
+              <Button
+                className="h-8"
+                variant="outline"
+                onClick={() => mutate()}
+              >
+                🔄 Refresh
               </Button>
               {selectedRows.length > 0 && (
                 <Button
@@ -854,11 +861,10 @@ const PackingTable = () => {
                       onClick={() =>
                         setSelectedContinueCarton(String(carton._cartonNo))
                       }
-                      className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition ${
-                        isSelected
+                      className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition ${isSelected
                           ? "border-blue-400 bg-blue-50 ring-1 ring-blue-200"
                           : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50"
-                      }`}
+                        }`}
                     >
                       <span className="min-w-0">
                         <span className="flex items-center gap-2">
@@ -866,11 +872,10 @@ const PackingTable = () => {
                             CTN #{carton._cartonNo}
                           </span>
                           {carton._cartonStatus && (
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                              carton._isActive
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${carton._isActive
                                 ? "bg-emerald-50 text-emerald-700"
                                 : "bg-slate-100 text-slate-600"
-                            }`}>
+                              }`}>
                               {carton._cartonStatus.toUpperCase()}
                             </span>
                           )}
@@ -883,11 +888,10 @@ const PackingTable = () => {
                         </span>
                       </span>
                       <span
-                        className={`ml-3 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                          isSelected
+                        className={`ml-3 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected
                             ? "border-blue-600 bg-blue-600 text-white"
                             : "border-slate-300"
-                        }`}
+                          }`}
                       >
                         {isSelected ? "✓" : ""}
                       </span>
@@ -960,10 +964,10 @@ const PackingTable = () => {
                       Loading outbound list...
                     </div>
                   ) : pickingOutbounds.filter((item) =>
-                      `${item.outbound_no} ${item.shipment_id ?? ""} ${item.customer_name ?? ""}`
-                        .toLowerCase()
-                        .includes(outboundSearch.toLowerCase())
-                    ).length === 0 ? (
+                    `${item.outbound_no} ${item.shipment_id ?? ""} ${item.customer_name ?? ""}`
+                      .toLowerCase()
+                      .includes(outboundSearch.toLowerCase())
+                  ).length === 0 ? (
                     <div className="py-8 text-center text-sm text-slate-500">
                       No outbound with PICKING status found.
                     </div>
@@ -979,9 +983,8 @@ const PackingTable = () => {
                           key={item.outbound_no}
                           type="button"
                           onClick={() => handleOutboundSelection(item.outbound_no)}
-                          className={`flex w-full items-center justify-between border-b border-slate-100 px-3 py-3 text-left last:border-b-0 hover:bg-blue-50 ${
-                            selectedOutboundNo === item.outbound_no ? "bg-blue-50 ring-1 ring-inset ring-blue-300" : ""
-                          }`}
+                          className={`flex w-full items-center justify-between border-b border-slate-100 px-3 py-3 text-left last:border-b-0 hover:bg-blue-50 ${selectedOutboundNo === item.outbound_no ? "bg-blue-50 ring-1 ring-inset ring-blue-300" : ""
+                            }`}
                         >
                           <span className="min-w-0">
                             <span className="block text-sm font-semibold text-slate-800">{item.outbound_no}</span>
