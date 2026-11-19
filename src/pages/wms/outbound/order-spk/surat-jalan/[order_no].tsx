@@ -250,10 +250,10 @@ const SuratJalanPrint = () => {
               </div>
             </div>
 
-            <div className="company-logo">
+            {/* <div className="company-logo">
               Yusen
               <strong>Logistics</strong>
-            </div>
+            </div> */}
 
           </header>
 
@@ -850,43 +850,77 @@ const SuratJalanPrint = () => {
 
         @media print {
 
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-          }
+            html,
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
 
-          .print-container {
-            padding: 0;
-            background: white;
-          }
+            .print-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                background: white !important;
+                overflow: visible !important;
+            }
 
-          .print-toolbar {
-            display: none !important;
-          }
+            .print-toolbar {
+                display: none !important;
+            }
 
-          .surat-jalan-page {
-            width: 210mm;
-            height: 297mm;
-            min-height: 297mm;
-            margin: 0;
-            padding: 13mm 13mm 12mm;
-            box-shadow: none;
-            overflow: hidden;
-            page-break-after: always;
-            break-after: page;
-          }
+            .surat-jalan-page {
+                position: relative;
+                width: 210mm;
+                height: auto !important;
+                min-height: 297mm;
+                max-height: none !important;
+                margin: 0;
+                padding: 13mm 13mm 12mm;
+                box-shadow: none;
+                overflow: visible !important;
 
-          .surat-jalan-page:last-child {
-            page-break-after: auto;
-            break-after: auto;
-          }
+                page-break-after: always;
+                break-after: page;
+            }
 
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
+            .surat-jalan-page:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
 
+            /* Table pagination */
+            .items-table {
+                width: 100%;
+                border-collapse: collapse;
+                page-break-inside: auto;
+                break-inside: auto;
+            }
+
+            .items-table thead {
+                display: table-header-group;
+            }
+
+            .items-table tfoot {
+                display: table-footer-group;
+            }
+
+            .items-table tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            .items-table th,
+            .items-table td {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
 
       `}</style>
