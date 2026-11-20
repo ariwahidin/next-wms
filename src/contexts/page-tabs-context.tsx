@@ -37,26 +37,69 @@ const DEFAULT_TAB: PageTab = {
 
 const EXCLUDED_TAB_URLS = ["/auth/login", "/auth/conflict","/"];
 
+// function normalizeUrl(url: string): string {
+//   return (
+//     url.split("?")[0].split("#")[0].replace(/\/+$/, "") || "/"
+//   );
+// }
+
 function normalizeUrl(url: string): string {
-  return (
-    url.split("?")[0].split("#")[0].replace(/\/+$/, "") || "/"
-  );
+  try {
+    const parsed = new URL(url, "http://localhost");
+
+    const pathname =
+      parsed.pathname.replace(/\/+$/, "") || "/";
+
+    return `${pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return url;
+  }
+}
+
+function getPathname(url: string): string {
+  try {
+    return new URL(url, "http://localhost").pathname
+      .replace(/\/+$/, "") || "/";
+  } catch {
+    return "/";
+  }
 }
 
 function isExcludedTab(url: string): boolean {
-  const normalizedUrl = normalizeUrl(url);
+  const pathname = getPathname(url);
 
   return EXCLUDED_TAB_URLS.some(
-    (excludedUrl) => normalizeUrl(excludedUrl) === normalizedUrl
+    (excludedUrl) => getPathname(excludedUrl) === pathname
   );
 }
+
+// function isExcludedTab(url: string): boolean {
+//   const normalizedUrl = normalizeUrl(url);
+
+//   return EXCLUDED_TAB_URLS.some(
+//     (excludedUrl) => normalizeUrl(excludedUrl) === normalizedUrl
+//   );
+// }
 
 function isValidInternalUrl(url: string): boolean {
   return url.startsWith("/") && !url.startsWith("//");
 }
 
+// function getFallbackTitle(url: string): string {
+//   const segment = normalizeUrl(url).split("/").filter(Boolean).pop();
+
+//   if (!segment) return "Dashboard";
+
+//   return segment
+//     .replace(/[-_]/g, " ")
+//     .replace(/\b\w/g, (character) => character.toUpperCase());
+// }
+
 function getFallbackTitle(url: string): string {
-  const segment = normalizeUrl(url).split("/").filter(Boolean).pop();
+  const segment = getPathname(url)
+    .split("/")
+    .filter(Boolean)
+    .pop();
 
   if (!segment) return "Dashboard";
 
