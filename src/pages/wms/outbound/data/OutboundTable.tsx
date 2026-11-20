@@ -1006,8 +1006,9 @@ const OutboundTable = () => {
         return date.toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" });
       },
     },
-    { field: "shipment_id", headerName: "DO No.", width: 150 },
+    { field: "shipment_id", headerName: "DO No.", width: 190 },
     { field: "order_type", headerName: "Order Type", width: 150 },
+    { field: "shipping_provider", headerName: "Shipping Provider", width: 260 },
     { field: "order_no", headerName: "SPK No.", width: 150 },
     {
       field: "status",

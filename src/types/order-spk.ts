@@ -41,6 +41,7 @@ export interface MuatanOrderSPK {
   remarks?: string;
   use_vas?: boolean;
   order_type?: string;
+  shipping_provider? : string;
 }
 
 export interface DetailItemFormPropsSPK {

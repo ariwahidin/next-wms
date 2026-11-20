@@ -20,6 +20,7 @@ type OrderDetailItem = {
   quantity: number;
   cbm: number;
   total_cbm: number;
+  lot_number?: string;
 };
 
 type GroupedData = {
@@ -192,7 +193,7 @@ const SPKSheetPrint = () => {
             <th style={th}>QTY</th>
             <th style={th}>Total CBM</th>
             <th style={th}>Total Koli</th>
-            <th style={th}>Remarks</th>
+            <th style={th}>Batch</th>
           </tr>
         </thead>
         <tbody>
@@ -227,7 +228,7 @@ const SPKSheetPrint = () => {
                       <td style={{ ...td, textAlign: "center" }}>
                         {j === 0 ? item.total_koli : ""}
                       </td>
-                      <td style={{ ...td, textAlign: "center" }}>{item.remarks}</td>
+                      <td style={{ ...td, textAlign: "center" }}>{item.lot_number}</td>
                     </tr>
                   ))}
                   <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>

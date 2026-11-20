@@ -1,7 +1,9 @@
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
@@ -30,107 +32,155 @@ const ItemSelectionModal = ({
   const [loading, setLoading] = useState(false);
   const [selectedOutboundNo, setSelectedOutboundNo] = useState<string[]>([]);
 
+  const selectAllRef = useRef<HTMLInputElement>(null);
+
+  // Initialize selected items when modal opens
   useEffect(() => {
     if (isOpen) {
-      console.log("Data Order SPK:", items);
-      console.log(
-        "setSelectedItemIds:",
-        selectedItems.map((item) => item.outbound_id)
+      setSelectedOutboundNo(
+        selectedItems.map((item) => item.outbound_no)
       );
-      setSelectedOutboundNo(selectedItems.map((item) => item.outbound_no));
       setSearchTerm("");
     }
   }, [isOpen, selectedItems]);
 
-  //   const fetchItems = async () => {
-  //     console.log("products : ", products);
-  //     setLoading(true);
-  //     setFilteredItems(products);
-  //     setTimeout(() => {
-  //       setLoading(false);
-  //     }, 500);
-  //   };
-
-  //   useEffect(() => {
-  //     if (isOpen) {
-  //       fetchItems();
-  //     }
-  //   }, [isOpen]);
-
+  // Search / Filter
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredItems(items);
-    } else {
-      const searchLower = searchTerm.toLowerCase();
-      const filtered = items.filter(
-        (item) =>
-          (item.outbound_no?.toLowerCase() || "").includes(searchLower) ||
-          (item.shipment_id?.toLowerCase() || "").includes(searchLower) ||
-          (item.deliv_to?.toLowerCase() || "").includes(searchLower) ||
-          (item.deliv_to_name?.toLowerCase() || "").includes(searchLower) ||
-          (item.deliv_address?.toLowerCase() || "").includes(searchLower) ||
-          (item.deliv_city?.toLowerCase() || "").includes(searchLower) || 
-          (item.order_type?.toLowerCase() || "").includes(searchLower)
-      );
-      setFilteredItems(filtered);
+      return;
     }
+
+    const searchLower = searchTerm.toLowerCase().trim();
+
+    const filtered = items.filter((item) =>
+      [
+        item.outbound_no,
+        item.shipment_id,
+        item.deliv_to,
+        item.deliv_to_name,
+        item.deliv_address,
+        item.deliv_city,
+        item.order_type,
+        item.shipping_provider,
+      ].some((value) =>
+        String(value ?? "").toLowerCase().includes(searchLower)
+      )
+    );
+
+    setFilteredItems(filtered);
   }, [searchTerm, items]);
 
-  const handleItemSelect = (outbound_no: string, isChecked: boolean) => {
+  // Get visible outbound numbers
+  const visibleOutboundNo = filteredItems.map(
+    (item) => item.outbound_no
+  );
+
+  // Check selected visible items
+  const selectedVisibleCount = visibleOutboundNo.filter(
+    (no) => selectedOutboundNo.includes(no)
+  ).length;
+
+  const isAllSelected =
+    visibleOutboundNo.length > 0 &&
+    selectedVisibleCount === visibleOutboundNo.length;
+
+  const isIndeterminate =
+    selectedVisibleCount > 0 &&
+    selectedVisibleCount < visibleOutboundNo.length;
+
+  // Handle checkbox indeterminate state
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate]);
+
+  // Select / Deselect individual item
+  const handleItemSelect = (
+    outbound_no: string,
+    isChecked: boolean
+  ) => {
     if (mode === "edit") {
       setSelectedOutboundNo(isChecked ? [outbound_no] : []);
-    } else {
-      setSelectedOutboundNo((prev) =>
-        isChecked
-          ? [...prev, outbound_no]
-          : prev.filter((no) => no !== outbound_no)
-      );
+      return;
     }
+
+    setSelectedOutboundNo((prev) =>
+      isChecked
+        ? prev.includes(outbound_no)
+          ? prev
+          : [...prev, outbound_no]
+        : prev.filter((no) => no !== outbound_no)
+    );
   };
 
+  // Select All / Deselect All (filtered data only)
+  const handleSelectAll = (isChecked: boolean) => {
+    if (mode === "edit") {
+      return;
+    }
+
+    setSelectedOutboundNo((prev) => {
+      if (isChecked) {
+        const merged = new Set([
+          ...prev,
+          ...visibleOutboundNo,
+        ]);
+
+        return Array.from(merged);
+      }
+
+      return prev.filter(
+        (no) => !visibleOutboundNo.includes(no)
+      );
+    });
+  };
+
+  // Row click
   const handleRowClick = (outbound_no: string) => {
-    console.log("Row Outbound No:", outbound_no);
-    const isCurrentlySelected = selectedOutboundNo.includes(outbound_no);
+    const isCurrentlySelected =
+      selectedOutboundNo.includes(outbound_no);
+
     handleItemSelect(outbound_no, !isCurrentlySelected);
   };
 
+  // Apply selection
   const handleApply = () => {
-
-    console.log("items ; ", items);
-    console.log("selectedItem:", selectedItems);
-    console.log("selectedOutboundNo:", selectedOutboundNo);
-
-    const currentSelectedOutboundNo = selectedItems.map((item) => item.outbound_no);
-
-    // console.log("Current Selected IDs:", currentSelectedOutboundNo);
-    // console.log("Applying selected items:", selectedOutboundNo);
-
-    const newSelectedOutboundNo = selectedOutboundNo.filter(
-      (no) => !currentSelectedOutboundNo.includes(no)
+    const currentSelectedOutboundNo = selectedItems.map(
+      (item) => item.outbound_no
     );
 
-    console.log("New Selected Outbound No:", newSelectedOutboundNo);
+    const newSelectedOutboundNo =
+      selectedOutboundNo.filter(
+        (no) => !currentSelectedOutboundNo.includes(no)
+      );
 
     const newSelectedItemsData = items.filter((item) =>
       newSelectedOutboundNo.includes(item.outbound_no)
     );
 
-    console.log("New Selected Items Data:", newSelectedItemsData);
-
-    onApply(newSelectedItemsData);
+    onApply?.(newSelectedItemsData);
     onClose();
   };
 
+  // Cancel
   const handleCancel = () => {
     setSelectedOutboundNo([]);
     setSearchTerm("");
     onClose();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  // Keyboard events
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLDivElement>
+  ) => {
     if (e.key === "Escape") {
       handleCancel();
-    } else if (e.key === "Enter" && selectedOutboundNo.length > 0) {
+    } else if (
+      e.key === "Enter" &&
+      selectedOutboundNo.length > 0
+    ) {
       handleApply();
     }
   };
@@ -144,25 +194,37 @@ const ItemSelectionModal = ({
       tabIndex={-1}
     >
       <div className="bg-white rounded-lg shadow-lg w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col">
+
+        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">
-            {mode === "edit" ? "Edit DO Item Selection" : "Select DO Items"}
+            {mode === "edit"
+              ? "Edit DO Item Selection"
+              : "Select DO Items"}
+
             {mode === "edit" && (
               <span className="text-sm text-gray-500 ml-2">
                 (Select one item)
               </span>
             )}
           </h2>
-          <Button variant="ghost" size="sm" onClick={handleCancel}>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCancel}
+          >
             <X size={16} />
           </Button>
         </div>
 
+        {/* Search */}
         <div className="p-4 border-b">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+
             <Input
-              placeholder="Search by picking no, DO, or Delivery To..."
+              placeholder="Search by Picking No, DO, Shipping Provider, or Delivery To..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -171,77 +233,136 @@ const ItemSelectionModal = ({
           </div>
         </div>
 
+        {/* Table */}
         <div className="flex-1 overflow-auto p-4">
           {loading ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <p className="mt-2 text-gray-600">Loading items...</p>
+              <p className="mt-2 text-gray-600">
+                Loading items...
+              </p>
             </div>
           ) : (
             <table
               className="w-full border text-sm"
               style={{ fontSize: "12px" }}
             >
-              <thead className="bg-gray-100 sticky top-0">
+              <thead className="bg-gray-100 sticky top-0 z-10">
                 <tr>
-                  <th className="p-2 border w-12">#</th>
-                  <th className="p-2 border w-12">Picking No</th>
+                  <th className="p-2 border w-12 text-center">
+                    {mode === "edit" ? (
+                      "#"
+                    ) : (
+                      <input
+                        ref={selectAllRef}
+                        type="checkbox"
+                        checked={isAllSelected}
+                        onChange={(e) =>
+                          handleSelectAll(e.target.checked)
+                        }
+                        disabled={filteredItems.length === 0}
+                        title="Select all filtered items"
+                        className="h-4 w-4 cursor-pointer accent-blue-600"
+                      />
+                    )}
+                  </th>
+
+                  <th className="p-2 border">Picking No</th>
                   <th className="p-2 border">DO No</th>
+                  <th className="p-2 border">Shipping Provider</th>
                   <th className="p-2 border">Order Type</th>
                   <th className="p-2 border">Delivery To</th>
                   <th className="p-2 border">Delivery City</th>
-                  {/* <th className="p-2 border">Total Koli</th> */}
                   <th className="p-2 border">Total Item</th>
                   <th className="p-2 border">Total Qty</th>
                   <th className="p-2 border">Total Ctn</th>
                   <th className="p-2 border">Total CBM</th>
                 </tr>
               </thead>
+
               <tbody>
-                {filteredItems.map((item, index) => {
-                  const isSelected = selectedOutboundNo.includes(item.outbound_no);
+                {filteredItems.map((item) => {
+                  const isSelected =
+                    selectedOutboundNo.includes(
+                      item.outbound_no
+                    );
+
                   return (
                     <tr
                       key={item.outbound_no}
-                      className={`border-t cursor-pointer hover:bg-gray-50 transition-colors ${isSelected ? "bg-blue-50 border-blue-200" : ""
-                        }`}
-                      onClick={() => handleRowClick(item.outbound_no)}
+                      className={`border-t cursor-pointer hover:bg-gray-50 transition-colors ${
+                        isSelected
+                          ? "bg-blue-50 border-blue-200"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        handleRowClick(item.outbound_no)
+                      }
                     >
                       <td className="p-2 border text-center">
                         <input
-                          type={mode === "edit" ? "radio" : "checkbox"}
-                          name={mode === "edit" ? "selectedItem" : undefined}
+                          type={
+                            mode === "edit"
+                              ? "radio"
+                              : "checkbox"
+                          }
+                          name={
+                            mode === "edit"
+                              ? "selectedItem"
+                              : undefined
+                          }
                           checked={isSelected}
                           onChange={(e) =>
                             handleItemSelect(
-                              item.outbound_no, e.target.checked)
+                              item.outbound_no,
+                              e.target.checked
+                            )
                           }
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) =>
+                            e.stopPropagation()
+                          }
+                          className="h-4 w-4 cursor-pointer accent-blue-600"
                         />
                       </td>
+
                       <td className="p-2 border font-medium">
                         {item.outbound_no}
                       </td>
-                      <td className="p-2 border">{item.shipment_id}</td>
-                      <td className="p-2 border">{item.order_type}</td>
-                      <td className="p-2 border">{item.deliv_to_name}</td>
+
+                      <td className="p-2 border">
+                        {item.shipment_id}
+                      </td>
+
+                      <td className="p-2 border">
+                        {item.shipping_provider}
+                      </td>
+
+                      <td className="p-2 border">
+                        {item.order_type}
+                      </td>
+
+                      <td className="p-2 border">
+                        {item.deliv_to_name}
+                      </td>
+
                       <td className="p-2 border text-center">
                         {item.deliv_city}
                       </td>
-                      {/* <td className="p-2 border text-center">
+
+                      <td className="p-2 border text-center">
+                        {item.total_item}
+                      </td>
+
+                      <td className="p-2 border text-center">
+                        {item.total_qty}
+                      </td>
+
+                      <td className="p-2 border text-center">
                         {item.qty_koli}
-                      </td> */}
-                      <td className="p-2 border text-center">
-                        {item?.total_item}
                       </td>
+
                       <td className="p-2 border text-center">
-                        {item?.total_qty}
-                      </td>
-                      <td className="p-2 border text-center">
-                        {item?.qty_koli}
-                      </td>
-                      <td className="p-2 border text-center">
-                        {item?.total_cbm}
+                        {item.total_cbm}
                       </td>
                     </tr>
                   );
@@ -259,20 +380,35 @@ const ItemSelectionModal = ({
           )}
         </div>
 
+        {/* Footer */}
         <div className="p-4 border-t bg-gray-50 flex items-center justify-between">
           <div className="text-sm text-gray-600">
             {selectedOutboundNo.length} item
             {selectedOutboundNo.length !== 1 ? "s" : ""} selected
-            {mode === "edit" && selectedOutboundNo.length > 1 && (
-              <span className="text-orange-600 ml-2">
-                (Only the first item will be applied in edit mode)
-              </span>
-            )}
+
+            {mode === "edit" &&
+              selectedOutboundNo.length > 1 && (
+                <span className="text-orange-600 ml-2">
+                  (Only the first item will be applied in edit mode)
+                </span>
+              )}
+
+            {mode === "create" &&
+              filteredItems.length > 0 && (
+                <span className="text-gray-400 ml-2">
+                  ({selectedVisibleCount} of {filteredItems.length} visible selected)
+                </span>
+              )}
           </div>
+
           <div className="space-x-2">
-            <Button variant="outline" onClick={handleCancel}>
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+            >
               Cancel
             </Button>
+
             <Button
               onClick={handleApply}
               disabled={selectedOutboundNo.length === 0}
