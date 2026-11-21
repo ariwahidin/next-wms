@@ -200,6 +200,11 @@ const PickingSheetPrint = () => {
             color: #000;
           }
 
+          table td {
+            border-bottom-style: solid !important;
+            border-bottom-color: #000 !important;
+          }
+
           /* Counter-based page numbering via CSS */
           .page-number::before {
             // content: "Page " counter(page) " of " counter(pages);
@@ -628,7 +633,7 @@ const th: React.CSSProperties = {
 };
 
 const td: React.CSSProperties = {
-  borderBottom: "1px dashed #000",
+  borderBottom: "1px solid #000",
   padding: "4px",
   fontSize: "10px",
 };
