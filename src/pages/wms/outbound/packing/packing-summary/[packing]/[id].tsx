@@ -6,102 +6,141 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import JsBarcode from "jsbarcode";
 import api from "@/lib/api";
-import React from "react";
 import { printDocument } from "@/lib/print";
 
 const PickingSheetPrint = () => {
     const router = useRouter();
     const { packing, id } = router.query;
+
     const [packingItems, setPackingItems] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
     const barcodeRef = useRef<HTMLCanvasElement>(null);
     const barcodeItemRef = useRef<Array<HTMLCanvasElement | null>>([]);
     const barcodeLocationRef = useRef<Array<HTMLCanvasElement | null>>([]);
+
     const printStartedRef = useRef(false);
 
     useEffect(() => {
         if (packing && id) {
-            console.log("packing : ", packing);
-            console.log("id : ", id);
             fetchData(id as string);
         }
     }, [packing, id]);
 
     const fetchData = async (id: string) => {
-        const res = await api.get(`/outbound/${id}/packing/${packing}`, {
-            withCredentials: true,
-        });
-        setPackingItems(res.data.data.list);
+        try {
+            setLoading(true);
+
+            const res = await api.get(
+                `/outbound/${id}/packing/${packing}`,
+                {
+                    withCredentials: true,
+                }
+            );
+
+            setPackingItems(res.data.data.list || []);
+        } catch (error) {
+            console.error("Failed to fetch packing data:", error);
+            alert("Failed to load packing data.");
+        } finally {
+            setLoading(false);
+        }
     };
 
+    // Generate barcode
     useEffect(() => {
-        if (packingItems.length > 0 && barcodeRef.current) {
-            JsBarcode(barcodeRef.current, packingItems[0].packing_no, {
-                format: "CODE128",
-                displayValue: true,
-                fontSize: 14,
-                width: 2,
-                height: 50,
-            });
+        if (packingItems.length === 0) return;
 
-            packingItems.forEach((item, index) => {
-                const canvasBarcode = barcodeLocationRef.current[index];
-                if (canvasBarcode) {
-                    JsBarcode(canvasBarcode, item.location, {
-                        format: "CODE128",
-                        displayValue: false,
-                        width: 1.5,
-                        height: 20,
-                        margin: 0,
-                    });
+        if (barcodeRef.current) {
+            JsBarcode(
+                barcodeRef.current,
+                packingItems[0].packing_no,
+                {
+                    format: "CODE128",
+                    displayValue: true,
+                    fontSize: 14,
+                    width: 2,
+                    height: 50,
+                    margin: 0,
                 }
-
-                const canvasBarcodeItem = barcodeItemRef.current[index];
-                if (canvasBarcodeItem) {
-                    JsBarcode(canvasBarcodeItem, item.barcode, {
-                        format: "CODE128",
-                        displayValue: false,
-                        width: 1.5,
-                        height: 20,
-                        margin: 0,
-                    });
-                }
-            });
-
-            if (printStartedRef.current) return;
-
-            printStartedRef.current = true;
-
-            const timer = setTimeout(async () => {
-                try {
-                    await printDocument({
-                        documentType: "PACKING_LIST_SUMMARY",
-                        documentNo: packingItems[0].packing_no,
-                        module: "OUTBOUND",
-                        printMethod: "BROWSER",
-                        printFormat: "PDF",
-                        copyCount: 1,
-                    });
-                } catch (error) {
-                    console.error("Packing List Summary print error:", error);
-
-                    printStartedRef.current = false;
-
-                    alert(
-                        error instanceof Error
-                            ? error.message
-                            : "Failed to process print request."
-                    );
-                }
-            }, 500);
-
-            return () => clearTimeout(timer);
+            );
         }
+
+        packingItems.forEach((item, index) => {
+            const canvasLocation = barcodeLocationRef.current[index];
+
+            if (canvasLocation && item.location) {
+                JsBarcode(canvasLocation, item.location, {
+                    format: "CODE128",
+                    displayValue: false,
+                    width: 1.5,
+                    height: 20,
+                    margin: 0,
+                });
+            }
+
+            const canvasItem = barcodeItemRef.current[index];
+
+            if (canvasItem && item.barcode) {
+                JsBarcode(canvasItem, item.barcode, {
+                    format: "CODE128",
+                    displayValue: false,
+                    width: 1.5,
+                    height: 20,
+                    margin: 0,
+                });
+            }
+        });
     }, [packingItems]);
 
-    if (packingItems.length === 0) return <p>Loading...</p>;
+    // Printing log
+    useEffect(() => {
+        if (packingItems.length === 0) return;
+
+        if (printStartedRef.current) return;
+
+        printStartedRef.current = true;
+
+        const timer = setTimeout(async () => {
+            try {
+                await printDocument({
+                    documentType: "PACKING_LIST_SUMMARY",
+                    documentNo: packingItems[0].packing_no,
+                    module: "OUTBOUND",
+                    printMethod: "BROWSER",
+                    printFormat: "PDF",
+                    copyCount: 1,
+                });
+            } catch (error) {
+                console.error(
+                    "Packing List Summary print error:",
+                    error
+                );
+
+                printStartedRef.current = false;
+
+                alert(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to process print request."
+                );
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [packingItems]);
+
+    if (loading) {
+        return <p>Loading...</p>;
+    }
+
+    if (packingItems.length === 0) {
+        return <p>No packing data found.</p>;
+    }
 
     const data = packingItems[0];
 
+    // Grouping data by Item Code and Package Type
     const groupedData = Object.values(
         packingItems.reduce((acc: any, item: any) => {
             const key = `${item.item_code}_${item.package_type}`;
@@ -119,13 +158,10 @@ const PickingSheetPrint = () => {
 
             const group = acc[key];
 
-            // Total package quantity
             group.qty_pack += Number(item.package_qty || 0);
 
-            // Total PCS
             group.qty_pcs += Number(item.quantity || 0);
 
-            // CTN Total = qty_scan / qty_per_carton
             const qtyScan = Number(item.qty_scan || 0);
             const qtyPerCarton = Number(item.qty_per_carton || 0);
 
@@ -135,8 +171,9 @@ const PickingSheetPrint = () => {
 
             return acc;
         }, {})
-    );
+    ) as any[];
 
+    // Grand Total
     const grandTotalQtyPack = groupedData.reduce(
         (sum: number, item: any) => sum + item.qty_pack,
         0
@@ -147,317 +184,597 @@ const PickingSheetPrint = () => {
         0
     );
 
-    // Format CTN Total: maximum 3 decimal places
+    // Round CTN Total up
     const formatCtnTotal = (value: number) => {
-        // return Number(value.toFixed(3)).toLocaleString("en-US");
         return Math.ceil(value).toLocaleString("en-US");
     };
 
     return (
-        <div style={{ padding: "10px", fontFamily: "Arial" }}>
-            {/* Header */}
-            <div style={{ display: "flex", justifyContent: "center" }}>
-                <p
-                    style={{
-                        fontSize: "16px",
-                        textAlign: "center",
-                        fontWeight: "bold",
-                    }}
-                >
-                    PT Yusen Logistics Interlink Indonesia
-                </p>
-            </div>
+        <>
+            <style jsx global>{`
+                /* ===============================
+                   GENERAL
+                =============================== */
 
-            <hr
-                style={{
-                    border: "1px solid black",
-                    marginBottom: "10px",
-                    marginTop: "10px",
-                }}
-            />
+                * {
+                    box-sizing: border-box;
+                }
 
-            <h2
-                style={{
-                    textAlign: "center",
-                    fontWeight: "bold",
-                    marginBottom: "10px",
-                }}
-            >
-                PACKING LIST SUMMARY
-            </h2>
+                .packing-document {
+                    padding: 15px;
+                    font-family: Arial, Helvetica, sans-serif;
+                    font-size: 12px;
+                    font-weight: 500;
+                    color: #000;
+                    background: #fff;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                    text-rendering: geometricPrecision;
+                }
 
-            <hr
-                style={{
-                    border: "1px solid black",
-                    marginBottom: "10px",
-                    marginTop: "10px",
-                }}
-            />
+                .company-name {
+                    text-align: center;
+                    font-size: 17px;
+                    font-weight: 800;
+                    margin: 0;
+                    letter-spacing: 0.3px;
+                }
 
-            <table style={{ display: "none", width: "100%", marginBottom: "10px" }}>
-                <tr>
-                    <td style={{ textAlign: "center", width: "33%" }}>
-                        <canvas
-                            style={{ width: "200px", height: "50px" }}
-                            ref={barcodeRef}
-                        ></canvas>
-                    </td>
+                .document-title {
+                    text-align: center;
+                    font-size: 18px;
+                    font-weight: 800;
+                    margin: 12px 0;
+                    letter-spacing: 0.5px;
+                }
 
-                    <td style={{ textAlign: "center" }}>
-                        <div
-                            style={{
-                                fontSize: "12px",
-                                border: "1px solid black",
-                                padding: "5px",
-                                width: "220px",
-                            }}
-                        >
-                            <span {...{ style: { fontWeight: "bold" } }}>
-                                {data.transporter_code}
-                                {" to "}
-                                {data.cust_city}
-                            </span>
-                        </div>
-                    </td>
+                .document-divider {
+                    border: none;
+                    border-top: 2px solid #000;
+                    margin: 10px 0;
+                }
 
-                    <td style={{ textAlign: "center" }}>
-                        <div
-                            style={{
-                                fontSize: "12px",
-                                border: "1px solid black",
-                                padding: "5px",
-                                width: "100px",
-                            }}
-                        >
-                            <span {...{ style: { fontWeight: "bold" } }}>
-                                {data.shipment_id}
-                            </span>
-                        </div>
-                    </td>
-                </tr>
-            </table>
+                /* ===============================
+                   HEADER INFORMATION
+                =============================== */
 
-            {/* Outbound Info */}
-            <div style={{ fontSize: "12px", marginTop: "10px" }}>
-                <table
-                    style={{
-                        width: "100%",
-                        borderCollapse: "collapse",
-                        fontSize: "12px",
-                    }}
-                >
+                .info-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 12px;
+                    font-weight: 600;
+                    margin-top: 12px;
+                }
+
+                .info-table td {
+                    padding: 4px 6px;
+                    vertical-align: top;
+                    line-height: 1.4;
+                    color: #000;
+                }
+
+                .info-label {
+                    width: 125px;
+                    font-weight: 800;
+                    white-space: nowrap;
+                }
+
+                .info-value {
+                    font-weight: 600;
+                }
+
+                /* ===============================
+                   DETAIL TABLE
+                =============================== */
+
+                .packing-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    table-layout: fixed;
+                    margin-top: 22px;
+                    font-size: 11px;
+                    color: #000;
+                }
+
+                .packing-table thead {
+                    display: table-header-group;
+                }
+
+                .packing-table th {
+                    border: 1px solid #000;
+                    background: #e5e5e5 !important;
+                    padding: 7px 5px;
+                    text-align: center;
+                    font-size: 11px;
+                    font-weight: 800;
+                    line-height: 1.3;
+                    color: #000;
+                }
+
+                .packing-table td {
+                    border: 1px solid #000;
+                    padding: 6px 5px;
+                    font-size: 11px;
+                    font-weight: 600;
+                    line-height: 1.35;
+                    color: #000;
+                    vertical-align: middle;
+                }
+
+                .packing-table tbody tr {
+                    page-break-inside: avoid;
+                    break-inside: avoid;
+                }
+
+                .packing-table .text-center {
+                    text-align: center;
+                }
+
+                .packing-table .text-left {
+                    text-align: left;
+                    white-space: normal;
+                    overflow-wrap: anywhere;
+                }
+
+                /* ===============================
+                   GRAND TOTAL
+                =============================== */
+
+                .grand-total td {
+                    font-weight: 900 !important;
+                    font-size: 12px !important;
+                    border-top: 2px solid #000 !important;
+                    border-bottom: 2px solid #000 !important;
+                    padding: 8px 5px !important;
+                    background: #f0f0f0 !important;
+                }
+
+                /* ===============================
+                   SIGNATURE
+                =============================== */
+
+                .signature-container {
+                    display: flex;
+                    justify-content: space-around;
+                    gap: 15px;
+                    margin-top: 45px;
+                    page-break-inside: avoid;
+                    break-inside: avoid;
+                }
+
+                .signature-box {
+                    flex: 1;
+                    min-width: 0;
+                    text-align: center;
+                }
+
+                .signature-title {
+                    font-size: 11px;
+                    font-weight: 800;
+                    margin-bottom: 5px;
+                }
+
+                .signature-line {
+                    width: 110px;
+                    height: 55px;
+                    border-bottom: 1.5px solid #000;
+                    margin: 0 auto 5px;
+                }
+
+                .signature-description {
+                    font-size: 10px;
+                    font-weight: 600;
+                    margin: 4px 0;
+                }
+
+                .signature-date {
+                    text-align: left;
+                    font-size: 10px;
+                    font-weight: 600;
+                    margin: 5px 0;
+                }
+
+                /* ===============================
+                   PRINT SETTINGS
+                =============================== */
+
+                @page {
+                    size: A4 portrait;
+                    margin: 10mm;
+                }
+
+                @media print {
+                    html,
+                    body {
+                        width: 100%;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: #fff !important;
+                        color: #000 !important;
+                    }
+
+                    body {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+
+                    .packing-document {
+                        width: 100%;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        font-family: Arial, Helvetica, sans-serif;
+                        color: #000 !important;
+                    }
+
+                    .company-name {
+                        font-size: 17px !important;
+                        font-weight: 800 !important;
+                    }
+
+                    .document-title {
+                        font-size: 18px !important;
+                        font-weight: 800 !important;
+                    }
+
+                    .info-table td {
+                        color: #000 !important;
+                        font-weight: 600 !important;
+                    }
+
+                    .info-label {
+                        font-weight: 800 !important;
+                    }
+
+                    .packing-table th {
+                        color: #000 !important;
+                        font-weight: 900 !important;
+                        background: #e5e5e5 !important;
+                        border: 1px solid #000 !important;
+                    }
+
+                    .packing-table td {
+                        color: #000 !important;
+                        font-weight: 600 !important;
+                        border: 1px solid #000 !important;
+                    }
+
+                    .grand-total td {
+                        font-weight: 900 !important;
+                        background: #eee !important;
+                        border-top: 2px solid #000 !important;
+                        border-bottom: 2px solid #000 !important;
+                    }
+
+                    .signature-title {
+                        font-weight: 800 !important;
+                    }
+
+                    .signature-description,
+                    .signature-date {
+                        font-weight: 600 !important;
+                    }
+
+                    .packing-table tr {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+
+                    .signature-container {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+
+                    canvas {
+                        image-rendering: crisp-edges;
+                    }
+                }
+            `}</style>
+
+            <div className="packing-document">
+
+                {/* ===============================
+                    COMPANY HEADER
+                =============================== */}
+
+                <div>
+                    <p className="company-name">
+                        PT Yusen Logistics Interlink Indonesia
+                    </p>
+                </div>
+
+                <hr className="document-divider" />
+
+                <h2 className="document-title">
+                    PACKING LIST SUMMARY
+                </h2>
+
+                <hr className="document-divider" />
+
+                {/* Hidden Barcode */}
+
+                <table style={{ display: "none", width: "100%" }}>
                     <tbody>
                         <tr>
-                            <td style={headerLabel}>Packing No</td>
-                            <td style={headerValue}>{data.packing_no}</td>
-                        </tr>
-
-                        <tr>
-                            <td style={headerLabel}>Shipment ID</td>
-                            <td style={headerValue}>{data.shipment_id}</td>
-                        </tr>
-
-                        <tr>
-                            <td style={headerLabel}>Packing Date</td>
-                            <td style={headerValue}>
-                                {new Date(data.packing_date).toLocaleDateString("id-ID", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                })}
+                            <td>
+                                <canvas ref={barcodeRef} />
                             </td>
-                        </tr>
-
-                        <tr>
-                            <td style={headerLabel}>Customer Name</td>
-                            <td style={headerValue}>{data.customer_name}</td>
-                        </tr>
-
-                        <tr>
-                            <td style={headerLabel}>Customer Address</td>
-                            <td style={headerValue}>{data.cust_address}</td>
-                        </tr>
-
-                        <tr>
-                            <td style={headerLabel}>Customer City</td>
-                            <td style={headerValue}>{data.cust_city}</td>
-                        </tr>
-
-                        <tr></tr>
-
-                        <tr>
-                            <td style={headerLabel}></td>
-                            <td style={headerValue}></td>
                         </tr>
                     </tbody>
                 </table>
-            </div>
 
-            <table
-                style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    marginTop: "20px",
-                    fontSize: "10px",
-                    tableLayout: "fixed",
-                }}
-            >
-                <thead>
-                    <tr>
-                        <th style={{ ...th, width: "5%" }}>No</th>
-                        <th style={{ ...th, width: "10%" }}>CTN total</th>
-                        <th style={{ ...th, width: "18%" }}>Item Code</th>
-                        <th style={{ ...th, width: "35%" }}>Description</th>
-                        <th style={{ ...th, width: "10%" }}>QTY PACK</th>
-                        <th style={{ ...th, width: "8%" }}>UOM</th>
-                        <th style={{ ...th, width: "14%" }}>QTY PCS</th>
-                    </tr>
-                </thead>
+                {/* ===============================
+                    PACKING INFORMATION
+                =============================== */}
 
-                <tbody>
-                    {groupedData.map((item: any, index: number) => (
-                        <tr key={`${item.item_code}-${item.package_type}`}>
-                            <td style={{ ...td, textAlign: "center" }}>
-                                {index + 1}
+                <table className="info-table">
+                    <tbody>
+                        <tr>
+                            <td className="info-label">
+                                Packing No
                             </td>
-
-                            {/* CTN Total */}
-                            <td style={{ ...td, textAlign: "center" }}>
-                                {formatCtnTotal(item.ctn_total)}
-                            </td>
-
-                            <td style={{ ...td, textAlign: "center" }}>
-                                {item.item_code}
-                            </td>
-
-                            <td
-                                style={{
-                                    ...td,
-                                    textAlign: "left",
-                                    whiteSpace: "normal",
-                                    wordBreak: "break-word",
-                                    lineHeight: "1.2",
-                                }}
-                            >
-                                {item.item_name}
-                            </td>
-
-                            <td style={{ ...td, textAlign: "center" }}>
-                                {item.qty_pack.toLocaleString("en-US")}
-                            </td>
-
-                            <td style={{ ...td, textAlign: "center" }}>
-                                {item.package_type}
-                            </td>
-
-                            <td style={{ ...td, textAlign: "center" }}>
-                                {item.qty_pcs.toLocaleString("en-US")}
+                            <td className="info-value">
+                                : {data.packing_no}
                             </td>
                         </tr>
-                    ))}
 
-                    <tr style={{ fontWeight: "bold" }}>
-                        <td colSpan={4} style={{ ...td, textAlign: "right" }}>
-                            GRAND TOTAL
-                        </td>
+                        <tr>
+                            <td className="info-label">
+                                Shipment ID
+                            </td>
+                            <td className="info-value">
+                                : {data.shipment_id}
+                            </td>
+                        </tr>
 
-                        <td style={{ ...td, textAlign: "center" }}>
-                            {grandTotalQtyPack.toLocaleString()}
-                        </td>
+                        <tr>
+                            <td className="info-label">
+                                Packing Date
+                            </td>
+                            <td className="info-value">
+                                :{" "}
+                                {data.packing_date
+                                    ? new Date(
+                                          data.packing_date
+                                      ).toLocaleString("id-ID", {
+                                          day: "2-digit",
+                                          month: "2-digit",
+                                          year: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                      })
+                                    : "-"}
+                            </td>
+                        </tr>
 
-                        <td style={{ ...td, textAlign: "center" }}>
-                            -
-                        </td>
+                        <tr>
+                            <td className="info-label">
+                                Customer Name
+                            </td>
+                            <td className="info-value">
+                                : {data.customer_name}
+                            </td>
+                        </tr>
 
-                        <td style={{ ...td, textAlign: "center" }}>
-                            {grandTotalQtyPcs.toLocaleString()}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                        <tr>
+                            <td className="info-label">
+                                Customer Address
+                            </td>
+                            <td className="info-value">
+                                : {data.cust_address}
+                            </td>
+                        </tr>
 
-            {/* Signatures */}
-            <div
-                style={{
-                    marginTop: "50px",
-                    display: "flex",
-                    justifyContent: "space-around",
-                }}
-            >
-                <div>
-                    <p style={{ textAlign: "center", fontSize: "10px" }}>
-                        Checker
-                    </p>
-                    <div style={signatureLine}></div>
-                    <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
-                    <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
-                    <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
+                        <tr>
+                            <td className="info-label">
+                                Customer City
+                            </td>
+                            <td className="info-value">
+                                : {data.cust_city}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                {/* ===============================
+                    PACKING DETAIL
+                =============================== */}
+
+                <table className="packing-table">
+                    <thead>
+                        <tr>
+                            <th style={{ width: "5%" }}>
+                                No
+                            </th>
+
+                            <th style={{ width: "10%" }}>
+                                CTN Total
+                            </th>
+
+                            <th style={{ width: "18%" }}>
+                                Item Code
+                            </th>
+
+                            <th style={{ width: "35%" }}>
+                                Description
+                            </th>
+
+                            <th style={{ width: "10%" }}>
+                                QTY PACK
+                            </th>
+
+                            <th style={{ width: "8%" }}>
+                                UOM
+                            </th>
+
+                            <th style={{ width: "14%" }}>
+                                QTY PCS
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {groupedData.map(
+                            (item: any, index: number) => (
+                                <tr
+                                    key={`${item.item_code}-${item.package_type}`}
+                                >
+                                    <td className="text-center">
+                                        {index + 1}
+                                    </td>
+
+                                    <td className="text-center">
+                                        {formatCtnTotal(
+                                            item.ctn_total
+                                        )}
+                                    </td>
+
+                                    <td className="text-center">
+                                        {item.item_code}
+                                    </td>
+
+                                    <td className="text-left">
+                                        {item.item_name}
+                                    </td>
+
+                                    <td className="text-center">
+                                        {item.qty_pack.toLocaleString(
+                                            "en-US"
+                                        )}
+                                    </td>
+
+                                    <td className="text-center">
+                                        {item.package_type}
+                                    </td>
+
+                                    <td className="text-center">
+                                        {item.qty_pcs.toLocaleString(
+                                            "en-US"
+                                        )}
+                                    </td>
+                                </tr>
+                            )
+                        )}
+
+                        {/* GRAND TOTAL */}
+
+                        <tr className="grand-total">
+                            <td
+                                colSpan={4}
+                                style={{ textAlign: "right" }}
+                            >
+                                GRAND TOTAL
+                            </td>
+
+                            <td className="text-center">
+                                {grandTotalQtyPack.toLocaleString(
+                                    "en-US"
+                                )}
+                            </td>
+
+                            <td className="text-center">
+                                -
+                            </td>
+
+                            <td className="text-center">
+                                {grandTotalQtyPcs.toLocaleString(
+                                    "en-US"
+                                )}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                {/* ===============================
+                    SIGNATURES
+                =============================== */}
+
+                <div className="signature-container">
+
+                    <div className="signature-box">
+                        <p className="signature-title">
+                            Checker
+                        </p>
+
+                        <div className="signature-line" />
+
+                        <p className="signature-description">
+                            Name & Sign
+                        </p>
+
+                        <p className="signature-date">
+                            Date :
+                        </p>
+
+                        <p className="signature-date">
+                            Time :
+                        </p>
+                    </div>
+
+                    <div className="signature-box">
+                        <p className="signature-title">
+                            Supervisor
+                        </p>
+
+                        <div className="signature-line" />
+
+                        <p className="signature-description">
+                            Name & Sign
+                        </p>
+
+                        <p className="signature-date">
+                            Date :
+                        </p>
+
+                        <p className="signature-date">
+                            Time :
+                        </p>
+                    </div>
+
+                    <div className="signature-box">
+                        <p className="signature-title">
+                            Driver
+                        </p>
+
+                        <div className="signature-line" />
+
+                        <p className="signature-description">
+                            Name & Sign
+                        </p>
+
+                        <p className="signature-date">
+                            Date :
+                        </p>
+
+                        <p className="signature-date">
+                            Time :
+                        </p>
+                    </div>
+
+                    <div className="signature-box">
+                        <p className="signature-title">
+                            Receiver
+                        </p>
+
+                        <div className="signature-line" />
+
+                        <p className="signature-description">
+                            Name & Sign
+                        </p>
+
+                        <p className="signature-date">
+                            Date :
+                        </p>
+
+                        <p className="signature-date">
+                            Time :
+                        </p>
+                    </div>
+
                 </div>
 
-                <div>
-                    <p style={{ textAlign: "center", fontSize: "10px" }}>
-                        Supervisor
-                    </p>
-                    <div style={signatureLine}></div>
-                    <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
-                    <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
-                    <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
-                </div>
-
-                <div>
-                    <p style={{ textAlign: "center", fontSize: "10px" }}>
-                        Driver
-                    </p>
-                    <div style={signatureLine}></div>
-                    <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
-                    <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
-                    <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
-                </div>
-
-                <div>
-                    <p style={{ textAlign: "center", fontSize: "10px" }}>
-                        Receiver
-                    </p>
-                    <div style={signatureLine}></div>
-                    <p style={{ textAlign: "center", fontSize: "10px" }}>Name & Sign</p>
-                    <p style={{ textAlign: "left", fontSize: "10px" }}>Date : </p>
-                    <p style={{ textAlign: "left", fontSize: "10px" }}>Time : </p>
-                </div>
             </div>
-        </div>
+        </>
     );
-};
-
-const th = {
-    border: "1px solid #000",
-    padding: "4px",
-    backgroundColor: "#eee",
-};
-
-const td = {
-    borderBottom: "1px dashed #000",
-    padding: "4px",
-};
-
-const headerLabel = {
-    padding: "2px 6px",
-    fontWeight: "bold" as const,
-    whiteSpace: "nowrap" as const,
-    width: "7%",
-};
-
-const headerValue = {
-    padding: "2px 6px",
-    width: "30%",
-};
-
-const signatureLine = {
-    borderBottom: "1px solid black",
-    width: "100px",
-    height: "55px",
-    marginBottom: "5px",
 };
 
 export default PickingSheetPrint;
