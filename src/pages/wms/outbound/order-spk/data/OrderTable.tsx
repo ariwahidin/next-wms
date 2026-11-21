@@ -21,6 +21,7 @@ import {
   Calendar,
   FileSearch,
   Highlighter,
+  FileText,
 } from "lucide-react";
 import useSWR from "swr";
 import {
@@ -77,7 +78,7 @@ interface FilterParams {
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string; color: string; dot: string }[] = [
-  { value: "open",   label: "Open",   color: "bg-blue-50 border-blue-200 text-blue-700",   dot: "bg-blue-500"  },
+  { value: "open", label: "Open", color: "bg-blue-50 border-blue-200 text-blue-700", dot: "bg-blue-500" },
   { value: "confirmed", label: "Confirmed", color: "bg-amber-50 border-amber-200 text-amber-700", dot: "bg-amber-500" },
   { value: "loaded", label: "Loaded", color: "bg-green-50 border-green-200 text-green-700", dot: "bg-green-500" },
 ];
@@ -89,9 +90,9 @@ const fmt = (d: Date) => format(d, "yyyy-MM-dd");
 const buildUrl = (filters: FilterParams) => {
   const params = new URLSearchParams({
     start_date: fmt(filters.startDate),
-    end_date:   fmt(filters.endDate),
+    end_date: fmt(filters.endDate),
   });
-  if (filters.search)   params.set("search",    filters.search);
+  if (filters.search) params.set("search", filters.search);
   if (filters.searchDO) params.set("search_do", filters.searchDO);
   if (filters.statuses.length > 0) params.set("statuses", filters.statuses.join(","));
   return `/order/filter?${params.toString()}`;
@@ -116,7 +117,7 @@ const HandleEdit = (item: any) => {
 };
 
 const HandlePreviewPDF = (item: MuatanOrderSPK) => {
-  window.open(`/wms/outbound/order-spk/spk-sheet/${item.order_no}`, "_blank");
+  
 };
 
 
@@ -144,7 +145,7 @@ interface DateRangePickerProps {
 
 const DateRangePicker = ({ startDate, endDate, onStartChange, onEndChange }: DateRangePickerProps) => {
   const [openStart, setOpenStart] = useState(false);
-  const [openEnd,   setOpenEnd]   = useState(false);
+  const [openEnd, setOpenEnd] = useState(false);
 
   return (
     <div className="flex items-center gap-1.5">
@@ -201,9 +202,9 @@ interface FilterBarProps {
 
 const FilterBar = ({ filters, onChange, loading, doMatchCount }: FilterBarProps) => {
   const [localSearch, setLocalSearch] = useState(filters.search);
-  const [localDO,     setLocalDO]     = useState(filters.searchDO);
+  const [localDO, setLocalDO] = useState(filters.searchDO);
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const doDebounce     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const doDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSearchChange = (val: string) => {
     setLocalSearch(val);
@@ -231,10 +232,10 @@ const FilterBar = ({ filters, onChange, loading, doMatchCount }: FilterBarProps)
   const handleReset = () => {
     const reset: FilterParams = {
       startDate: subDays(new Date(), 7),
-      endDate:   new Date(),
-      search:    "",
-      searchDO:  "",
-      statuses:  [],
+      endDate: new Date(),
+      search: "",
+      searchDO: "",
+      statuses: [],
     };
     setLocalSearch("");
     setLocalDO("");
@@ -246,7 +247,7 @@ const FilterBar = ({ filters, onChange, loading, doMatchCount }: FilterBarProps)
     filters.searchDO !== "" ||
     filters.statuses.length > 0 ||
     fmt(filters.startDate) !== fmt(subDays(new Date(), 7)) ||
-    fmt(filters.endDate)   !== fmt(new Date());
+    fmt(filters.endDate) !== fmt(new Date());
 
   return (
     <div className="mb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -275,7 +276,7 @@ const FilterBar = ({ filters, onChange, loading, doMatchCount }: FilterBarProps)
             startDate={filters.startDate}
             endDate={filters.endDate}
             onStartChange={(d) => onChange({ ...filters, startDate: d })}
-            onEndChange={(d)   => onChange({ ...filters, endDate:   d })}
+            onEndChange={(d) => onChange({ ...filters, endDate: d })}
           />
         </div>
 
@@ -294,15 +295,15 @@ const FilterBar = ({ filters, onChange, loading, doMatchCount }: FilterBarProps)
                     ? <span className="text-slate-400">All statuses</span>
                     : filters.statuses.length === 1
                       ? <span className="flex items-center gap-1.5">
-                          <span className={`h-1.5 w-1.5 rounded-full ${STATUS_OPTIONS.find(o => o.value === filters.statuses[0])?.dot}`} />
-                          <span className="capitalize">{filters.statuses[0]}</span>
-                        </span>
+                        <span className={`h-1.5 w-1.5 rounded-full ${STATUS_OPTIONS.find(o => o.value === filters.statuses[0])?.dot}`} />
+                        <span className="capitalize">{filters.statuses[0]}</span>
+                      </span>
                       : <span className="flex items-center gap-1">
-                          {filters.statuses.slice(0, 2).map(s => (
-                            <span key={s} className={`h-1.5 w-1.5 rounded-full ${STATUS_OPTIONS.find(o => o.value === s)?.dot}`} />
-                          ))}
-                          <span className="text-slate-600">{filters.statuses.length} selected</span>
-                        </span>
+                        {filters.statuses.slice(0, 2).map(s => (
+                          <span key={s} className={`h-1.5 w-1.5 rounded-full ${STATUS_OPTIONS.find(o => o.value === s)?.dot}`} />
+                        ))}
+                        <span className="text-slate-600">{filters.statuses.length} selected</span>
+                      </span>
                   }
                 </span>
                 <svg className="h-3.5 w-3.5 text-slate-400 shrink-0" viewBox="0 0 16 16" fill="none">
@@ -536,24 +537,24 @@ const OrderTable = () => {
   // Filter state
   const [filters, setFilters] = useState<FilterParams>({
     startDate: subDays(new Date(), 7),
-    endDate:   new Date(),
-    search:    "",
-    searchDO:  "",
-    statuses:  [],
+    endDate: new Date(),
+    search: "",
+    searchDO: "",
+    statuses: [],
   });
 
   const swrKey = buildUrl(filters);
   const { data: rowData, error, mutate, isValidating } = useSWR(swrKey, fetcher);
 
   // Dialog states
-  const [isScannedItemDialog, setIsScannedItemDialog]   = useState(false);
-  const [scannedItemData,      setScannedItemData]       = useState<any>(null);
-  const [tempLocationName,     setTempLocationName]      = useState("");
+  const [isScannedItemDialog, setIsScannedItemDialog] = useState(false);
+  const [scannedItemData, setScannedItemData] = useState<any>(null);
+  const [tempLocationName, setTempLocationName] = useState("");
   const [showTempLocationInput, setShowTempLocationInput] = useState(false);
 
-  const gridRef    = useRef<AgGridReact>(null);
+  const gridRef = useRef<AgGridReact>(null);
   const gridApiRef = useRef<any>(null);
-  const inputRef   = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // ── Derived: rows that contain the searched DO No ──────────────────────────
   // Backend memfilter baris ini; di sisi frontend kita tinggal highlight semua
@@ -708,7 +709,7 @@ const OrderTable = () => {
       resizable: false,
       headerName: "",
     },
-    { field: "no",       headerName: "No.",      maxWidth: 60  },
+    { field: "no", headerName: "No.", maxWidth: 60 },
     { field: "order_no", headerName: "Order No", maxWidth: 160 },
     {
       field: "status",
@@ -742,14 +743,35 @@ const OrderTable = () => {
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandleEdit(params.data); }}>
-                  <Pencil className="mr-2 h-4 w-4" /> View / Edit
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    HandleEdit(params.data);
+                  }}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  View / Edit
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+
+                    router.push(
+                      `/wms/outbound/order-spk/edit/${params.data.order_no}?tab=surat-jalan`
+                    );
+                  }}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Delivery Note
                 </DropdownMenuItem>
 
                 <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePreviewPDF(params.data); }}>
                   <Printer className="mr-2 h-4 w-4" /> Print SPK
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePrintSPKWithOutDetail(params.data); }}>
                   <Printer className="mr-2 h-4 w-4" /> Print SPK Without Items
                 </DropdownMenuItem>
@@ -758,9 +780,9 @@ const OrderTable = () => {
                   <Printer className="mr-2 h-4 w-4" /> Print SPK Custom 1
                 </DropdownMenuItem>
 
-                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePrintSuratJalan(params.data); }}>
+                {/* <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePrintSuratJalan(params.data); }}>
                   <Printer className="mr-2 h-4 w-4" /> Print Surat Jalan
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
 
                 <DropdownMenuSeparator />
 
@@ -793,21 +815,21 @@ const OrderTable = () => {
       },
     },
     { field: "transporter_name", headerName: "Transporter", maxWidth: 250 },
-    { field: "truck_no",         headerName: "Truck No",    maxWidth: 120 },
-    { field: "driver",           headerName: "Driver",      maxWidth: 120 },
-    { field: "order_type",       headerName: "Order Type",  maxWidth: 150 },
-    { field: "total_do",   headerName: "Total DO",   maxWidth: 100, cellStyle: { textAlign: "center" } },
+    { field: "truck_no", headerName: "Truck No", maxWidth: 120 },
+    { field: "driver", headerName: "Driver", maxWidth: 120 },
+    { field: "order_type", headerName: "Order Type", maxWidth: 150 },
+    { field: "total_do", headerName: "Total DO", maxWidth: 100, cellStyle: { textAlign: "center" } },
     { field: "total_drop", headerName: "Total Drop", maxWidth: 100, cellStyle: { textAlign: "center" } },
     { field: "total_koli", headerName: "Total Koli", maxWidth: 100, cellStyle: { textAlign: "center" } },
     { field: "total_item", headerName: "Total Item", maxWidth: 100, cellStyle: { textAlign: "center" } },
-    { field: "total_qty",  headerName: "Total Qty",  maxWidth: 100, cellStyle: { textAlign: "center" } },
-    { field: "total_cbm",  headerName: "Total CBM",  maxWidth: 100, cellStyle: { textAlign: "center" } },
+    { field: "total_qty", headerName: "Total Qty", maxWidth: 100, cellStyle: { textAlign: "center" } },
+    { field: "total_cbm", headerName: "Total CBM", maxWidth: 100, cellStyle: { textAlign: "center" } },
   ]);
 
   // ── Derived booleans ───────────────────────────────────────────────────────
-  const isLoading    = !rowData && !error;
+  const isLoading = !rowData && !error;
   const isRefetching = isValidating && !!rowData;
-  const hasSelected  = selectedRows.length > 0;
+  const hasSelected = selectedRows.length > 0;
 
   // ── Render ─────────────────────────────────────────────────────────────────
 

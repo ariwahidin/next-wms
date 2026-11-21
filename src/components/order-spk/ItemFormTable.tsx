@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -194,9 +195,8 @@ export default function ItemFormTable({
       );
 
       const filtered = newPicking.filter((item) => {
-        const key = `${item.outbound_id}:${
-          item.shipment_id || item.outbound_no
-        }`;
+        const key = `${item.outbound_id}:${item.shipment_id || item.outbound_no
+          }`;
 
         return !existingKeys.has(key);
       });
@@ -246,9 +246,9 @@ export default function ItemFormTable({
       prev.map((item) =>
         item.ID === id
           ? {
-              ...item,
-              [field]: value,
-            }
+            ...item,
+            [field]: value,
+          }
           : item
       )
     );
@@ -460,20 +460,33 @@ export default function ItemFormTable({
 
                   <td className="border p-2">
                     <Input
-                      readOnly
+                      onWheel={(e) => e.currentTarget.blur()}
                       className="h-8"
                       style={{
                         fontSize: "12px",
                         textAlign: "center",
                       }}
                       type="number"
+                      min={0}
                       value={item.qty_koli ?? 0}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+
+                        setMuatan((prev) =>
+                          prev.map((row) =>
+                            row.ID === item.ID
+                              ? { ...row, qty_koli: value }
+                              : row
+                          )
+                        );
+                      }}
                     />
                   </td>
 
                   {useVas && (
                     <td className="border p-2">
                       <Input
+                        onWheel={(e) => e.currentTarget.blur()}
                         className="h-8"
                         disabled={isReadOnly}
                         style={{
@@ -495,40 +508,62 @@ export default function ItemFormTable({
 
                   <td className="border p-2">
                     <Input
-                      readOnly
+                      onWheel={(e) => e.currentTarget.blur()}
                       className="h-8"
-                      style={{
-                        fontSize: "12px",
-                        textAlign: "center",
-                      }}
-                      type="text"
+                      style={{ fontSize: "12px", textAlign: "center" }}
+                      type="number"
                       value={item.total_item ?? 0}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        setMuatan((prev) =>
+                          prev.map((row) =>
+                            row.ID === item.ID
+                              ? { ...row, total_item: value }
+                              : row
+                          )
+                        );
+                      }}
                     />
                   </td>
 
                   <td className="border p-2">
                     <Input
-                      readOnly
+                      onWheel={(e) => e.currentTarget.blur()}
                       className="h-8"
-                      style={{
-                        fontSize: "12px",
-                        textAlign: "center",
-                      }}
-                      type="text"
+                      style={{ fontSize: "12px", textAlign: "center" }}
+                      type="number"
                       value={item.total_qty ?? 0}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        setMuatan((prev) =>
+                          prev.map((row) =>
+                            row.ID === item.ID
+                              ? { ...row, total_qty: value }
+                              : row
+                          )
+                        );
+                      }}
                     />
                   </td>
 
                   <td className="border p-2">
                     <Input
-                      readOnly
+                      onWheel={(e) => e.currentTarget.blur()}
                       className="h-8"
-                      style={{
-                        fontSize: "12px",
-                        textAlign: "center",
-                      }}
-                      type="text"
+                      style={{ fontSize: "12px", textAlign: "center" }}
+                      type="number"
+                      step="any"
                       value={item.total_cbm ?? 0}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        setMuatan((prev) =>
+                          prev.map((row) =>
+                            row.ID === item.ID
+                              ? { ...row, total_cbm: value }
+                              : row
+                          )
+                        );
+                      }}
                     />
                   </td>
 
