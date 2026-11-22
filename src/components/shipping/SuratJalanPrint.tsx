@@ -334,7 +334,7 @@ export default function SuratJalanPrint({
                   <th>Item Code</th>
                   <th>Packaging</th>
                   <th>Qty Pcs</th>
-                  <th>Note</th>f
+                  <th>Note</th>
                 </tr>
               </thead>
 

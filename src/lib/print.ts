@@ -14,6 +14,10 @@ export interface PrintDocumentOptions {
   copyCount?: number;
   printerName?: string;
   reason?: string;
+
+  ip_address? : string;
+  workstation_name? :string;
+  printer_name? : string;
 }
 
 export interface PrintLogResponse {
@@ -44,6 +48,8 @@ export const printDocument = async (
       copy_count: options.copyCount ?? 1,
       printer_name: options.printerName ?? "",
       reason: options.reason ?? "",
+
+      
     },
     {
       withCredentials: true,

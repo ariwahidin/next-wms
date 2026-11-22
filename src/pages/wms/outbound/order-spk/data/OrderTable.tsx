@@ -780,9 +780,9 @@ const OrderTable = () => {
                   <Printer className="mr-2 h-4 w-4" /> Print SPK Custom 1
                 </DropdownMenuItem>
 
-                {/* <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePrintSuratJalan(params.data); }}>
+                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePrintSuratJalan(params.data); }}>
                   <Printer className="mr-2 h-4 w-4" /> Print Surat Jalan
-                </DropdownMenuItem> */}
+                </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
 
