@@ -58,6 +58,9 @@ export interface MuatanOrderSPK {
   total_item?: number;
   total_qty?: number;
   qty_koli?: number;
+  qty_pack?:number;
+  qty_sj?:number;
+  qty_remaining?:number;
   vas_koli?: number;
   total_cbm?: number;
   mode?: "create" | "edit";

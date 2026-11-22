@@ -431,7 +431,7 @@ export default function SuratJalanManager({
 
       if (sjNo) {
         router.push(
-          `/wms/outbound/shipping/surat-jalan/${sjNo}`
+          `/wms/outbound/order-spk/edit/${spkHeader.order_no}?tab=surat-jalan`
         );
       }
     } catch (error: any) {
@@ -534,7 +534,7 @@ export default function SuratJalanManager({
             <FileText className="h-5 w-5 text-blue-600" />
 
             <h2 className="text-lg font-semibold">
-              Surat Jalan
+              Delivery Notes
             </h2>
           </div>
 
@@ -673,7 +673,7 @@ export default function SuratJalanManager({
             </div>
 
             <p className="mt-1 text-xs text-gray-500">
-              Search by DO number, outbound number, item code, carton, barcode, or serial number.
+              Search by DO number, outbound number, or item code..
             </p>
           </div>
 
@@ -803,7 +803,7 @@ export default function SuratJalanManager({
                     >
                       {searchDO
                         ? "No packages match your search."
-                        : "No packages are available. They may already be allocated to another Surat Jalan."}
+                        : "No packages are available. They may already be allocated to another delivery notes."}
                     </td>
                   </tr>
                 )}
@@ -816,7 +816,7 @@ export default function SuratJalanManager({
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-xs text-gray-500">
-            {selectedPackages.length} package dipilih dari{" "}
+            {selectedPackages.length} package selected from{" "}
             {packages.length} available packages.
           </div>
 
@@ -832,7 +832,7 @@ export default function SuratJalanManager({
           >
             <FileText className="h-4 w-4" />
 
-            {saving ? "Saving..." : "Create SJ Draft"}
+            {saving ? "Saving..." : "Create Delivery Note"}
           </button>
         </div>
       </section>
@@ -845,16 +845,16 @@ export default function SuratJalanManager({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold">
-              Surat Jalan Documents
+              Delivery Notes
             </h3>
 
             <p className="mt-1 text-xs text-gray-500">
-              Surat Jalan Documents yang sudah dibuat untuk SPK ini.
+              Delivery Notes Created for This Work Order
             </p>
           </div>
 
           <span className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600">
-            {sjList.length} SJ
+            {sjList.length} Delivery Notes
           </span>
         </div>
 
@@ -863,7 +863,7 @@ export default function SuratJalanManager({
             <thead className="bg-gray-100">
               <tr>
                 {[
-                  "SJ No",
+                  "Delivery Note Number",
                   "Date",
                   "Driver",
                   "Truck",
@@ -944,7 +944,7 @@ export default function SuratJalanManager({
                     colSpan={6}
                     className="p-8 text-center text-gray-500"
                   >
-                    No Surat Jalan documents have been created for this SPK yet.
+                    No Delivery Notes have been created for this Work Order yet.
                   </td>
                 </tr>
               )}

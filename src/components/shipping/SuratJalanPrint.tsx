@@ -171,10 +171,10 @@ export default function SuratJalanPrint({
             PT YUSEN LOGISTICS INTERLINK INDONESIA
           </div>
 
-          <div>Jl. Raya Cakung Cilincing KM 1.6</div>
-          <div>Jakarta - Indonesia</div>
+          <div>Jl. Raya Cakung Cilincing KM 1.5</div>
+          <div>Jakarta 13910 - Indonesia</div>
           <div>
-            TEL: 021-4607620 | FAX: 021-4607622
+            TEL: 4608720 (HUNTING), 44132241 (HUNTING) | FAX: 4602280, 4413234 - 5
           </div>
         </div>
 
@@ -190,7 +190,7 @@ export default function SuratJalanPrint({
 
       {/* DOCUMENT TITLE */}
       <div className="sj-document-title">
-        SURAT JALAN
+        SURAT JALAN / DELIVERY NOTE
       </div>
 
       {/* DOCUMENT & TRANSPORT INFORMATION */}
@@ -214,7 +214,7 @@ export default function SuratJalanPrint({
           </div>
 
           <div className="sj-info-row">
-            <span>SPK / Order</span>
+            <span>SPK No.</span>
             <span>:</span>
             <span>{header.order_no || "-"}</span>
           </div>
@@ -232,7 +232,7 @@ export default function SuratJalanPrint({
           </div>
 
           <div className="sj-info-row">
-            <span>Phone</span>
+            <span>Driver Phone</span>
             <span>:</span>
             <span>{header.driver_phone || "-"}</span>
           </div>
@@ -255,21 +255,9 @@ export default function SuratJalanPrint({
           </div>
 
           <div className="sj-info-row">
-            <span>Truck Type</span>
-            <span>:</span>
-            <span>{header.truck_type || "-"}</span>
-          </div>
-
-          <div className="sj-info-row">
             <span>Truck Size</span>
             <span>:</span>
             <span>{header.truck_size || "-"}</span>
-          </div>
-
-          <div className="sj-info-row">
-            <span>Total Package</span>
-            <span>:</span>
-            <span>{packageCount}</span>
           </div>
 
         </div>
@@ -344,9 +332,9 @@ export default function SuratJalanPrint({
                   <th>No</th>
                   <th>CTN Total</th>
                   <th>Item Code</th>
-                  <th>Package</th>
+                  <th>Packaging</th>
                   <th>Qty Pcs</th>
-                  <th>Note</th>
+                  <th>Note</th>f
                 </tr>
               </thead>
 
@@ -398,7 +386,7 @@ export default function SuratJalanPrint({
                 {/* SUBTOTAL */}
                 <tr className="sj-subtotal-row">
                   <td className="text-right">
-                    SUBTOTAL
+                   {""}
                   </td>
 
                   <td className="text-center">
@@ -441,7 +429,7 @@ export default function SuratJalanPrint({
           <tbody>
             <tr className="sj-grand-total-row">
               <td className="text-right">
-                GRAND TOTAL
+                {""}
               </td>
 
               <td className="text-center">
@@ -622,22 +610,26 @@ export default function SuratJalanPrint({
           width: 100%;
           table-layout: fixed;
           border-collapse: collapse;
-          font-size: 10px;
+          border-spacing: 0;
+          font-size: 11px;
         }
 
         .sj-table th,
         .sj-table td {
           border: 1px solid #000;
+          border-bottom: 1px solid #000;
+          border-style: solid;
           padding: 6px 7px;
           vertical-align: middle;
           overflow-wrap: anywhere;
+          color: #000;
         }
 
         .sj-table th {
-          font-weight: 700;
+          font-weight: 800;
           text-align: center;
-          background: #f3f3f3;
-          height: 25px;
+          background: #e9e9e9;
+          height: 28px;
         }
 
         .sj-table td.text-center {
@@ -655,8 +647,8 @@ export default function SuratJalanPrint({
         /* SUBTOTAL */
 
         .sj-subtotal-row {
-          font-weight: 700;
-          background: #f3f3f3;
+          font-weight: 800;
+          background: #f0f0f0;
         }
 
         .sj-subtotal-row td {
@@ -670,7 +662,7 @@ export default function SuratJalanPrint({
         }
 
         .sj-grand-total-row {
-          font-weight: 700;
+          font-weight: 800;
           background: #e9edf3;
         }
 
@@ -702,27 +694,47 @@ export default function SuratJalanPrint({
         @media print {
 
           @page {
-            size: A4;
+            size: A4 portrait;
             margin: 12mm;
           }
 
+          html,
           body {
+            width: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
             background: #fff !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            color: #000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
 
           .sj-print {
             width: 100%;
-            font-size: 10pt;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            color: #000 !important;
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-size: 9.5pt !important;
+            font-weight: 500;
+            line-height: 1.35;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
 
+          /* COMPANY LETTERHEAD */
           .sj-letterhead {
-            font-size: 8px;
+            font-size: 8.5pt !important;
+            line-height: 1.4 !important;
+            font-weight: 500;
+            color: #000 !important;
           }
 
           .sj-company-name {
-            font-size: 11px;
+            font-size: 11pt !important;
+            font-weight: 800 !important;
+            color: #173d78 !important;
           }
 
           .sj-company-logo img {
@@ -730,26 +742,88 @@ export default function SuratJalanPrint({
             max-height: 55px;
           }
 
+          /* DOCUMENT TITLE */
           .sj-document-title {
-            font-size: 15px;
+            font-size: 15pt !important;
+            line-height: 1.2 !important;
+            font-weight: 800 !important;
+            color: #000 !important;
+            margin: 8px 0 12px;
+          }
+
+          /* DOCUMENT INFORMATION */
+          .sj-info-container {
+            margin-bottom: 13px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #000 !important;
           }
 
           .sj-info-row {
-            font-size: 9px;
-            grid-template-columns: 95px 9px minmax(0, 1fr);
+            font-size: 9.5pt !important;
+            line-height: 1.45 !important;
+            font-weight: 500;
+            grid-template-columns: 100px 10px minmax(0, 1fr);
+            color: #000 !important;
           }
 
+          .sj-info-row span:first-child {
+            font-weight: 600;
+          }
+
+          .sj-info-section {
+            font-weight: 800 !important;
+          }
+
+          /* DELIVERY INFORMATION */
           .sj-delivery-info {
-            font-size: 9px;
+            font-size: 9.5pt !important;
+            line-height: 1.4 !important;
+            font-weight: 500;
+            color: #000 !important;
+            border-bottom: 1px solid #000 !important;
           }
 
+          .sj-delivery-info b,
+          .sj-order-number b {
+            font-weight: 800 !important;
+          }
+
+          /* PACKAGE TABLE */
           .sj-table {
-            font-size: 9px;
+            width: 100%;
+            font-size: 9.5pt !important;
+            line-height: 1.3 !important;
+            border-collapse: collapse !important;
+            border-spacing: 0 !important;
+            color: #000 !important;
           }
 
           .sj-table th,
           .sj-table td {
-            padding: 5px 6px;
+            border: 1px solid #000 !important;
+            border-bottom: 1px solid #000 !important;
+            border-style: solid !important;
+            padding: 5px 6px !important;
+            vertical-align: middle;
+            color: #000 !important;
+            font-size: 9.5pt !important;
+            font-weight: 500;
+          }
+
+          .sj-table th {
+            font-size: 9.5pt !important;
+            font-weight: 800 !important;
+            line-height: 1.25 !important;
+            text-align: center;
+            background: #e9e9e9 !important;
+          }
+
+          .sj-table td.text-center {
+            text-align: center;
+          }
+
+          .sj-table td.text-right {
+            text-align: right;
           }
 
           .sj-table thead {
@@ -758,6 +832,60 @@ export default function SuratJalanPrint({
 
           .sj-table tr {
             break-inside: avoid;
+            page-break-inside: avoid;
+          }
+
+          /* SUBTOTAL */
+          .sj-subtotal-row {
+            background: #f0f0f0 !important;
+            font-weight: 800 !important;
+          }
+
+          .sj-subtotal-row td {
+            border-top: 1.5px solid #000 !important;
+            border-bottom: 1px solid #000 !important;
+            font-weight: 800 !important;
+          }
+
+          /* GRAND TOTAL */
+          .sj-grand-total-table {
+            margin-top: -12px;
+          }
+
+          .sj-grand-total-row {
+            background: #e9edf3 !important;
+            font-weight: 800 !important;
+          }
+
+          .sj-grand-total-row td {
+            border-top: 2px solid #000 !important;
+            border-bottom: 2px solid #000 !important;
+            font-size: 10pt !important;
+            font-weight: 800 !important;
+            padding-top: 7px !important;
+            padding-bottom: 7px !important;
+          }
+
+          /* REMARKS */
+          .sj-remarks {
+            margin-top: 16px;
+            font-size: 9.5pt !important;
+            line-height: 1.4;
+            font-weight: 500;
+          }
+
+          .sj-remarks b {
+            font-weight: 800 !important;
+          }
+
+          /* SIGNATURE */
+          .sj-signature {
+            margin-top: 38px;
+            font-size: 9.5pt !important;
+            line-height: 1.4;
+            font-weight: 600;
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
 
           .sj-print button {

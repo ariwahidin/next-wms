@@ -1178,7 +1178,7 @@ const SPKSheetPrint = () => {
                       {group.delivery_mode === "VIA_HUB" ? (
                         <>
                           <div style={{ fontWeight: "bold" }}>
-                            VIA HUB - {group.delivery_hub_code} -{" "}
+                            VIA HUB -{" "}
                             {group.delivery_hub_name}
                           </div>
 

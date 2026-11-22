@@ -190,9 +190,9 @@ const ItemSelectionModal = ({
                   <th className="p-2 border">Order Type</th>
                   <th className="p-2 border">Delivery To</th>
                   <th className="p-2 border">Delivery City</th>
-                  {/* <th className="p-2 border">Total Koli</th> */}
                   <th className="p-2 border">Total Item</th>
                   <th className="p-2 border">Total Qty</th>
+                  <th className="p-2 border">Qty Remaining</th>
                   <th className="p-2 border">Total Ctn</th>
                   <th className="p-2 border">Total CBM</th>
                 </tr>
@@ -228,14 +228,14 @@ const ItemSelectionModal = ({
                       <td className="p-2 border text-center">
                         {item.deliv_city}
                       </td>
-                      {/* <td className="p-2 border text-center">
-                        {item.qty_koli}
-                      </td> */}
                       <td className="p-2 border text-center">
                         {item?.total_item}
                       </td>
                       <td className="p-2 border text-center">
                         {item?.total_qty}
+                      </td>
+                      <td className="p-2 border text-center">
+                        {item?.qty_remaining}
                       </td>
                       <td className="p-2 border text-center">
                         {item?.qty_koli}

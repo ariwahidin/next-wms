@@ -214,7 +214,7 @@ export default function ManualForm() {
             "
           >
             <FileText className="h-4 w-4" />
-            SPK
+            Work Order
             {/* <span className="rounded-md bg-gray-200 px-2 py-0.5 text-[10px] data-[state=active]:bg-blue-100">
               Header & Muatan
             </span> */}
@@ -235,7 +235,7 @@ export default function ManualForm() {
               "
             >
               <TruckIcon className="h-4 w-4" />
-              Delivery Note
+              Delivery Notes
               {/* <span className="rounded-md bg-gray-200 px-2 py-0.5 text-[10px]">
                 Pengiriman
               </span> */}
@@ -272,7 +272,7 @@ export default function ManualForm() {
                 </Button>
               )}
 
-              {formData.ID && (
+              {formData.ID > 0 && can("shipment", "create") && (
                 <Button
                   variant="outline"
                   className="bg-slate-300-500 text-black hover:bg-blue-600 h-8"

@@ -132,7 +132,7 @@ export default function SuratJalanPrintPage() {
                     className="rounded bg-blue-600 px-4 py-2 text-white"
                     onClick={() => window.print()}
                 >
-                    Print Surat Jalan
+                    Print Delivery Notes
                 </button>
 
             </div>
