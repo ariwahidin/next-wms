@@ -931,7 +931,7 @@ const ItemScannedTable: React.FC<ItemScannedTableProps> = ({ headerForm }) => {
                                                     <TableCell>{item.lot_number || "-"}</TableCell>
                                                     <TableCell>{formatDate(item.exp_date)}</TableCell>
                                                     {/* <TableCell>{formatDate(item.prod_date)}</TableCell> */}
-                                                    <TableCell>{dayjs(item.created_at).format("DD/MM/YYYY, HH:mm")}</TableCell>
+                                                    <TableCell>{dayjs(item.CreatedAt).format("DD/MM/YYYY, HH:mm")}</TableCell>
                                                 </TableRow>
                                             ))
                                         )}
