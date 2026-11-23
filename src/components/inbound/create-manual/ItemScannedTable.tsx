@@ -42,6 +42,7 @@ interface ItemReceivedFull {
     qa_status: string;
     quantity: number;
     created_at: string;
+    CreatedAt : string;
     uom?: string;
     product?: { item_name?: string; has_serial?: string };
     exp_date?: string;
