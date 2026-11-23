@@ -184,6 +184,11 @@ const PickingSheetPrint = () => {
         0
     );
 
+    const grandTotalCtn = groupedData.reduce(
+        (sum: number, item: any) => sum + Math.ceil(item.ctn_total),
+        0
+    );
+
     // Round CTN Total up
     const formatCtnTotal = (value: number) => {
         return Math.ceil(value).toLocaleString("en-US");
@@ -534,14 +539,14 @@ const PickingSheetPrint = () => {
                                 :{" "}
                                 {data.packing_date
                                     ? new Date(
-                                          data.packing_date
-                                      ).toLocaleString("id-ID", {
-                                          day: "2-digit",
-                                          month: "2-digit",
-                                          year: "numeric",
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                      })
+                                        data.packing_date
+                                    ).toLocaleString("id-ID", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                    })
                                     : "-"}
                             </td>
                         </tr>
@@ -657,28 +662,38 @@ const PickingSheetPrint = () => {
 
                         {/* GRAND TOTAL */}
 
+                        {/* GRAND TOTAL */}
                         <tr className="grand-total">
                             <td
-                                colSpan={4}
-                                style={{ textAlign: "right" }}
+                                colSpan={1}
+                                style={{ textAlign: "center" }}
                             >
-                                GRAND TOTAL
                             </td>
 
+                            {/* CTN TOTAL */}
                             <td className="text-center">
-                                {grandTotalQtyPack.toLocaleString(
-                                    "en-US"
-                                )}
+                                {formatCtnTotal(grandTotalCtn)}
                             </td>
 
+                            {/* ITEM CODE */}
+                            <td></td>
+
+                            {/* DESCRIPTION */}
+                            <td></td>
+
+                            {/* QTY PACK */}
+                            <td className="text-center">
+                                {grandTotalQtyPack.toLocaleString("en-US")}
+                            </td>
+
+                            {/* UOM */}
                             <td className="text-center">
                                 -
                             </td>
 
+                            {/* QTY PCS */}
                             <td className="text-center">
-                                {grandTotalQtyPcs.toLocaleString(
-                                    "en-US"
-                                )}
+                                {grandTotalQtyPcs.toLocaleString("en-US")}
                             </td>
                         </tr>
                     </tbody>
