@@ -673,7 +673,7 @@ export default function SuratJalanManager({
             </div>
 
             <p className="mt-1 text-xs text-gray-500">
-              Search by DO number, outbound number, or item code..
+              Search by order number, outbound number, or item code..
             </p>
           </div>
 

@@ -351,7 +351,7 @@ export default function DeliveryHubAssignment({
               </h3>
 
               <p className="text-xs text-gray-500">
-                Assign delivery route for each DO in this SPK.
+                Assign delivery route for each order in this manifest.
               </p>
             </div>
           </div>
@@ -597,7 +597,7 @@ export default function DeliveryHubAssignment({
         </div>
 
         <p className="text-xs text-gray-500">
-          Original DO destination is preserved. Delivery Hub is only a
+          Original order destination is preserved. Delivery Hub is only a
           transit point before handover to the expedition company.
         </p>
       </section>

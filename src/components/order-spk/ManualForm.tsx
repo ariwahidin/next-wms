@@ -214,7 +214,7 @@ export default function ManualForm() {
             "
           >
             <FileText className="h-4 w-4" />
-            Work Order
+            Manifest
             {/* <span className="rounded-md bg-gray-200 px-2 py-0.5 text-[10px] data-[state=active]:bg-blue-100">
               Header & Muatan
             </span> */}
@@ -281,7 +281,7 @@ export default function ManualForm() {
                   }}
                 >
                   <PrinterIcon className="mr-2" />
-                  Print SPK
+                  Print Manifest
                 </Button>
               )}
             </div>

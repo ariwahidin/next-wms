@@ -87,8 +87,8 @@ const SPKSheetPrint = () => {
       setOrder(res.data.data.order);
       setOrderDetailItems(res.data.data.detail_items || []);
     } catch (error) {
-      console.error("Failed to fetch SPK data:", error);
-      window.alert("Failed to load SPK data.");
+      console.error("Failed to fetch menifest data:", error);
+      window.alert("Failed to load manifest data.");
     }
   };
 
@@ -232,7 +232,7 @@ const SPKSheetPrint = () => {
 
   const grandTotalCbm = shipmentSummaries
     .reduce((sum, item) => sum + item.total_cbm, 0)
-    .toFixed(4);
+    .toFixed(3);
 
   const grandTotalKoli = shipmentSummaries.reduce(
     (sum, item) => sum + item.total_koli,
@@ -436,7 +436,7 @@ const SPKSheetPrint = () => {
         [1, 5].forEach((col) => {
           row.getCell(col).font = {
             name: "Arial",
-            size: 10,
+            size: 12,
             bold: true,
           };
         });
@@ -444,7 +444,7 @@ const SPKSheetPrint = () => {
         [2, 6].forEach((col) => {
           row.getCell(col).font = {
             name: "Arial",
-            size: 10,
+            size: 12,
           };
         });
 
@@ -504,7 +504,7 @@ const SPKSheetPrint = () => {
       tableHeader.eachCell((cell) => {
         cell.font = {
           name: "Arial",
-          size: 10,
+          size: 12,
           bold: true,
         };
 
@@ -560,7 +560,7 @@ const SPKSheetPrint = () => {
 
         hubHeader.font = {
           name: "Arial",
-          size: 10,
+          size: 12,
           bold: true,
         };
 
@@ -617,7 +617,7 @@ const SPKSheetPrint = () => {
           row.eachCell((cell, colNumber) => {
             cell.font = {
               name: "Arial",
-              size: 9,
+              size: 12,
             };
 
             cell.alignment = {
@@ -664,7 +664,7 @@ const SPKSheetPrint = () => {
 
         subtotalLabel.font = {
           name: "Arial",
-          size: 10,
+          size: 12,
           bold: true,
         };
 
@@ -692,7 +692,7 @@ const SPKSheetPrint = () => {
 
           cell.font = {
             name: "Arial",
-            size: 10,
+            size: 12,
             bold: true,
           };
 
@@ -739,7 +739,7 @@ const SPKSheetPrint = () => {
       grandTotalCell.value = "GRAND TOTAL";
       grandTotalCell.font = {
         name: "Arial",
-        size: 10,
+        size: 12,
         bold: true,
       };
 
@@ -775,7 +775,7 @@ const SPKSheetPrint = () => {
 
         cell.font = {
           name: "Arial",
-          size: 10,
+          size: 12,
           bold: true,
         };
 
@@ -833,7 +833,7 @@ const SPKSheetPrint = () => {
         cell.value = position.title;
         cell.font = {
           name: "Arial",
-          size: 10,
+          size: 12,
         };
 
         cell.alignment = {
@@ -913,7 +913,7 @@ const SPKSheetPrint = () => {
 
       noteCell.font = {
         name: "Arial",
-        size: 10,
+        size: 12,
         bold: true,
       };
 
@@ -1137,7 +1137,7 @@ const SPKSheetPrint = () => {
           width: "100%",
           borderCollapse: "collapse",
           marginTop: "20px",
-          fontSize: "11px",
+          fontSize: "12px",
         }}
       >
         <thead>
@@ -1163,7 +1163,7 @@ const SPKSheetPrint = () => {
 
               const subtotalCbm = group.items
                 .reduce((sum, item) => sum + item.total_cbm, 0)
-                .toFixed(4);
+                .toFixed(3);
 
               const subtotalKoli = group.items.reduce(
                 (sum, item) => sum + item.total_koli,
@@ -1231,10 +1231,10 @@ const SPKSheetPrint = () => {
                         </td>
 
                         <td style={{ ...groupCell, textAlign: "right" }}>
-                          {item.total_cbm.toFixed(4)}
+                          {item.total_cbm.toFixed(3)}
                         </td>
 
-                        <td style={{ ...groupCell, textAlign: "center" }}>
+                        <td style={{ ...groupCell, textAlign: "right" }}>
                           {item.total_koli}
                         </td>
 
@@ -1312,7 +1312,7 @@ const SPKSheetPrint = () => {
             <p
               style={{
                 textAlign: "center",
-                fontSize: "10px",
+                fontSize: "12px",
               }}
             >
               {role}
@@ -1323,17 +1323,17 @@ const SPKSheetPrint = () => {
             <p
               style={{
                 textAlign: "center",
-                fontSize: "10px",
+                fontSize: "12px",
               }}
             >
               Name & Sign
             </p>
 
-            <p style={{ textAlign: "left", fontSize: "10px" }}>
+            <p style={{ textAlign: "left", fontSize: "12px" }}>
               Date :
             </p>
 
-            <p style={{ textAlign: "left", fontSize: "10px" }}>
+            <p style={{ textAlign: "left", fontSize: "12px" }}>
               Time :
             </p>
           </div>
@@ -1414,7 +1414,7 @@ const groupHeader = {
 };
 
 const groupCity = {
-  fontSize: "10px",
+  fontSize: "12px",
   marginTop: "2px",
   fontWeight: "normal" as const,
 };

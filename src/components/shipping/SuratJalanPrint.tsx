@@ -575,7 +575,7 @@ export default function SuratJalanPrint({
         }
 
         .sj-info-section {
-          font-weight: 700;
+          // font-weight: 700;
           margin-top: 2px;
         }
 
@@ -771,7 +771,7 @@ export default function SuratJalanPrint({
           }
 
           .sj-info-section {
-            font-weight: 800 !important;
+            // font-weight: 800 !important;
           }
 
           /* DELIVERY INFORMATION */
