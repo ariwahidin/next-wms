@@ -273,11 +273,11 @@ const PickingSheetPrint = () => {
             <tbody>
               {[
                 { label: "Customer Name", value: data.customer_name },
-                { label: "Customer Address", value: data.cust_address },
-                { label: "Customer City", value: data.cust_city },
-                { label: "Delivery To", value: data.deliv_to_name },
-                { label: "Delivery Address", value: data.deliv_address },
-                { label: "Delivery City", value: data.deliv_city },
+                { label: "Ship To Address", value: data.actual_deliv_address || data.cust_address },
+                // { label: "Customer City", value: data.cust_city },
+                // { label: "Delivery To", value: data.deliv_to_name },
+                // { label: "Delivery Address", value: data.deliv_address },
+                // { label: "Delivery City", value: data.deliv_city },
               ].map((f, idx) => (
                 <tr key={idx}>
                   <td style={{ ...headerLabel, verticalAlign: "top" }}>{f.label}</td>
