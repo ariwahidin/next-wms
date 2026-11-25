@@ -1365,6 +1365,18 @@ const OutboundTable = () => {
                 Furuno
               </span>
             </button>
+            <button
+              onClick={() => {
+                setOpenImportModal(false);
+                router.push("/wms/outbound/import-excel/item-transfer-excel-upload");
+              }}
+              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-6 transition-all hover:border-purple-500 hover:bg-purple-50"
+            >
+              <FileSpreadsheet className="h-10 w-10 text-slate-600" />
+              <span className="text-sm font-semibold text-slate-700">
+                Furuno TI
+              </span>
+            </button>
 
           </div>
         </DialogContent>
