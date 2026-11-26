@@ -35,9 +35,12 @@ type PackageRow = {
   carton_code: string;
   pack_ctn_no: string;
   serial_number: string;
+  customer_name?: string;
   Outbound?: {
     outbound_no: string;
     shipment_id: string;
+    customer_name?: string;
+    deliv_to_name?: string;
   } | null;
   product?: {
     item_name?: string;
@@ -92,6 +95,22 @@ const getLocalDate = () => {
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+};
+
+const getPackageCustomerName = (item: PackageRow, dos: SPKDO[] = []) => {
+  const outboundNo = (item.outbound_no || item.Outbound?.outbound_no || "").trim().toUpperCase();
+  const spkDO = dos.find(
+    (deliveryOrder) =>
+      deliveryOrder.outbound_no?.trim().toUpperCase() === outboundNo
+  );
+
+  return (
+    item.customer_name ||
+    item.Outbound?.customer_name ||
+    item.Outbound?.deliv_to_name ||
+    spkDO?.deliv_to_name ||
+    "-"
+  );
 };
 
 const getStatusClass = (status: string) => {
@@ -149,6 +168,7 @@ export default function SuratJalanManager({
   const [editForm, setEditForm] = useState<any>(null);
   const [editPackageRows, setEditPackageRows] = useState<PackageRow[]>([]);
   const [editSelected, setEditSelected] = useState<Record<number, boolean>>({});
+  const [searchEditPackages, setSearchEditPackages] = useState("");
   const [editSaving, setEditSaving] = useState(false);
 
   const showNotice = (message: string, tone: "success" | "error" | "info" = "info", title = "Surat Jalan") => {
@@ -272,6 +292,7 @@ export default function SuratJalanManager({
 
       return (
         shipmentId.toLowerCase().includes(keyword) ||
+        getPackageCustomerName(item, dos).toLowerCase().includes(keyword) ||
         item.outbound_no?.toLowerCase().includes(keyword) ||
         item.item_code?.toLowerCase().includes(keyword) ||
         item.item_model?.toLowerCase().includes(keyword) ||
@@ -283,7 +304,40 @@ export default function SuratJalanManager({
         item.package_type?.toLowerCase().includes(keyword)
       );
     });
-  }, [packages, searchDO]);
+  }, [packages, searchDO, dos]);
+
+  // Search khusus pada modal Edit Surat Jalan.
+  // Select All hanya berlaku untuk hasil pencarian yang sedang terlihat.
+  const filteredEditPackageRows = useMemo(() => {
+    const keyword = searchEditPackages.trim().toLowerCase();
+
+    if (!keyword) return editPackageRows;
+
+    return editPackageRows.filter((item) => {
+      const shipmentId = item.Outbound?.shipment_id ?? "";
+      const customerName = getPackageCustomerName(item, dos);
+
+      return (
+        shipmentId.toLowerCase().includes(keyword) ||
+        customerName.toLowerCase().includes(keyword)
+      );
+    });
+  }, [editPackageRows, searchEditPackages, dos]);
+
+  const toggleEditSelectAll = () => {
+    const visibleIds = filteredEditPackageRows.map((item) => Number(item.ID));
+    const allSelected =
+      visibleIds.length > 0 &&
+      visibleIds.every((id) => !!editSelected[id]);
+
+    setEditSelected((previous) => {
+      const next = { ...previous };
+      visibleIds.forEach((id) => {
+        next[id] = !allSelected;
+      });
+      return next;
+    });
+  };
 
   // ---------------------------------------------------
   // SELECTED PACKAGES
@@ -469,6 +523,7 @@ export default function SuratJalanManager({
         if (!allRows.some((x) => Number(x.ID) === Number(pkg.ID))) allRows.push(pkg);
       }
       setEditingSJ(sjNo);
+      setSearchEditPackages("");
       setEditPackageRows(allRows);
       setEditSelected(chosen);
       setEditForm({
@@ -673,7 +728,7 @@ export default function SuratJalanManager({
             </div>
 
             <p className="mt-1 text-xs text-gray-500">
-              Search by order number, outbound number, or item code..
+              Search by Shipment ID, Delivery To, outbound number, or item details.
             </p>
           </div>
 
@@ -684,7 +739,7 @@ export default function SuratJalanManager({
               type="text"
               value={searchDO}
               onChange={(e) => setSearchDO(e.target.value)}
-              placeholder="Search DO No / Item ..."
+              placeholder="Search Shipment ID / Delivery To / Item ..."
               className="w-full rounded-lg border py-2 pl-9 pr-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
@@ -713,7 +768,8 @@ export default function SuratJalanManager({
                   </th>
 
                   {[
-                    "DO No",
+                    "Shipment ID",
+                    "Delivery To",
                     "Item Code",
                     "Item Name",
                     "Package",
@@ -760,6 +816,10 @@ export default function SuratJalanManager({
 
                         <td className="border-b p-3 font-medium text-blue-700">
                           {shipmentId}
+                        </td>
+
+                        <td className="border-b p-3">
+                          {getPackageCustomerName(item, dos)}
                         </td>
 
                         <td className="border-b p-3 font-medium">
@@ -957,7 +1017,7 @@ export default function SuratJalanManager({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-xl bg-white shadow-2xl">
             <div className="sticky top-0 flex items-center justify-between border-b bg-white px-5 py-4">
-              <div><h3 className="font-semibold text-gray-900">Edit Surat Jalan</h3><p className="text-xs text-gray-500">{editingSJ}</p></div>
+              <div><h3 className="font-semibold text-gray-900">Edit Delivery Note</h3><p className="text-xs text-gray-500">{editingSJ}</p></div>
               <button type="button" onClick={() => setEditingSJ(null)} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"><X className="h-5 w-5" /></button>
             </div>
             <div className="space-y-4 p-5">
@@ -965,8 +1025,92 @@ export default function SuratJalanManager({
                 {([["sj_date","SJ Date","date"],["driver","Driver","text"],["driver_phone","Driver Phone","text"],["transporter_name","Transporter","text"],["truck_type","Truck Type","text"],["truck_size","Truck Size","text"],["truck_no","Truck Number","text"]] as string[][]).map(([key,label,type]) => <label key={key} className="text-xs font-medium text-gray-600">{label}<input type={type} value={editForm[key] || ""} onChange={(e) => setEditForm((p: any) => ({...p,[key]:e.target.value}))} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal text-gray-900 outline-none focus:border-blue-500" /></label>)}
               </div>
               <label className="block text-xs font-medium text-gray-600">Remarks<textarea rows={2} value={editForm.remarks || ""} onChange={(e) => setEditForm((p: any) => ({...p,remarks:e.target.value}))} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal text-gray-900 outline-none focus:border-blue-500" /></label>
-              <div><div className="mb-2 flex items-center justify-between"><h4 className="font-semibold text-gray-800">Allocated Packages</h4><span className="text-xs text-gray-500">{editPackageRows.filter((p) => editSelected[Number(p.ID)]).length} selected</span></div>
-                <div className="max-h-72 overflow-auto rounded-lg border"><table className="w-full text-xs"><thead className="sticky top-0 bg-gray-100"><tr><th className="p-2 text-left">Select</th><th className="p-2 text-left">Do No</th><th className="p-2 text-left">Item Code</th><th className="p-2 text-left">Item Name</th><th className="p-2 text-left">Package</th><th className="p-2 text-right">Qty Pcs</th></tr></thead><tbody>{editPackageRows.map((p) => <tr key={p.ID} className="border-t"><td className="p-2"><input type="checkbox" checked={!!editSelected[Number(p.ID)]} onChange={(e) => setEditSelected((old) => ({...old,[Number(p.ID)]:e.target.checked}))} /></td><td className="p-2">{p.Outbound.shipment_id}</td><td className="p-2">{p.item_code}</td><td className="p-2">{p.product?.item_name || p.item_model || "-"}</td><td className="p-2">{p.package_qty} {p.package_type}</td><td className="p-2 text-right">{p.quantity}</td></tr>)}</tbody></table></div>
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="font-semibold text-gray-800">Allocated Packages</h4>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Search by Shipment ID or Delivery To. Select All applies to the filtered results.
+                    </p>
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    {editPackageRows.filter((p) => editSelected[Number(p.ID)]).length} of {editPackageRows.length} selected
+                  </span>
+                </div>
+
+                <div className="relative w-full md:max-w-sm">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchEditPackages}
+                    onChange={(e) => setSearchEditPackages(e.target.value)}
+                    placeholder="Search Shipment ID / Delivery To..."
+                    className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="max-h-72 overflow-auto rounded-lg border">
+                  <table className="w-full min-w-[850px] text-xs">
+                    <thead className="sticky top-0 bg-gray-100">
+                      <tr>
+                        <th className="w-12 p-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={
+                              filteredEditPackageRows.length > 0 &&
+                              filteredEditPackageRows.every((p) => !!editSelected[Number(p.ID)])
+                            }
+                            onChange={toggleEditSelectAll}
+                            disabled={!filteredEditPackageRows.length}
+                            title="Select all filtered packages"
+                          />
+                        </th>
+                        <th className="p-2 text-left">Shipment ID</th>
+                        <th className="p-2 text-left">Delivery To</th>
+                        <th className="p-2 text-left">Item Code</th>
+                        <th className="p-2 text-left">Item Name</th>
+                        <th className="p-2 text-left">Package</th>
+                        <th className="p-2 text-right">Qty Pcs</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredEditPackageRows.length > 0 ? (
+                        filteredEditPackageRows.map((p) => (
+                          <tr key={p.ID} className="border-t hover:bg-gray-50">
+                            <td className="p-2 text-center">
+                              <input
+                                type="checkbox"
+                                checked={!!editSelected[Number(p.ID)]}
+                                onChange={(e) =>
+                                  setEditSelected((old) => ({
+                                    ...old,
+                                    [Number(p.ID)]: e.target.checked,
+                                  }))
+                                }
+                              />
+                            </td>
+                            <td className="p-2 font-medium text-blue-700">
+                              {p.Outbound?.shipment_id || "-"}
+                            </td>
+                            <td className="p-2">{getPackageCustomerName(p, dos)}</td>
+                            <td className="p-2">{p.item_code || "-"}</td>
+                            <td className="p-2">{p.product?.item_name || p.item_model || "-"}</td>
+                            <td className="p-2">{p.package_qty} {p.package_type}</td>
+                            <td className="p-2 text-right">{p.quantity ?? 0}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="p-6 text-center text-gray-500">
+                            {searchEditPackages
+                              ? "No allocated packages match your search."
+                              : "No allocated packages found."}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 border-t px-5 py-4"><button type="button" onClick={() => setEditingSJ(null)} className="rounded-lg border px-4 py-2 text-sm">Cancel</button><button type="button" disabled={editSaving} onClick={() => void saveEdit()} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">{editSaving ? "Saving..." : "Save Changes"}</button></div>

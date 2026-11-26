@@ -13,7 +13,9 @@ import { HeaderSPK } from "@/types/order-spk";
 
 type OrderDetailItem = {
   shipment_id: string;
+  deliv_to?: string;
   deliv_to_name: string;
+  deliv_address?: string;
   deliv_city: string;
   total_koli: number;
   remarks: string;
@@ -30,7 +32,9 @@ type OrderDetailItem = {
 
 type ShipmentSummary = {
   shipment_id: string;
+  deliv_to: string;
   deliv_to_name: string;
+  deliv_address: string;
   deliv_city: string;
   total_qty: number;
   total_cbm: number;
@@ -52,6 +56,9 @@ type DeliveryGroup = {
   delivery_hub_name: string;
   delivery_hub_address: string;
   delivery_hub_city: string;
+  deliv_to: string;
+  deliv_address: string;
+  deliv_city: string;
   items: ShipmentSummary[];
 };
 
@@ -150,7 +157,9 @@ const SPKSheetPrint = () => {
       if (!acc[shipmentId]) {
         acc[shipmentId] = {
           shipment_id: shipmentId,
+          deliv_to: item.deliv_to || "",
           deliv_to_name: item.deliv_to_name,
+          deliv_address: item.deliv_address || "",
           deliv_city: item.deliv_city,
           total_qty: 0,
           total_cbm: 0,
@@ -194,9 +203,16 @@ const SPKSheetPrint = () => {
         item.delivery_hub_name ??
         "UNKNOWN";
 
+      // VIA_HUB remains grouped by hub.
+      // DIRECT is grouped by destination code (deliv_to).
+      const directIdentifier =
+        (item.deliv_to || "").trim().toUpperCase() ||
+        (item.deliv_to_name || "").trim().toUpperCase() ||
+        "UNKNOWN";
+
       const key = isViaHub
         ? `HUB-${hubIdentifier}`
-        : "DIRECT";
+        : `DIRECT-${directIdentifier || item.deliv_to_name || "UNKNOWN"}`;
 
       let group = groups.find((g) => g.key === key);
 
@@ -208,6 +224,9 @@ const SPKSheetPrint = () => {
           delivery_hub_name: item.delivery_hub_name,
           delivery_hub_address: item.delivery_hub_address,
           delivery_hub_city: item.delivery_hub_city,
+          deliv_to: item.deliv_to,
+          deliv_address: item.deliv_address,
+          deliv_city: item.deliv_city,
           items: [],
         };
 
@@ -555,7 +574,13 @@ const SPKSheetPrint = () => {
             .filter(Boolean)
             .join("\n");
         } else {
-          hubHeader.value = "DIRECT DELIVERY";
+          hubHeader.value = [
+            `DIRECT DELIVERY - ${group.deliv_to || "UNKNOWN"}`,
+            group.deliv_city,
+            group.deliv_address,
+          ]
+            .filter(Boolean)
+            .join("\n");
         }
 
         hubHeader.font = {
@@ -587,8 +612,7 @@ const SPKSheetPrint = () => {
           };
         }
 
-        worksheet.getRow(rowNumber).height =
-          group.delivery_mode === "VIA_HUB" ? 48 : 22;
+        worksheet.getRow(rowNumber).height = 48;
 
         // ------------------------------------------------------
         // DO ROWS
@@ -660,7 +684,10 @@ const SPKSheetPrint = () => {
         worksheet.mergeCells(`A${rowNumber}:D${rowNumber}`);
 
         const subtotalLabel = worksheet.getCell(`A${rowNumber}`);
-        subtotalLabel.value = "SUBTOTAL HUB";
+        subtotalLabel.value =
+          group.delivery_mode === "VIA_HUB"
+            ? "SUBTOTAL HUB"
+            : "SUBTOTAL DIRECT";
 
         subtotalLabel.font = {
           name: "Arial",
@@ -1178,22 +1205,33 @@ const SPKSheetPrint = () => {
                       {group.delivery_mode === "VIA_HUB" ? (
                         <>
                           <div style={{ fontWeight: "bold" }}>
-                            VIA HUB -{" "}
+                            {/* VIA HUB -{" "} */}
                             {group.delivery_hub_name}
-                          </div>
-
-                          <div style={groupCity}>
-                            {group.delivery_hub_city}
                           </div>
 
                           <div style={groupAddress}>
                             {group.delivery_hub_address}
                           </div>
+
+                          <div style={groupCity}>
+                            {group.delivery_hub_city}
+                          </div>
                         </>
                       ) : (
-                        <div style={{ fontWeight: "bold" }}>
-                          DIRECT DELIVERY
-                        </div>
+                        <>
+                          <div style={{ fontWeight: "bold" }}>
+                            {/* DIRECT DELIVERY -  */}
+                            {group.deliv_to || "UNKNOWN"}
+                          </div>
+
+                          <div style={groupAddress}>
+                            {group.deliv_address}
+                          </div>
+
+                          <div style={groupCity}>
+                            {group.deliv_city}
+                          </div>
+                        </>
                       )}
                     </td>
                   </tr>
@@ -1260,7 +1298,9 @@ const SPKSheetPrint = () => {
                         borderLeft: "1px solid #000",
                       }}
                     >
-                      SUBTOTAL HUB
+                      {group.delivery_mode === "VIA_HUB"
+                        ? "SUBTOTAL HUB"
+                        : "SUBTOTAL DIRECT"}
                     </td>
 
                     <td style={subtotalValue}>{subtotalQty}</td>
@@ -1416,13 +1456,13 @@ const groupHeader = {
 const groupCity = {
   fontSize: "12px",
   marginTop: "2px",
-  fontWeight: "normal" as const,
+  fontWeight: "bold" as const,
 };
 
 const groupAddress = {
-  fontSize: "9px",
+  fontSize: "12px",
   marginTop: "2px",
-  fontWeight: "normal" as const,
+  fontWeight: "bold" as const,
 };
 
 const groupCell = {

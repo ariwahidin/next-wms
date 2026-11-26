@@ -768,7 +768,7 @@ const OrderTable = () => {
                   Delivery Note
                 </DropdownMenuItem>
 
-                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePreviewPDF(params.data); }}>
+                {/* <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePreviewPDF(params.data); }}>
                   <Printer className="mr-2 h-4 w-4" /> Print SPK
                 </DropdownMenuItem>
 
@@ -782,7 +782,7 @@ const OrderTable = () => {
 
                 <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); HandlePrintSuratJalan(params.data); }}>
                   <Printer className="mr-2 h-4 w-4" /> Print Surat Jalan
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
 
                 <DropdownMenuSeparator />
 
