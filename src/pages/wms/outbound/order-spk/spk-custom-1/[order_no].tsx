@@ -198,15 +198,12 @@ const SPKSheetPrint = () => {
       const isViaHub = item.delivery_mode === "VIA_HUB";
 
       const hubIdentifier =
-        item.delivery_hub_id ??
-        item.delivery_hub_code ??
         item.delivery_hub_name ??
         "UNKNOWN";
 
       // VIA_HUB remains grouped by hub.
       // DIRECT is grouped by destination code (deliv_to).
       const directIdentifier =
-        (item.deliv_to || "").trim().toUpperCase() ||
         (item.deliv_to_name || "").trim().toUpperCase() ||
         "UNKNOWN";
 
