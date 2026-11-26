@@ -57,6 +57,7 @@ type DeliveryGroup = {
   delivery_hub_address: string;
   delivery_hub_city: string;
   deliv_to: string;
+  deliv_to_name : string;
   deliv_address: string;
   deliv_city: string;
   items: ShipmentSummary[];
@@ -222,6 +223,7 @@ const SPKSheetPrint = () => {
           delivery_hub_address: item.delivery_hub_address,
           delivery_hub_city: item.delivery_hub_city,
           deliv_to: item.deliv_to,
+          deliv_to_name : item.deliv_to_name,
           deliv_address: item.deliv_address,
           deliv_city: item.deliv_city,
           items: [],
@@ -572,7 +574,7 @@ const SPKSheetPrint = () => {
             .join("\n");
         } else {
           hubHeader.value = [
-            `DIRECT DELIVERY - ${group.deliv_to || "UNKNOWN"}`,
+            `DIRECT DELIVERY - ${group.deliv_to_name || "UNKNOWN"}`,
             group.deliv_city,
             group.deliv_address,
           ]
@@ -1218,7 +1220,7 @@ const SPKSheetPrint = () => {
                         <>
                           <div style={{ fontWeight: "bold" }}>
                             {/* DIRECT DELIVERY -  */}
-                            {group.deliv_to || "UNKNOWN"}
+                            {group.deliv_to_name || "UNKNOWN"}
                           </div>
 
                           <div style={groupAddress}>
