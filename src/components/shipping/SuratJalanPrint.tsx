@@ -776,6 +776,7 @@ export default function SuratJalanPrint({
 
           /* DELIVERY INFORMATION */
           .sj-delivery-info {
+            margin-top: 25px;
             font-size: 9.5pt !important;
             line-height: 1.4 !important;
             font-weight: 500;
